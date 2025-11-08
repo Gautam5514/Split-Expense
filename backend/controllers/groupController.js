@@ -2,14 +2,13 @@ import mongoose from "mongoose";
 import Group from "../models/groupModel.js";
 import User from "../models/userModel.js";
 import { createNotification } from "../controllers/notificationController.js";
+import UserProfile from "../models/userProfileModel.js";
 
 // Helper utilities
-const asId = (u) =>
-  typeof u === "string" ? u : u?.id || u?._id?.toString();
+const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
 const sameId = (a, b) => String(a) === String(b);
 const isMember = (group, userId) =>
   (group.members || []).some((m) => String(m) === String(userId));
-
 
 export const createGroup = async (req, res) => {
   try {
@@ -36,7 +35,42 @@ export const createGroup = async (req, res) => {
   }
 };
 
+/**
+ * 🧩 Utility: Enrich members with photoURL from Google or manual profile upload
+ */
+const enrichMembersWithImages = async (members) => {
+  const memberIds = members.map((m) => m._id);
 
+  // Fetch corresponding UserProfile entries
+  const profiles = await UserProfile.find({
+    userId: { $in: memberIds },
+  }).select("userId profileImage.url");
+
+  const profileMap = profiles.reduce((acc, p) => {
+    acc[String(p.userId)] = p.profileImage?.url || null;
+    return acc;
+  }, {});
+
+  // Merge Google photoURL or manual profile URL
+  const users = await User.find({ _id: { $in: memberIds } }).select(
+    "photoURL email name"
+  );
+
+  const userMap = users.reduce((acc, u) => {
+    acc[String(u._id)] = u.photoURL || profileMap[String(u._id)] || null;
+    return acc;
+  }, {});
+
+  // Attach to members
+  return members.map((m) => ({
+    ...m,
+    photoURL: userMap[String(m._id)] || null,
+  }));
+};
+
+/**
+ * ✅ GET /api/groups
+ */
 export const getGroups = async (req, res) => {
   try {
     const uid = req.user?.id || req.user?._id?.toString();
@@ -46,19 +80,25 @@ export const getGroups = async (req, res) => {
       members: new mongoose.Types.ObjectId(uid),
     })
       .sort({ updatedAt: -1 })
-      .populate("members", "name email createdAt")
-      .populate("createdBy", "name email");
+      .populate("members", "name email")
+      .populate("createdBy", "name email")
+      .lean();
 
-    // 🧩 Add computed status field
-    const enrichedGroups = groups.map((g) => {
-      const isCreator =
-        String(g.createdBy?._id || g.createdBy) === String(uid);
+    // Enrich members with images
+    const enrichedGroups = await Promise.all(
+      groups.map(async (g) => {
+        const isCreator =
+          String(g.createdBy?._id || g.createdBy) === String(uid);
 
-      return {
-        ...g.toObject(),
-        status: isCreator ? "active" : "inactive",
-      };
-    });
+        const enrichedMembers = await enrichMembersWithImages(g.members || []);
+
+        return {
+          ...g,
+          members: enrichedMembers,
+          status: isCreator ? "active" : "inactive",
+        };
+      })
+    );
 
     res.json(enrichedGroups);
   } catch (err) {
@@ -67,34 +107,30 @@ export const getGroups = async (req, res) => {
   }
 };
 
-
-
+/**
+ * ✅ GET /api/groups/:groupId
+ */
 export const getGroupById = async (req, res) => {
   try {
     const uid = req.user?.id;
     if (!uid) return res.status(401).json({ message: "Unauthorized" });
 
-    // 🟢 Force cast groupId into ObjectId for proper query
     const group = await Group.findById(req.params.groupId)
       .populate("members", "name email")
       .populate("createdBy", "name email")
-      .lean(); // <- use lean() to get plain objects
+      .lean();
 
-    if (!group)
-      return res.status(404).json({ message: "Group not found." });
+    if (!group) return res.status(404).json({ message: "Group not found." });
 
-    // 🔧 Convert everything to strings for safe comparison
     const memberIds = (group.members || []).map((m) => String(m._id));
     const creatorId = String(group.createdBy?._id || group.createdBy);
 
     const isMember = memberIds.includes(uid) || creatorId === uid;
-
     if (!isMember) {
-      console.log("❌ Not in members:", { uid, memberIds, creatorId });
       return res.status(403).json({ message: "Not a member of this group." });
     }
 
-    // ✅ Auto-heal: if creator not in members
+    // Auto-heal: ensure creator is in members
     if (!memberIds.includes(creatorId)) {
       await Group.updateOne(
         { _id: group._id },
@@ -102,13 +138,18 @@ export const getGroupById = async (req, res) => {
       );
     }
 
-    res.json(group);
+    // Enrich members with profile images
+    const enrichedMembers = await enrichMembersWithImages(group.members || []);
+
+    res.json({
+      ...group,
+      members: enrichedMembers,
+    });
   } catch (err) {
     console.error("getGroupById error:", err.message);
     res.status(500).json({ message: err.message });
   }
 };
-
 
 export const addMembersByEmail = async (req, res) => {
   try {
@@ -162,13 +203,12 @@ export const addMembersByEmail = async (req, res) => {
       .populate("createdBy", "name email");
 
     // Notify new members
-      await createNotification(
+    await createNotification(
       userIds,
       `You were added to group "${group.name}" by ${req.user.name}`,
       `/groups/${group._id}`,
       "group"
     );
-
 
     res.json(updated);
   } catch (err) {
@@ -176,7 +216,6 @@ export const addMembersByEmail = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 export const removeMember = async (req, res) => {
   try {
@@ -207,30 +246,50 @@ export const removeMember = async (req, res) => {
   }
 };
 
-
 export const listAvailableUsers = async (req, res) => {
   try {
     const { groupId } = req.params;
     const { q = "", limit = 20, page = 1 } = req.query;
 
+    // 🟢 Fetch group members to exclude them
     const group = await Group.findById(groupId, "members");
     if (!group) return res.status(404).json({ message: "Group not found." });
 
+    // 🔍 Search filter (by name or email)
     const filter = {
       _id: { $nin: group.members },
-      $or: [
-        { email: new RegExp(q, "i") },
-        { name: new RegExp(q, "i") },
-      ],
+      $or: [{ email: new RegExp(q, "i") }, { name: new RegExp(q, "i") }],
     };
 
-    const users = await User.find(filter, "name email")
+    // 🧠 Fetch users from User collection
+    const users = await User.find(filter, "name email photoURL createdAt")
       .sort({ createdAt: -1 })
       .limit(Math.min(Number(limit) || 20, 100))
-      .skip(((Number(page) || 1) - 1) * (Number(limit) || 20));
+      .skip(((Number(page) || 1) - 1) * (Number(limit) || 20))
+      .lean();
 
-    res.json(users);
+    // 🧩 Fetch corresponding manual profile images (only for these users)
+    const userIds = users.map((u) => u._id);
+    const profiles = await UserProfile.find({
+      userId: { $in: userIds },
+    }).select("userId profileImage.url");
+
+    const profileMap = profiles.reduce((acc, p) => {
+      acc[String(p.userId)] = p.profileImage?.url || null;
+      return acc;
+    }, {});
+
+    // 🧠 Merge both sources of image (Google photoURL > manual upload > null)
+    const enriched = users.map((u) => ({
+      _id: u._id,
+      name: u.name,
+      email: u.email,
+      photoURL: u.photoURL || profileMap[String(u._id)] || null,
+    }));
+
+    res.json(enriched);
   } catch (err) {
+    console.error("listAvailableUsers error:", err.message);
     res.status(500).json({ message: err.message });
   }
 };
@@ -244,7 +303,9 @@ export const markGroupCompleted = async (req, res) => {
     if (!group) return res.status(404).json({ message: "Group not found" });
 
     if (String(group.createdBy) !== String(uid)) {
-      return res.status(403).json({ message: "Only the creator can mark as completed" });
+      return res
+        .status(403)
+        .json({ message: "Only the creator can mark as completed" });
     }
 
     group.isCompleted = true;
@@ -256,4 +317,3 @@ export const markGroupCompleted = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-

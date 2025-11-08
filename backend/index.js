@@ -8,6 +8,7 @@ import admin from "./config/firebaseAdmin.js";
 import jwt from "jsonwebtoken";
 import User from "./models/userModel.js";
 
+// Routes
 import authRoutes from "./routes/authRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
@@ -16,6 +17,8 @@ import userRoutes from "./routes/userRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import userProfileRoutes from "./routes/userProfileRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import notepadeRoutes from "./routes/notepadRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -23,6 +26,7 @@ connectDB();
 const app = express();
 const server = createServer(app);
 
+// ✅ CORS setup
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -43,11 +47,17 @@ export const io = new Server(server, {
   },
 });
 
+// ✅ Make io available in controllers
+app.set("io", io);
+
+// ✅ Track online users
 export const onlineUsers = new Map();
 
+// ✅ Socket.IO events
 io.on("connection", (socket) => {
   console.log("🟢 Client connected:", socket.id);
 
+  // Register socket with token
   socket.on("register", async (token) => {
     try {
       if (!token) return console.log("⚠️ No token received for socket");
@@ -75,16 +85,46 @@ io.on("connection", (socket) => {
         }
       }
 
-      if (userId) onlineUsers.set(String(userId), socket.id);
+      if (userId) {
+        onlineUsers.set(String(userId), socket.id);
+        io.emit("userStatus", { userId, online: true }); // 🔥 Broadcast online
+      }
     } catch (err) {
       console.error("❌ register socket error:", err.message);
     }
   });
 
+  // ✅ Join conversation room
+  socket.on("joinConversation", (conversationId) => {
+    socket.join(conversationId);
+    console.log(`💬 User joined conversation: ${conversationId}`);
+  });
+
+  // ✅ Typing indicator
+  socket.on("typing", ({ conversationId, userId }) => {
+    socket.to(conversationId).emit("typing", userId);
+  });
+
+  // ✅ Send message event
+  socket.on("sendMessage", async (data) => {
+    try {
+      const { conversationId, senderId, text, mediaUrl } = data;
+      const ioInstance = app.get("io");
+      if (ioInstance)
+        ioInstance.to(conversationId).emit("newMessage", data);
+
+      // Optional: you could persist messages here too if you wish.
+    } catch (err) {
+      console.error("❌ sendMessage error:", err.message);
+    }
+  });
+
+  // ✅ Handle disconnect
   socket.on("disconnect", () => {
     for (const [userId, id] of onlineUsers.entries()) {
       if (id === socket.id) {
         onlineUsers.delete(userId);
+        io.emit("userStatus", { userId, online: false }); // 🔴 Broadcast offline
         console.log(`🔴 User ${userId} disconnected`);
       }
     }
@@ -100,6 +140,11 @@ app.use("/api/users", userRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/profile", userProfileRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/notepads", notepadeRoutes);
+app.use("/api/chat", chatRoutes);
 
+// ✅ Start server
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+server.listen(PORT, () =>
+  console.log(`✅ Server running on port ${PORT}`)
+);

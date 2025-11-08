@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import useDebounce from "@/hooks/useDebounce";
 import toast from "react-hot-toast";
-import { Loader2, Search, UserPlus, Mail, Check } from "lucide-react";
+import { Loader2, Search, UserPlus, Mail, Check, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function MemberPicker({ groupId, onSubmit, exclude = [] }) {
@@ -62,7 +62,7 @@ export default function MemberPicker({ groupId, onSubmit, exclude = [] }) {
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-lg font-semibold text-emerald-400">
           <UserPlus size={18} />
-          Add Members to Group
+          Add Members
         </h3>
         {selected.length > 0 && (
           <button
@@ -74,7 +74,7 @@ export default function MemberPicker({ groupId, onSubmit, exclude = [] }) {
         )}
       </div>
 
-      {/* Search Bar */}
+      {/* Search Input */}
       <div className="relative">
         <Search className="absolute left-3 top-3 text-gray-500" size={18} />
         <input
@@ -89,54 +89,65 @@ export default function MemberPicker({ groupId, onSubmit, exclude = [] }) {
       {!query && (
         <div className="text-xs text-gray-500 flex items-center gap-2">
           <Mail size={14} className="text-emerald-400" />
-          Try searching an email of a user you want to add.
+          Try searching by user email or name.
         </div>
       )}
 
-      {/* Results */}
-      <div className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden">
+      {/* Results Section */}
+      <div className="bg-gray-950 border border-gray-800 rounded-xl p-3">
         {loading ? (
           <div className="flex items-center justify-center py-6 text-gray-400 text-sm">
             <Loader2 size={16} className="animate-spin mr-2" />
             Searching users…
           </div>
         ) : options.length > 0 ? (
-          <ul className="divide-y divide-gray-800 max-h-72 overflow-auto">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <AnimatePresence>
-              {options.map((u) => (
+              {options.map((u, idx) => (
                 <motion.li
                   key={u._id}
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="flex items-center justify-between p-3 hover:bg-gray-800/60 transition-all"
+                  className="relative bg-gray-800/40 border border-gray-700 rounded-xl p-4 hover:bg-gray-800/80 transition-all group"
                 >
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-100 truncate">
-                      {u.name || "Unnamed User"}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">{u.email}</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => toggle(u.email)}
-                    className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border transition-all ${
-                      selectedSet.has(u.email)
-                        ? "bg-emerald-600 border-emerald-500 text-white"
-                        : "border-gray-700 text-gray-300 hover:bg-gray-800"
-                    }`}
-                  >
-                    {selectedSet.has(u.email) ? (
-                      <>
-                        <Check size={12} />
-                        Selected
-                      </>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {u.photoURL ? (
+                      <img
+                        src={u.photoURL}
+                        alt={u.name || "User"}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-700 shadow-sm"
+                        loading="lazy"
+                      />
                     ) : (
-                      "Select"
+                      <div className="w-10 h-10 rounded-full bg-emerald-700/30 flex items-center justify-center text-emerald-400 font-semibold text-sm shadow-inner">
+                        {u.name ? u.name.charAt(0).toUpperCase() : "U"}
+                      </div>
                     )}
-                  </button>
+                      <p className="font-medium text-gray-100 truncate">
+                        {u.name || "Unnamed User"}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => toggle(u.email)}
+                      className={`flex items-center justify-center w-8 h-8 rounded-full border transition-all ${
+                        selectedSet.has(u.email)
+                          ? "bg-emerald-600 border-emerald-500 text-white hover:bg-emerald-500"
+                          : "border-gray-700 text-gray-400 hover:bg-gray-800"
+                      }`}
+                    >
+                      {selectedSet.has(u.email) ? (
+                        <Check size={16} />
+                      ) : (
+                        <Plus size={16} />
+                      )}
+                    </button>
+                  </div>
                 </motion.li>
               ))}
             </AnimatePresence>
@@ -151,14 +162,28 @@ export default function MemberPicker({ groupId, onSubmit, exclude = [] }) {
       {/* Selected Chips */}
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-800">
-          {selected.map((email) => (
-            <span
+          {selected.slice(0, 5).map((email) => (
+            <motion.div
               key={email}
-              className="text-xs bg-emerald-600/20 border border-emerald-600/40 text-emerald-300 px-3 py-1 rounded-full"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-1 bg-emerald-600/20 border border-emerald-600/40 text-emerald-300 px-3 py-1 rounded-full text-xs"
             >
               {email}
-            </span>
+              <button
+                onClick={() => toggle(email)}
+                className="text-emerald-400 hover:text-emerald-300 transition"
+              >
+                <X size={12} />
+              </button>
+            </motion.div>
           ))}
+          {selected.length > 5 && (
+            <span className="text-xs text-gray-400">
+              +{selected.length - 5} more selected
+            </span>
+          )}
         </div>
       )}
     </motion.form>

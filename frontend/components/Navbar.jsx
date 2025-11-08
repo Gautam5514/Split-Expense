@@ -13,12 +13,13 @@ import {
   Home,
   PlusCircle,
   Split,
+  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import useTheme from "@/hooks/useTheme";
 import { useNotifications } from "@/context/NotificationContext";
 import { signOut } from "firebase/auth";
-import { auth } from "../lib/firebaseClient"; // 👈 adjust path if needed
+import { auth } from "../lib/firebaseClient"; 
 
 export default function Navbar() {
   const router = useRouter();
@@ -91,7 +92,7 @@ export default function Navbar() {
         {isLoggedIn ? (
           <div className="hidden sm:flex items-center gap-6 text-sm font-medium">
             <Link
-              href="/dashboard"
+              href="/users"
               className="hover:text-emerald-400 flex items-center gap-1 transition"
             >
               <Home size={16} /> Home
@@ -101,6 +102,12 @@ export default function Navbar() {
               className="hover:text-indigo-400 flex items-center gap-1 transition"
             >
               <PlusCircle size={16} /> Create Group
+            </Link>
+            <Link
+              href="/chat"
+              className="hover:text-indigo-400 flex items-center gap-1 transition"
+            >
+              <MessageCircle size={16} /> Messages
             </Link>
           </div>
         ) : (
