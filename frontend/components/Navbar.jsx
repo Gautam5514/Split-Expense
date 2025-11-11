@@ -14,6 +14,8 @@ import {
   PlusCircle,
   Split,
   MessageCircle,
+  MessageCircleMore,
+  Bot,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import useTheme from "@/hooks/useTheme";
@@ -108,6 +110,18 @@ export default function Navbar() {
               className="hover:text-indigo-400 flex items-center gap-1 transition"
             >
               <MessageCircle size={16} /> Messages
+            </Link>
+            <Link
+              href="/groupchat"
+              className="hover:text-indigo-400 flex items-center gap-1 transition"
+            >
+              <MessageCircleMore size={16} /> Group Messages
+            </Link>
+            <Link
+              href="/ai"
+              className="hover:text-indigo-400 flex items-center gap-1 transition"
+            >
+              <Bot size={16} /> AI Mode
             </Link>
           </div>
         ) : (

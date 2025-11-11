@@ -3,6 +3,8 @@ import Group from "../models/groupModel.js";
 import User from "../models/userModel.js";
 import { createNotification } from "../controllers/notificationController.js";
 import UserProfile from "../models/userProfileModel.js";
+import crypto from "crypto";
+import QRCode from "qrcode";
 
 // Helper utilities
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
@@ -314,6 +316,73 @@ export const markGroupCompleted = async (req, res) => {
     res.json({ success: true, message: "Trip marked as completed", group });
   } catch (err) {
     console.error("markGroupCompleted error:", err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const generateInviteLink = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const uid = req.user.id;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    // Only creator can generate the link
+    if (String(group.createdBy) !== String(uid))
+      return res.status(403).json({ message: "Only creator can generate invite" });
+
+    // If inviteCode doesn’t exist, generate one
+    if (!group.inviteCode) {
+      group.inviteCode = crypto.randomBytes(4).toString("hex");
+      await group.save();
+    }
+
+    const joinLink = `${process.env.FRONTEND_URL || "https://splitease.app"}/join/${group.inviteCode}`;
+
+    // Generate base64 QR code
+    const qrBase64 = await QRCode.toDataURL(joinLink);
+
+    res.json({
+      success: true,
+      joinLink,
+      qrBase64,
+    });
+  } catch (err) {
+    console.error("generateInviteLink error:", err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * 🟩 POST /api/groups/join/:inviteCode
+ * Join group by invite link
+ */
+export const joinGroupByInvite = async (req, res) => {
+  try {
+    const { inviteCode } = req.params;
+    const uid = req.user.id;
+
+    const group = await Group.findOne({ inviteCode });
+    if (!group) return res.status(404).json({ message: "Invalid invite link" });
+
+    // Add user to group if not already member
+    if (!group.members.map(String).includes(String(uid))) {
+      group.members.push(uid);
+      await group.save();
+    }
+
+    const populated = await Group.findById(group._id)
+      .populate("members", "name email")
+      .populate("createdBy", "name email");
+
+    res.json({
+      success: true,
+      message: "Joined group successfully",
+      group: populated,
+    });
+  } catch (err) {
+    console.error("joinGroupByInvite error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -19,6 +19,7 @@ import userProfileRoutes from "./routes/userProfileRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import notepadeRoutes from "./routes/notepadRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -78,8 +79,7 @@ io.on("connection", (socket) => {
         try {
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
           userId = decoded.id || decoded._id || null;
-          if (userId)
-            console.log(`✅ Socket registered (JWT): ${userId}`);
+          if (userId) console.log(`✅ Socket registered (JWT): ${userId}`);
         } catch {
           console.log("⚠️ Invalid token during socket registration");
         }
@@ -92,6 +92,23 @@ io.on("connection", (socket) => {
     } catch (err) {
       console.error("❌ register socket error:", err.message);
     }
+  });
+
+  // ✅ Join a group chat room
+  socket.on("joinGroup", (groupId) => {
+    socket.join(`group:${groupId}`);
+    console.log(`👥 User joined group: group:${groupId}`);
+  });
+
+  // ✅ Leave a group chat room
+  socket.on("leaveGroup", (groupId) => {
+    socket.leave(`group:${groupId}`);
+    console.log(`👋 User left group: group:${groupId}`);
+  });
+
+  // ✅ Typing in group chat (optional)
+  socket.on("groupTyping", ({ groupId, userId }) => {
+    socket.to(`group:${groupId}`).emit("groupTyping", userId);
   });
 
   // ✅ Join conversation room
@@ -110,8 +127,7 @@ io.on("connection", (socket) => {
     try {
       const { conversationId, senderId, text, mediaUrl } = data;
       const ioInstance = app.get("io");
-      if (ioInstance)
-        ioInstance.to(conversationId).emit("newMessage", data);
+      if (ioInstance) ioInstance.to(conversationId).emit("newMessage", data);
 
       // Optional: you could persist messages here too if you wish.
     } catch (err) {
@@ -142,9 +158,8 @@ app.use("/api/profile", userProfileRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/notepads", notepadeRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/ai", aiRoutes);
 
 // ✅ Start server
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () =>
-  console.log(`✅ Server running on port ${PORT}`)
-);
+server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

@@ -1,5 +1,5 @@
 import User from "../models/userModel.js";
-
+import UserProfile from "../models/userProfileModel.js";
 /**
  * GET /api/users
  * Query params:
@@ -22,13 +22,39 @@ export const listUsers = async (req, res) => {
         }
       : {};
 
-    const [items, total] = await Promise.all([
-      User.find(filter, "name email createdAt").sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-      User.countDocuments(filter),
-    ]);
+    // 🧩 Fetch base users
+    const users = await User.find(filter, "name email photoURL createdAt")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    // 🧩 Collect user IDs without Google photoURL
+    const userIds = users
+      .filter(u => !u.photoURL)
+      .map(u => u._id);
+
+    // 🧩 Fetch profile images for those users
+    const profiles = await UserProfile.find(
+      { userId: { $in: userIds } },
+      "userId profileImage.url"
+    ).lean();
+
+    const profileMap = {};
+    profiles.forEach(p => {
+      profileMap[p.userId.toString()] = p.profileImage?.url || null;
+    });
+
+    // 🧩 Merge image URLs
+    const items = users.map(u => ({
+      _id: u._id,
+      name: u.name,
+      email: u.email,
+      createdAt: u.createdAt,
+      imageUrl: u.photoURL || profileMap[u._id.toString()] || null, // ✅ unified image
+    }));
+
+    const total = await User.countDocuments(filter);
 
     res.json({
       items,
@@ -38,9 +64,11 @@ export const listUsers = async (req, res) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (err) {
+    console.error("listUsers error:", err);
     res.status(500).json({ message: err.message });
   }
 };
+
 
 /**
  * GET /api/users/me

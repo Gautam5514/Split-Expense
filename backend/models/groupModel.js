@@ -6,6 +6,7 @@ const groupSchema = new mongoose.Schema(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     isCompleted: { type: Boolean, default: false},
+    invitecode: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );

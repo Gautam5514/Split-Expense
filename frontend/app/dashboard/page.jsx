@@ -12,6 +12,7 @@ import {
   Sparkles,
   CheckCircle,
 } from "lucide-react";
+import InviteModal from "@/components/InviteModal";
 
 export default function DashboardPage() {
   const { token } = useAuth();
@@ -22,6 +23,7 @@ export default function DashboardPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [inviteGroupId, setInviteGroupId] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -88,7 +90,10 @@ export default function DashboardPage() {
       const res = await api.post("/groups", { name: name.trim() });
       toast.success("Group created successfully!");
       const newGroup = res.data;
-      // Re-fetch all groups to ensure data consistency
+
+      // Immediately show invite modal for this group
+      setInviteGroupId(newGroup._id);
+
       fetchGroups();
       setName("");
     } catch (err) {
@@ -280,7 +285,15 @@ export default function DashboardPage() {
           </section>
         )}
       </div>
+      {inviteGroupId && (
+      <InviteModal
+        groupId={inviteGroupId}
+        token={token}
+        onClose={() => setInviteGroupId(null)}
+      />
+    )}
     </div>
+    
   );
 }
 
@@ -361,5 +374,6 @@ function GroupCard({
         )}
       </div>
     </Link>
+    
   );
 }

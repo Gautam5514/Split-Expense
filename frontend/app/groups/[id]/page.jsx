@@ -6,7 +6,26 @@ import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import MemberPicker from "@/components/MemberPicker";
 import AddExpenseModal from "@/components/AddExpenseModal";
-import {Users,ArrowLeft,Loader2,Wallet2,Star,PlusCircle,Users2,Wallet2Icon,ArrowLeftCircle,StarIcon,X,Receipt,CreditCard,Utensils,Bus,ShoppingBag,Gift,FileText,Home,Coffee,
+import {
+  ArrowLeft,
+  Loader2,
+  Wallet2,
+  PlusCircle,
+  Users2,
+  Wallet2Icon,
+  ArrowLeftCircle,
+  StarIcon,
+  X,
+  Receipt,
+  CreditCard,
+  Utensils,
+  Bus,
+  ShoppingBag,
+  Gift,
+  FileText,
+  Home,
+  Coffee,
+  MessageCircleMore,
 } from "lucide-react";
 const categoryIcons = {
   food: Utensils,
@@ -108,6 +127,9 @@ export default function GroupDetailPage() {
 
   const goBack = () => router.back();
 
+  const goToChat = () => router.push(`/groupchat?groupId=${groupId}`);
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[80vh] bg-black text-gray-400">
@@ -150,12 +172,25 @@ export default function GroupDetailPage() {
               </span>
             </p>
           </div>
-          <button
-            onClick={goBack}
-            className="flex items-center gap-2 text-sm text-gray-400 hover:text-emerald-400 transition-colors"
-          >
-            <ArrowLeftCircle size={16} /> Back
-          </button>
+          <div className="flex items-center gap-3">
+            {/* ✅ New Group Chat Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={goToChat}
+              className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-md transition-all"
+            >
+              <MessageCircleMore size={16} />
+              Group Chat
+            </motion.button>
+
+            <button
+              onClick={goBack}
+              className="flex items-center gap-2 text-sm text-gray-400 hover:text-emerald-400 transition-colors"
+            >
+              <ArrowLeftCircle size={16} /> Back
+            </button>
+          </div>
         </div>
 
         {/* Members Section */}
@@ -314,7 +349,7 @@ export default function GroupDetailPage() {
         {/* Balances Section */}
         <GroupBalanceSection balances={balances} />
 
-         <NotepadSection groupId={groupId} />
+        <NotepadSection groupId={groupId} />
       </motion.div>
 
       {/* Expense Modal */}

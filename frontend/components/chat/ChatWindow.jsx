@@ -10,20 +10,42 @@ export default function ChatWindow({ activeFriend }) {
   const [me, setMe] = useState(null);
   const bottomRef = useRef(null);
 
+  // 🎨 Helper: consistent pastel colors for avatar initials
+  const getColorForName = (name) => {
+    const colors = [
+      "bg-blue-500",
+      "bg-green-500",
+      "bg-purple-500",
+      "bg-pink-500",
+      "bg-orange-500",
+      "bg-teal-500",
+      "bg-indigo-500",
+      "bg-rose-500",
+    ];
+    const index = name
+      ? name.charCodeAt(0) % colors.length
+      : Math.floor(Math.random() * colors.length);
+    return colors[index];
+  };
+
   // 🧠 Load my profile + conversation
   useEffect(() => {
     const init = async () => {
-      const userRes = await api.get("/users/me");
-      setMe(userRes.data);
+      try {
+        const userRes = await api.get("/users/me");
+        setMe(userRes.data);
 
-      if (activeFriend) {
-        const convo = await api.post("/chat/conversation", {
-          otherEmail: activeFriend.email,
-        });
-        setConversationId(convo.data._id);
+        if (activeFriend) {
+          const convo = await api.post("/chat/conversation", {
+            otherEmail: activeFriend.email,
+          });
+          setConversationId(convo.data._id);
 
-        const msgs = await api.get(`/chat/messages/${convo.data._id}`);
-        setMessages(msgs.data || []);
+          const msgs = await api.get(`/chat/messages/${convo.data._id}`);
+          setMessages(msgs.data || []);
+        }
+      } catch (err) {
+        console.error("Error loading chat:", err);
       }
     };
     init();
@@ -48,7 +70,7 @@ export default function ChatWindow({ activeFriend }) {
     return () => socket.off("newMessage");
   }, [conversationId]);
 
-  // 🧩 Auto-scroll
+  // 🧩 Auto-scroll on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -65,20 +87,31 @@ export default function ChatWindow({ activeFriend }) {
 
   return (
     <div className="flex flex-col w-3/4 h-full bg-[#efeae2]">
-      {/* Header */}
+      {/* 💬 Header */}
       <div className="border-b p-4 flex items-center gap-3 bg-[#f0f2f5] sticky top-0 z-10">
-        <img
-          src={activeFriend.photoURL || "/avatar.png"}
-          alt="friend"
-          className="w-9 h-9 rounded-full object-cover"
-        />
+        {activeFriend.imageUrl ? (
+          <img
+            src={activeFriend.imageUrl}
+            alt={activeFriend.name}
+            className="w-10 h-10 rounded-full object-cover border border-gray-200"
+          />
+        ) : (
+          <div
+            className={`w-10 h-10 flex items-center justify-center rounded-full text-white font-semibold uppercase ${getColorForName(
+              activeFriend.name
+            )}`}
+          >
+            {activeFriend.name?.charAt(0) || "?"}
+          </div>
+        )}
+
         <div>
           <p className="font-medium text-gray-900">{activeFriend.name}</p>
           <p className="text-xs text-gray-500">{activeFriend.email}</p>
         </div>
       </div>
 
-      {/* Messages */}
+      {/* 💌 Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 bg-[#efeae2]">
         {messages.map((m, index) => {
           const mine = isMine(m);
@@ -87,6 +120,27 @@ export default function ChatWindow({ activeFriend }) {
               key={m._id || index}
               className={`flex w-full ${mine ? "justify-end" : "justify-start"}`}
             >
+              {/* If message is from other user, show avatar before bubble */}
+              {!mine && (
+                <div className="shrink-0 mr-2">
+                  {m.sender?.imageUrl ? (
+                    <img
+                      src={m.sender.imageUrl}
+                      alt={m.sender.name}
+                      className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                    />
+                  ) : (
+                    <div
+                      className={`w-8 h-8 flex items-center justify-center rounded-full text-white font-semibold uppercase ${getColorForName(
+                        m.sender?.name || "?"
+                      )}`}
+                    >
+                      {m.sender?.name?.charAt(0) || "?"}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div
                 className={`relative p-3 rounded-2xl shadow-sm max-w-[75%] leading-relaxed ${
                   mine
@@ -131,7 +185,7 @@ export default function ChatWindow({ activeFriend }) {
         <div ref={bottomRef}></div>
       </div>
 
-      {/* Input */}
+      {/* ✍️ Input */}
       <ChatInput
         conversationId={conversationId}
         onSend={(msg) =>
