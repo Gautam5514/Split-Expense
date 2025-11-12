@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 import { getAuth } from "firebase/auth";
 
-const socket = io("http://localhost:8080", {
+const socket = io( process.env.NEXT_PUBLIC_URL || "http://localhost:8080", {
   transports: ["websocket"],
   autoConnect: false,
 });

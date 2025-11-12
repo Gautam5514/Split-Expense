@@ -38,7 +38,7 @@ export function NotificationProvider({ children }) {
     if (!token) return;
 
     const socketInstance = io(
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
+      process.env.NEXT_PUBLIC_URL || "http://localhost:8080",
       {
         transports: ["websocket"],
         reconnection: true,
