@@ -26,6 +26,7 @@ import {
   Home,
   Coffee,
   MessageCircleMore,
+  Eye,
 } from "lucide-react";
 const categoryIcons = {
   food: Utensils,
@@ -40,6 +41,7 @@ const categoryIcons = {
 import { motion, AnimatePresence } from "framer-motion";
 import GroupBalanceSection from "../../../components/GroupBalanceSection";
 import NotepadSection from "@/components/Notepad/NotepadSection";
+import OcrViewModal from "@/components/OcrViewModal";
 
 export default function GroupDetailPage() {
   const params = useParams();
@@ -52,6 +54,8 @@ export default function GroupDetailPage() {
   const [expenses, setExpenses] = useState([]);
   const [balances, setBalances] = useState(null);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showOcrModal, setShowOcrModal] = useState(false);
+  const [selectedOcr, setSelectedOcr] = useState(null);
 
   // Fetch group details
   const fetchGroup = async () => {
@@ -128,7 +132,6 @@ export default function GroupDetailPage() {
   const goBack = () => router.back();
 
   const goToChat = () => router.push(`/groupchat?groupId=${groupId}`);
-
 
   if (loading) {
     return (
@@ -336,9 +339,26 @@ export default function GroupDetailPage() {
                     </div>
 
                     {/* Right: Category */}
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 bg-gray-800/60 px-3 py-1 rounded-full border border-gray-700/70">
-                      {exp.category || "Misc"}
-                    </span>
+                    {/* Right Section: Category + View OCR */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 bg-gray-800/60 px-3 py-1 rounded-full border border-gray-700/70">
+                        {exp.category || "Misc"}
+                      </span>
+
+                      {/* 👁️ View OCR Button */}
+                      {exp.ocrText && (
+                        <button
+                          onClick={() => {
+                            setSelectedOcr(exp);
+                            setShowOcrModal(true);
+                          }}
+                          className="text-gray-400 hover:text-indigo-400 transition-colors"
+                          title="View OCR Text"
+                        >
+                          <Eye size={18} />
+                        </button>
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}
@@ -359,6 +379,17 @@ export default function GroupDetailPage() {
             group={group}
             onClose={() => setShowExpenseModal(false)}
             onSuccess={handleExpenseAdded}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* OCR Modal */}
+      <AnimatePresence>
+        {showOcrModal && selectedOcr && (
+          <OcrViewModal
+            ocrText={selectedOcr.ocrText}
+            imageUrl={selectedOcr.imageUrl}
+            onClose={() => setShowOcrModal(false)}
           />
         )}
       </AnimatePresence>

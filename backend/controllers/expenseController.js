@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Expense from "../models/expenseModel.js";
 import Group from "../models/groupModel.js";
 import { createNotification } from "../controllers/notificationController.js";
+import Tesseract from "tesseract.js";
 
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
 const sameId = (a, b) => String(a) === String(b);
@@ -80,41 +81,38 @@ export const addExpense = async (req, res) => {
       amount,
       splitType = "equal",
       category = "general",
-      participants, // optional
-      exactSplits = [], // for exact
-      percentSplits = [], // for percent
+      participants = [],
+      exactSplits = [],
+      percentSplits = [],
+      fileUrl, // 👈 Cloudinary URL from frontend
     } = req.body;
 
     const uid = asId(req.user);
     if (!uid) return res.status(401).json({ message: "Unauthorized" });
 
-    // ALWAYS fetch the latest group state
+    // Validate Group
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
     if (!ensureMember(group, uid))
-      return res
-        .status(403)
-        .json({ message: "You are not a member of this group." });
+      return res.status(403).json({ message: "You are not a member of this group." });
 
     const amt = Number(amount);
     if (!amt || amt <= 0)
-      return res
-        .status(400)
-        .json({ message: "Amount must be a positive number." });
+      return res.status(400).json({ message: "Amount must be positive." });
     if (!description?.trim())
       return res.status(400).json({ message: "Description is required." });
 
-    // ACTIVE members only
-    const activeMemberIds = group.members.map((m) => String(m));
-    let selected = participants?.length
-      ? participants.map(String)
-      : activeMemberIds;
-    selected = selected.filter((p) => activeMemberIds.includes(p));
-    if (selected.length === 0)
-      return res
-        .status(400)
-        .json({ message: "No valid participants found in group." });
+    // 🔹 OCR
+    let ocrText = null;
+    if (fileUrl) {
+      const { data } = await Tesseract.recognize(fileUrl, "eng");
+      ocrText = data.text.trim() || null;
+    }
 
+    // 🔹 Participants
+    const activeMemberIds = group.members.map((m) => String(m));
+    let selected = participants?.length ? participants.map(String) : activeMemberIds;
+    selected = selected.filter((p) => activeMemberIds.includes(p));
     const part = selected.map((id) => new mongoose.Types.ObjectId(id));
 
     const splits = buildSplits({
@@ -125,15 +123,18 @@ export const addExpense = async (req, res) => {
       percentSplits,
     });
 
+    // 🔹 Save to DB
     const expense = await Expense.create({
-      groupId: new mongoose.Types.ObjectId(groupId), // <-- ensure ObjectId
+      groupId: new mongoose.Types.ObjectId(groupId),
       description: description.trim(),
       amount: amt,
-      paidBy: new mongoose.Types.ObjectId(uid), // <-- ensure ObjectId
+      paidBy: new mongoose.Types.ObjectId(uid),
       splitType,
       category,
       participants: part,
       splits,
+      imageUrl: fileUrl || null,
+      ocrText,
       date: new Date(),
     });
 
@@ -141,15 +142,14 @@ export const addExpense = async (req, res) => {
       .populate("paidBy", "name email")
       .lean();
 
-    // 🟢 Notify other members
+    // 🔹 Notify other members
     const allMembers = group.members.map((m) => String(m));
     const payerId = String(uid);
     const recipients = allMembers.filter((id) => id !== payerId);
-
     if (recipients.length > 0) {
       await createNotification(
         recipients,
-        `${req.user.name} added an expense "${description}" of ₹${amt} in group "${group.name}"`,
+        `${req.user.name} added an expense "${description}" of ₹${amt} in "${group.name}"`,
         `/groups/${groupId}`,
         "expense"
       );
@@ -161,6 +161,7 @@ export const addExpense = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
 
 export const getExpenses = async (req, res) => {
   try {
