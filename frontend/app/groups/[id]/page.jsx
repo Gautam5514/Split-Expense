@@ -39,9 +39,9 @@ const categoryIcons = {
   misc: FileText,
 };
 import { motion, AnimatePresence } from "framer-motion";
-import GroupBalanceSection from "../../../components/GroupBalanceSection";
+import GroupBalanceSection from "@/components/GroupBalanceSection";
 import NotepadSection from "@/components/Notepad/NotepadSection";
-import OcrViewModal from "@/components/OcrViewModal";
+import OcrViewModal from "../../../components/OcrViewModel";
 
 export default function GroupDetailPage() {
   const params = useParams();

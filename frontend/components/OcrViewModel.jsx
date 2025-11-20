@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, FileText } from "lucide-react";
-import OcrReceipt from "./OcrReceipt"; // <--- 1. Import the new component
+import OcrReceipt from "./OrcReceipt"; // <--- 1. Import the new component
 
 export default function OcrViewModal({ ocrText, imageUrl, onClose }) {
     return (

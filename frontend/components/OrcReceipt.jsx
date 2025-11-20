@@ -2,16 +2,16 @@ import React, { useMemo } from 'react';
 
 // Helper component for a consistent section layout
 const Section = ({ title, children, className = "" }) => (
-    <div className={mb - 6 ${className}}>
-        { title && (
+    <div className={`mb-6 ${className}`}>
+        {title && (
             <h3 className="text-emerald-400 text-sm font-semibold mb-3 uppercase tracking-wider border-b border-gray-700 pb-2">
                 {title}
             </h3>
         )}
-<div className="text-gray-300 leading-relaxed text-sm font-mono">
-    {children}
-</div>
-  </div >
+        <div className="text-gray-300 leading-relaxed text-sm font-mono">
+            {children}
+        </div>
+    </div>
 );
 
 // This component intelligently parses and formats the OCR text
