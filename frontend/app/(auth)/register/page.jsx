@@ -1,0 +1,318 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { Eye, EyeOff, User, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
+import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebaseClient";
+import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
+
+const steps = [
+  {
+    number: "01",
+    gradient: "from-indigo-500 to-violet-600",
+    glow: "rgba(99,102,241,0.35)",
+    title: "Create a group",
+    desc: "Add your friends, roommates, or travel buddies to a shared group.",
+  },
+  {
+    number: "02",
+    gradient: "from-violet-500 to-purple-600",
+    glow: "rgba(139,92,246,0.35)",
+    title: "Log expenses",
+    desc: "Record who paid and split the bill any way you like.",
+  },
+  {
+    number: "03",
+    gradient: "from-purple-500 to-pink-600",
+    glow: "rgba(168,85,247,0.35)",
+    title: "Settle up",
+    desc: "See exactly who owes what and mark debts as paid in one tap.",
+  },
+];
+
+const avatars = [
+  { label: "A", color: "#6366f1" },
+  { label: "M", color: "#8b5cf6" },
+  { label: "J", color: "#a855f7" },
+  { label: "R", color: "#ec4899" },
+];
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const { setToken } = useAuth();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [focused, setFocused] = useState("");
+
+  const passwordStrength = (() => {
+    if (!password) return 0;
+    let s = 0;
+    if (password.length >= 8) s++;
+    if (/[A-Z]/.test(password)) s++;
+    if (/[0-9]/.test(password)) s++;
+    if (/[^A-Za-z0-9]/.test(password)) s++;
+    return s;
+  })();
+
+  const strengthLabel = ["", "Weak", "Fair", "Good", "Strong"][passwordStrength];
+  const strengthColor = ["", "#ef4444", "#f59e0b", "#22c55e", "#10b981"][passwordStrength];
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(result.user, { displayName: name });
+      const firebaseToken = await result.user.getIdToken();
+      const res = await api.post("/auth/google", { token: firebaseToken });
+      setToken(res.data.token);
+      toast.success("Account created successfully!");
+      router.push("/dashboard");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Registration failed.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setIsLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseToken = await result.user.getIdToken();
+      const res = await api.post("/auth/google", { token: firebaseToken });
+      setToken(res.data.token);
+      toast.success(`Welcome, ${result.user.displayName || "User"}!`);
+      router.push("/dashboard");
+    } catch (err) {
+      toast.error("Google signup failed.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    /* h-screen + overflow-hidden = zero scroll */
+    <div className="h-screen overflow-hidden flex" style={{ background: "#08080f" }}>
+
+      {/* ── Left visual panel ── */}
+      <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden flex-col justify-center px-12 py-8">
+        {/* bg */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#0c1445 0%,#1a0533 55%,#0f0c29 100%)" }} />
+        {/* grid */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(139,92,246,1) 1px,transparent 1px),linear-gradient(90deg,rgba(139,92,246,1) 1px,transparent 1px)", backgroundSize: "56px 56px" }} />
+        {/* orbs */}
+        <div className="absolute w-[440px] h-[440px] rounded-full pointer-events-none" style={{ bottom: "-10%", left: "-5%", background: "radial-gradient(circle,rgba(139,92,246,0.15) 0%,transparent 70%)" }} />
+        <div className="absolute w-[320px] h-[320px] rounded-full pointer-events-none" style={{ top: "5%", right: "-5%", background: "radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)" }} />
+
+        <div className="relative z-10 max-w-[400px]">
+          {/* logo */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
+              <span className="text-white text-lg font-black">S</span>
+            </div>
+            <span className="text-2xl font-black text-white tracking-tight">Split</span>
+          </div>
+
+          {/* headline */}
+          <h1 className="text-[2.2rem] font-extrabold text-white leading-[1.15] mb-3">
+            Built for groups,<br />
+            <span style={{ background: "linear-gradient(90deg,#a78bfa,#c084fc,#e879f9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              loved by friends.
+            </span>
+          </h1>
+          <p className="text-slate-400 text-sm leading-relaxed mb-7">
+            Join thousands of groups already using Split to manage shared finances with zero drama.
+          </p>
+
+          {/* steps */}
+          <div className="space-y-4">
+            {steps.map((step, i) => (
+              <div key={i} className="flex items-start gap-4">
+                <div className="relative flex-shrink-0">
+                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${step.gradient} flex items-center justify-center`} style={{ boxShadow: `0 4px 14px ${step.glow}` }}>
+                    <span className="text-white text-xs font-black">{step.number}</span>
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div className="absolute left-1/2 top-full -translate-x-1/2 w-px mt-0.5" style={{ height: "16px", background: "linear-gradient(to bottom,rgba(139,92,246,0.4),transparent)" }} />
+                  )}
+                </div>
+                <div className="pb-3">
+                  <p className="text-white text-sm font-semibold mb-0.5">{step.title}</p>
+                  <p className="text-slate-500 text-xs leading-relaxed">{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* social proof */}
+          <div className="mt-6 flex items-center gap-4 rounded-2xl px-4 py-3 border border-white/[0.07]" style={{ background: "rgba(255,255,255,0.03)" }}>
+            <div className="flex -space-x-2">
+              {avatars.map((a) => (
+                <div key={a.label} className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ring-2 ring-[#0c1445]" style={{ background: a.color }}>
+                  {a.label}
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="text-white text-sm font-semibold">Join 50,000+ users</p>
+              <p className="text-slate-500 text-xs">who already split smarter</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Right form panel ── */}
+      <div className="flex-1 h-full flex items-center justify-center px-6 lg:px-10 overflow-y-auto" style={{ background: "#0d0d18" }}>
+        <div className="w-full max-w-[380px] py-6">
+          {/* mobile logo */}
+          <div className="flex items-center gap-3 mb-6 lg:hidden">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+              <span className="text-white font-black">S</span>
+            </div>
+            <span className="text-xl font-black text-white">Split</span>
+          </div>
+
+          {/* heading */}
+          <div className="mb-5">
+            <h2 className="text-2xl font-bold text-white mb-1">Create your account</h2>
+            <p className="text-slate-400 text-sm">Free forever · No credit card required</p>
+          </div>
+
+          {/* Google */}
+          <button
+            onClick={handleGoogleSignup}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-sm text-white/80 hover:text-white border border-white/10 hover:border-white/20 transition-all duration-200"
+            style={{ background: "rgba(255,255,255,0.05)" }}
+          >
+            <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" className="w-5 h-5" />
+            Sign up with Google
+          </button>
+
+          {/* divider */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/[0.08]" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="px-4 text-[11px] font-medium text-slate-600 uppercase tracking-[0.2em]" style={{ background: "#0d0d18" }}>
+                or sign up with email
+              </span>
+            </div>
+          </div>
+
+          {/* form */}
+          <form onSubmit={handleRegister} className="space-y-3">
+            {/* name */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Full name</label>
+              <div className="relative flex items-center rounded-xl border transition-all duration-200"
+                style={{
+                  background: focused === "name" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
+                  borderColor: focused === "name" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
+                  boxShadow: focused === "name" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                }}>
+                <User className="absolute left-4 w-4 h-4 text-slate-600" />
+                <input
+                  type="text" placeholder="John Doe" required
+                  value={name} onChange={(e) => setName(e.target.value)}
+                  onFocus={() => setFocused("name")} onBlur={() => setFocused("")}
+                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-3 rounded-xl outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            {/* email */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email address</label>
+              <div className="relative flex items-center rounded-xl border transition-all duration-200"
+                style={{
+                  background: focused === "email" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
+                  borderColor: focused === "email" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
+                  boxShadow: focused === "email" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                }}>
+                <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
+                <input
+                  type="email" placeholder="you@example.com" required
+                  value={email} onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocused("email")} onBlur={() => setFocused("")}
+                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-3 rounded-xl outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            {/* password */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+              <div className="relative flex items-center rounded-xl border transition-all duration-200"
+                style={{
+                  background: focused === "password" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
+                  borderColor: focused === "password" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
+                  boxShadow: focused === "password" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                }}>
+                <Lock className="absolute left-4 w-4 h-4 text-slate-600" />
+                <input
+                  type={showPassword ? "text" : "password"} placeholder="Min. 8 characters" required
+                  value={password} onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setFocused("password")} onBlur={() => setFocused("")}
+                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-12 py-3 rounded-xl outline-none text-sm"
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-slate-600 hover:text-slate-400 transition-colors">
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* strength meter */}
+              {password.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
+                        style={{ background: i <= passwordStrength ? strengthColor : "rgba(255,255,255,0.08)" }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs mt-1 font-medium transition-colors duration-200" style={{ color: strengthColor }}>
+                    {strengthLabel}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* submit */}
+            <button
+              type="submit" disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(99,102,241,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+            >
+              {isLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Creating account…</> : <>Create account <ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </form>
+
+          <p className="mt-4 text-center text-xs text-slate-600 leading-relaxed">
+            By signing up, you agree to our{" "}
+            <a href="#" className="text-slate-400 hover:text-slate-300 transition-colors">Terms</a>
+            {" "}and{" "}
+            <a href="#" className="text-slate-400 hover:text-slate-300 transition-colors">Privacy Policy</a>.
+          </p>
+
+          <p className="mt-3 text-center text-sm text-slate-500">
+            Already have an account?{" "}
+            <a href="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+              Sign in →
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
