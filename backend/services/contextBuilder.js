@@ -35,12 +35,14 @@ const buildSettlement = (balancesObj) => {
   return txns;
 };
 
-
 /**
  * Fetches and compiles a deeply detailed context string about a user's data.
  * This is the core engine that powers the AI's financial intelligence.
+ * Now compiles individual itemized transactions, categories, notepad guidelines,
+ * and cross-group configurations for maximum reasoning capability.
+ *
  * @param {string} userId - The ID of the user asking the question.
- * @returns {Promise<string>} A formatted string containing the user's detailed data context.
+ * @returns {Promise<string>} A structured markdown string of the user's detailed data context.
  */
 export const buildUserContext = async (userId) => {
   const user = await User.findById(userId).select("name email").lean();
@@ -51,23 +53,37 @@ export const buildUserContext = async (userId) => {
     .lean();
 
   const userGroupIds = groups.map(g => g._id);
-  
-  // ✅ FIX: Corrected the variable name from 'userGroupids' to 'userGroupIds'
   const notes = await Notepad.find({ groupId: { $in: userGroupIds } }).lean();
 
-  let context = `
---- CONTEXT START ---
+  // Create a fast lookup for user names
+  const allUsersMap = {};
+  groups.forEach(g => {
+    g.members.forEach(m => {
+      allUsersMap[m._id.toString()] = m.name;
+    });
+  });
+  allUsersMap[userId] = user.name;
 
-This is the data context for the user:
-- Your Name: ${user.name}
-- Your ID / Email: ${user.email}
+  let context = `# SplitEase Complete Financial Database Context
 
-Here is a detailed breakdown of each group you are a part of:
+## User Profile
+- Name: ${user.name}
+- Email: ${user.email}
+- User ID: ${userId}
+
+## Active Groups & Members
+${groups.map(g => `- **Group Name**: "${g.name}" (ID: ${g._id})
+  - Status: ${g.isCompleted ? "Completed/Settled" : "Active"}
+  - Members: ${g.members.map(m => `${m.name} (${m.email})`).join(", ")}`).join("\n\n")}
+
+## Itemized Expense Ledger
+Here is the complete chronological log of all individual expenses registered in all your groups:
 `;
 
-  // Process each group individually to create a detailed financial report.
+  const allExpenses = [];
+
   for (const group of groups) {
-    const expenses = await Expense.find({ groupId: group._id }).lean();
+    const expenses = await Expense.find({ groupId: group._id }).populate("paidBy", "name email").lean();
     
     // Calculate balances for this group
     const balances = {};
@@ -76,8 +92,27 @@ Here is a detailed breakdown of each group you are a part of:
     });
 
     for (const exp of expenses) {
-      const payerId = exp.paidBy.toString();
-      if (balances[payerId] !== undefined) {
+      // Map splits to user names for rich context
+      const populatedSplits = exp.splits.map(s => ({
+        name: allUsersMap[s.userId.toString()] || "Unknown User",
+        share: to2(s.share)
+      }));
+
+      allExpenses.push({
+        groupName: group.name,
+        description: exp.description,
+        amount: to2(exp.amount),
+        paidByName: exp.paidBy?.name || "Unknown",
+        paidByEmail: exp.paidBy?.email || "",
+        category: exp.category || "general",
+        date: exp.date,
+        splits: populatedSplits,
+        hasImage: !!exp.imageUrl,
+        hasOcr: !!exp.ocrText
+      });
+
+      const payerId = exp.paidBy?._id?.toString();
+      if (payerId && balances[payerId] !== undefined) {
         balances[payerId] += exp.amount;
       }
       for (const split of exp.splits) {
@@ -96,34 +131,51 @@ Here is a detailed breakdown of each group you are a part of:
       return `${fromUser.name} pays ${toUser.name} ₹${t.amount}`;
     });
 
-    // Calculate the current user's personal spend in this group
-    const myPersonalSpend = expenses
-      .filter(e => e.paidBy.toString() === userId)
+    const groupTotalSpend = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const myPersonalPaid = expenses
+      .filter(e => e.paidBy?._id?.toString() === userId)
       .reduce((sum, e) => sum + e.amount, 0);
 
-    // Append the detailed report for this group to the context
     context += `
----
-[GROUP REPORT: "${group.name}"]
-- Status: ${group.isCompleted ? "Completed" : "Active"}
-- Members: ${group.members.map(m => `${m.name} (${m.email})`).join(", ")}
-- Total Group Spend: ₹${to2(expenses.reduce((sum, e) => sum + e.amount, 0))}
-- Your Personal Contribution (what you have paid): ₹${to2(myPersonalSpend)}
-- Final Balances:
-${group.members.map(m => `  - ${m.name}: ${to2(balances[m._id.toString()]) >= 0 ? 'is owed' : 'owes'} ₹${Math.abs(to2(balances[m._id.toString()]))}`).join("\n")}
-- Settlement Plan (how to clear debts):
-${settlementPlan.length > 0 ? settlementPlan.map(s => `  - ${s}`).join("\n") : "  - All debts are settled."}
----
+### Group Report: "${group.name}"
+- **Total Group Spend**: ₹${to2(groupTotalSpend)}
+- **Your Personal Paid Amount**: ₹${to2(myPersonalPaid)}
+- **Final Net Balances**:
+${group.members.map(m => {
+  const bal = to2(balances[m._id.toString()]);
+  return `  - ${m.name}: ${bal >= 0 ? 'is OWED' : 'OWES'} ₹${Math.abs(bal)}`;
+}).join("\n")}
+- **Smart Group Settlement Suggestions**:
+${settlementPlan.length > 0 ? settlementPlan.map(s => `  - ${s}`).join("\n") : "  - Group is fully settled. No transactions needed!"}
 `;
   }
-  
-  // Add notepad details
-  if (notes.length > 0) {
-    context += `\n[NOTEPAD DETAILS]\n` + notes.map(n =>
-      `• Notepad Title: "${n.title}" for group "${groups.find(g => g._id.equals(n.groupId))?.name || 'Unknown'}"\n`
-    ).join('');
+
+  // Chronological sorting of all itemized expenses
+  allExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (allExpenses.length > 0) {
+    context += `\n### Detailed Transactions (Chronological Ledger)\n`;
+    allExpenses.forEach((exp, idx) => {
+      context += `${idx + 1}. **[${exp.groupName}]** "${exp.description}"
+   - **Amount**: ₹${exp.amount}
+   - **Category**: ${exp.category}
+   - **Paid By**: ${exp.paidByName}
+   - **Date**: ${new Date(exp.date).toLocaleDateString()}
+   - **Splits Share**: ${exp.splits.map(s => `${s.name}: ₹${s.share}`).join(", ")}
+   - **Receipt**: ${exp.hasImage ? "Receipt image attached" : "No image attached"}\n`;
+    });
+  } else {
+    context += `\n*No individual expenses have been recorded yet in any group.*\n`;
   }
 
+  // Add notepad details
+  if (notes.length > 0) {
+    context += `\n## Group Planning & Notes\n`;
+    notes.forEach(n => {
+      const gName = groups.find(g => g._id.equals(n.groupId))?.name || 'Unknown';
+      context += `- **Note**: "${n.title}" (Group: "${gName}")\n  - Content: ${n.content || "Empty content"}\n`;
+    });
+  }
 
   context += "\n--- CONTEXT END ---";
   return context;
