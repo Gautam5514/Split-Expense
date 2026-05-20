@@ -295,6 +295,27 @@ export const resetUnreadCount = async (req, res) => {
 
     await convo.save();
 
+    // Mark all incoming messages in this conversation as seen by me
+    await Message.updateMany(
+      {
+        conversationId: convo._id,
+        sender: otherUserId,
+        seenBy: { $ne: me }
+      },
+      {
+        $addToSet: { seenBy: me }
+      }
+    );
+
+    // Emit live seen event to conversation socket room
+    const io = req.app.get("io");
+    if (io) {
+      io.to(convo._id.toString()).emit("messagesSeen", {
+        conversationId: convo._id.toString(),
+        seenBy: me,
+      });
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: err.message });

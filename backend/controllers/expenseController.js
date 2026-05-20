@@ -124,11 +124,12 @@ export const addExpense = async (req, res) => {
     });
 
     // 🔹 Save to DB
+    const payerId = req.body.paidBy || uid;
     const expense = await Expense.create({
       groupId: new mongoose.Types.ObjectId(groupId),
       description: description.trim(),
       amount: amt,
-      paidBy: new mongoose.Types.ObjectId(uid),
+      paidBy: new mongoose.Types.ObjectId(payerId),
       splitType,
       category,
       participants: part,
@@ -144,8 +145,7 @@ export const addExpense = async (req, res) => {
 
     // 🔹 Notify other members
     const allMembers = group.members.map((m) => String(m));
-    const payerId = String(uid);
-    const recipients = allMembers.filter((id) => id !== payerId);
+    const recipients = allMembers.filter((id) => id !== String(uid));
     if (recipients.length > 0) {
       await createNotification(
         recipients,

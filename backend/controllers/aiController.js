@@ -1,11 +1,10 @@
 // controller/aiController.js
 
 import AiMessage from "../models/aiMessageModel.js";
-import { geminiModel } from "../services/geminiService.js";
+import { generateWithRetry } from "../services/geminiService.js";
 import { buildUserContext } from "../services/contextBuilder.js";
 
 const cleanText = (text = "") => {
-  // ... (your existing cleanText function is perfect)
   return text
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
@@ -32,7 +31,16 @@ const getAIServiceError = (err) => {
     return {
       status: 429,
       code: "AI_RATE_LIMITED",
-      message: "SplitEase AI is temporarily rate limited. Please try again shortly.",
+      message: "SplitEase AI is temporarily rate limited. Please try again in a few seconds.",
+    };
+  }
+
+  if (err?.status === 503) {
+    return {
+      status: 503,
+      code: "AI_OVERLOADED",
+      message:
+        "SplitEase AI is experiencing high demand right now. Please try again in a moment.",
     };
   }
 
@@ -56,7 +64,7 @@ export const queryAI = async (req, res) => {
     await AiMessage.create({ userId, role: "user", content: prompt });
 
     // 2️⃣ STEP 1: CLASSIFY USER INTENT
-    // This is a quick, preliminary call to the AI to understand the *type* of question.
+    // Quick preliminary call to understand the *type* of question.
     const classificationPrompt = `
       Analyze the following user question. Classify it as either 'PERSONAL_DATA' if it asks about the user's personal information (like expenses, groups, trips, plans), or 'GENERAL_KNOWLEDGE' if it's a general question (like "what is the capital of France?" or "what is the distance from Koderma to Goa?").
 
@@ -65,20 +73,16 @@ export const queryAI = async (req, res) => {
       User Question: "${prompt}"
     `;
 
-    const classificationResult = await geminiModel.generateContent(classificationPrompt);
-    // We clean up the response to be certain we just have the classification word.
-    const intent = classificationResult.response.text().trim();
+    // Use generateWithRetry — auto retries + falls back to gemini-1.5-flash if 503
+    const intent = (await generateWithRetry(classificationPrompt, { maxRetries: 3 })).trim();
 
     let finalPrompt;
 
     // 3️⃣ STEP 2: CHOOSE THE CORRECT PROMPT BASED ON INTENT
     if (intent === "PERSONAL_DATA") {
       // --- Path for questions about the user's data ---
-
-      // RETRIEVE: Fetch the user-specific data from your database.
       const context = await buildUserContext(userId);
-      
-      // AUGMENT: Create the strict, data-aware prompt.
+
       finalPrompt = `
         You are SplitEase AI, a specialized assistant for the SplitEase app.
         Your primary function is to answer the user's question based *exclusively* on the CONTEXT provided below.
@@ -94,11 +98,8 @@ export const queryAI = async (req, res) => {
         Now, please answer the following user question:
         Question: "${prompt}"
       `;
-
     } else {
       // --- Path for general knowledge questions ---
-
-      // We do NOT provide context. We give a simple, direct instruction.
       finalPrompt = `
         You are a helpful general knowledge assistant.
         Please answer the following question accurately.
@@ -107,9 +108,9 @@ export const queryAI = async (req, res) => {
       `;
     }
 
-    // 4️⃣ GENERATE: Send the chosen prompt to the Gemini model.
-    const result = await geminiModel.generateContent(finalPrompt);
-    let aiText = result?.response?.text() || "Hmm... I had trouble generating an answer.";
+    // 4️⃣ GENERATE: Send the chosen prompt with retry + fallback protection.
+    const rawText = await generateWithRetry(finalPrompt, { maxRetries: 3 });
+    let aiText = rawText || "Hmm... I had trouble generating an answer.";
 
     // 5️⃣ Clean the response for better UI presentation.
     aiText = cleanText(aiText);

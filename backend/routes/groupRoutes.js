@@ -15,6 +15,7 @@ import {
   getGroupMessages,
   sendGroupMessage,
   deleteGroupChats,
+  markGroupMessagesSeen,
 } from "../controllers/groupChatController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -36,10 +37,12 @@ router.put("/:groupId/complete", authMiddleware, markGroupCompleted);
 router.post("/messages/delete", authMiddleware, deleteGroupChats);
 router.get("/:groupId/messages", authMiddleware, getGroupMessages);
 router.post("/:groupId/message", authMiddleware, sendGroupMessage);
+router.post("/:groupId/mark-seen", authMiddleware, markGroupMessagesSeen);
 
 // 🆕 SplitLink: Generate invite + Join via code
 router.post("/:groupId/invite", authMiddleware, generateInviteLink);
 router.post("/join/:inviteCode", authMiddleware, joinGroupByInvite);
+
 
 
 export default router;

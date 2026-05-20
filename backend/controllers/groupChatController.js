@@ -21,6 +21,18 @@ export const getGroupMessages = async (req, res) => {
       $pull: { hiddenGroupChats: group._id },
     });
 
+    // Mark all existing group messages as seen by the current user
+    await GroupMessage.updateMany(
+      { groupId, seenBy: { $ne: uid } },
+      { $addToSet: { seenBy: uid } }
+    );
+
+    // Emit group messages seen socket signal
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`group:${groupId}`).emit("groupMessagesSeen", { groupId, userId: uid });
+    }
+
     const messages = await GroupMessage.find({ groupId })
       .populate("sender", "name email photoURL")
       .sort({ createdAt: 1 })
@@ -152,3 +164,35 @@ export const deleteGroupChats = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+/**
+ * ✅ POST /api/groups/:groupId/mark-seen
+ */
+export const markGroupMessagesSeen = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const uid = req.user.id;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!group.members.map(String).includes(String(uid)))
+      return res.status(403).json({ message: "Not a member of this group" });
+
+    // Mark all group messages as read by me
+    await GroupMessage.updateMany(
+      { groupId, seenBy: { $ne: uid } },
+      { $addToSet: { seenBy: uid } }
+    );
+
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`group:${groupId}`).emit("groupMessagesSeen", { groupId, userId: uid });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("markGroupMessagesSeen error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
