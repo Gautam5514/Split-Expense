@@ -21,52 +21,64 @@ import {
   TrendingUp,
   MessageSquare,
   AlertTriangle,
+  Cpu,
+  ShieldCheck,
+  Compass,
+  ArrowUpRight,
+  LineChart,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import toast from "react-hot-toast";
 
-/* ─── Quick Prompts ───────────────────────────────────────────────── */
+/* ─── Premium Suggestions / Insights ─────────────────────────────── */
 const QUICK_PROMPTS = [
   {
     icon: WalletCards,
-    title: "Trip spend",
-    subtitle: "Across all groups",
+    title: "Trip spend analysis",
+    subtitle: "Complete cross-group spend metrics",
     prompt: "How much did I spend across my recent groups?",
-    border: "border-violet-500/20 hover:border-violet-500/40",
+    color: "from-violet-500/20 to-indigo-500/20",
+    border: "group-hover:border-violet-500/40",
     iconColor: "text-violet-400",
-    iconBg: "bg-violet-500/15",
-    dot: "bg-violet-400",
+    iconBg: "bg-violet-500/10",
   },
   {
     icon: ReceiptText,
-    title: "Expense summary",
-    subtitle: "By category",
+    title: "Expense distribution",
+    subtitle: "Breakdown by category and shares",
     prompt: "Summarize my latest expenses by category.",
-    border: "border-emerald-500/20 hover:border-emerald-500/40",
+    color: "from-emerald-500/20 to-teal-500/20",
+    border: "group-hover:border-emerald-500/40",
     iconColor: "text-emerald-400",
-    iconBg: "bg-emerald-500/15",
-    dot: "bg-emerald-400",
+    iconBg: "bg-emerald-500/10",
   },
   {
     icon: UsersRound,
-    title: "Who owes what",
-    subtitle: "Active balances",
+    title: "Smart debt simplification",
+    subtitle: "Cross-group optimized balances",
     prompt: "Who owes money in my active groups?",
-    border: "border-orange-500/20 hover:border-orange-500/40",
+    color: "from-orange-500/20 to-amber-500/20",
+    border: "group-hover:border-orange-500/40",
     iconColor: "text-orange-400",
-    iconBg: "bg-orange-500/15",
-    dot: "bg-orange-400",
+    iconBg: "bg-orange-500/10",
   },
   {
     icon: Lightbulb,
-    title: "Budget planner",
-    subtitle: "AI suggestions",
+    title: "Trip budget planning",
+    subtitle: "Interactive travel forecaster",
     prompt: "Suggest a simple budget plan for my next trip.",
-    border: "border-pink-500/20 hover:border-pink-500/40",
+    color: "from-pink-500/20 to-rose-500/20",
+    border: "group-hover:border-pink-500/40",
     iconColor: "text-pink-400",
-    iconBg: "bg-pink-500/15",
-    dot: "bg-pink-400",
+    iconBg: "bg-pink-500/10",
   },
+];
+
+/* ─── Interactive Intelligence Hub ─────────────────────────────── */
+const CAPABILITIES = [
+  { name: "Debt simplification", active: true },
+  { name: "Anomalies detection", active: true },
+  { name: "Forecast & planning", active: true },
 ];
 
 /* ─── Root Page ───────────────────────────────────────────────────── */
@@ -147,144 +159,179 @@ export default function AiPage() {
   }, []);
 
   return (
-    /* Full remaining viewport height after the 70px navbar */
-    <div className="flex bg-background overflow-hidden" style={{ height: "calc(100vh - 70px)" }}>
+    <div className="relative flex bg-[#030303] overflow-hidden select-none" style={{ height: "calc(100vh - 70px)" }}>
+      
+      {/* Ambient Neon Background Meshes */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: "8s" }} />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/8 blur-[150px] pointer-events-none animate-pulse" style={{ animationDuration: "12s" }} />
 
-      {/* ── Sidebar ──────────────────────────────────────────────── */}
-      <aside className="hidden lg:flex w-[280px] xl:w-[300px] shrink-0 flex-col border-r border-border/60">
-
-        {/* Brand */}
-        <div className="px-5 pt-5 pb-4 border-b border-border/40">
+      {/* ── Sidebar ── */}
+      <aside className="hidden lg:flex w-[300px] xl:w-[320px] shrink-0 flex-col border-r border-white/[0.04] bg-[#09090b]/70 backdrop-blur-xl relative z-10">
+        
+        {/* Sidebar Header */}
+        <div className="px-5 pt-6 pb-5 border-b border-white/[0.03]">
           <div className="flex items-center gap-3">
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/30">
-              <Sparkles size={16} className="text-white" />
-              <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 shadow-[0_0_20px_rgba(99,102,241,0.3)] border border-white/10">
+              <Cpu size={18} className="text-white" />
+              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
               </span>
             </div>
             <div>
-              <p className="text-[14px] font-bold text-foreground tracking-tight leading-tight">SplitEase AI</p>
-              <p className="text-[11px] text-muted-foreground leading-tight">Powered by Gemini</p>
+              <p className="text-[14px] font-bold text-white tracking-tight leading-tight flex items-center gap-1.5">
+                SplitEase Core
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                  PRO
+                </span>
+              </p>
+              <p className="text-[11px] text-[#8e8e93] mt-0.5">Gemini 3.5 Analytical Suite</p>
             </div>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="px-4 py-4 grid grid-cols-2 gap-2 border-b border-border/40">
-          <StatCard
-            icon={<MessageSquare size={12} />}
-            label="Questions"
-            value={totalQuestions}
-            accent="indigo"
-          />
-          <StatCard
-            icon={loading ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
-            label="Status"
-            value={loading ? "Thinking…" : "Ready"}
-            accent={loading ? "amber" : "emerald"}
-          />
+        {/* Live System Diagnostics / Widgets */}
+        <div className="px-4 py-4 space-y-4 border-b border-white/[0.03] bg-white/[0.01]">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-[#8e8e93] px-1">
+            System Diagnostics
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard
+              icon={<MessageSquare size={12} className="text-indigo-400" />}
+              label="Inquiries"
+              value={totalQuestions}
+              accent="indigo"
+            />
+            <StatCard
+              icon={loading ? <Loader2 size={12} className="animate-spin text-amber-400" /> : <ShieldCheck size={12} className="text-emerald-400" />}
+              label="Processor"
+              value={loading ? "Analyzing..." : "Standby"}
+              accent={loading ? "amber" : "emerald"}
+            />
+          </div>
+
+          {/* Core Analytics Status */}
+          <div className="rounded-xl border border-white/[0.03] bg-black/40 p-3 space-y-2">
+            <div className="flex items-center justify-between text-[10px] font-medium text-[#8e8e93]">
+              <span>INTELLIGENCE CAPABILITIES</span>
+              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                <span className="h-1 w-1 rounded-full bg-emerald-400 animate-ping" />
+                ACTIVE
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {CAPABILITIES.map((cap) => (
+                <div key={cap.name} className="flex items-center justify-between text-[11px] text-white/70">
+                  <span className="flex items-center gap-1.5 text-[#a1a1aa]">
+                    <span className="h-1 w-1 rounded-full bg-indigo-500" />
+                    {cap.name}
+                  </span>
+                  <span className="text-[10px] text-indigo-400 font-semibold bg-indigo-500/5 px-1.5 py-0.2 rounded border border-indigo-500/10">PRO</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Quick prompts */}
-        <div className="px-4 py-4 flex-1 overflow-y-auto custom-scrollbar space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-            Quick Prompts
+        {/* Custom Actions list */}
+        <div className="px-4 py-4 flex-1 overflow-y-auto custom-scrollbar space-y-1.5 relative">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-[#8e8e93] px-1 mb-2">
+            Intelligence Modules
           </p>
-          {QUICK_PROMPTS.map(({ icon: Icon, title, subtitle, prompt: qp, iconColor, iconBg, dot }) => (
+          {QUICK_PROMPTS.map(({ icon: Icon, title, subtitle, prompt: qp, iconColor, iconBg, border }) => (
             <button
               key={title}
               type="button"
               onClick={() => askAI(qp)}
               disabled={loading}
-              className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150 hover:bg-muted/50 border border-transparent hover:border-border/60 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200 hover:bg-white/[0.03] border border-transparent hover:border-white/[0.03] hover:shadow-[0_2px_12px_rgba(0,0,0,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${iconBg} ${iconColor}`}>
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconBg} ${iconColor} shadow-inner`}>
                 <Icon size={14} />
               </span>
               <span className="flex-1 min-w-0">
-                <span className="block text-[12px] font-semibold text-foreground leading-tight">{title}</span>
-                <span className="block text-[11px] text-muted-foreground">{subtitle}</span>
+                <span className="block text-[12px] font-semibold text-white group-hover:text-indigo-400 transition-colors leading-tight">{title}</span>
+                <span className="block text-[10px] text-[#8e8e93] truncate mt-0.5">{subtitle}</span>
               </span>
-              <ChevronRight size={12} className="text-muted-foreground/30 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-muted-foreground/60" />
+              <ChevronRight size={12} className="text-white/20 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-white/50" />
             </button>
           ))}
         </div>
 
-        {/* Tip */}
-        <div className="px-4 pb-4">
-          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-4 py-3">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <TrendingUp size={11} className="text-indigo-400" />
-              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Pro tip</span>
+        {/* Tip panel */}
+        <div className="p-4 border-t border-white/[0.03]">
+          <div className="rounded-xl border border-indigo-500/10 bg-indigo-500/5 px-3.5 py-3 shadow-[inset_0_1px_12px_rgba(99,102,241,0.05)]">
+            <div className="flex items-center gap-1.5 mb-1">
+              <TrendingUp size={12} className="text-indigo-400" />
+              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Dynamic context</span>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Mention group names or date ranges for more precise answers.
+            <p className="text-[11px] text-[#8e8e93] leading-relaxed">
+              Real-time cross-group simplifications are calculated live based on current ledgers.
             </p>
           </div>
         </div>
       </aside>
 
-      {/* ── Main Chat ─────────────────────────────────────────────── */}
-      <section className="flex flex-1 min-w-0 flex-col bg-background">
-
-        {/* Slim top bar — actions only, no redundant title */}
-        <div className="shrink-0 h-12 flex items-center justify-between gap-3 border-b border-border/60 bg-card/60 backdrop-blur-sm px-4">
-          {/* Mobile brand */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
-              <Sparkles size={13} className="text-white" />
+      {/* ── Main Chat Area ── */}
+      <section className="flex flex-1 min-w-0 flex-col bg-[#09090b]/40 backdrop-blur-xl relative z-10">
+        
+        {/* Terminal Header */}
+        <div className="shrink-0 h-14 flex items-center justify-between gap-3 border-b border-white/[0.04] bg-[#09090b]/60 backdrop-blur-md px-4 md:px-6">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Mobile icon */}
+            <div className="flex lg:hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-md">
+              <Cpu size={14} className="text-white" />
             </div>
-            <span className="text-[13px] font-semibold text-foreground">SplitEase AI</span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-bold text-white tracking-tight">Intelligence Console</span>
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse hidden sm:inline-block" />
+              </div>
+              <p className="text-[10px] text-[#8e8e93] truncate hidden sm:block">
+                Query model with complete chronological, categorical, and transaction contexts
+              </p>
+            </div>
           </div>
 
-          {/* Desktop: subtle model badge */}
-          <div className="hidden lg:flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            <span className="text-[12px] text-muted-foreground font-medium">
-              {loading ? "Generating response…" : `${totalQuestions} question${totalQuestions !== 1 ? "s" : ""} asked`}
-            </span>
-          </div>
-
-          {/* Actions */}
+          {/* Quick controls */}
           <div className="flex items-center gap-2">
             {lastPrompt && !loading && (
               <button
                 type="button"
                 onClick={() => askAI(lastPrompt)}
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border text-[11px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.04] text-[11px] font-semibold text-[#8e8e93] hover:text-white transition-all"
               >
                 <RefreshCw size={11} />
-                Retry
+                Retry Last
               </button>
             )}
             {messages.length > 0 && (
               <button
                 type="button"
                 onClick={clearChat}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border text-[11px] font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/[0.04] bg-white/[0.01] hover:bg-red-500/10 hover:border-red-500/20 text-[11px] font-semibold text-[#8e8e93] hover:text-red-400 transition-all"
               >
                 <Trash2 size={11} />
-                Clear
+                Reset Chat
               </button>
             )}
           </div>
         </div>
 
-        {/* Messages scroll area */}
+        {/* Message Threads */}
         <div
           ref={scrollAreaRef}
-          className="flex-1 overflow-y-auto custom-scrollbar px-4 py-5 md:px-8 md:py-6"
+          className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 md:px-8 xl:px-12"
         >
           <AnimatePresence mode="popLayout" initial={false}>
             {messages.length === 0 && !loading ? (
               <EmptyState key="empty" onSuggestionClick={askAI} />
             ) : (
               <motion.div
-                key="msgs"
+                key="chat-thread"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="mx-auto flex max-w-2xl flex-col gap-5"
+                className="mx-auto flex max-w-3xl flex-col gap-6"
               >
                 {messages.map((msg) => (
                   <ChatBubble key={msg.id} message={msg} />
@@ -295,7 +342,7 @@ export default function AiPage() {
           </AnimatePresence>
         </div>
 
-        {/* Input */}
+        {/* Advanced Commander Input Box */}
         <PromptInput
           prompt={prompt}
           setPrompt={setPrompt}
@@ -309,22 +356,22 @@ export default function AiPage() {
   );
 }
 
-/* ─── Stat Card ───────────────────────────────────────────────────── */
+/* ─── Premium Stat Card ───────────────────────────────────────────── */
 const ACCENT_MAP = {
-  indigo: { text: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/20" },
-  emerald: { text: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-  amber: { text: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+  indigo: { text: "text-indigo-400", bg: "bg-indigo-500/5", border: "border-indigo-500/20" },
+  emerald: { text: "text-emerald-400", bg: "bg-emerald-500/5", border: "border-emerald-500/20" },
+  amber: { text: "text-amber-400", bg: "bg-amber-500/5", border: "border-amber-500/20" },
 };
 
 function StatCard({ icon, label, value, accent }) {
   const a = ACCENT_MAP[accent] || ACCENT_MAP.indigo;
   return (
-    <div className={`rounded-xl border ${a.border} ${a.bg} px-3 py-2.5`}>
-      <div className={`flex items-center gap-1 ${a.text} mb-1`}>
+    <div className={`rounded-xl border ${a.border} ${a.bg} p-3 transition-all duration-200 hover:bg-white/[0.02]`}>
+      <div className="flex items-center gap-1.5 mb-1">
         {icon}
-        <span className="text-[9px] font-bold uppercase tracking-widest">{label}</span>
+        <span className="text-[9px] font-bold uppercase tracking-widest text-[#8e8e93]">{label}</span>
       </div>
-      <p className={`text-[13px] font-bold ${a.text} truncate`}>{value}</p>
+      <p className="text-[13px] font-bold text-white truncate font-mono">{value}</p>
     </div>
   );
 }
@@ -336,51 +383,52 @@ function ChatBubble({ message }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ duration: 0.16, ease: "easeOut" }}
-      className={`flex items-end gap-2.5 ${isUser ? "justify-end" : "justify-start"}`}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={`flex items-start gap-4.5 ${isUser ? "justify-end" : "justify-start"}`}
     >
-      {/* AI avatar */}
+      {/* Bot Avatar */}
       {!isUser && (
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-md shadow-indigo-500/25 mb-0.5">
-          <Bot size={13} className="text-white" />
+        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 shadow-[0_0_15px_rgba(99,102,241,0.25)] border border-white/10 mt-1">
+          <Bot size={14} className="text-white" />
         </div>
       )}
 
-      <div className={`flex flex-col gap-1 ${isUser ? "items-end" : "items-start"} max-w-[80%] md:max-w-[70%]`}>
-        <span className="text-[10px] font-semibold text-muted-foreground px-1">
-          {isUser ? "You" : "SplitEase AI"}
+      <div className={`flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} max-w-[85%] md:max-w-[76%]`}>
+        <span className="text-[10px] font-semibold text-[#8e8e93] px-1 tracking-wider uppercase font-mono">
+          {isUser ? "USER CONSOLE" : "CORE INTELLIGENCE"}
         </span>
 
         <div
-          className={`px-4 py-3 rounded-2xl text-[13.5px] leading-relaxed shadow-sm
+          className={`px-5 py-4 rounded-2xl text-[14px] leading-relaxed shadow-lg backdrop-blur-md relative overflow-hidden
             ${isUser
-              ? "bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-br-sm shadow-indigo-500/20"
+              ? "bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-br-sm shadow-[0_4px_20px_rgba(99,102,241,0.15)] border border-indigo-400/20"
               : isError
-              ? "bg-red-500/8 border border-red-500/25 text-foreground rounded-bl-sm"
-              : "bg-card border border-border/70 text-foreground rounded-bl-sm"
+              ? "bg-red-500/5 border border-red-500/20 text-red-200 rounded-bl-sm"
+              : "bg-white/[0.02] border border-white/[0.04] text-[#e1e1e6] rounded-bl-sm"
             }`}
         >
           {isError && (
             <div className="flex items-center gap-1.5 mb-2 text-red-400">
-              <AlertTriangle size={12} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide">Error</span>
+              <AlertTriangle size={13} />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Operational Fault</span>
             </div>
           )}
           <FormattedText text={message.content} isUser={isUser} />
           {!isUser && (
-            <div className="mt-3 pt-2.5 border-t border-border/40">
+            <div className="mt-4 pt-3.5 border-t border-white/[0.04] flex items-center justify-between">
               <CopyBtn text={message.content} />
+              <span className="text-[9px] font-mono text-[#8e8e93]">SplitEase AI Core v3.5</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* User avatar */}
+      {/* User Avatar */}
       {isUser && (
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-muted border border-border/60 text-[11px] font-bold text-foreground mb-0.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.06] text-[11px] font-bold text-white shadow-md mt-1">
           U
         </div>
       )}
@@ -388,23 +436,105 @@ function ChatBubble({ message }) {
   );
 }
 
-/* ─── Formatted Text ──────────────────────────────────────────────── */
+/* ─── Custom Premium Markdown Parser ─── */
+function parseInlineMarkdown(text, isUser) {
+  const regex = /(\*\*.*?\*\*|\*.*?\*|`.*?`)/g;
+  const parts = text.split(regex);
+
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={index} className={`font-bold ${isUser ? "text-white" : "text-white font-bold tracking-wide"}`}>
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return <em key={index} className="italic opacity-90">{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code
+          key={index}
+          className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-medium ${
+            isUser ? "bg-white/20 text-white" : "bg-[#111] text-indigo-400 border border-white/[0.06]"
+          }`}
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+}
+
 function FormattedText({ text, isUser }) {
   const lines = text.split("\n");
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2.5 select-text">
       {lines.map((line, i) => {
         const trimmed = line.trim();
-        if (!trimmed) return <div key={i} className="h-1.5" />;
+        if (!trimmed) return <div key={i} className="h-2" />;
+
+        // Blockquotes
+        if (trimmed.startsWith("> ")) {
+          return (
+            <blockquote
+              key={i}
+              className={`pl-4 border-l-2 py-1.5 px-3 rounded-r-xl my-2 text-[13px] ${
+                isUser
+                  ? "border-white/50 bg-white/10 text-white/90"
+                  : "border-indigo-500 bg-indigo-500/5 text-[#8e8e93]"
+              }`}
+            >
+              {parseInlineMarkdown(trimmed.slice(2), isUser)}
+            </blockquote>
+          );
+        }
+
+        // Headers
+        if (trimmed.startsWith("### ")) {
+          return (
+            <h4 key={i} className={`font-bold text-[14px] mt-4 mb-1.5 tracking-tight ${isUser ? "text-white" : "text-indigo-400"}`}>
+              {parseInlineMarkdown(trimmed.slice(4), isUser)}
+            </h4>
+          );
+        }
+        if (trimmed.startsWith("## ") || trimmed.startsWith("# ")) {
+          const sliceIndex = trimmed.startsWith("## ") ? 3 : 2;
+          return (
+            <h3
+              key={i}
+              className={`font-bold text-[15px] mt-5 mb-2.5 pb-1.5 border-b ${
+                isUser ? "text-white border-white/25" : "text-white border-white/[0.04]"
+              }`}
+            >
+              {parseInlineMarkdown(trimmed.slice(sliceIndex), isUser)}
+            </h3>
+          );
+        }
+
+        // Lists
         if (trimmed.match(/^[•\-\*] /)) {
           return (
-            <div key={i} className="flex items-start gap-2">
-              <span className={`mt-[7px] h-1 w-1 shrink-0 rounded-full ${isUser ? "bg-white/60" : "bg-indigo-400"}`} />
-              <span className="whitespace-pre-wrap break-words">{trimmed.slice(2)}</span>
+            <div key={i} className="flex items-start gap-2.5 pl-2 my-0.5">
+              <span
+                className={`mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full ${
+                  isUser ? "bg-white/60" : "bg-indigo-500 animate-pulse"
+                }`}
+              />
+              <span className="whitespace-pre-wrap break-words leading-relaxed">
+                {parseInlineMarkdown(trimmed.slice(2), isUser)}
+              </span>
             </div>
           );
         }
-        return <p key={i} className="whitespace-pre-wrap break-words">{line}</p>;
+
+        return (
+          <p key={i} className="whitespace-pre-wrap break-words leading-relaxed text-[13.5px]">
+            {parseInlineMarkdown(line, isUser)}
+          </p>
+        );
       })}
     </div>
   );
@@ -426,14 +556,14 @@ function CopyBtn({ text }) {
     <button
       type="button"
       onClick={handleCopy}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all duration-150 border
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold transition-all duration-150 border
         ${copied
-          ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-500"
-          : "bg-muted/60 border-border/60 text-muted-foreground hover:text-foreground"
+          ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+          : "bg-white/[0.02] border-white/[0.04] text-[#8e8e93] hover:text-white hover:bg-white/[0.04]"
         }`}
     >
       {copied ? <Check size={10} /> : <Clipboard size={10} />}
-      {copied ? "Copied!" : "Copy response"}
+      {copied ? "Copied!" : "Copy ledger"}
     </button>
   );
 }
@@ -442,39 +572,41 @@ function CopyBtn({ text }) {
 function ThinkingBubble({ onStop }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.16 }}
-      className="flex items-end gap-2.5"
+      className="flex items-start gap-4.5"
     >
-      <div className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-md shadow-indigo-500/25 mb-0.5">
-        <Bot size={13} className="text-white" />
-        <span className="absolute inset-0 rounded-xl animate-ping bg-indigo-400/20" />
+      <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_0_15px_rgba(99,102,241,0.25)] border border-white/10 mt-1">
+        <Bot size={14} className="text-white" />
+        <span className="absolute -inset-0.5 rounded-xl animate-ping bg-indigo-500/20" />
       </div>
 
-      <div className="flex flex-col items-start gap-1">
-        <span className="text-[10px] font-semibold text-muted-foreground px-1">SplitEase AI</span>
-        <div className="bg-card border border-border/70 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-          <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-1.5 items-start">
+        <span className="text-[10px] font-semibold text-[#8e8e93] px-1 tracking-wider uppercase font-mono">
+          CORE INTELLIGENCE
+        </span>
+        <div className="bg-white/[0.02] border border-white/[0.04] rounded-2xl rounded-bl-sm px-5 py-4 shadow-lg backdrop-blur-md">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">
               {[0, 0.15, 0.3].map((delay, i) => (
                 <motion.span
                   key={i}
                   animate={{ y: [0, -5, 0], opacity: [0.3, 1, 0.3] }}
                   transition={{ duration: 0.9, repeat: Infinity, delay, ease: "easeInOut" }}
-                  className="block h-2 w-2 rounded-full bg-indigo-400"
+                  className="block h-2.5 w-2.5 rounded-full bg-indigo-500"
                 />
               ))}
             </div>
-            <span className="text-[12px] font-medium text-muted-foreground">Thinking</span>
+            <span className="text-[12px] font-mono text-[#8e8e93]">Analyzing ledger parameters...</span>
             <button
               type="button"
               onClick={onStop}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted border border-border/60 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.02] border border-white/[0.04] text-[11px] font-semibold text-[#8e8e93] hover:text-white transition-all"
             >
               <Square size={8} className="fill-current" />
-              Stop
+              Abort
             </button>
           </div>
         </div>
@@ -487,45 +619,48 @@ function ThinkingBubble({ onStop }) {
 function EmptyState({ onSuggestionClick }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
       className="mx-auto flex h-full max-w-xl flex-col items-center justify-center py-6 text-center"
     >
       {/* Icon */}
-      <div className="relative mb-5">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-xl shadow-indigo-500/30">
-          <Sparkles size={24} className="text-white" />
+      <div className="relative mb-6">
+        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_0_30px_rgba(99,102,241,0.3)] border border-white/10 relative z-10">
+          <Cpu size={28} className="text-white" />
         </div>
         <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0, 0.2] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 rounded-2xl bg-indigo-500/40 blur-xl"
+          animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 rounded-3xl bg-indigo-500/30 blur-2xl z-0"
         />
       </div>
 
-      <h2 className="text-xl font-bold text-foreground mb-2">Ask SplitEase AI</h2>
-      <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed mb-7">
-        Get instant answers from your expense history, group balances, and trip records — or ask any general question.
+      <h2 className="text-2xl font-black text-white mb-2 tracking-tight">SplitEase Intelligence Console</h2>
+      <p className="text-[13px] text-[#8e8e93] max-w-sm leading-relaxed mb-8">
+        Unlock real-time cross-group debt optimizations, budget anomaly tracking, and advanced cost simulations.
       </p>
 
-      {/* Prompt cards */}
-      <div className="w-full grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-        {QUICK_PROMPTS.map(({ icon: Icon, title, subtitle, prompt, iconColor, iconBg, border, dot }) => (
+      {/* Suggested prompts list */}
+      <div className="w-full grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {QUICK_PROMPTS.map(({ icon: Icon, title, subtitle, prompt, iconColor, iconBg, border, color }) => (
           <button
             key={title}
             type="button"
             onClick={() => onSuggestionClick(prompt)}
-            className={`group relative flex items-center gap-3 rounded-2xl border ${border} bg-card/80 p-3.5 text-left transition-all duration-200 hover:bg-muted/30 hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0`}
+            className={`group relative flex items-center gap-3.5 rounded-2xl border border-white/[0.04] bg-white/[0.01] p-4 text-left transition-all duration-300 hover:bg-white/[0.03] hover:border-indigo-500/20 hover:shadow-[0_4px_25px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 active:translate-y-0`}
           >
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconBg} ${iconColor}`}>
+            {/* Background Hover Glow */}
+            <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none`} />
+
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconBg} ${iconColor} border border-white/[0.03]`}>
               <Icon size={16} />
             </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-[13px] font-semibold text-foreground leading-tight">{title}</span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">{subtitle}</span>
+            <span className="flex-1 min-w-0 relative z-10">
+              <span className="block text-[13px] font-bold text-white group-hover:text-indigo-400 transition-colors leading-tight">{title}</span>
+              <span className="block text-[11px] text-[#8e8e93] mt-0.5 leading-normal">{subtitle}</span>
             </span>
-            <ChevronRight size={13} className="shrink-0 text-muted-foreground/30 transition-transform group-hover:translate-x-0.5 group-hover:text-muted-foreground/60" />
+            <ArrowUpRight size={14} className="shrink-0 text-white/20 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-indigo-400 relative z-10" />
           </button>
         ))}
       </div>
@@ -533,7 +668,7 @@ function EmptyState({ onSuggestionClick }) {
   );
 }
 
-/* ─── Prompt Input ────────────────────────────────────────────────── */
+/* ─── Premium Commander Input Box ─── */
 function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop }) {
   const textareaRef = useRef(null);
   const charCount = prompt.length;
@@ -557,15 +692,29 @@ function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop }) {
   const barColor = pct > 90 ? "bg-red-500" : pct > 70 ? "bg-amber-500" : "bg-indigo-500";
 
   return (
-    <div className="shrink-0 border-t border-border/60 bg-card/70 backdrop-blur-sm px-4 py-3 md:px-6">
-      <div className="mx-auto max-w-2xl">
+    <div className="shrink-0 border-t border-white/[0.04] bg-[#09090b]/40 backdrop-blur-md px-4 py-4 md:px-8 xl:px-12">
+      <div className="mx-auto max-w-3xl">
+        
+        {/* Commander panel */}
         <div
-          className={`rounded-2xl border bg-card shadow-sm transition-all duration-200 ${
+          className={`rounded-2xl border bg-black/60 shadow-2xl relative overflow-hidden transition-all duration-300 ${
             loading
-              ? "border-border/40"
-              : "border-border/60 focus-within:border-indigo-500/50 focus-within:shadow-md focus-within:shadow-indigo-500/8"
+              ? "border-white/[0.02]"
+              : "border-white/[0.04] focus-within:border-indigo-500/30 focus-within:shadow-[0_0_30px_rgba(99,102,241,0.06)]"
           }`}
         >
+          {/* Neon inner edge highlight */}
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" />
+
+          {/* Commander Badge */}
+          <div className="flex items-center justify-between px-4 pt-3 pb-1 border-b border-white/[0.02] bg-white/[0.01]">
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+              <span className="text-[9px] font-mono font-bold text-indigo-400 uppercase tracking-widest">COMMANDER MODULE v3.5</span>
+            </div>
+            <span className="text-[9px] font-mono text-[#8e8e93]">SYSTEM SECURE</span>
+          </div>
+
           <textarea
             ref={textareaRef}
             rows={1}
@@ -573,59 +722,60 @@ function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop }) {
             onChange={(e) => setPrompt(e.target.value.slice(0, MAX))}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            placeholder="Ask about your expenses, groups, balances, or any question…"
-            className="w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[13.5px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/50 disabled:opacity-50 custom-scrollbar"
+            placeholder="Ask about spent trends, cross-group balances, anomalies, or planning..."
+            className="w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[13.5px] leading-relaxed text-white outline-none placeholder:text-[#8e8e93]/50 disabled:opacity-40 custom-scrollbar"
             style={{ minHeight: "50px", maxHeight: "160px" }}
           />
 
-          <div className="flex items-center justify-between px-3 pb-3 pt-1 gap-3">
-            {/* Left: char progress */}
+          <div className="flex items-center justify-between px-3 pb-3 pt-1 gap-3 border-t border-white/[0.01]">
+            {/* Char progress */}
             <div className="flex items-center gap-2.5">
-              <div className="h-0.5 w-14 rounded-full bg-muted overflow-hidden">
+              <div className="h-0.5 w-12 rounded-full bg-white/[0.06] overflow-hidden">
                 <motion.div
                   className={`h-full rounded-full ${barColor}`}
                   animate={{ width: `${pct}%` }}
                   transition={{ duration: 0.1 }}
                 />
               </div>
-              <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
-                {charCount}<span className="opacity-40">/{MAX}</span>
+              <span className="text-[10px] text-[#8e8e93] font-mono tabular-nums">
+                {charCount}<span className="opacity-30">/{MAX}</span>
               </span>
-              <span className="hidden sm:block text-[10px] text-muted-foreground/40">
-                Shift+Enter for new line
+              <span className="hidden sm:block text-[9px] text-[#8e8e93]/40 font-mono">
+                [Enter] Send · [Shift+Enter] Line
               </span>
             </div>
 
-            {/* Right: action button */}
+            {/* Action buttons */}
             {loading ? (
               <button
                 type="button"
                 onClick={onStop}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-muted text-[12px] font-semibold text-muted-foreground hover:text-foreground transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-white/[0.04] bg-white/[0.02] text-[12px] font-semibold text-[#8e8e93] hover:text-white transition-all shadow-md"
               >
-                <Square size={11} className="fill-current" />
-                Stop
+                <Square size={10} className="fill-current text-red-500 animate-pulse" />
+                Abort
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => askAI(prompt)}
                 disabled={!canSend}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all duration-150 shadow-sm
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold tracking-wide transition-all duration-200 shadow-lg
                   ${canSend
-                    ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:shadow-md hover:-translate-y-px active:translate-y-0"
-                    : "bg-muted text-muted-foreground cursor-not-allowed border border-border/50"
+                    ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:-translate-y-px active:translate-y-0 border border-white/10"
+                    : "bg-white/[0.01] text-white/20 cursor-not-allowed border border-white/[0.02]"
                   }`}
               >
-                <Send size={13} />
-                Send
+                <Send size={12} />
+                ENGAGE
               </button>
             )}
           </div>
         </div>
 
-        <p className="mt-2 text-center text-[10px] text-muted-foreground/40">
-          SplitEase AI reads your expense and group data to give personalized answers.
+        {/* Console footer */}
+        <p className="mt-2.5 text-center text-[9px] font-mono text-[#8e8e93]/40 tracking-wider">
+          SYSTEM STATUS: ONLINE · SECURITY LEVEL: ELEVATED · CONTEXT WINDOW: MAXIMUM
         </p>
       </div>
     </div>
