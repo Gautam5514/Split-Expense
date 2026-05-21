@@ -6,14 +6,34 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 
 export const metadata = {
-  title: "SplitWise Travel",
-  description: "Group expense splitter app",
+  title: "SplitEase - Group Expense Splitter",
+  description: "Stunning AI-powered group expense splitter & travel tracker",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="application-name" content="Split" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Split" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#6366f1" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                });
+              }
+            `,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

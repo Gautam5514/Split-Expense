@@ -136,8 +136,11 @@ export default function DashboardPage() {
         {/* 🧭 Header Section */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
           <div className="text-center sm:text-left">
-            <h1 className="text-4xl font-extrabold flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              <Sparkles className="text-indigo-500" size={30} /> SplitEase
+            <h1 className="text-4xl font-extrabold flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center border border-indigo-500/20 shadow-md flex-shrink-0">
+                <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
+              </div>
+              SplitEase
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               Manage your trips, groups & expenses effortlessly

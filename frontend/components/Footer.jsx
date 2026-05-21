@@ -93,10 +93,9 @@ export default function Footer() {
           <div className="max-w-xs">
             <div className="flex items-center gap-2.5 mb-4">
               <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,#8b5cf6,#6366f1)" }}
+                className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center border border-white/10"
               >
-                <Wallet className="w-4 h-4 text-white" />
+                <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
               </div>
               <span className="text-white font-extrabold text-xl tracking-tight">SplitEase</span>
             </div>

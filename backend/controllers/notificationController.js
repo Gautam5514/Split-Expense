@@ -2,6 +2,65 @@ import mongoose from "mongoose";
 import Notification from "../models/notification.model.js";
 import User from "../models/userModel.js";
 import { io, onlineUsers } from "../index.js";
+import admin from "../config/firebaseAdmin.js";
+
+/**
+ * 🚀 Helper to send Firebase Cloud Messaging (FCM) push notifications to multiple users' web browsers
+ */
+const sendFcmPushNotifications = async (userIds, payload) => {
+  try {
+    const users = await User.find(
+      { _id: { $in: userIds } },
+      "webPushTokens"
+    ).lean();
+
+    const tokens = users.flatMap(user => user.webPushTokens || []);
+    if (!tokens.length) return;
+
+    // Construct multi-cast FCM message
+    const message = {
+      notification: {
+        title: payload.title,
+        body: payload.body,
+      },
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        type: payload.data?.type || "group",
+        link: payload.data?.link || "",
+      },
+      tokens: tokens,
+    };
+
+    const response = await admin.messaging().sendEachForMulticast(message);
+    console.log(`🚀 Sent ${response.successCount} Web Push notifications successfully (${response.failureCount} failed).`);
+
+    // Clean up expired/invalid tokens
+    if (response.failureCount > 0) {
+      const tokensToRemove = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          const errorCode = resp.error?.code;
+          if (
+            errorCode === "messaging/invalid-registration-token" ||
+            errorCode === "messaging/registration-token-not-registered"
+          ) {
+            tokensToRemove.push(tokens[idx]);
+          }
+        }
+      });
+
+      if (tokensToRemove.length > 0) {
+        await User.updateMany(
+          { webPushTokens: { $in: tokensToRemove } },
+          { $pull: { webPushTokens: { $in: tokensToRemove } } }
+        );
+        console.log(`🧹 Cleaned up ${tokensToRemove.length} expired FCM web push tokens.`);
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error sending FCM push notifications:", error.message);
+  }
+};
 
 /**
  * 🔔 Create notifications for multiple users, emit them in real time, and send push
@@ -27,7 +86,15 @@ export const createNotification = async (userIds, message, link, type = "group")
       }
     });
 
+    // 📱 Dispatch Expo push alerts (mobile apps)
     await sendExpoPushNotifications(recipientIds, {
+      title: notificationTitleForType(type),
+      body: message,
+      data: { link, type },
+    });
+
+    // 🌐 Dispatch FCM push alerts (web browsers)
+    await sendFcmPushNotifications(recipientIds, {
       title: notificationTitleForType(type),
       body: message,
       data: { link, type },
@@ -158,6 +225,59 @@ export const unregisterPushToken = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error("❌ unregisterPushToken:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * 🌐 Register Browser FCM Token
+ */
+export const registerFcmToken = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const { token } = req.body;
+
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ message: "Invalid or missing token" });
+    }
+
+    // Pull from any other user to prevent duplicate push deliveries to other users
+    await User.updateMany(
+      { webPushTokens: token },
+      { $pull: { webPushTokens: token } }
+    );
+
+    // Save token to the logged-in user
+    await User.findByIdAndUpdate(uid, {
+      $addToSet: { webPushTokens: token }
+    });
+
+    res.json({ success: true, message: "FCM Token registered successfully" });
+  } catch (err) {
+    console.error("❌ registerFcmToken:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * 🌐 Unregister Browser FCM Token
+ */
+export const unregisterFcmToken = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const { token } = req.body;
+
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ message: "Invalid or missing token" });
+    }
+
+    await User.findByIdAndUpdate(uid, {
+      $pull: { webPushTokens: token }
+    });
+
+    res.json({ success: true, message: "FCM Token unregistered successfully" });
+  } catch (err) {
+    console.error("❌ unregisterFcmToken:", err.message);
     res.status(500).json({ message: err.message });
   }
 };

@@ -237,9 +237,8 @@ export default function HeroSection() {
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-white/80 font-medium"
                   style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
                 >
-                  <div className="w-3.5 h-3.5 rounded-sm flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg,#8b5cf6,#6366f1)" }}>
-                    <Wallet className="w-2 h-2 text-white" />
+                  <div className="w-3.5 h-3.5 rounded-sm overflow-hidden flex items-center justify-center border border-white/10 flex-shrink-0">
+                    <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase" />
                   </div>
                   SplitEase
                 </div>
@@ -285,10 +284,9 @@ export default function HeroSection() {
               {/* Logo */}
               <div className="flex items-center gap-2 px-2 mb-7">
                 <div
-                  className="w-7 h-7 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#8b5cf6,#6366f1)" }}
+                  className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center border border-white/10 flex-shrink-0"
                 >
-                  <Wallet className="w-3.5 h-3.5 text-white" />
+                  <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
                 </div>
                 <span className="font-extrabold text-sm text-white tracking-tight">SplitEase</span>
               </div>

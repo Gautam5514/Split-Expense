@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
       updatedAt: { type: Date, default: Date.now },
     },
   ],
+  webPushTokens: [{ type: String }],
   hiddenDirectChats: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   hiddenGroupChats: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
   createdAt: { type: Date, default: Date.now },

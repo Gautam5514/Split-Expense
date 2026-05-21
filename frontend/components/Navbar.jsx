@@ -136,9 +136,8 @@ export default function Navbar() {
 
         {/* ── Logo ── */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md"
-            style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}>
-            <Split className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-200">
+            <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
           </div>
           <span className="font-extrabold text-xl bg-gradient-to-r from-violet-500 via-indigo-400 to-violet-500 bg-clip-text text-transparent tracking-tight">
             SplitEase
