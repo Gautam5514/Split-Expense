@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Group from "../models/groupModel.js";
+import { isValidEmail } from "../middleware/validate.js";
 import Expense from "../models/expenseModel.js";
 import GroupMessage from "../models/groupMessageModel.js";
 import Notepad from "../models/notepadModel.js";
@@ -20,7 +21,11 @@ export const createGroup = async (req, res) => {
   try {
     const { name } = req.body;
     if (!name?.trim())
-      return res.status(400).json({ message: "Group name is required." });
+      return res.status(400).json({ field: "name", message: "Group name is required." });
+    if (name.trim().length < 2)
+      return res.status(400).json({ field: "name", message: "Group name must be at least 2 characters." });
+    if (name.trim().length > 100)
+      return res.status(400).json({ field: "name", message: "Group name must be under 100 characters." });
 
     const uid = asId(req.user);
     if (!uid) return res.status(401).json({ message: "Unauthorized" });
@@ -173,9 +178,16 @@ export const addMembersByEmail = async (req, res) => {
     const { groupId } = req.params;
 
     // 1️⃣ Validate input
-    if (!Array.isArray(emails) || emails.length === 0) {
-      return res.status(400).json({ message: "emails[] required." });
-    }
+    if (!Array.isArray(emails) || emails.length === 0)
+      return res.status(400).json({ field: "emails", message: "Please provide at least one email address." });
+    if (emails.length > 20)
+      return res.status(400).json({ field: "emails", message: "You can add at most 20 members at a time." });
+    const invalidEmails = emails.filter((e) => !isValidEmail(e));
+    if (invalidEmails.length)
+      return res.status(400).json({
+        field: "emails",
+        message: `Invalid email format: ${invalidEmails.slice(0, 3).join(", ")}`,
+      });
 
     // 2️⃣ Find the group
     const group = await Group.findById(groupId);

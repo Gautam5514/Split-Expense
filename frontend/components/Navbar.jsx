@@ -40,6 +40,12 @@ const NAV_LINKS = [
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const cleanPath = pathname?.replace(/\/$/, "") || "";
+  const isAuthPage = cleanPath.startsWith("/login") || 
+                     cleanPath.startsWith("/register") || 
+                     cleanPath.startsWith("/reset-password");
+  if (isAuthPage) return null;
+
   const { token, setToken } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { notifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead } =

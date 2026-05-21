@@ -41,6 +41,8 @@ const expenseCards = [
   },
 ];
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginPage() {
   const router = useRouter();
   const { setToken } = useAuth();
@@ -49,6 +51,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [focused, setFocused] = useState("");
+  const [errors, setErrors] = useState({});
 
   // Forgot password flow states
   const [isForgotFlow, setIsForgotFlow] = useState(false);
@@ -56,8 +59,29 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [simulatedMail, setSimulatedMail] = useState(null);
 
+  const clearError = (field) =>
+    setErrors((prev) => ({ ...prev, [field]: "" }));
+
+  const validateLogin = () => {
+    const e = {};
+    if (!email.trim()) e.email = "Email address is required.";
+    else if (!emailRegex.test(email.trim())) e.email = "Please enter a valid email address.";
+    if (!password) e.password = "Password is required.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const validateForgot = () => {
+    const e = {};
+    if (!forgotEmail.trim()) e.forgotEmail = "Email address is required.";
+    else if (!emailRegex.test(forgotEmail.trim())) e.forgotEmail = "Please enter a valid email address.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const handleForgotSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForgot()) return;
     setForgotLoading(true);
     try {
       const res = await api.post("/auth/forgot-password", { email: forgotEmail });
@@ -68,7 +92,9 @@ export default function LoginPage() {
         resetUrl: res.data.resetUrl,
       });
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to generate reset link.");
+      const data = err?.response?.data;
+      if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
+      else toast.error(data?.message || "Failed to generate reset link.");
     } finally {
       setForgotLoading(false);
     }
@@ -76,6 +102,7 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
+    if (!validateLogin()) return;
     setIsLoading(true);
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
@@ -85,7 +112,9 @@ export default function LoginPage() {
       toast.success("Login successful!");
       router.push("/dashboard");
     } catch (err) {
-      toast.error("Invalid email or password.");
+      const data = err?.response?.data;
+      if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
+      else setErrors({ password: "Invalid email or password. Please check and try again." });
     } finally {
       setIsLoading(false);
     }
@@ -101,15 +130,23 @@ export default function LoginPage() {
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
       router.push("/dashboard");
     } catch (err) {
-      toast.error("Google Sign-In failed.");
+      console.error("Google Sign-In error:", err);
+      if (err.code === "auth/unauthorized-domain" || err.message?.includes("auth/unauthorized-domain")) {
+        toast.error(
+          "Domain Unauthorized! Please add this deployment domain to your Firebase Console under Authentication > Settings > Authorized Domains.",
+          { duration: 10000 }
+        );
+      } else {
+        toast.error(err.message || "Google Sign-In failed.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    /* h-screen + overflow-hidden = zero scroll */
-    <div className="h-screen overflow-hidden flex" style={{ background: "#08080f" }}>
+    /* h-[100dvh] + overflow-hidden = zero scroll */
+    <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex" style={{ background: "#08080f" }}>
 
       {/* ── Left visual panel ── */}
       <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden flex-col justify-center px-12 py-8">
@@ -124,10 +161,10 @@ export default function LoginPage() {
         <div className="relative z-10 max-w-[400px]">
           {/* logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
-              <span className="text-white text-lg font-black">S</span>
+            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
+              <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
-            <span className="text-2xl font-black text-white tracking-tight">Split</span>
+            <span className="text-2xl font-black text-white tracking-tight">SplitEase</span>
           </div>
 
           {/* headline */}
@@ -173,14 +210,14 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 h-full flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#0d0d18" }}>
+      <div className="flex-1 h-[100dvh] flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#0d0d18" }}>
         <div className="w-full max-w-[380px] py-4">
           {/* mobile logo */}
-          <div className="flex items-center gap-3 mb-6 lg:hidden">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
-              <span className="text-white font-black">S</span>
+          <div className="flex items-center gap-2.5 mb-5 lg:hidden justify-center">
+            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center border border-white/10">
+              <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
-            <span className="text-xl font-black text-white">Split</span>
+            <span className="text-xl font-extrabold text-white">SplitEase</span>
           </div>
 
           {!isForgotFlow ? (
@@ -224,17 +261,19 @@ export default function LoginPage() {
                   <div className="relative flex items-center rounded-xl border transition-all duration-200"
                     style={{
                       background: focused === "email" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                      borderColor: focused === "email" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
-                      boxShadow: focused === "email" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                      borderColor: errors.email ? "#f87171" : (focused === "email" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
+                      boxShadow: errors.email ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "email" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
                     }}>
                     <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
                     <input
-                      type="email" placeholder="you@example.com" required
-                      value={email} onChange={(e) => setEmail(e.target.value)}
+                      type="email" placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
                       onFocus={() => setFocused("email")} onBlur={() => setFocused("")}
                       className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-3 rounded-xl outline-none text-sm"
                     />
                   </div>
+                  {errors.email && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.email}</p>}
                 </div>
 
                 {/* password */}
@@ -246,6 +285,7 @@ export default function LoginPage() {
                       onClick={() => {
                         setIsForgotFlow(true);
                         setSimulatedMail(null);
+                        setErrors({});
                       }}
                       className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer outline-none"
                     >
@@ -255,13 +295,14 @@ export default function LoginPage() {
                   <div className="relative flex items-center rounded-xl border transition-all duration-200"
                     style={{
                       background: focused === "password" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                      borderColor: focused === "password" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
-                      boxShadow: focused === "password" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                      borderColor: errors.password ? "#f87171" : (focused === "password" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
+                      boxShadow: errors.password ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "password" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
                     }}>
                     <Lock className="absolute left-4 w-4 h-4 text-slate-600" />
                     <input
-                      type={showPassword ? "text" : "password"} placeholder="••••••••" required
-                      value={password} onChange={(e) => setPassword(e.target.value)}
+                      type={showPassword ? "text" : "password"} placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
                       onFocus={() => setFocused("password")} onBlur={() => setFocused("")}
                       className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-12 py-3 rounded-xl outline-none text-sm"
                     />
@@ -269,6 +310,7 @@ export default function LoginPage() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {errors.password && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.password}</p>}
                 </div>
 
                 {/* submit */}
@@ -290,12 +332,12 @@ export default function LoginPage() {
                 </a>
               </p>
             </>
-          ) : (
+          ) : !simulatedMail ? (
             <>
               {/* heading */}
-              <div className="mb-6">
+              <div className="mb-5">
                 <h2 className="text-2xl font-bold text-white mb-1">Forgot password</h2>
-                <p className="text-slate-400 text-sm">Reset your password via simulated secure token link</p>
+                <p className="text-slate-400 text-sm">We'll send a password recovery token link to your email</p>
               </div>
 
               {/* form */}
@@ -307,18 +349,20 @@ export default function LoginPage() {
                   </label>
                   <div className="relative flex items-center rounded-xl border transition-all duration-200"
                     style={{
-                      background: focused === "email" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                      borderColor: focused === "email" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
-                      boxShadow: focused === "email" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                      background: focused === "forgotEmail" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
+                      borderColor: errors.forgotEmail ? "#f87171" : (focused === "forgotEmail" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
+                      boxShadow: errors.forgotEmail ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "forgotEmail" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
                     }}>
                     <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
                     <input
-                      type="email" placeholder="you@example.com" required
-                      value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)}
-                      onFocus={() => setFocused("email")} onBlur={() => setFocused("")}
+                      type="email" placeholder="you@example.com"
+                      value={forgotEmail}
+                      onChange={(e) => { setForgotEmail(e.target.value); clearError("forgotEmail"); }}
+                      onFocus={() => setFocused("forgotEmail")} onBlur={() => setFocused("")}
                       className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-3 rounded-xl outline-none text-sm"
                     />
                   </div>
+                  {errors.forgotEmail && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.forgotEmail}</p>}
                 </div>
 
                 {/* submit */}
@@ -326,7 +370,7 @@ export default function LoginPage() {
                   type="submit" disabled={forgotLoading}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
                   style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(99,102,241,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28 rgba(99,102,241,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
                 >
                   {forgotLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Generating Link…</> : <>Send Reset Link <ArrowRight className="w-4 h-4" /></>}
@@ -338,53 +382,73 @@ export default function LoginPage() {
                 onClick={() => {
                   setIsForgotFlow(false);
                   setSimulatedMail(null);
+                  setErrors({});
                 }}
                 className="mt-6 w-full text-center text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-semibold cursor-pointer outline-none"
               >
                 ← Back to Sign in
               </button>
             </>
+          ) : (
+            <>
+              {/* Premium Simulated Inbox view direct in card */}
+              <div className="text-center mb-5 animate-in fade-in zoom-in-95 duration-300">
+                <div className="w-14 h-14 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-3 text-indigo-400 animate-pulse">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-1">Reset link sent!</h2>
+                <p className="text-slate-400 text-xs">We've simulated a secure password recovery message.</p>
+              </div>
+
+              <div className="rounded-2xl border border-indigo-500/20 bg-white/[0.02] p-4 text-xs space-y-2.5 leading-relaxed mb-5 animate-in fade-in slide-in-from-bottom-3 duration-300">
+                <div className="flex justify-between text-slate-500 pb-2 border-b border-white/[0.06]">
+                  <span className="font-semibold text-slate-400">📬 Local Mailbox Simulator</span>
+                  <span className="text-[9px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Simulated</span>
+                </div>
+                <div className="text-slate-300 truncate">
+                  <span className="font-medium text-slate-500">To:</span> {simulatedMail.email}
+                </div>
+                <div className="text-slate-300">
+                  <span className="font-medium text-slate-500">Subject:</span> Reset your SplitEase Password
+                </div>
+                
+                <div className="pt-1.5">
+                  <p className="text-slate-300 mb-1 font-semibold">Hello,</p>
+                  <p className="text-slate-400 mb-3 text-[11px]">We received a password reset request for your account. Click below to continue:</p>
+                  
+                  <a 
+                    href={simulatedMail.resetUrl}
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 py-2.5 text-xs font-bold text-white transition-all shadow-lg shadow-indigo-600/20 cursor-pointer text-center"
+                  >
+                    Reset Password Now
+                  </a>
+                </div>
+              </div>
+
+              <div className="space-y-3 animate-in fade-in duration-300">
+                <button
+                  type="button"
+                  onClick={handleForgotSubmit}
+                  className="w-full text-center text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer outline-none block"
+                >
+                  Didn't receive email? <span className="text-indigo-400 font-semibold hover:underline">Resend recovery link</span>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotFlow(false);
+                    setSimulatedMail(null);
+                    setErrors({});
+                  }}
+                  className="w-full text-center text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-semibold cursor-pointer outline-none mt-2 block"
+                >
+                  ← Return to Sign in
+                </button>
+              </div>
+            </>
           )}
         </div>
-
-        {/* 📬 Simulated Mail Server Overlay Panel */}
-        {simulatedMail && (
-          <div className="fixed bottom-6 right-6 z-[9999] w-[350px] max-w-[calc(100vw-2rem)] rounded-2xl border border-indigo-500/30 bg-zinc-950/95 p-4 shadow-[0_8px_32px_rgba(99,102,241,0.35)] backdrop-blur-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-5 text-white">
-            <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/[0.08]">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">📬 Local Mail Simulator</span>
-              </div>
-              <button 
-                onClick={() => setSimulatedMail(null)} 
-                className="text-[10px] text-white/40 hover:text-white transition-colors cursor-pointer bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded"
-              >
-                Dismiss
-              </button>
-            </div>
-            
-            <div className="space-y-2 text-xs">
-              <div className="text-white/60">
-                <span className="font-semibold text-white/90">To:</span> {simulatedMail.email}
-              </div>
-              <div className="text-white/60">
-                <span className="font-semibold text-white/90">Subject:</span> Reset your SplitEase Password
-              </div>
-              
-              <div className="mt-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] leading-relaxed text-white/80 text-[11px]">
-                <p className="mb-1 font-medium text-white">Hello,</p>
-                <p className="mb-3 text-slate-300">We received a request to reset your SplitEase account password. Click the button below to recover your account:</p>
-                
-                <a 
-                  href={simulatedMail.resetUrl}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/20 py-2.5 text-xs font-semibold text-white transition-all shadow-lg shadow-indigo-600/20 cursor-pointer text-center"
-                >
-                  Reset Password Now
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -3,6 +3,9 @@ import Expense from "../models/expenseModel.js";
 import Group from "../models/groupModel.js";
 import { createNotification } from "../controllers/notificationController.js";
 import Tesseract from "tesseract.js";
+import { isValidObjectId } from "../middleware/validate.js";
+
+const VALID_CATEGORIES = ["general", "food", "travel", "stay", "shopping", "bills"];
 
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
 const sameId = (a, b) => String(a) === String(b);
@@ -90,17 +93,28 @@ export const addExpense = async (req, res) => {
     const uid = asId(req.user);
     if (!uid) return res.status(401).json({ message: "Unauthorized" });
 
+    // Input validation
+    if (!groupId || !isValidObjectId(groupId))
+      return res.status(400).json({ field: "groupId", message: "A valid group is required." });
+    if (!description?.trim())
+      return res.status(400).json({ field: "description", message: "Description is required." });
+    if (description.trim().length > 200)
+      return res.status(400).json({ field: "description", message: "Description must be under 200 characters." });
+    if (amount === undefined || amount === null || amount === "")
+      return res.status(400).json({ field: "amount", message: "Amount is required." });
+    const amt = Number(amount);
+    if (isNaN(amt) || amt <= 0)
+      return res.status(400).json({ field: "amount", message: "Amount must be a positive number." });
+    if (amt > 9999999)
+      return res.status(400).json({ field: "amount", message: "Amount exceeds the maximum limit of ₹99,99,999." });
+    if (category && !VALID_CATEGORIES.includes(category))
+      return res.status(400).json({ field: "category", message: "Invalid category. Choose from: " + VALID_CATEGORIES.join(", ") + "." });
+
     // Validate Group
     const group = await Group.findById(groupId);
-    if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!group) return res.status(404).json({ message: "Group not found." });
     if (!ensureMember(group, uid))
       return res.status(403).json({ message: "You are not a member of this group." });
-
-    const amt = Number(amount);
-    if (!amt || amt <= 0)
-      return res.status(400).json({ message: "Amount must be positive." });
-    if (!description?.trim())
-      return res.status(400).json({ message: "Description is required." });
 
     // 🔹 OCR
     let ocrText = null;

@@ -3,11 +3,21 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/userModel.js";
 import admin from "../config/firebaseAdmin.js";
+import { isValidEmail, validatePassword } from "../middleware/validate.js";
 
 
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+
+    if (!name?.trim() || name.trim().length < 2)
+      return res.status(400).json({ field: "name", message: "Name must be at least 2 characters." });
+    if (name.trim().length > 100)
+      return res.status(400).json({ field: "name", message: "Name must be under 100 characters." });
+    if (!isValidEmail(email))
+      return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
+    const pwErr = validatePassword(password);
+    if (pwErr) return res.status(400).json({ field: "password", message: pwErr });
 
     const existingUser = await User.findOne({ email });
     if (existingUser)
@@ -43,6 +53,12 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!isValidEmail(email))
+      return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
+    if (!password)
+      return res.status(400).json({ field: "password", message: "Password is required." });
+
     const user = await User.findOne({ email });
     if (!user)
       return res.status(400).json({ message: "User not found" });
@@ -98,9 +114,10 @@ export const googleLogin = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
-    }
+    if (!email?.trim())
+      return res.status(400).json({ field: "forgotEmail", message: "Email address is required." });
+    if (!isValidEmail(email))
+      return res.status(400).json({ field: "forgotEmail", message: "Please enter a valid email address." });
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -134,9 +151,10 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-    if (!token || !password) {
-      return res.status(400).json({ message: "Token and password are required" });
-    }
+    if (!token)
+      return res.status(400).json({ message: "Reset token is required." });
+    const pwErr = validatePassword(password);
+    if (pwErr) return res.status(400).json({ field: "password", message: pwErr });
 
     const user = await User.findOne({
       resetPasswordToken: token,

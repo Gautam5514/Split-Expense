@@ -13,6 +13,21 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const clearError = (field) =>
+    setErrors((prev) => ({ ...prev, [field]: "" }));
+
+  const validate = () => {
+    const e = {};
+    if (!description.trim()) e.description = "Description is required.";
+    else if (description.trim().length > 200) e.description = "Description must be under 200 characters.";
+    if (!amount && amount !== 0) e.amount = "Amount is required.";
+    else if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) e.amount = "Amount must be a positive number.";
+    else if (parseFloat(amount) > 9999999) e.amount = "Amount exceeds the maximum limit of ₹99,99,999.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -36,12 +51,7 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!description.trim() || !amount)
-      return toast.error("Please fill all required fields.");
-
-    if (parseFloat(amount) <= 0)
-      return toast.error("Amount must be greater than zero.");
+    if (!validate()) return;
 
     try {
       setLoading(true);
@@ -73,7 +83,9 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
       onSuccess();
       onClose();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to add expense");
+      const data = err?.response?.data;
+      if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
+      else toast.error(data?.message || "Failed to add expense");
     } finally {
       setLoading(false);
     }
@@ -130,11 +142,11 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
                 <input
                   type="text"
                   placeholder="E.g. Dinner, Cab Ride"
-                  className="w-full bg-input border border-input rounded-lg p-3 text-foreground 
-                  shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className={`w-full bg-input border rounded-lg p-3 text-foreground shadow-sm focus:outline-none focus:ring-2 ${errors.description ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"}`}
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => { setDescription(e.target.value); clearError("description"); }}
                 />
+                {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
               </div>
 
               <div>
@@ -144,11 +156,11 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
                 <input
                   type="number"
                   placeholder="Enter amount"
-                  className="w-full bg-input border border-input rounded-lg p-3 text-foreground 
-                  shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className={`w-full bg-input border rounded-lg p-3 text-foreground shadow-sm focus:outline-none focus:ring-2 ${errors.amount ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"}`}
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => { setAmount(e.target.value); clearError("amount"); }}
                 />
+                {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount}</p>}
               </div>
             </div>
 

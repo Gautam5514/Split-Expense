@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [createdGroups, setCreatedGroups] = useState([]);
   const [joinedGroups, setJoinedGroups] = useState([]);
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [inviteGroupId, setInviteGroupId] = useState(null);
@@ -101,17 +102,22 @@ export default function DashboardPage() {
 
   const createGroup = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return toast.error("Enter a group name");
+    const trimmed = name.trim();
+    if (!trimmed) { setNameError("Group name is required."); return; }
+    if (trimmed.length < 2) { setNameError("Group name must be at least 2 characters."); return; }
+    if (trimmed.length > 100) { setNameError("Group name must be under 100 characters."); return; }
+    setNameError("");
     try {
       setCreating(true);
-      const res = await api.post("/groups", { name: name.trim() });
+      const res = await api.post("/groups", { name: trimmed });
       toast.success("Group created successfully!");
       setInviteGroupId(res.data._id);
-
       fetchGroups();
       setName("");
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Error creating group");
+      const data = err?.response?.data;
+      if (data?.field === "name") setNameError(data.message);
+      else toast.error(data?.message || "Error creating group");
     } finally {
       setCreating(false);
     }
@@ -150,27 +156,29 @@ export default function DashboardPage() {
           {/* 👇 Create Group Input */}
           <form
             onSubmit={createGroup}
-            className="flex items-center gap-2 w-full sm:w-auto"
+            className="flex flex-col gap-1 w-full sm:w-auto"
           >
-            <input
-              placeholder="Enter new group name"
-              className="flex-grow rounded-lg bg-card text-foreground border border-border p-2 px-3 shadow-sm focus:ring-2 focus:ring-primary"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-
-            <button
-              type="submit"
-              disabled={creating}
-              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-lg disabled:opacity-60"
-            >
-              {creating ? (
-                <Loader2 className="animate-spin w-4 h-4" />
-              ) : (
-                <Plus size={18} />
-              )}
-              {creating ? "Creating..." : "Create"}
-            </button>
+            <div className="flex items-center gap-2">
+              <input
+                placeholder="Enter new group name"
+                className={`flex-grow rounded-lg bg-card text-foreground border p-2 px-3 shadow-sm focus:ring-2 focus:ring-primary ${nameError ? "border-red-500 focus:ring-red-500" : "border-border"}`}
+                value={name}
+                onChange={(e) => { setName(e.target.value); if (nameError) setNameError(""); }}
+              />
+              <button
+                type="submit"
+                disabled={creating}
+                className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-lg disabled:opacity-60"
+              >
+                {creating ? (
+                  <Loader2 className="animate-spin w-4 h-4" />
+                ) : (
+                  <Plus size={18} />
+                )}
+                {creating ? "Creating..." : "Create"}
+              </button>
+            </div>
+            {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
           </form>
         </div>
 

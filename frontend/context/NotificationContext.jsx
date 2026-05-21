@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
+import { usePathname } from "next/navigation";
 import { api } from "@/lib/api";
 import { API_URL } from "@/lib/config";
 import { BellRing, Clock3, ReceiptText, UsersRound, AlertTriangle, AlertCircle, Info, Copy, ShieldCheck } from "lucide-react";
@@ -117,6 +118,11 @@ function NotificationToast({ notif, visible }) {
 
 export function NotificationProvider({ children }) {
   const { token } = useAuth();
+  const pathname = usePathname();
+  const cleanPath = pathname?.replace(/\/$/, "") || "";
+  const isAuthPage = cleanPath.startsWith("/login") || 
+                     cleanPath.startsWith("/register") || 
+                     cleanPath.startsWith("/reset-password");
   const [notifications, setNotifications] = useState([]);
   const [hasUnread, setHasUnread] = useState(false);
   const [fcmToken, setFcmToken] = useState(null);
@@ -381,7 +387,7 @@ export function NotificationProvider({ children }) {
       }}
     >
       {children}
-      {token && (() => {
+      {token && !isAuthPage && (() => {
         const isFullyActive = vapidKeyConfigured && notificationPermission === "granted" && fcmToken;
         
         if (isFullyActive && isCollapsed) {

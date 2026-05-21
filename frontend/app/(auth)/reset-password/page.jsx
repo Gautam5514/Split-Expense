@@ -26,6 +26,7 @@ function ResetPasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [focused, setFocused] = useState("");
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     const t = searchParams.get("token");
@@ -49,16 +50,23 @@ function ResetPasswordForm() {
   const strengthLabel = ["", "Weak", "Fair", "Good", "Strong"][passwordStrength];
   const strengthColor = ["", "#ef4444", "#f59e0b", "#22c55e", "#10b981"][passwordStrength];
 
+  const validateReset = () => {
+    const e = {};
+    if (!password) e.password = "Password is required.";
+    else if (password.length < 8) e.password = "Password must be at least 8 characters.";
+    else if (!/[A-Z]/.test(password)) e.password = "Password must include at least one uppercase letter (A-Z).";
+    else if (!/[0-9]/.test(password)) e.password = "Password must include at least one number (0-9).";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const handleResetSubmit = async (e) => {
     e.preventDefault();
     if (!token) {
       toast.error("Cannot reset password without a valid token.");
       return;
     }
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters.");
-      return;
-    }
+    if (!validateReset()) return;
 
     setIsLoading(true);
     try {
@@ -68,14 +76,17 @@ function ResetPasswordForm() {
         router.push("/login");
       }, 1500);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to reset password.");
+      const data = err?.response?.data;
+      if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
+      else toast.error(data?.message || "Failed to reset password.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="h-screen overflow-hidden flex" style={{ background: "#08080f" }}>
+    /* h-[100dvh] + overflow-hidden = zero scroll */
+    <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex" style={{ background: "#08080f" }}>
       {/* ── Left visual panel ── */}
       <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden flex-col justify-center px-12 py-8">
         {/* bg */}
@@ -89,10 +100,10 @@ function ResetPasswordForm() {
         <div className="relative z-10 max-w-[400px]">
           {/* logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
-              <span className="text-white text-lg font-black">S</span>
+            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
+              <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
-            <span className="text-2xl font-black text-white tracking-tight">Split</span>
+            <span className="text-2xl font-black text-white tracking-tight">SplitEase</span>
           </div>
 
           {/* headline */}
@@ -124,14 +135,14 @@ function ResetPasswordForm() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 h-full flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#0d0d18" }}>
+      <div className="flex-1 h-[100dvh] flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#0d0d18" }}>
         <div className="w-full max-w-[380px] py-4">
           {/* mobile logo */}
-          <div className="flex items-center gap-3 mb-5 lg:hidden">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
-              <span className="text-white font-black">S</span>
+          <div className="flex items-center gap-2.5 mb-5 lg:hidden justify-center">
+            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center border border-white/10">
+              <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
-            <span className="text-xl font-black text-white">Split</span>
+            <span className="text-xl font-extrabold text-white">SplitEase</span>
           </div>
 
           {/* heading */}
@@ -148,13 +159,14 @@ function ResetPasswordForm() {
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
                   background: focused === "password" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: focused === "password" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
-                  boxShadow: focused === "password" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                  borderColor: errors.password ? "#f87171" : (focused === "password" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
+                  boxShadow: errors.password ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "password" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
                 }}>
                 <Lock className="absolute left-4 w-4 h-4 text-slate-600" />
                 <input
-                  type={showPassword ? "text" : "password"} placeholder="Min. 8 characters" required
-                  value={password} onChange={(e) => setPassword(e.target.value)}
+                  type={showPassword ? "text" : "password"} placeholder="Min. 8 characters"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setErrors((prev) => ({ ...prev, password: "" })); }}
                   onFocus={() => setFocused("password")} onBlur={() => setFocused("")}
                   className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-12 py-3 rounded-xl outline-none text-sm"
                 />
@@ -162,6 +174,7 @@ function ResetPasswordForm() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {errors.password && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.password}</p>}
 
               {/* strength meter */}
               {password.length > 0 && (

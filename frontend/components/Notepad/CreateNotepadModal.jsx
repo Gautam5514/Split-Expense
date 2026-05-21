@@ -6,14 +6,20 @@ import { X, Loader2 } from "lucide-react";
 
 export default function CreateNotepadModal({ isOpen, onConfirm, onCancel, creating }) {
   const [title, setTitle] = useState("");
+  const [titleError, setTitleError] = useState("");
 
   useEffect(() => {
-    if (isOpen) setTitle("");
+    if (isOpen) { setTitle(""); setTitleError(""); }
   }, [isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (title.trim()) onConfirm(title);
+    const trimmed = title.trim();
+    if (!trimmed) { setTitleError("Notepad title is required."); return; }
+    if (trimmed.length < 2) { setTitleError("Title must be at least 2 characters."); return; }
+    if (trimmed.length > 100) { setTitleError("Title must be under 100 characters."); return; }
+    setTitleError("");
+    onConfirm(trimmed);
   };
 
   return (
@@ -52,10 +58,11 @@ export default function CreateNotepadModal({ isOpen, onConfirm, onCancel, creati
                 <input
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => { setTitle(e.target.value); if (titleError) setTitleError(""); }}
                   placeholder="e.g., Trip to the Mountains"
-                  className="w-full bg-input border border-input rounded-lg px-4 py-2.5 text-foreground shadow-sm focus:ring-2 focus:ring-primary outline-none"
+                  className={`w-full bg-input border rounded-lg px-4 py-2.5 text-foreground shadow-sm focus:ring-2 outline-none ${titleError ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"}`}
                 />
+                {titleError && <p className="text-red-500 text-xs mt-1">{titleError}</p>}
               </div>
 
               <div className="flex justify-end items-center gap-3 p-4 border-t border-border bg-muted">

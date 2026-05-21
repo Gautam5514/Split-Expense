@@ -39,6 +39,8 @@ const avatars = [
   { label: "R", color: "#ec4899" },
 ];
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function RegisterPage() {
   const router = useRouter();
   const { setToken } = useAuth();
@@ -49,6 +51,10 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [focused, setFocused] = useState("");
+  const [errors, setErrors] = useState({});
+
+  const clearError = (field) =>
+    setErrors((prev) => ({ ...prev, [field]: "" }));
 
   const passwordStrength = (() => {
     if (!password) return 0;
@@ -63,8 +69,23 @@ export default function RegisterPage() {
   const strengthLabel = ["", "Weak", "Fair", "Good", "Strong"][passwordStrength];
   const strengthColor = ["", "#ef4444", "#f59e0b", "#22c55e", "#10b981"][passwordStrength];
 
+  const validateRegister = () => {
+    const e = {};
+    if (!name.trim() || name.trim().length < 2) e.name = "Name must be at least 2 characters.";
+    else if (name.trim().length > 100) e.name = "Name must be under 100 characters.";
+    if (!email.trim()) e.email = "Email address is required.";
+    else if (!emailRegex.test(email.trim())) e.email = "Please enter a valid email address.";
+    if (!password) e.password = "Password is required.";
+    else if (password.length < 8) e.password = "Password must be at least 8 characters.";
+    else if (!/[A-Z]/.test(password)) e.password = "Password must include at least one uppercase letter (A-Z).";
+    else if (!/[0-9]/.test(password)) e.password = "Password must include at least one number (0-9).";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!validateRegister()) return;
     setIsLoading(true);
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
@@ -75,7 +96,9 @@ export default function RegisterPage() {
       toast.success("Account created successfully!");
       router.push("/dashboard");
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Registration failed.");
+      const data = err?.response?.data;
+      if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
+      else toast.error(data?.message || "Registration failed.");
     } finally {
       setIsLoading(false);
     }
@@ -91,15 +114,23 @@ export default function RegisterPage() {
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
       router.push("/dashboard");
     } catch (err) {
-      toast.error("Google signup failed.");
+      console.error("Google Sign-Up error:", err);
+      if (err.code === "auth/unauthorized-domain" || err.message?.includes("auth/unauthorized-domain")) {
+        toast.error(
+          "Domain Unauthorized! Please add this deployment domain to your Firebase Console under Authentication > Settings > Authorized Domains.",
+          { duration: 10000 }
+        );
+      } else {
+        toast.error(err.message || "Google signup failed.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    /* h-screen + overflow-hidden = zero scroll */
-    <div className="h-screen overflow-hidden flex" style={{ background: "#08080f" }}>
+    /* h-[100dvh] + overflow-hidden = zero scroll */
+    <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex" style={{ background: "#08080f" }}>
 
       {/* ── Left visual panel ── */}
       <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden flex-col justify-center px-12 py-8">
@@ -114,10 +145,10 @@ export default function RegisterPage() {
         <div className="relative z-10 max-w-[400px]">
           {/* logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
-              <span className="text-white text-lg font-black">S</span>
+            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
+              <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
-            <span className="text-2xl font-black text-white tracking-tight">Split</span>
+            <span className="text-2xl font-black text-white tracking-tight">SplitEase</span>
           </div>
 
           {/* headline */}
@@ -169,14 +200,14 @@ export default function RegisterPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 h-full flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#0d0d18" }}>
+      <div className="flex-1 h-[100dvh] flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#0d0d18" }}>
         <div className="w-full max-w-[380px] py-4">
           {/* mobile logo */}
-          <div className="flex items-center gap-3 mb-5 lg:hidden">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
-              <span className="text-white font-black">S</span>
+          <div className="flex items-center gap-2.5 mb-5 lg:hidden justify-center">
+            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center border border-white/10">
+              <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
-            <span className="text-xl font-black text-white">Split</span>
+            <span className="text-xl font-extrabold text-white">SplitEase</span>
           </div>
 
           {/* heading */}
@@ -216,17 +247,19 @@ export default function RegisterPage() {
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
                   background: focused === "name" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: focused === "name" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
-                  boxShadow: focused === "name" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                  borderColor: errors.name ? "#f87171" : (focused === "name" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
+                  boxShadow: errors.name ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "name" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
                 }}>
                 <User className="absolute left-4 w-4 h-4 text-slate-600" />
                 <input
-                  type="text" placeholder="John Doe" required
-                  value={name} onChange={(e) => setName(e.target.value)}
+                  type="text" placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); clearError("name"); }}
                   onFocus={() => setFocused("name")} onBlur={() => setFocused("")}
                   className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-2.5 rounded-xl outline-none text-sm"
                 />
               </div>
+              {errors.name && <p className="text-red-400 text-xs mt-1 ml-1">{errors.name}</p>}
             </div>
 
             {/* email */}
@@ -235,17 +268,19 @@ export default function RegisterPage() {
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
                   background: focused === "email" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: focused === "email" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
-                  boxShadow: focused === "email" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                  borderColor: errors.email ? "#f87171" : (focused === "email" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
+                  boxShadow: errors.email ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "email" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
                 }}>
                 <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
                 <input
-                  type="email" placeholder="you@example.com" required
-                  value={email} onChange={(e) => setEmail(e.target.value)}
+                  type="email" placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
                   onFocus={() => setFocused("email")} onBlur={() => setFocused("")}
                   className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-2.5 rounded-xl outline-none text-sm"
                 />
               </div>
+              {errors.email && <p className="text-red-400 text-xs mt-1 ml-1">{errors.email}</p>}
             </div>
 
             {/* password */}
@@ -254,13 +289,14 @@ export default function RegisterPage() {
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
                   background: focused === "password" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: focused === "password" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)",
-                  boxShadow: focused === "password" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                  borderColor: errors.password ? "#f87171" : (focused === "password" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
+                  boxShadow: errors.password ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "password" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
                 }}>
                 <Lock className="absolute left-4 w-4 h-4 text-slate-600" />
                 <input
-                  type={showPassword ? "text" : "password"} placeholder="Min. 8 characters" required
-                  value={password} onChange={(e) => setPassword(e.target.value)}
+                  type={showPassword ? "text" : "password"} placeholder="Min. 8 characters"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
                   onFocus={() => setFocused("password")} onBlur={() => setFocused("")}
                   className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-12 py-2.5 rounded-xl outline-none text-sm"
                 />
@@ -268,6 +304,7 @@ export default function RegisterPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {errors.password && <p className="text-red-400 text-xs mt-1 ml-1">{errors.password}</p>}
 
               {/* strength meter */}
               {password.length > 0 && (

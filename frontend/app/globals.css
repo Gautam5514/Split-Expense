@@ -139,3 +139,9 @@ html {
 .animate-logo-scroll:hover {
   animation-play-state: paused;
 }
+
+/* Eliminate global top header padding for isolated, full-screen auth pages */
+main:has(.auth-page-wrapper),
+main:has(.h-screen) {
+  padding-top: 0 !important;
+}

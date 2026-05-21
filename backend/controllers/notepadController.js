@@ -7,6 +7,13 @@ export const createNotepad = async (req, res) => {
     const { groupId, title } = req.body;
     const userId = req.user.id;
 
+    if (!title?.trim())
+      return res.status(400).json({ field: "title", message: "Notepad title is required." });
+    if (title.trim().length < 2)
+      return res.status(400).json({ field: "title", message: "Title must be at least 2 characters." });
+    if (title.trim().length > 100)
+      return res.status(400).json({ field: "title", message: "Title must be under 100 characters." });
+
     // check if user is part of group
     const group = await Group.findById(groupId);
     if (!group || !group.members.includes(userId)) {
@@ -44,6 +51,11 @@ export const addStep = async (req, res) => {
     const { notepadId } = req.params;
     const { title, notes, date } = req.body;
     const userId = req.user.id;
+
+    if (!title?.trim())
+      return res.status(400).json({ field: "title", message: "Step title is required." });
+    if (title.trim().length > 200)
+      return res.status(400).json({ field: "title", message: "Step title must be under 200 characters." });
 
     const notepad = await Notepad.findById(notepadId);
     if (!notepad) return res.status(404).json({ message: "Notepad not found" });
