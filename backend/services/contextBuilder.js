@@ -5,7 +5,6 @@ import Expense from "../models/expenseModel.js";
 import Notepad from "../models/notepadModel.js";
 import User from "../models/userModel.js";
 
-// Helper function to format numbers to 2 decimal places
 const to2 = (n) => Number(Number(n).toFixed(2));
 
 /**
@@ -14,6 +13,9 @@ const to2 = (n) => Number(Number(n).toFixed(2));
  * @param {object} balancesObj - { userId: balance }
  * @returns {Array} - [{ from, to, amount }]
  */
+
+
+
 const buildSettlement = (balancesObj) => {
   const entries = Object.entries(balancesObj).map(([userId, bal]) => ({ userId, bal: to2(bal) }));
   const creditors = entries.filter((e) => e.bal > 0).sort((a, b) => b.bal - a.bal);
