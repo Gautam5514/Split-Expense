@@ -1,8 +1,8 @@
 import { io } from "socket.io-client";
 import { getAuth } from "firebase/auth";
+import { API_URL } from "@/lib/config";
 
-const socket = io("http://localhost:8080", {
-// const socket = io("https://split.facedeliver.shop", {
+const socket = io(API_URL, {
   transports: ["websocket"],
   autoConnect: false,
 });

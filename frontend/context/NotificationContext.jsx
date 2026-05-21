@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { API_URL } from "@/lib/config";
 import { BellRing, Clock3, ReceiptText, UsersRound } from "lucide-react";
 
 
@@ -142,14 +143,11 @@ export function NotificationProvider({ children }) {
   useEffect(() => {
     if (!token) return;
 
-    const socketInstance = io(
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
-      {
-        transports: ["websocket"],
-        reconnection: true,
-        reconnectionAttempts: 5,
-      }
-    );
+    const socketInstance = io(API_URL, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+    });
 
     // 🧠 Instead of sending userId, send the *token*
     socketInstance.emit("register", token);

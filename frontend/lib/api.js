@@ -1,9 +1,9 @@
 import axios from "axios";
 import { getAuth } from "firebase/auth";
+import { API_BASE_URL } from "@/lib/config";
 
 export const api = axios.create({
-  baseURL: "http://localhost:8080/api",
-  // baseURL: "https://split.facedeliver.shop/api",
+  baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use(async (config) => {
