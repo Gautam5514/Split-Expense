@@ -125,8 +125,9 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav
-      className={`fixed top-4 inset-x-4 mx-auto z-50 max-w-7xl transition-all duration-300 rounded-2xl border ${
+    <>
+      <nav
+        className={`fixed top-4 inset-x-4 mx-auto z-50 max-w-7xl transition-all duration-300 rounded-2xl border ${
         scrolled
           ? "bg-background/60 backdrop-blur-2xl border-foreground/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
           : "bg-background/30 backdrop-blur-xl border-foreground/5 shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
@@ -346,6 +347,7 @@ export default function Navbar() {
           )}
         </div>
       </div>
+    </nav>
 
       {/* ── Mobile Bottom Bar (logged in) ── */}
       {isLoggedIn && (
@@ -419,6 +421,6 @@ export default function Navbar() {
           </Link>
         </div>
       )}
-    </nav>
+    </>
   );
 }
