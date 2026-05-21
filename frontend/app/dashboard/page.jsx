@@ -354,18 +354,52 @@ function GroupCard({
           />
         </div>
 
-        <p className="text-sm text-muted-foreground mt-1">
-          {group.members?.length || 0} members
-        </p>
+        {group.members?.length > 0 ? (
+          <div className="mt-3.5 flex items-center gap-2">
+            <div className="flex -space-x-2.5 overflow-hidden">
+              {group.members.slice(0, 4).map((m, i) => {
+                const nameStr = m.name || m.email || "User";
+                const initial = nameStr.charAt(0).toUpperCase();
+                const colors = [
+                  "from-violet-500 to-indigo-500",
+                  "from-emerald-500 to-teal-500",
+                  "from-rose-500 to-pink-500",
+                  "from-amber-500 to-orange-500",
+                  "from-cyan-500 to-blue-500",
+                ];
+                const colorBg = colors[i % colors.length];
 
-        {group.members?.length > 0 && (
-          <div className="mt-2 text-xs text-muted-foreground/60 line-clamp-1">
-            {group.members
-              .slice(0, 3)
-              .map((m) => m.name || m.email)
-              .join(", ")}
-            {group.members.length > 3 ? "…" : ""}
+                return m.photoURL ? (
+                  <img
+                    key={m._id || i}
+                    className="inline-block h-7 w-7 rounded-full ring-2 ring-card object-cover"
+                    src={m.photoURL}
+                    alt={nameStr}
+                    title={nameStr}
+                  />
+                ) : (
+                  <div
+                    key={m._id || i}
+                    className={`inline-flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-card bg-gradient-to-br ${colorBg} text-[10px] font-bold text-white uppercase shadow-sm`}
+                    title={nameStr}
+                  >
+                    {initial}
+                  </div>
+                );
+              })}
+              {group.members.length > 4 && (
+                <div className="inline-flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-card bg-muted text-[10px] font-bold text-muted-foreground border border-border">
+                  +{group.members.length - 4}
+                </div>
+              )}
+            </div>
+            
+            <span className="text-[11px] text-muted-foreground/75 font-semibold">
+              {group.members.length} Member{group.members.length !== 1 && "s"}
+            </span>
           </div>
+        ) : (
+          <p className="text-xs text-muted-foreground/60 mt-3 italic">No members added yet</p>
         )}
       </div>
 

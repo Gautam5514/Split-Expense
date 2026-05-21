@@ -147,11 +147,16 @@ export const addExpense = async (req, res) => {
     const allMembers = group.members.map((m) => String(m));
     const recipients = allMembers.filter((id) => id !== String(uid));
     if (recipients.length > 0) {
+      const isSettlement = description.toLowerCase().startsWith("settlement");
+      const notificationMessage = isSettlement
+        ? `${description} (₹${amt}) in "${group.name}"`
+        : `${req.user.name} added an expense "${description}" of ₹${amt} in "${group.name}"`;
+
       await createNotification(
         recipients,
-        `${req.user.name} added an expense "${description}" of ₹${amt} in "${group.name}"`,
+        notificationMessage,
         `/groups/${groupId}`,
-        "expense"
+        isSettlement ? "group" : "expense"
       );
     }
 

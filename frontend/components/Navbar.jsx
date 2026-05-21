@@ -349,20 +349,62 @@ export default function Navbar() {
 
       {/* ── Mobile Bottom Bar (logged in) ── */}
       {isLoggedIn && (
-        <div className="sm:hidden fixed bottom-4 inset-x-4 z-50 flex justify-around items-center py-2 px-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-          {NAV_LINKS.slice(0, 4).map(({ href, icon: Icon, label }) => {
-            const active = pathname === href;
-            return (
-              <Link key={href} href={href}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all ${
-                  active ? "text-violet-400" : "text-foreground/40 hover:text-foreground/70"
-                }`}>
-                <Icon size={18} />
-                <span className="text-[9px] font-medium">{label}</span>
-                {active && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5" />}
-              </Link>
-            );
-          })}
+        <div className="sm:hidden fixed bottom-4 inset-x-4 z-50 flex justify-around items-center h-16 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-2">
+          {/* Home */}
+          <Link href="/users"
+            className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
+              pathname === "/users" ? "text-violet-400" : "text-foreground/40 hover:text-foreground/70"
+            }`}>
+            <Home size={18} />
+            <span className="text-[9px] font-semibold">Home</span>
+            {pathname === "/users" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
+          </Link>
+
+          {/* Groups */}
+          <Link href="/dashboard"
+            className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
+              pathname === "/dashboard" ? "text-violet-400" : "text-foreground/40 hover:text-foreground/70"
+            }`}>
+            <PlusCircle size={18} />
+            <span className="text-[9px] font-semibold">Groups</span>
+            {pathname === "/dashboard" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
+          </Link>
+
+          {/* AI FAB (Center) */}
+          <div className="relative -top-4 flex flex-col items-center">
+            {/* Pulsing ring outer effect */}
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-violet-500 to-indigo-600 opacity-20 blur-sm animate-ping pointer-events-none" />
+            <div className="absolute inset-0 rounded-full bg-violet-500/25 blur-md animate-pulse pointer-events-none" />
+            <Link href="/ai"
+              className={`flex items-center justify-center w-13 h-13 rounded-full border-4 border-background/95 shadow-[0_4px_16px_rgba(139,92,246,0.4)] transition-all transform active:scale-95 duration-200 z-10 ${
+                pathname === "/ai"
+                  ? "bg-gradient-to-tr from-violet-500 via-indigo-500 to-purple-600 text-white scale-105"
+                  : "bg-card text-violet-500 hover:text-violet-400"
+              }`}>
+              <Bot size={20} className={pathname === "/ai" ? "animate-pulse" : ""} />
+            </Link>
+            <span className="text-[9px] font-bold text-violet-500 mt-0.5 uppercase tracking-wider scale-90">AI Agent</span>
+          </div>
+
+          {/* Messages */}
+          <Link href="/chat"
+            className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
+              pathname === "/chat" ? "text-violet-400" : "text-foreground/40 hover:text-foreground/70"
+            }`}>
+            <MessageCircle size={18} />
+            <span className="text-[9px] font-semibold">Messages</span>
+            {pathname === "/chat" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
+          </Link>
+
+          {/* Group Chat */}
+          <Link href="/groupchat"
+            className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
+              pathname === "/groupchat" ? "text-violet-400" : "text-foreground/40 hover:text-foreground/70"
+            }`}>
+            <MessageCircleMore size={18} />
+            <span className="text-[9px] font-semibold">Chatroom</span>
+            {pathname === "/groupchat" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
+          </Link>
         </div>
       )}
 

@@ -191,7 +191,7 @@ export const addMembersByEmail = async (req, res) => {
     // 3️⃣ Find users by email
     const users = await User.find(
       { email: { $in: emails.map((e) => e.toLowerCase().trim()) } },
-      "_id email"
+      "_id email name"
     );
 
     if (!users.length) {
@@ -225,6 +225,20 @@ export const addMembersByEmail = async (req, res) => {
       `/groups/${group._id}`,
       "group"
     );
+
+    // Notify existing members
+    const existingMembers = group.members
+      .map(String)
+      .filter((id) => !userIds.map(String).includes(id) && id !== String(uid));
+    if (existingMembers.length > 0) {
+      const addedNames = users.map((u) => u.name || u.email).join(", ");
+      await createNotification(
+        existingMembers,
+        `${req.user.name} added ${addedNames} to "${group.name}"`,
+        `/groups/${group._id}`,
+        "group"
+      );
+    }
 
     res.json(updated);
   } catch (err) {
@@ -327,6 +341,17 @@ export const markGroupCompleted = async (req, res) => {
     group.isCompleted = true;
     await group.save();
 
+    // Notify other members
+    const otherMembers = group.members.map(String).filter((id) => id !== String(uid));
+    if (otherMembers.length > 0) {
+      await createNotification(
+        otherMembers,
+        `"${group.name}" has been marked as completed by ${req.user.name}`,
+        `/groups/${group._id}`,
+        "group"
+      );
+    }
+
     res.json({ success: true, message: "Trip marked as completed", group });
   } catch (err) {
     console.error("markGroupCompleted error:", err.message);
@@ -412,9 +437,21 @@ export const joinGroupByInvite = async (req, res) => {
     if (!group) return res.status(404).json({ message: "Invalid invite link" });
 
     // Add user to group if not already member
-    if (!group.members.map(String).includes(String(uid))) {
+    const wasAlreadyMember = group.members.map(String).includes(String(uid));
+    if (!wasAlreadyMember) {
       group.members.push(uid);
       await group.save();
+
+      // Notify other members
+      const otherMembers = group.members.map(String).filter((id) => id !== String(uid));
+      if (otherMembers.length > 0) {
+        await createNotification(
+          otherMembers,
+          `${req.user.name} joined "${group.name}" using an invite link`,
+          `/groups/${group._id}`,
+          "group"
+        );
+      }
     }
 
     const populated = await Group.findById(group._id)

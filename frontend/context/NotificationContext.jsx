@@ -124,6 +124,7 @@ export function NotificationProvider({ children }) {
   const [vapidKeyConfigured, setVapidKeyConfigured] = useState(false);
   const [fcmError, setFcmError] = useState(null);
   const [customVapidInput, setCustomVapidInput] = useState("");
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   // Helper to resolve the active VAPID public key (local storage OR process.env)
   const getActiveVapidKey = () => {
@@ -380,16 +381,48 @@ export function NotificationProvider({ children }) {
       }}
     >
       {children}
-      {token && (
-        <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-zinc-950/90 p-4 shadow-2xl backdrop-blur-xl transition-all duration-300 max-w-[320px] text-white">
-          
-          {/* Header */}
-          <div className="flex items-center gap-2 pb-2 border-b border-white/[0.06]">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
-              <BellRing size={14} className={fcmToken ? "animate-pulse" : ""} />
+      {token && (() => {
+        const isFullyActive = vapidKeyConfigured && notificationPermission === "granted" && fcmToken;
+        
+        if (isFullyActive && isCollapsed) {
+          return (
+            <button
+              onClick={() => setIsCollapsed(false)}
+              className="fixed bottom-4 left-4 z-50 flex items-center gap-2.5 rounded-full border border-emerald-500/30 bg-zinc-950/90 px-3.5 py-2 shadow-xl backdrop-blur-md hover:bg-zinc-900/95 hover:border-emerald-400 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer group"
+              title="Click to open Web Push Control Center"
+            >
+              {/* Pulsing indicator */}
+              <div className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </div>
+              <BellRing size={13} className="text-emerald-400 animate-pulse group-hover:rotate-12 transition-transform duration-300" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/90 group-hover:text-emerald-400 transition-colors">Push Active</span>
+            </button>
+          );
+        }
+
+        return (
+          <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-zinc-950/90 p-4 shadow-2xl backdrop-blur-xl transition-all duration-300 max-w-[320px] text-white">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
+                  <BellRing size={14} className={fcmToken ? "animate-pulse" : ""} />
+                </div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-white">Web Push Control Center</span>
+              </div>
+              {isFullyActive && (
+                <button
+                  onClick={() => setIsCollapsed(true)}
+                  className="flex h-5 w-5 items-center justify-center rounded-md border border-white/[0.08] hover:bg-white/5 text-white/50 hover:text-white transition-colors cursor-pointer text-xs font-semibold"
+                  title="Collapse Panel"
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-white">Web Push Control Center</span>
-          </div>
 
           {/* Condition 1: Missing VAPID Public Key */}
           {!vapidKeyConfigured && (
@@ -555,8 +588,9 @@ export function NotificationProvider({ children }) {
             </div>
           )}
 
-        </div>
-      )}
+          </div>
+        );
+      })()}
     </NotificationContext.Provider>
   );
 }

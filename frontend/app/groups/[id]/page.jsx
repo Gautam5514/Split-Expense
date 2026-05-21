@@ -222,6 +222,13 @@ export default function GroupDetailPage() {
     };
   }, [expenses]);
 
+  const currentUserBalance = useMemo(() => {
+    if (!balances?.balances) return 0;
+    const currentUid = getCurrentUserId();
+    const userBal = balances.balances.find((b) => String(b.userId) === String(currentUid));
+    return userBal ? Number(userBal.balance) : 0;
+  }, [balances, token]);
+
   const handleDeleteTrip = async () => {
     const confirmed = window.confirm(
       "Delete this trip and all of its expenses, notes, and group messages?"
@@ -328,6 +335,105 @@ export default function GroupDetailPage() {
         </motion.div>
       </div>
 
+      {/* 💳 QUICK FINTECH INFO CARDS */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* Card 1: Total Spent */}
+        <div className="bg-card border border-border/80 p-5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-bl-full pointer-events-none group-hover:bg-indigo-500/10 transition-colors" />
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Total Group Spend</p>
+          <p className="text-2xl font-black text-foreground mt-2 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+            {expenseSummary.currency.format(expenseSummary.total)}
+          </p>
+          <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+            <span>Across {expenses.length} logged expense items</span>
+          </div>
+        </div>
+
+        {/* Card 2: Personal Balance Position */}
+        <div className={`bg-card border p-5 rounded-2xl shadow-sm relative overflow-hidden group transition-all duration-300 ${
+          currentUserBalance > 0.01 
+            ? "border-emerald-500/20 hover:border-emerald-500/40" 
+            : currentUserBalance < -0.01 
+            ? "border-rose-500/20 hover:border-rose-500/40" 
+            : "border-border/80 hover:border-primary/30"
+        }`}>
+          <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full pointer-events-none transition-colors ${
+            currentUserBalance > 0.01 
+              ? "bg-emerald-500/5 group-hover:bg-emerald-500/10" 
+              : currentUserBalance < -0.01 
+              ? "bg-rose-500/5 group-hover:bg-rose-500/10" 
+              : "bg-primary/5 group-hover:bg-primary/10"
+          }`} />
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Your Balance Position</p>
+          
+          {currentUserBalance > 0.01 ? (
+            <>
+              <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
+                +{expenseSummary.currency.format(Math.abs(currentUserBalance))}
+              </p>
+              <div className="flex items-center gap-1 mt-2 text-[10px] text-emerald-600 dark:text-emerald-400">
+                <ArrowUpRight size={12} />
+                <span>You are owed overall by this group</span>
+              </div>
+            </>
+          ) : currentUserBalance < -0.01 ? (
+            <>
+              <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2">
+                -{expenseSummary.currency.format(Math.abs(currentUserBalance))}
+              </p>
+              <div className="flex items-center gap-1 mt-2 text-[10px] text-rose-600 dark:text-rose-400">
+                <ArrowDownLeft size={12} />
+                <span>You owe money to others in this group</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-black text-muted-foreground mt-2">
+                Settled Up
+              </p>
+              <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
+                <CheckCircle size={12} className="text-primary" />
+                <span>All balances are settled or zero</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Card 3: Active Members */}
+        <div className="bg-card border border-border/80 p-5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-bl-full pointer-events-none group-hover:bg-purple-500/10 transition-colors" />
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Active Group Size</p>
+          <p className="text-2xl font-black text-foreground mt-2 bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+            {group.members?.length || 0} Members
+          </p>
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center -space-x-1.5 overflow-hidden">
+              {group.members?.slice(0, 4).map((m, i) => (
+                m.photoURL ? (
+                  <img key={m._id || i} className="inline-block h-5 w-5 rounded-full ring-2 ring-card object-cover" src={m.photoURL} alt="" />
+                ) : (
+                  <div key={m._id || i} className="inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-card bg-neutral-700 text-[8px] font-bold text-white uppercase">
+                    {m.name?.charAt(0) || "U"}
+                  </div>
+                )
+              ))}
+              {group.members?.length > 4 && (
+                <div className="inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-card bg-muted text-[8px] font-bold text-muted-foreground border border-border">
+                  +{group.members.length - 4}
+                </div>
+              )}
+            </div>
+            <button 
+              onClick={() => setShowInviteModal(true)} 
+              className="text-[11px] text-primary hover:underline font-bold cursor-pointer"
+            >
+              + Invite Friends
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* 🟦 DUAL PANEL LAYOUT */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-8">
         
@@ -357,6 +463,18 @@ export default function GroupDetailPage() {
             >
               <TrendingUp size={16} />
               Spend Owners
+            </button>
+            {/* Balances Tab only on Mobile/Tablet */}
+            <button
+              onClick={() => setActiveTab("balances")}
+              className={`lg:hidden flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+                activeTab === "balances"
+                  ? "bg-primary text-primary-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <Wallet2 size={16} />
+              Balances
             </button>
             <button
               onClick={() => setActiveTab("notes")}
@@ -627,12 +745,227 @@ export default function GroupDetailPage() {
                   <NotepadSection groupId={groupId} />
                 </motion.div>
               )}
+
+              {/* Tab 4: Balances & Members (Mobile/Tablet Only) */}
+              {activeTab === "balances" && (
+                <motion.div
+                  key="balances"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-6 lg:hidden"
+                >
+                  {/* Group Balances Widget */}
+                  <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
+                    <div className="flex items-center justify-between border-b border-border pb-3">
+                      <h3 className="font-bold text-foreground flex items-center gap-2">
+                        <Wallet2 className="text-primary" size={18} />
+                        Group Balances
+                      </h3>
+                      <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
+                        Real-Time
+                      </span>
+                    </div>
+
+                    {!balances?.balances?.length ? (
+                      <div className="text-center py-6 text-muted-foreground text-xs">
+                        No active balances. Add expenses to calculate.
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {balances.balances.map((b, i) => {
+                          const balNum = Number(b.balance);
+                          const isCreditor = balNum > 0.01;
+                          const isDebtor = balNum < -0.01;
+
+                          return (
+                            <div
+                              key={b.userId || i}
+                              className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-border/60 text-xs hover:border-primary/30 transition-all"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                {isCreditor ? (
+                                  <div className="h-6 w-6 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                    <ArrowUpRight size={13} />
+                                  </div>
+                                ) : isDebtor ? (
+                                  <div className="h-6 w-6 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                    <ArrowDownLeft size={13} />
+                                  </div>
+                                ) : (
+                                  <div className="h-6 w-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+                                    <CheckCircle size={13} />
+                                  </div>
+                                )}
+                                <span className="text-foreground font-semibold truncate">{b.name}</span>
+                              </div>
+
+                              <span
+                                className={`font-bold ${
+                                  isCreditor
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : isDebtor
+                                    ? "text-rose-600 dark:text-rose-400"
+                                    : "text-muted-foreground"
+                                }`}
+                              >
+                                {isCreditor
+                                  ? `+₹${Math.abs(balNum).toFixed(0)}`
+                                  : isDebtor
+                                  ? `-₹${Math.abs(balNum).toFixed(0)}`
+                                  : "Settled"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {balances?.suggestions?.length > 0 && (
+                      <div className="pt-4 border-t border-border space-y-3">
+                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          💡 Smart Settlements
+                        </h4>
+                        <div className="space-y-2.5">
+                          {balances.suggestions.map((s, i) => (
+                            <div
+                              key={i}
+                              className="bg-muted/40 border border-border p-3.5 rounded-xl text-xs flex flex-col gap-2.5 hover:border-primary/30 transition shadow-sm"
+                            >
+                              <div className="leading-relaxed">
+                                <span className="font-bold text-rose-600 dark:text-rose-400">{s.from.name}</span>
+                                <span className="text-muted-foreground"> owes </span>
+                                <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{s.amount.toFixed(0)}</span>
+                                <span className="text-muted-foreground"> to </span>
+                                <span className="font-semibold text-primary">{s.to.name}</span>
+                              </div>
+                              
+                              <button
+                                onClick={() => handleRecordSettlement(s.from, s.to, s.amount)}
+                                className="w-full flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 hover:border-primary/20 font-bold py-2 rounded-lg transition-all cursor-pointer"
+                              >
+                                <CheckCircle size={13} />
+                                Record Settlement
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Group Members Widget */}
+                  <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-5">
+                    <div className="flex items-center justify-between border-b border-border pb-3">
+                      <h3 className="font-bold text-foreground flex items-center gap-2">
+                        <Users2 className="text-primary" size={18} />
+                        Group Members
+                      </h3>
+                      <span className="text-xs text-muted-foreground">
+                        {group.members?.length || 0} total
+                      </span>
+                    </div>
+
+                    {group.members?.length ? (
+                      <div className="space-y-3.5 max-h-60 overflow-y-auto pr-1">
+                        {group.members.map((m) => {
+                          const isCreatorUser = String(group.createdBy?._id || group.createdBy) === String(m._id);
+                          
+                          return (
+                            <div
+                              key={m._id}
+                              className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-muted/30 transition group relative"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                {m.photoURL ? (
+                                  <img
+                                    src={m.photoURL}
+                                    alt={m.name}
+                                    className="w-7 h-7 rounded-full object-cover border border-border"
+                                  />
+                                ) : (
+                                  <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0">
+                                    {m.name ? m.name.charAt(0).toUpperCase() : "U"}
+                                  </div>
+                                )}
+                                <div className="min-w-0 text-xs">
+                                  <p className="font-semibold text-foreground truncate">{m.name || "Unnamed User"}</p>
+                                  <p className="text-[10px] text-muted-foreground truncate">{m.email}</p>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 flex items-center">
+                                {isCreatorUser ? (
+                                  <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                    Owner
+                                  </span>
+                                ) : (
+                                  isCreator && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemove(m._id)}
+                                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1 rounded-md transition cursor-pointer"
+                                      title={`Remove ${m.name}`}
+                                    >
+                                      <X size={13} />
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground text-xs">No members.</div>
+                    )}
+
+                    <div className="pt-3 border-t border-border flex flex-col gap-2.5">
+                      <button
+                        onClick={() => setShowInviteModal(true)}
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold py-2.5 rounded-xl shadow hover:opacity-95 transition-all cursor-pointer"
+                      >
+                        <QrCode size={14} />
+                        Invite Friends (Link / QR)
+                      </button>
+
+                      <button
+                        onClick={() => setShowAddMember(!showAddMember)}
+                        className="w-full flex items-center justify-center gap-1 text-xs font-semibold border border-border hover:bg-muted text-foreground py-2 rounded-xl transition-all cursor-pointer"
+                      >
+                        {showAddMember ? "✕ Hide Search Picker" : "➕ Add Member by Email"}
+                      </button>
+
+                      <AnimatePresence>
+                        {showAddMember && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden mt-1"
+                          >
+                            <MemberPicker
+                              groupId={groupId}
+                              exclude={group.members.map((m) => m.email)}
+                              onSubmit={(selectedEmails) => {
+                                handleAddMembers(selectedEmails);
+                                setShowAddMember(false);
+                              }}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
           </div>
         </div>
 
         {/* ===================== RIGHT COLUMN: SIDEBAR (BALANCES & MEMBERS) ===================== */}
-        <div className="space-y-6">
+        <div className="hidden lg:block space-y-6">
           
           {/* 1. Group Balances & Settlement Suggestions Card */}
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">

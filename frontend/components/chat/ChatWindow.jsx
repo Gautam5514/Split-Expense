@@ -4,9 +4,9 @@ import { api } from "@/lib/api";
 import socket, { connectSocket } from "@/lib/socket";
 import ChatInput from "./ChatInput";
 import VoicePlayer from "./VoicePlayer";
-import { Search, MoreVertical, X, AlertCircle, Loader2, RotateCw } from "lucide-react";
+import { Search, MoreVertical, X, AlertCircle, Loader2, RotateCw, ArrowLeft } from "lucide-react";
 
-export default function ChatWindow({ activeFriend }) {
+export default function ChatWindow({ activeFriend, onBack }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const [me, setMe] = useState(null);
@@ -236,29 +236,44 @@ export default function ChatWindow({ activeFriend }) {
 
       {/* HEADER */}
       <div className="h-16 bg-muted/90 px-4 flex items-center justify-between border-b border-border z-10 flex-shrink-0">
-        <div className="flex items-center gap-3 cursor-pointer">
-          {activeFriend.imageUrl ? (
-            <img
-              src={activeFriend.imageUrl}
-              alt={activeFriend.name}
-              className="w-10 h-10 rounded-full object-cover"
-            />
-          ) : (
-            <div
-              className={`w-10 h-10 flex items-center justify-center rounded-full text-white font-bold ${getColorForName(
-                activeFriend.name
-              )}`}
+        <div className="flex items-center gap-2.5 min-w-0">
+          {onBack && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBack();
+              }}
+              className="md:hidden mr-1 p-1.5 hover:bg-background/80 rounded-lg text-muted-foreground hover:text-foreground transition shrink-0 cursor-pointer"
+              title="Back to contacts"
             >
-              {activeFriend.name?.charAt(0) || "?"}
-            </div>
+              <ArrowLeft className="w-5 h-5" />
+            </button>
           )}
-          <div className="flex flex-col justify-center min-w-0">
-            <span className="truncate text-foreground text-base font-semibold leading-tight">
-              {activeFriend.name}
-            </span>
-            <span className="text-[13px] text-muted-foreground leading-tight">
-              {isOnline ? "online" : formatLastSeen(lastActive)}
-            </span>
+
+          <div className="flex items-center gap-3 cursor-pointer min-w-0">
+            {activeFriend.imageUrl ? (
+              <img
+                src={activeFriend.imageUrl}
+                alt={activeFriend.name}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div
+                className={`w-10 h-10 flex items-center justify-center rounded-full text-white font-bold ${getColorForName(
+                  activeFriend.name
+                )}`}
+              >
+                {activeFriend.name?.charAt(0) || "?"}
+              </div>
+            )}
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="truncate text-foreground text-base font-semibold leading-tight">
+                {activeFriend.name}
+              </span>
+              <span className="text-[13px] text-muted-foreground leading-tight">
+                {isOnline ? "online" : formatLastSeen(lastActive)}
+              </span>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">

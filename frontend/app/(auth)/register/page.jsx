@@ -169,10 +169,10 @@ export default function RegisterPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 h-full flex items-center justify-center px-6 lg:px-10 overflow-y-auto" style={{ background: "#0d0d18" }}>
-        <div className="w-full max-w-[380px] py-6">
+      <div className="flex-1 h-full flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#0d0d18" }}>
+        <div className="w-full max-w-[380px] py-4">
           {/* mobile logo */}
-          <div className="flex items-center gap-3 mb-6 lg:hidden">
+          <div className="flex items-center gap-3 mb-5 lg:hidden">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
               <span className="text-white font-black">S</span>
             </div>
@@ -180,39 +180,39 @@ export default function RegisterPage() {
           </div>
 
           {/* heading */}
-          <div className="mb-5">
-            <h2 className="text-2xl font-bold text-white mb-1">Create your account</h2>
-            <p className="text-slate-400 text-sm">Free forever · No credit card required</p>
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold text-white mb-0.5">Create your account</h2>
+            <p className="text-slate-400 text-xs">Free forever · No credit card required</p>
           </div>
 
           {/* Google */}
           <button
             onClick={handleGoogleSignup}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-sm text-white/80 hover:text-white border border-white/10 hover:border-white/20 transition-all duration-200"
+            className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl font-semibold text-xs text-white/80 hover:text-white border border-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer"
             style={{ background: "rgba(255,255,255,0.05)" }}
           >
-            <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" className="w-5 h-5" />
+            <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" className="w-4.5 h-4.5" />
             Sign up with Google
           </button>
 
           {/* divider */}
-          <div className="relative my-4">
+          <div className="relative my-3.5">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/[0.08]" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-4 text-[11px] font-medium text-slate-600 uppercase tracking-[0.2em]" style={{ background: "#0d0d18" }}>
+              <span className="px-4 text-[10px] font-medium text-slate-600 uppercase tracking-[0.2em]" style={{ background: "#0d0d18" }}>
                 or sign up with email
               </span>
             </div>
           </div>
 
           {/* form */}
-          <form onSubmit={handleRegister} className="space-y-3">
+          <form onSubmit={handleRegister} className="space-y-2.5">
             {/* name */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Full name</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Full name</label>
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
                   background: focused === "name" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
@@ -224,14 +224,14 @@ export default function RegisterPage() {
                   type="text" placeholder="John Doe" required
                   value={name} onChange={(e) => setName(e.target.value)}
                   onFocus={() => setFocused("name")} onBlur={() => setFocused("")}
-                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-3 rounded-xl outline-none text-sm"
+                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-2.5 rounded-xl outline-none text-sm"
                 />
               </div>
             </div>
 
             {/* email */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email address</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Email address</label>
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
                   background: focused === "email" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
@@ -243,14 +243,14 @@ export default function RegisterPage() {
                   type="email" placeholder="you@example.com" required
                   value={email} onChange={(e) => setEmail(e.target.value)}
                   onFocus={() => setFocused("email")} onBlur={() => setFocused("")}
-                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-3 rounded-xl outline-none text-sm"
+                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-2.5 rounded-xl outline-none text-sm"
                 />
               </div>
             </div>
 
             {/* password */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Password</label>
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
                   background: focused === "password" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
@@ -262,7 +262,7 @@ export default function RegisterPage() {
                   type={showPassword ? "text" : "password"} placeholder="Min. 8 characters" required
                   value={password} onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setFocused("password")} onBlur={() => setFocused("")}
-                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-12 py-3 rounded-xl outline-none text-sm"
+                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-12 py-2.5 rounded-xl outline-none text-sm"
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-slate-600 hover:text-slate-400 transition-colors">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -271,15 +271,15 @@ export default function RegisterPage() {
 
               {/* strength meter */}
               {password.length > 0 && (
-                <div className="mt-2">
-                  <div className="flex gap-1.5">
+                <div className="mt-1.5">
+                  <div className="flex gap-1">
                     {[1, 2, 3, 4].map((i) => (
                       <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
                         style={{ background: i <= passwordStrength ? strengthColor : "rgba(255,255,255,0.08)" }}
                       />
                     ))}
                   </div>
-                  <p className="text-xs mt-1 font-medium transition-colors duration-200" style={{ color: strengthColor }}>
+                  <p className="text-[10px] mt-0.5 font-medium transition-colors duration-200" style={{ color: strengthColor }}>
                     {strengthLabel}
                   </p>
                 </div>
@@ -289,7 +289,7 @@ export default function RegisterPage() {
             {/* submit */}
             <button
               type="submit" disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
               style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}
               onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(99,102,241,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
@@ -298,14 +298,14 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-slate-600 leading-relaxed">
+          <p className="mt-3 text-center text-[10px] text-slate-600 leading-relaxed">
             By signing up, you agree to our{" "}
             <a href="#" className="text-slate-400 hover:text-slate-300 transition-colors">Terms</a>
             {" "}and{" "}
             <a href="#" className="text-slate-400 hover:text-slate-300 transition-colors">Privacy Policy</a>.
           </p>
 
-          <p className="mt-3 text-center text-sm text-slate-500">
+          <p className="mt-2.5 text-center text-xs text-slate-500">
             Already have an account?{" "}
             <a href="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
               Sign in →
