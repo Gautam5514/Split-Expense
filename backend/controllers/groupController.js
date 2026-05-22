@@ -19,7 +19,7 @@ const isMember = (group, userId) =>
 
 export const createGroup = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, groupType } = req.body;
     if (!name?.trim())
       return res.status(400).json({ field: "name", message: "Group name is required." });
     if (name.trim().length < 2)
@@ -34,6 +34,7 @@ export const createGroup = async (req, res) => {
       name: name.trim(),
       createdBy: uid,
       members: [uid],
+      groupType: groupType || "trip",
     });
 
     const populated = await Group.findById(group._id).populate(

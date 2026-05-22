@@ -74,7 +74,7 @@ export const buildUserContext = async (userId) => {
 - User ID: ${userId}
 
 ## Active Groups & Members
-${groups.map(g => `- **Group Name**: "${g.name}" (ID: ${g._id})
+${groups.map(g => `- **Group Name**: "${g.name}" (ID: ${g._id}, Type: ${g.groupType || "trip"})
   - Status: ${g.isCompleted ? "Completed/Settled" : "Active"}
   - Members: ${g.members.map(m => `${m.name} (${m.email})`).join(", ")}`).join("\n\n")}
 
