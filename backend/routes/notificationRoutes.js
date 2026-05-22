@@ -8,6 +8,7 @@ import {
   unregisterPushToken,
   registerFcmToken,
   unregisterFcmToken,
+  sendTestNotification,
 } from "../controllers/notificationController.js";
 
 const router = express.Router();
@@ -19,6 +20,7 @@ router.delete("/push-token", authMiddleware, unregisterPushToken);
 // 🌐 Browser FCM push token registration
 router.post("/register-fcm", authMiddleware, registerFcmToken);
 router.delete("/unregister-fcm", authMiddleware, unregisterFcmToken);
+router.post("/send-test", authMiddleware, sendTestNotification);
 
 router.put("/mark-read", authMiddleware, markAllAsRead);
 router.put("/:id/read", authMiddleware, markNotificationAsRead);

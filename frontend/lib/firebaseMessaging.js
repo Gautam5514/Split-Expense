@@ -35,8 +35,16 @@ export const getNotificationPermission = async (customVapidKey = null) => {
       return null;
     }
 
+    // 🔒 Robust Validation: VAPID keys must be exactly 87 characters (uncompressed EC public key in base64url)
+    const cleanVapidKey = vapidKey.trim();
+    if (cleanVapidKey.length !== 87) {
+      const errorMsg = `VAPID Public Key is malformed (expected 87 characters, got ${cleanVapidKey.length}). Please verify that you copied the complete key from the Firebase Console without truncation.`;
+      console.error(`❌ ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+
     // 🧠 5. Retrieve registration token from Firebase
-    const currentToken = await getToken(messaging, { vapidKey });
+    const currentToken = await getToken(messaging, { vapidKey: cleanVapidKey });
     if (currentToken) {
       return currentToken;
     } else {

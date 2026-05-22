@@ -367,6 +367,76 @@ export const markNotificationAsRead = async (req, res) => {
 
 
 /**
+ * 🌐 Send a direct FCM test push notification to the logged-in user
+ */
+export const sendTestNotification = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const user = await User.findById(uid, "webPushTokens name").lean();
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.webPushTokens || user.webPushTokens.length === 0) {
+      return res.status(400).json({
+        message: "No FCM tokens registered for your account. Please enable push notifications on the client first."
+      });
+    }
+
+    // Construct message for the logged-in user's own tokens
+    const message = {
+      notification: {
+        title: "SplitEase Push Test! 🔔",
+        body: `Hey ${user.name || "there"}, your FCM push notification setup is working robustly!`,
+      },
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        type: "group",
+        link: "/dashboard",
+      },
+      tokens: user.webPushTokens,
+    };
+
+    const response = await admin.messaging().sendEachForMulticast(message);
+    console.log(`🚀 Sent ${response.successCount} Test Push notifications successfully (${response.failureCount} failed).`);
+
+    // Clean up expired/invalid tokens
+    if (response.failureCount > 0) {
+      const tokensToRemove = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          const errorCode = resp.error?.code;
+          if (
+            errorCode === "messaging/invalid-registration-token" ||
+            errorCode === "messaging/registration-token-not-registered"
+          ) {
+            tokensToRemove.push(user.webPushTokens[idx]);
+          }
+        }
+      });
+
+      if (tokensToRemove.length > 0) {
+        await User.updateOne(
+          { _id: uid },
+          { $pull: { webPushTokens: { $in: tokensToRemove } } }
+        );
+        console.log(`🧹 Cleaned up ${tokensToRemove.length} expired FCM test tokens.`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `FCM test push sent. Success: ${response.successCount}, Failed: ${response.failureCount}`,
+      details: response.responses,
+    });
+  } catch (err) {
+    console.error("❌ sendTestNotification error:", err);
+    res.status(500).json({ message: err.message || "Server error" });
+  }
+};
+
+/**
  * 🧹 Optional: Delete old read notifications (cleanup)
  */
 export const cleanupOldNotifications = async () => {
