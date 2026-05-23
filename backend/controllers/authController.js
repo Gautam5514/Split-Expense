@@ -134,7 +134,8 @@ export const forgotPassword = async (req, res) => {
 
     // Since we are running in local/test without a real SMTP, we return the token
     // and a mock link in the payload for absolute seamless testing
-    const resetUrl = `http://localhost:3000/reset-password?token=${rawToken}`;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
     
     res.status(200).json({
       message: "Reset token generated successfully",

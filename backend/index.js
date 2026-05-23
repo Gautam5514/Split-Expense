@@ -30,9 +30,11 @@ const server = createServer(app);
 // -----------------------------------------
 //  CORS
 // -----------------------------------------
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: frontendUrl,
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -46,7 +48,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // -----------------------------------------
 export const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: frontendUrl,
     methods: ["GET", "POST"],
     credentials: true,
   },
