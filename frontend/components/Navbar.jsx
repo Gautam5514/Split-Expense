@@ -31,21 +31,15 @@ import { auth } from "../lib/firebaseClient";
 
 const NAV_LINKS = [
   { href: "/users", icon: Home, label: "Home" },
-  { href: "/dashboard", icon: PlusCircle, label: "Groups" },
   { href: "/chat", icon: MessageCircle, label: "Messages" },
-  { href: "/groupchat", icon: MessageCircleMore, label: "Group Chat" },
-  { href: "/ai", icon: Bot, label: "AI", highlight: true },
+  { href: "/dashboard", icon: PlusCircle, label: "Groups", highlight: true },
+  { href: "/groupchat", icon: MessageCircleMore, label: "Chatroom" },
+  { href: "/ai", icon: Bot, label: "AI Agent" },
 ];
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const cleanPath = pathname?.replace(/\/$/, "") || "";
-  const isAuthPage = cleanPath.startsWith("/login") || 
-                     cleanPath.startsWith("/register") || 
-                     cleanPath.startsWith("/reset-password");
-  if (isAuthPage) return null;
-
   const { token, setToken } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { notifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead } =
@@ -57,6 +51,12 @@ export default function Navbar() {
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
+
+  const cleanPath = pathname?.replace(/\/$/, "") || "";
+  const isAuthPage =
+    cleanPath.startsWith("/login") ||
+    cleanPath.startsWith("/register") ||
+    cleanPath.startsWith("/reset-password");
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);
@@ -75,7 +75,7 @@ export default function Navbar() {
       setToken(null);
       localStorage.removeItem("token");
       setDropdownOpen(false);
-      router.push("/login");
+      router.replace("/");
     } catch (err) {
       console.error("Logout error:", err);
     }
@@ -129,6 +129,8 @@ export default function Navbar() {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
+
+  if (isAuthPage) return null;
 
   return (
     <>
@@ -218,7 +220,7 @@ export default function Navbar() {
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-3 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl z-50 overflow-hidden bg-background/95 backdrop-blur-2xl border border-foreground/10">
+                <div className="fixed inset-x-4 top-[78px] mx-auto md:absolute md:inset-x-auto md:right-0 md:top-auto mt-3 w-auto md:w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl z-50 overflow-hidden bg-background/95 backdrop-blur-2xl border border-foreground/10">
                   <div className="relative overflow-hidden border-b border-border px-4 py-4">
                     <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-indigo-500/10" />
                     <div className="relative flex items-start justify-between gap-3">
@@ -368,32 +370,6 @@ export default function Navbar() {
             {pathname === "/users" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
           </Link>
 
-          {/* Groups */}
-          <Link href="/dashboard"
-            className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
-              pathname === "/dashboard" ? "text-violet-400" : "text-foreground/40 hover:text-foreground/70"
-            }`}>
-            <PlusCircle size={18} />
-            <span className="text-[9px] font-semibold">Groups</span>
-            {pathname === "/dashboard" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
-          </Link>
-
-          {/* AI FAB (Center) */}
-          <div className="relative -top-4 flex flex-col items-center">
-            {/* Pulsing ring outer effect */}
-            <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-violet-500 to-indigo-600 opacity-20 blur-sm animate-ping pointer-events-none" />
-            <div className="absolute inset-0 rounded-full bg-violet-500/25 blur-md animate-pulse pointer-events-none" />
-            <Link href="/ai"
-              className={`flex items-center justify-center w-13 h-13 rounded-full border-4 border-background/95 shadow-[0_4px_16px_rgba(139,92,246,0.4)] transition-all transform active:scale-95 duration-200 z-10 ${
-                pathname === "/ai"
-                  ? "bg-gradient-to-tr from-violet-500 via-indigo-500 to-purple-600 text-white scale-105"
-                  : "bg-card text-violet-500 hover:text-violet-400"
-              }`}>
-              <Bot size={20} className={pathname === "/ai" ? "animate-pulse" : ""} />
-            </Link>
-            <span className="text-[9px] font-bold text-violet-500 mt-0.5 uppercase tracking-wider scale-90">AI Agent</span>
-          </div>
-
           {/* Messages */}
           <Link href="/chat"
             className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
@@ -404,7 +380,23 @@ export default function Navbar() {
             {pathname === "/chat" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
           </Link>
 
-          {/* Group Chat */}
+          {/* Groups FAB (Center) */}
+          <div className="relative -top-4 flex flex-col items-center">
+            {/* Pulsing ring outer effect */}
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-violet-500 to-indigo-600 opacity-20 blur-sm animate-ping pointer-events-none" />
+            <div className="absolute inset-0 rounded-full bg-violet-500/25 blur-md animate-pulse pointer-events-none" />
+            <Link href="/dashboard"
+              className={`flex items-center justify-center w-13 h-13 rounded-full border-4 border-background/95 shadow-[0_4px_16px_rgba(139,92,246,0.4)] transition-all transform active:scale-95 duration-200 z-10 ${
+                pathname === "/dashboard"
+                  ? "bg-gradient-to-tr from-violet-500 via-indigo-500 to-purple-600 text-white scale-105"
+                  : "bg-card text-violet-500 hover:text-violet-400"
+              }`}>
+              <PlusCircle size={20} className={pathname === "/dashboard" ? "animate-pulse" : ""} />
+            </Link>
+            <span className="text-[9px] font-bold text-violet-500 mt-0.5 uppercase tracking-wider scale-90">Groups</span>
+          </div>
+
+          {/* Chatroom */}
           <Link href="/groupchat"
             className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
               pathname === "/groupchat" ? "text-violet-400" : "text-foreground/40 hover:text-foreground/70"
@@ -412,6 +404,16 @@ export default function Navbar() {
             <MessageCircleMore size={18} />
             <span className="text-[9px] font-semibold">Chatroom</span>
             {pathname === "/groupchat" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
+          </Link>
+
+          {/* AI (Last in right side) */}
+          <Link href="/ai"
+            className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
+              pathname === "/ai" ? "text-violet-400" : "text-foreground/40 hover:text-foreground/70"
+            }`}>
+            <Bot size={18} />
+            <span className="text-[9px] font-semibold">AI Agent</span>
+            {pathname === "/ai" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
           </Link>
         </div>
       )}

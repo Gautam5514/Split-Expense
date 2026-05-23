@@ -6,9 +6,9 @@ import {
   markNotificationAsRead,
   registerPushToken,
   unregisterPushToken,
-  registerFcmToken,
-  unregisterFcmToken,
-  sendTestNotification,
+  registerOneSignalSubscription,
+  unregisterOneSignalSubscription,
+  sendOneSignalTestNotification,
 } from "../controllers/notificationController.js";
 
 const router = express.Router();
@@ -17,10 +17,12 @@ router.get("/", authMiddleware, getUserNotifications);
 router.post("/push-token", authMiddleware, registerPushToken);
 router.delete("/push-token", authMiddleware, unregisterPushToken);
 
-// 🌐 Browser FCM push token registration
-router.post("/register-fcm", authMiddleware, registerFcmToken);
-router.delete("/unregister-fcm", authMiddleware, unregisterFcmToken);
-router.post("/send-test", authMiddleware, sendTestNotification);
+
+
+// 🌐 Browser OneSignal push subscription registration
+router.post("/register-onesignal", authMiddleware, registerOneSignalSubscription);
+router.delete("/unregister-onesignal", authMiddleware, unregisterOneSignalSubscription);
+router.post("/send-onesignal-test", authMiddleware, sendOneSignalTestNotification);
 
 router.put("/mark-read", authMiddleware, markAllAsRead);
 router.put("/:id/read", authMiddleware, markNotificationAsRead);

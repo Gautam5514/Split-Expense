@@ -23,17 +23,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#6366f1" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                });
-              }
-            `,
-          }}
-        />
+
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -57,7 +47,12 @@ export default function RootLayout({ children }) {
           <AuthProvider>
             <NotificationProvider>
               <Navbar />
-              <Toaster position="top-right" />
+              <Toaster 
+                position="top-right"
+                toastOptions={{
+                  className: "glass-toast-premium",
+                }}
+              />
               <main className="pt-[70px]">
                 {children}
               </main>

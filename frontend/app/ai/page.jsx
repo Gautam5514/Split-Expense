@@ -31,7 +31,7 @@ import {
   PanelLeft,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import useTheme from "@/hooks/useTheme";
 
 /* ─── Premium Suggestions / Insights ─────────────────────────────── */

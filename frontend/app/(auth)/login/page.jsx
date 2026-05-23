@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebaseClient";
@@ -45,8 +45,12 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setToken } = useAuth();
+  const { token, setToken } = useAuth();
   const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (token) router.replace("/users");
+  }, [token, router]);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +61,7 @@ export default function LoginPage() {
   const [isForgotFlow, setIsForgotFlow] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [simulatedMail, setSimulatedMail] = useState(null);
+  const [emailSent, setEmailSent] = useState(false);
 
   const clearError = (field) =>
     setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -84,17 +88,12 @@ export default function LoginPage() {
     if (!validateForgot()) return;
     setForgotLoading(true);
     try {
-      const res = await api.post("/auth/forgot-password", { email: forgotEmail });
-      toast.success("Reset link generated!");
-      setSimulatedMail({
-        email: forgotEmail,
-        token: res.data.token,
-        resetUrl: res.data.resetUrl,
-      });
+      await api.post("/auth/forgot-password", { email: forgotEmail });
+      setEmailSent(true);
     } catch (err) {
       const data = err?.response?.data;
       if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
-      else toast.error(data?.message || "Failed to generate reset link.");
+      else toast.error(data?.message || "Failed to send reset email.");
     } finally {
       setForgotLoading(false);
     }
@@ -110,7 +109,7 @@ export default function LoginPage() {
       const res = await api.post("/auth/google", { token: firebaseToken });
       setToken(res.data.token);
       toast.success("Login successful!");
-      router.push("/dashboard");
+      router.push("/users");
     } catch (err) {
       const data = err?.response?.data;
       if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
@@ -128,7 +127,7 @@ export default function LoginPage() {
       const res = await api.post("/auth/google", { token: firebaseToken });
       setToken(res.data.token);
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
-      router.push("/dashboard");
+      router.push("/users");
     } catch (err) {
       console.error("Google Sign-In error:", err);
       if (err.code === "auth/unauthorized-domain" || err.message?.includes("auth/unauthorized-domain")) {
@@ -284,7 +283,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => {
                         setIsForgotFlow(true);
-                        setSimulatedMail(null);
+                        setEmailSent(false);
                         setErrors({});
                       }}
                       className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer outline-none"
@@ -332,12 +331,12 @@ export default function LoginPage() {
                 </a>
               </p>
             </>
-          ) : !simulatedMail ? (
+          ) : !emailSent ? (
             <>
               {/* heading */}
               <div className="mb-5">
                 <h2 className="text-2xl font-bold text-white mb-1">Forgot password</h2>
-                <p className="text-slate-400 text-sm">We'll send a password recovery token link to your email</p>
+                <p className="text-slate-400 text-sm">Enter your email and we'll send you a secure reset link</p>
               </div>
 
               {/* form */}
@@ -373,7 +372,7 @@ export default function LoginPage() {
                   onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28 rgba(99,102,241,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
                 >
-                  {forgotLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Generating Link…</> : <>Send Reset Link <ArrowRight className="w-4 h-4" /></>}
+                  {forgotLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Sending…</> : <>Send Reset Link <ArrowRight className="w-4 h-4" /></>}
                 </button>
               </form>
 
@@ -381,7 +380,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => {
                   setIsForgotFlow(false);
-                  setSimulatedMail(null);
+                  setEmailSent(false);
                   setErrors({});
                 }}
                 className="mt-6 w-full text-center text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-semibold cursor-pointer outline-none"
@@ -391,57 +390,41 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              {/* Premium Simulated Inbox view direct in card */}
-              <div className="text-center mb-5 animate-in fade-in zoom-in-95 duration-300">
-                <div className="w-14 h-14 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-3 text-indigo-400 animate-pulse">
-                  <Mail className="w-6 h-6" />
+              {/* Check your email screen */}
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-4 text-indigo-400">
+                  <Mail className="w-7 h-7" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-1">Reset link sent!</h2>
-                <p className="text-slate-400 text-xs">We've simulated a secure password recovery message.</p>
+                <h2 className="text-xl font-bold text-white mb-2">Check your inbox</h2>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  We sent a password reset link to<br />
+                  <span className="text-indigo-400 font-semibold">{forgotEmail}</span>
+                </p>
               </div>
 
-              <div className="rounded-2xl border border-indigo-500/20 bg-white/[0.02] p-4 text-xs space-y-2.5 leading-relaxed mb-5 animate-in fade-in slide-in-from-bottom-3 duration-300">
-                <div className="flex justify-between text-slate-500 pb-2 border-b border-white/[0.06]">
-                  <span className="font-semibold text-slate-400">📬 Local Mailbox Simulator</span>
-                  <span className="text-[9px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Simulated</span>
-                </div>
-                <div className="text-slate-300 truncate">
-                  <span className="font-medium text-slate-500">To:</span> {simulatedMail.email}
-                </div>
-                <div className="text-slate-300">
-                  <span className="font-medium text-slate-500">Subject:</span> Reset your SplitEase Password
-                </div>
-                
-                <div className="pt-1.5">
-                  <p className="text-slate-300 mb-1 font-semibold">Hello,</p>
-                  <p className="text-slate-400 mb-3 text-[11px]">We received a password reset request for your account. Click below to continue:</p>
-                  
-                  <a 
-                    href={simulatedMail.resetUrl}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 py-2.5 text-xs font-bold text-white transition-all shadow-lg shadow-indigo-600/20 cursor-pointer text-center"
-                  >
-                    Reset Password Now
-                  </a>
-                </div>
+              <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 text-sm text-slate-400 leading-relaxed mb-6 space-y-2">
+                <p>• Check your spam folder if you don't see it.</p>
+                <p>• The link expires in <span className="text-white font-semibold">15 minutes</span>.</p>
+                <p>• You can safely close this tab after clicking the link.</p>
               </div>
 
-              <div className="space-y-3 animate-in fade-in duration-300">
+              <div className="space-y-3">
                 <button
                   type="button"
-                  onClick={handleForgotSubmit}
+                  onClick={() => { setEmailSent(false); }}
                   className="w-full text-center text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer outline-none block"
                 >
-                  Didn't receive email? <span className="text-indigo-400 font-semibold hover:underline">Resend recovery link</span>
+                  Didn't receive it? <span className="text-indigo-400 font-semibold hover:underline">Resend reset link</span>
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={() => {
                     setIsForgotFlow(false);
-                    setSimulatedMail(null);
+                    setEmailSent(false);
                     setErrors({});
                   }}
-                  className="w-full text-center text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-semibold cursor-pointer outline-none mt-2 block"
+                  className="w-full text-center text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-semibold cursor-pointer outline-none block"
                 >
                   ← Return to Sign in
                 </button>

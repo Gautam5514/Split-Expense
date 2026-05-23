@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import useDebounce from "@/hooks/useDebounce";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { Loader2, Search, UserPlus, Mail, Check, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function MemberPicker({ groupId, onSubmit, exclude = [] }) {
+export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] }) {
   const [query, setQuery] = useState("");
-  const debounced = useDebounce(query, 400);
+  const debounced = useDebounce(query, 300);
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState([]);
@@ -26,11 +26,12 @@ export default function MemberPicker({ groupId, onSubmit, exclude = [] }) {
     try {
       setLoading(true);
       const res = await api.get(`/groups/${groupId}/available-users`, {
-        params: { q: searchTerm, limit: 10 },
+        params: { q: searchTerm, limit: 12 },
       });
       const data = (res.data || []).filter((u) => !exclude.includes(u.email));
       setOptions(data);
-    } catch {
+    } catch (err) {
+      console.error("fetchOptions error:", err);
       toast.error("Failed to fetch users");
     } finally {
       setLoading(false);
@@ -60,93 +61,103 @@ export default function MemberPicker({ groupId, onSubmit, exclude = [] }) {
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
   return (
-    <motion.form
-      layout
-      onSubmit={submit}
-      className="w-full bg-card border border-border rounded p-6 space-y-5 text-foreground"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-lg font-semibold text-primary">
-          <UserPlus size={18} />
-          Add Members
-        </h3>
-
-        {selected.length > 0 && (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      >
+        {/* Main Glass Modal */}
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/20 dark:border-white/10 bg-white/80 dark:bg-slate-950/80 text-foreground shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl"
+        >
+          {/* Close Button */}
           <button
-            type="submit"
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-md transition-all"
+            onClick={onClose}
+            className="absolute top-4 right-4 rounded-xl p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer z-10"
           >
-            Add {selected.length} {selected.length > 1 ? "Members" : "Member"}
+            <X size={18} />
           </button>
-        )}
-      </div>
 
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-4 text-muted-foreground" size={18} />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name or email..."
-          className="w-full bg-input text-foreground rounded-lg pl-10 pr-4 py-3 
-          border border-input shadow-sm focus:outline-none focus:ring-2 
-          focus:ring-primary transition-all"
-        />
-      </div>
+          {/* Header */}
+          <div className="border-b border-border p-6 bg-gradient-to-r from-violet-500/5 to-indigo-500/5">
+            <div className="flex items-center gap-2 mb-1">
+              <UserPlus className="text-violet-500" size={22} />
+              <h2 className="text-xl font-bold text-foreground">
+                Add Group Members
+              </h2>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Search for users by name or email, select them, and add them to this group.
+            </p>
+          </div>
 
-      {!hasSearch && (
-        <div className="text-xs text-muted-foreground flex items-center gap-2">
-          <Mail size={14} className="text-primary" />
-          Search a name or email to find users.
-        </div>
-      )}
+          <div className="p-6 space-y-5">
+            {/* Search Input Box */}
+            <div className="relative">
+              <Search className="absolute left-3.5 top-3.5 text-muted-foreground/60" size={16} />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name or email address..."
+                className="w-full bg-slate-100/50 dark:bg-slate-900/50 text-foreground text-sm rounded-xl pl-10 pr-4 py-3 border border-border focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all outline-none"
+                autoFocus
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="absolute right-3.5 top-3.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
 
-      {/* Results */}
-      <AnimatePresence initial={false}>
-        {hasSearch && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.15 }}
-            className="bg-muted border border-border rounded-xl p-3"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
-                <Loader2 size={16} className="animate-spin mr-2" />
-                Searching users...
+            {/* Helper State */}
+            {!hasSearch && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2 px-1">
+                <Mail size={14} className="text-violet-500 animate-pulse" />
+                <span>Search name or email to view matching registered SplitEase users.</span>
               </div>
-            ) : options.length > 0 ? (
-              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <AnimatePresence>
-                  {options.map((u) => (
-                    <motion.li
-                      key={u._id}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="relative bg-card border border-border hover:border-primary/50 
-                      rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="min-w-0 flex items-center gap-3">
+            )}
+
+            {/* Results Grid - Spacious List View for complete Name and Email Visibility */}
+            <div className="max-h-[280px] min-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-xs">
+                  <Loader2 size={24} className="animate-spin text-primary mb-2" />
+                  Searching user catalog...
+                </div>
+              ) : options.length > 0 ? (
+                <div className="divide-y divide-border/50">
+                  {options.map((u) => {
+                    const isChecked = selectedSet.has(u.email);
+                    return (
+                      <div
+                        key={u._id}
+                        onClick={() => toggle(u.email)}
+                        className="flex items-center justify-between py-3 px-2 hover:bg-foreground/5 rounded-xl transition-all duration-200 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
                           {u.photoURL ? (
                             <img
                               src={u.photoURL}
                               alt={u.name || "User"}
                               className="w-10 h-10 rounded-full object-cover border border-border shadow-sm"
-                              loading="lazy"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shadow-inner">
                               {u.name ? u.name.charAt(0).toUpperCase() : "U"}
                             </div>
                           )}
 
+                          {/* Full Name & Email completely visible and readable */}
                           <div className="min-w-0">
-                            <p className="font-medium text-foreground truncate">
+                            <p className="font-semibold text-sm text-foreground truncate">
                               {u.name || "Unnamed User"}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
@@ -155,62 +166,81 @@ export default function MemberPicker({ groupId, onSubmit, exclude = [] }) {
                           </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => toggle(u.email)}
-                          className={`flex items-center justify-center w-8 h-8 rounded-full border transition-all ${selectedSet.has(u.email)
-                              ? "bg-primary border-primary text-primary-foreground hover:bg-primary/90"
-                              : "border-border text-muted-foreground hover:bg-muted"
-                            }`}
+                        {/* Interactive select check circle */}
+                        <div
+                          className={`flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border transition-all ${
+                            isChecked
+                              ? "bg-primary border-primary text-primary-foreground scale-110 shadow-sm"
+                              : "border-border text-transparent hover:border-primary/50"
+                          }`}
                         >
-                          {selectedSet.has(u.email) ? (
-                            <Check size={16} />
-                          ) : (
-                            <Plus size={16} />
-                          )}
-                        </button>
+                          <Check size={14} className="stroke-[3px]" />
+                        </div>
                       </div>
-                    </motion.li>
-                  ))}
-                </AnimatePresence>
-              </ul>
-            ) : (
-              <div className="p-4 text-sm text-muted-foreground text-center">
-                No users found for &quot;{query.trim()}&quot;.
+                    );
+                  })}
+                </div>
+              ) : hasSearch ? (
+                <div className="text-center py-16 text-xs text-muted-foreground italic">
+                  No registered users found matching &quot;{query}&quot;
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-xs text-center px-4">
+                  <UserPlus className="text-muted-foreground/30 mb-2" size={32} />
+                  <p className="font-semibold text-foreground/75">Select members to add</p>
+                  <p className="mt-1 text-muted-foreground/60">Search for members in the search input above to begin.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Selected Chips panel */}
+            {selected.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-3 border-t border-border/80">
+                {selected.slice(0, 6).map((email) => (
+                  <div
+                    key={email}
+                    className="flex items-center gap-1 bg-violet-500/10 text-violet-500 dark:text-violet-400 border border-violet-500/20 px-3 py-1 rounded-full text-xs font-semibold"
+                  >
+                    <span className="max-w-[150px] truncate">{email}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggle(email); }}
+                      className="text-violet-500 hover:text-violet-700 transition cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+
+                {selected.length > 6 && (
+                  <span className="text-xs text-muted-foreground font-semibold flex items-center pl-1">
+                    +{selected.length - 6} more selected
+                  </span>
+                )}
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Selected Chips */}
-      {selected.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-          {selected.slice(0, 5).map((email) => (
-            <motion.div
-              key={email}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="flex items-center gap-1 bg-primary/10 text-primary 
-              border border-primary/20 px-3 py-1 rounded-full text-xs"
-            >
-              {email}
+            {/* Action Buttons Footer */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
               <button
-                onClick={() => toggle(email)}
-                className="text-primary hover:text-primary/80 transition"
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-semibold text-muted-foreground border border-input rounded-xl hover:bg-muted transition cursor-pointer"
               >
-                <X size={12} />
+                Cancel
               </button>
-            </motion.div>
-          ))}
 
-          {selected.length > 5 && (
-            <span className="text-xs text-muted-foreground">
-              +{selected.length - 5} more selected
-            </span>
-          )}
-        </div>
-      )}
-    </motion.form>
+              <button
+                type="button"
+                onClick={submit}
+                disabled={selected.length === 0}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 transition disabled:opacity-50 cursor-pointer shadow-lg shadow-indigo-600/15"
+              >
+                Add {selected.length} {selected.length === 1 ? "Member" : "Members"}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
   );
 }

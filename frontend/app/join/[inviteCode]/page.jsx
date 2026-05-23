@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { getAuth } from "firebase/auth";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 export default function JoinGroupPage() {
   const { inviteCode } = useParams();

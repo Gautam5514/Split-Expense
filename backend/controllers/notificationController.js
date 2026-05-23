@@ -2,63 +2,61 @@ import mongoose from "mongoose";
 import Notification from "../models/notification.model.js";
 import User from "../models/userModel.js";
 import { io, onlineUsers } from "../index.js";
-import admin from "../config/firebaseAdmin.js";
+
 
 /**
- * 🚀 Helper to send Firebase Cloud Messaging (FCM) push notifications to multiple users' web browsers
+ * 🚀 Helper to send OneSignal Web Push notifications to multiple users' browsers
  */
-const sendFcmPushNotifications = async (userIds, payload) => {
+const sendOneSignalPushNotifications = async (userIds, payload) => {
   try {
+    const appId = process.env.ONESIGNAL_APP_ID;
+    const apiKey = process.env.ONESIGNAL_REST_API_KEY;
+
+    if (!appId || !apiKey) {
+      console.warn("⚠️ OneSignal Push: ONESIGNAL_APP_ID or ONESIGNAL_REST_API_KEY is not configured.");
+      return;
+    }
+
     const users = await User.find(
       { _id: { $in: userIds } },
-      "webPushTokens"
+      "oneSignalSubscriptionIds"
     ).lean();
 
-    const tokens = users.flatMap(user => user.webPushTokens || []);
-    if (!tokens.length) return;
+    const subscriptionIds = users.flatMap(user => user.oneSignalSubscriptionIds || []);
+    if (!subscriptionIds.length) {
+      console.log("ℹ️ OneSignal Push: No registered subscription IDs found for users.");
+      return;
+    }
 
-    // Construct multi-cast FCM message
-    const message = {
-      notification: {
-        title: payload.title,
-        body: payload.body,
+    console.log(`🚀 Sending OneSignal Web Push to ${subscriptionIds.length} subscriptions...`);
+
+    const response = await fetch("https://api.onesignal.com/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Key ${apiKey}`
       },
-      data: {
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-        type: payload.data?.type || "group",
-        link: payload.data?.link || "",
-      },
-      tokens: tokens,
-    };
+      body: JSON.stringify({
+        app_id: appId,
+        include_subscription_ids: subscriptionIds,
+        headings: {
+          en: payload.title
+        },
+        contents: {
+          en: payload.body
+        },
+        url: payload.data?.link ? `${process.env.FRONTEND_URL || 'http://localhost:3000'}${payload.data.link}` : undefined
+      })
+    });
 
-    const response = await admin.messaging().sendEachForMulticast(message);
-    console.log(`🚀 Sent ${response.successCount} Web Push notifications successfully (${response.failureCount} failed).`);
-
-    // Clean up expired/invalid tokens
-    if (response.failureCount > 0) {
-      const tokensToRemove = [];
-      response.responses.forEach((resp, idx) => {
-        if (!resp.success) {
-          const errorCode = resp.error?.code;
-          if (
-            errorCode === "messaging/invalid-registration-token" ||
-            errorCode === "messaging/registration-token-not-registered"
-          ) {
-            tokensToRemove.push(tokens[idx]);
-          }
-        }
-      });
-
-      if (tokensToRemove.length > 0) {
-        await User.updateMany(
-          { webPushTokens: { $in: tokensToRemove } },
-          { $pull: { webPushTokens: { $in: tokensToRemove } } }
-        );
-        console.log(`🧹 Cleaned up ${tokensToRemove.length} expired FCM web push tokens.`);
-      }
+    const data = await response.json();
+    if (!response.ok) {
+      console.error("❌ OneSignal Push Error response:", data);
+    } else {
+      console.log("🚀 OneSignal push notification dispatched successfully:", data);
     }
   } catch (error) {
-    console.error("❌ Error sending FCM push notifications:", error.message);
+    console.error("❌ Error sending OneSignal push notifications:", error.message);
   }
 };
 
@@ -93,8 +91,8 @@ export const createNotification = async (userIds, message, link, type = "group")
       data: { link, type },
     });
 
-    // 🌐 Dispatch FCM push alerts (web browsers)
-    await sendFcmPushNotifications(recipientIds, {
+    // 🌐 Dispatch OneSignal push alerts (web browsers)
+    await sendOneSignalPushNotifications(recipientIds, {
       title: notificationTitleForType(type),
       body: message,
       data: { link, type },
@@ -229,58 +227,7 @@ export const unregisterPushToken = async (req, res) => {
   }
 };
 
-/**
- * 🌐 Register Browser FCM Token
- */
-export const registerFcmToken = async (req, res) => {
-  try {
-    const uid = req.user.id;
-    const { token } = req.body;
 
-    if (!token || typeof token !== "string") {
-      return res.status(400).json({ message: "Invalid or missing token" });
-    }
-
-    // Pull from any other user to prevent duplicate push deliveries to other users
-    await User.updateMany(
-      { webPushTokens: token },
-      { $pull: { webPushTokens: token } }
-    );
-
-    // Save token to the logged-in user
-    await User.findByIdAndUpdate(uid, {
-      $addToSet: { webPushTokens: token }
-    });
-
-    res.json({ success: true, message: "FCM Token registered successfully" });
-  } catch (err) {
-    console.error("❌ registerFcmToken:", err.message);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-/**
- * 🌐 Unregister Browser FCM Token
- */
-export const unregisterFcmToken = async (req, res) => {
-  try {
-    const uid = req.user.id;
-    const { token } = req.body;
-
-    if (!token || typeof token !== "string") {
-      return res.status(400).json({ message: "Invalid or missing token" });
-    }
-
-    await User.findByIdAndUpdate(uid, {
-      $pull: { webPushTokens: token }
-    });
-
-    res.json({ success: true, message: "FCM Token unregistered successfully" });
-  } catch (err) {
-    console.error("❌ unregisterFcmToken:", err.message);
-    res.status(500).json({ message: err.message });
-  }
-};
 
 /**
  * 📩 Fetch latest notifications for logged-in user
@@ -366,75 +313,7 @@ export const markNotificationAsRead = async (req, res) => {
 
 
 
-/**
- * 🌐 Send a direct FCM test push notification to the logged-in user
- */
-export const sendTestNotification = async (req, res) => {
-  try {
-    const uid = req.user.id;
-    const user = await User.findById(uid, "webPushTokens name").lean();
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (!user.webPushTokens || user.webPushTokens.length === 0) {
-      return res.status(400).json({
-        message: "No FCM tokens registered for your account. Please enable push notifications on the client first."
-      });
-    }
-
-    // Construct message for the logged-in user's own tokens
-    const message = {
-      notification: {
-        title: "SplitEase Push Test! 🔔",
-        body: `Hey ${user.name || "there"}, your FCM push notification setup is working robustly!`,
-      },
-      data: {
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-        type: "group",
-        link: "/dashboard",
-      },
-      tokens: user.webPushTokens,
-    };
-
-    const response = await admin.messaging().sendEachForMulticast(message);
-    console.log(`🚀 Sent ${response.successCount} Test Push notifications successfully (${response.failureCount} failed).`);
-
-    // Clean up expired/invalid tokens
-    if (response.failureCount > 0) {
-      const tokensToRemove = [];
-      response.responses.forEach((resp, idx) => {
-        if (!resp.success) {
-          const errorCode = resp.error?.code;
-          if (
-            errorCode === "messaging/invalid-registration-token" ||
-            errorCode === "messaging/registration-token-not-registered"
-          ) {
-            tokensToRemove.push(user.webPushTokens[idx]);
-          }
-        }
-      });
-
-      if (tokensToRemove.length > 0) {
-        await User.updateOne(
-          { _id: uid },
-          { $pull: { webPushTokens: { $in: tokensToRemove } } }
-        );
-        console.log(`🧹 Cleaned up ${tokensToRemove.length} expired FCM test tokens.`);
-      }
-    }
-
-    res.json({
-      success: true,
-      message: `FCM test push sent. Success: ${response.successCount}, Failed: ${response.failureCount}`,
-      details: response.responses,
-    });
-  } catch (err) {
-    console.error("❌ sendTestNotification error:", err);
-    res.status(500).json({ message: err.message || "Server error" });
-  }
-};
 
 /**
  * 🧹 Optional: Delete old read notifications (cleanup)
@@ -446,5 +325,127 @@ export const cleanupOldNotifications = async () => {
     await Notification.deleteMany({ isRead: true, createdAt: { $lt: cutoff } });
   } catch (err) {
     console.error("Cleanup failed:", err.message);
+  }
+};
+
+/**
+ * 🌐 Register Browser OneSignal subscription ID
+ */
+export const registerOneSignalSubscription = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const { subscriptionId } = req.body;
+
+    if (!subscriptionId || typeof subscriptionId !== "string") {
+      return res.status(400).json({ message: "Invalid or missing subscriptionId" });
+    }
+
+    // Pull from any other user to prevent duplicate push deliveries to other users
+    await User.updateMany(
+      { oneSignalSubscriptionIds: subscriptionId },
+      { $pull: { oneSignalSubscriptionIds: subscriptionId } }
+    );
+
+    // Save subscription ID to the logged-in user
+    await User.findByIdAndUpdate(uid, {
+      $addToSet: { oneSignalSubscriptionIds: subscriptionId }
+    });
+
+    res.json({ success: true, message: "OneSignal subscription saved successfully" });
+  } catch (err) {
+    console.error("❌ registerOneSignalSubscription:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * 🌐 Unregister Browser OneSignal subscription ID
+ */
+export const unregisterOneSignalSubscription = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const { subscriptionId } = req.body;
+
+    if (!subscriptionId || typeof subscriptionId !== "string") {
+      return res.status(400).json({ message: "Invalid or missing subscriptionId" });
+    }
+
+    await User.findByIdAndUpdate(uid, {
+      $pull: { oneSignalSubscriptionIds: subscriptionId }
+    });
+
+    res.json({ success: true, message: "OneSignal subscription removed successfully" });
+  } catch (err) {
+    console.error("❌ unregisterOneSignalSubscription:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * 🌐 Send a direct OneSignal test push notification to the logged-in user
+ */
+export const sendOneSignalTestNotification = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const user = await User.findById(uid, "oneSignalSubscriptionIds name").lean();
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.oneSignalSubscriptionIds || user.oneSignalSubscriptionIds.length === 0) {
+      return res.status(400).json({
+        message: "No OneSignal subscription IDs registered for your account. Please enable push notifications on the client first."
+      });
+    }
+
+    const appId = process.env.ONESIGNAL_APP_ID;
+    const apiKey = process.env.ONESIGNAL_REST_API_KEY;
+
+    if (!appId || !apiKey) {
+      return res.status(500).json({
+        message: "OneSignal credentials are not configured on the server."
+      });
+    }
+
+    console.log(`🚀 Sending OneSignal Test Push to user ${user.name} (${user.oneSignalSubscriptionIds.length} subscriptions)...`);
+
+    const response = await fetch("https://api.onesignal.com/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Key ${apiKey}`
+      },
+      body: JSON.stringify({
+        app_id: appId,
+        include_subscription_ids: user.oneSignalSubscriptionIds,
+        headings: {
+          en: "SplitEase Push Test! 🔔"
+        },
+        contents: {
+          en: `Hey ${user.name || "there"}, your OneSignal push notification setup is working robustly!`
+        },
+        url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard`
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error("❌ OneSignal Test Push Error:", data);
+      return res.status(500).json({
+        success: false,
+        message: "OneSignal API returned an error.",
+        details: data
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `OneSignal test push sent successfully!`,
+      details: data,
+    });
+  } catch (err) {
+    console.error("❌ sendOneSignalTestNotification error:", err);
+    res.status(500).json({ message: err.message || "Server error" });
   }
 };

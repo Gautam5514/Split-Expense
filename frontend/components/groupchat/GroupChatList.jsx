@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { connectSocket } from "@/lib/socket";
 import { Search, MoreVertical, Users, MessageSquarePlus, Trash2, X, Check } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 export default function GroupChatList({ onSelect, activeGroup }) {
   const [groups, setGroups] = useState([]);

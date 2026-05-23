@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { useAuth } from "@/context/AuthContext";
 import MemberPicker from "@/components/MemberPicker";
 import AddExpenseModal from "@/components/AddExpenseModal";
@@ -931,31 +931,11 @@ export default function GroupDetailPage() {
                       </button>
 
                       <button
-                        onClick={() => setShowAddMember(!showAddMember)}
-                        className="w-full flex items-center justify-center gap-1 text-xs font-semibold border border-border hover:bg-muted text-foreground py-2 rounded-xl transition-all cursor-pointer"
+                        onClick={() => setShowAddMember(true)}
+                        className="w-full flex items-center justify-center gap-2 text-xs font-semibold border border-border hover:bg-muted text-foreground py-2.5 rounded-xl transition-all cursor-pointer shadow-sm"
                       >
-                        {showAddMember ? "✕ Hide Search Picker" : "➕ Add Member by Email"}
+                        ➕ Add Group Member
                       </button>
-
-                      <AnimatePresence>
-                        {showAddMember && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden mt-1"
-                          >
-                            <MemberPicker
-                              groupId={groupId}
-                              exclude={group.members.map((m) => m.email)}
-                              onSubmit={(selectedEmails) => {
-                                handleAddMembers(selectedEmails);
-                                setShowAddMember(false);
-                              }}
-                            />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
                     </div>
                   </div>
                 </motion.div>
@@ -1149,31 +1129,11 @@ export default function GroupDetailPage() {
 
               {/* Add member search widget toggle */}
               <button
-                onClick={() => setShowAddMember(!showAddMember)}
-                className="w-full flex items-center justify-center gap-1 text-xs font-semibold border border-border hover:bg-muted text-foreground py-2 rounded-xl transition-all cursor-pointer"
+                onClick={() => setShowAddMember(true)}
+                className="w-full flex items-center justify-center gap-2 text-xs font-semibold border border-border hover:bg-muted text-foreground py-2.5 rounded-xl transition-all cursor-pointer shadow-sm"
               >
-                {showAddMember ? "✕ Hide Search Picker" : "➕ Add Member by Email"}
+                ➕ Add Group Member
               </button>
-
-              <AnimatePresence>
-                {showAddMember && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden mt-1"
-                  >
-                    <MemberPicker
-                      groupId={groupId}
-                      exclude={group.members.map((m) => m.email)}
-                      onSubmit={(selectedEmails) => {
-                        handleAddMembers(selectedEmails);
-                        setShowAddMember(false);
-                      }}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
         </div>
@@ -1209,6 +1169,21 @@ export default function GroupDetailPage() {
             ocrText={selectedOcr.ocrText}
             imageUrl={selectedOcr.imageUrl}
             onClose={() => setShowOcrModal(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ➕ ADD MEMBER MODAL */}
+      <AnimatePresence>
+        {showAddMember && (
+          <MemberPicker
+            groupId={groupId}
+            exclude={group.members.map((m) => m.email)}
+            onClose={() => setShowAddMember(false)}
+            onSubmit={(selectedEmails) => {
+              handleAddMembers(selectedEmails);
+              setShowAddMember(false);
+            }}
           />
         )}
       </AnimatePresence>

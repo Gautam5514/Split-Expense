@@ -1,7 +1,7 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
 import { api } from "@/lib/api";
@@ -10,6 +10,55 @@ import { BellRing, Clock3, ReceiptText, UsersRound, AlertTriangle, AlertCircle, 
 
 
 const NotificationContext = createContext();
+
+const getOneSignal = async () => (await import("react-onesignal")).default;
+
+const unregisterLegacyFirebaseWorkers = async () => {
+  if (typeof navigator === "undefined" || !navigator.serviceWorker?.getRegistrations) {
+    return;
+  }
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(
+    registrations
+      .filter((registration) =>
+        registration.active?.scriptURL?.includes("/firebase-messaging-sw.js") ||
+        registration.installing?.scriptURL?.includes("/firebase-messaging-sw.js") ||
+        registration.waiting?.scriptURL?.includes("/firebase-messaging-sw.js")
+      )
+      .map((registration) => registration.unregister())
+  );
+};
+
+const initOneSignalOnce = async (config) => {
+  if (typeof window === "undefined") return null;
+
+  if (window.__splitEaseOneSignalInitPromise) {
+    return window.__splitEaseOneSignalInitPromise;
+  }
+
+  window.__splitEaseOneSignalInitPromise = getOneSignal()
+    .then(async (OneSignal) => {
+      await unregisterLegacyFirebaseWorkers();
+
+      try {
+        await OneSignal.init(config);
+      } catch (err) {
+        const message = err?.message || String(err || "");
+        if (!message.toLowerCase().includes("already initialized")) {
+          throw err;
+        }
+      }
+
+      return OneSignal;
+    })
+    .catch((err) => {
+      window.__splitEaseOneSignalInitPromise = null;
+      throw err;
+    });
+
+  return window.__splitEaseOneSignalInitPromise;
+};
 
 const getNotificationMeta = (type) => {
   if (type === "expense") {
@@ -78,36 +127,49 @@ function NotificationToast({ notif, visible }) {
 
   return (
     <div
-      className={`pointer-events-auto w-[380px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-foreground/10 bg-background/95 text-foreground shadow-2xl backdrop-blur-2xl transition-all duration-300 ${
-        visible ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"
+      className={`pointer-events-auto w-[380px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/70 dark:bg-slate-950/70 text-foreground shadow-[0_20px_50px_rgba(0,0,0,0.12)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        visible ? "translate-y-0 opacity-100 scale-100" : "-translate-y-4 opacity-0 scale-95"
       }`}
     >
-      <div className={`h-1 bg-gradient-to-r ${accentClass}`} />
-      <div className="relative p-4">
-        <div className={`absolute inset-0 bg-gradient-to-br ${accentClass}`} />
-        <div className="relative flex gap-3">
-          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${iconClass}`}>
-            <Icon size={19} />
+      {/* Dynamic top gradient line */}
+      <div className={`h-[3px] bg-gradient-to-r ${accentClass}`} />
+      
+      <div className="relative p-5">
+        {/* Soft backlighting ambient glow */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${accentClass} opacity-10 dark:opacity-20 blur-xl pointer-events-none`} />
+        
+        <div className="relative flex gap-4">
+          {/* Animated pulsing icon container */}
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ring-1 shadow-inner transition-transform duration-300 hover:scale-110 ${iconClass}`}>
+            <Icon size={20} className="animate-pulse" />
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="mb-1 flex items-center justify-between gap-3">
-              <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {label}
               </span>
-              <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
-                <Clock3 size={12} />
+              <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                <Clock3 size={11} />
                 {formatToastTime(notif.createdAt)}
               </span>
             </div>
 
-            <p className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">
+            <p className="line-clamp-2 text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">
               {notif.message}
             </p>
 
-            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <BellRing size={13} className="text-violet-500" />
-              <span>New notification received</span>
+            <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-3">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-500 dark:text-indigo-400 uppercase tracking-wider">
+                <BellRing size={12} className="animate-bounce" />
+                <span>SplitEase Live</span>
+              </div>
+              <button 
+                onClick={() => toast.dismiss()}
+                className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors uppercase tracking-wider cursor-pointer"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
         </div>
@@ -125,109 +187,236 @@ export function NotificationProvider({ children }) {
                      cleanPath.startsWith("/reset-password");
   const [notifications, setNotifications] = useState([]);
   const [hasUnread, setHasUnread] = useState(false);
-  const [fcmToken, setFcmToken] = useState(null);
+  const seenNotifsRef = useRef(new Set());
+  const [oneSignalSubscriptionId, setOneSignalSubscriptionId] = useState(null);
+  const [oneSignalPermission, setOneSignalPermission] = useState("default");
+  const [oneSignalError, setOneSignalError] = useState(null);
 
-  // Helper to resolve the active VAPID public key (from process.env or local storage if exists)
-  const getActiveVapidKey = () => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("split_ease_vapid_key");
-      if (stored) return stored;
-    }
-    const envKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-    return envKey && envKey !== "YOUR_VAPID_PUBLIC_KEY_HERE" ? envKey : null;
-  };
-
-  // Helper to handle FCM setup and silent automatic permission request
-  const runSetup = async () => {
-    if (!token) return;
-
-    const activeKey = getActiveVapidKey();
-    if (!activeKey) {
-      console.warn("⚠️ FCM Setup: VAPID Key is not configured in .env");
-      return;
-    }
-
-    if (typeof window !== "undefined" && "Notification" in window) {
-      let permission = Notification.permission;
-
-      // Smart/Silent automatic permission request if default
-      if (permission === "default") {
-        try {
-          console.log("📣 FCM Setup: Automatically requesting notification permission...");
-          permission = await Notification.requestPermission();
-        } catch (err) {
-          console.warn("⚠️ FCM Setup: Notification auto-permission request failed:", err);
-          return;
-        }
-      }
-
-      if (permission !== "granted") {
-        console.log("ℹ️ FCM Setup: Notification permission is blocked or denied.");
-        return;
-      }
-    }
-
-    try {
-      const { getNotificationPermission } = await import("@/lib/firebaseMessaging");
-      const fcmRegToken = await getNotificationPermission(activeKey);
-      if (fcmRegToken) {
-        console.log("🚀 FCM registration token retrieved successfully");
-        setFcmToken(fcmRegToken);
-        // Register on backend silently
-        await api.post("/notifications/register-fcm", { token: fcmRegToken });
-      }
-    } catch (err) {
-      console.error("❌ FCM Setup error:", err);
-    }
-  };
-
-  // 🔔 1. Setup Firebase Cloud Messaging (FCM) silently on login
+  // 🔔 OneSignal setup silently on login
   useEffect(() => {
     if (!token) {
-      setFcmToken(null);
+      setOneSignalSubscriptionId(null);
+      setOneSignalPermission("default");
+      setOneSignalError(null);
       return;
     }
 
-    let unsubscribeForeground = null;
+    let isMounted = true;
+    let pushSubscriptionChangeListener = null;
 
-    const setupFCM = async () => {
-      await runSetup();
+    const setupOneSignal = async () => {
+      const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+      const safariWebId = process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID;
+      const currentHostname = window.location.hostname;
+
+      if (!appId) {
+        const warnMsg = "OneSignal App ID is missing. Set NEXT_PUBLIC_ONESIGNAL_APP_ID in frontend/.env and restart Next.js.";
+        console.warn(warnMsg);
+        setOneSignalError(warnMsg);
+        return;
+      }
+
+
+
+      // 🧠 2. Intercept global errors to prevent Next.js dev crash overlays
+      const handleGlobalError = (event) => {
+        const msg = event.message || "";
+        if (msg.includes("OneSignal") || msg.includes("split-expense-vert.vercel.app")) {
+          event.preventDefault();
+          console.warn("⚠️ OneSignal Global Error caught and bypassed:", msg);
+          setOneSignalError("Domain mismatch or setup issue. Push is bypassed.");
+        }
+      };
+
+      const handleRejection = (event) => {
+        const reason = event.reason?.message || String(event.reason || "");
+        if (reason.includes("OneSignal") || reason.includes("split-expense-vert.vercel.app")) {
+          event.preventDefault();
+          console.warn("⚠️ OneSignal Promise Rejection caught and bypassed:", reason);
+          setOneSignalError("Domain mismatch or setup issue. Push is bypassed.");
+        }
+      };
+
+      if (typeof window !== "undefined") {
+        window.addEventListener("error", handleGlobalError);
+        window.addEventListener("unhandledrejection", handleRejection);
+      }
 
       try {
-        const { onForegroundMessage } = await import("@/lib/firebaseMessaging");
-        // Listen for foreground FCM alerts
-        unsubscribeForeground = await onForegroundMessage((payload) => {
-          console.log("🔔 FCM Foreground Message received:", payload);
-          toast.custom(
-            (t) => (
-              <NotificationToast
-                notif={{
-                  type: payload.data?.type || "group",
-                  message: payload.notification?.body || "You have a new update!",
-                  createdAt: new Date().toISOString(),
-                }}
-                visible={t.visible}
-              />
-            ),
-            {
-              position: "top-right",
-              duration: 5200,
-            }
-          );
+        const isProduction = 
+          currentHostname === "split-expense-vert.vercel.app" || 
+          currentHostname.endsWith(".vercel.app");
+        const isLocal = currentHostname === "localhost" || currentHostname === "127.0.0.1";
+
+        // Gracefully bypass if running on an unsupported development domain/IP
+        if (!isProduction && !isLocal) {
+          const warnMsg = `⚠️ OneSignal: Domain '${currentHostname}' is not configured. Push is bypassed. Use localhost or https://split-expense-vert.vercel.app to test.`;
+          console.warn(warnMsg);
+          setOneSignalError(warnMsg);
+          return;
+        }
+
+        console.log("📣 Initializing OneSignal...", {
+          appId,
+          origin: window.location.origin,
+          hostname: currentHostname,
         });
+        const OneSignal = await initOneSignalOnce({
+          appId: appId,
+          ...(safariWebId ? { safari_web_id: safariWebId } : {}),
+          allowLocalhostAsSecureOrigin: true,
+          notifyButton: {
+            enable: true,
+          },
+        });
+
+        if (!isMounted) return;
+
+        // Sync initial state
+        const permission = OneSignal.Notifications.permission ? "granted" : (Notification?.permission || "default");
+        setOneSignalPermission(permission);
+
+        const subId = OneSignal.User.PushSubscription.id;
+        const isOptedIn = OneSignal.User.PushSubscription.optedIn;
+
+        if (subId && isOptedIn) {
+          console.log("🚀 OneSignal active subscription ID:", subId);
+          setOneSignalSubscriptionId(subId);
+          // Silently register subscription ID on backend
+          await api.post("/notifications/register-onesignal", { subscriptionId: subId });
+        }
+
+        // Listen for subscription changes (e.g. permission granted, or opted out)
+        pushSubscriptionChangeListener = async (event) => {
+          if (!isMounted) return;
+          const currentId = event.current.id;
+          const optedIn = event.current.optedIn;
+          
+          console.log("🔄 OneSignal subscription changed event:", { currentId, optedIn });
+          
+          if (currentId && optedIn) {
+            setOneSignalSubscriptionId(currentId);
+            await api.post("/notifications/register-onesignal", { subscriptionId: currentId });
+          } else {
+            setOneSignalSubscriptionId(null);
+            if (event.previous?.id) {
+              await api.delete("/notifications/unregister-onesignal", {
+                data: { subscriptionId: event.previous.id },
+              });
+            }
+          }
+        };
+
+        OneSignal.User.PushSubscription.addEventListener("change", pushSubscriptionChangeListener);
+
       } catch (err) {
-        console.warn("⚠️ FCM foreground listener warning:", err.message);
+        console.error("❌ OneSignal setup failed:", err);
+        setOneSignalError(err.message || "Initialization failed.");
+      } finally {
+        // Remove the error interceptors after bootstrap has finished
+        setTimeout(() => {
+          if (typeof window !== "undefined") {
+            window.removeEventListener("error", handleGlobalError);
+            window.removeEventListener("unhandledrejection", handleRejection);
+          }
+        }, 3000);
       }
     };
 
-    setupFCM();
+    setupOneSignal();
 
     return () => {
-      if (unsubscribeForeground) {
-        unsubscribeForeground();
+      isMounted = false;
+      if (pushSubscriptionChangeListener) {
+        getOneSignal().then((OneSignal) => {
+          try {
+            OneSignal.User.PushSubscription.removeEventListener("change", pushSubscriptionChangeListener);
+          } catch {}
+        }).catch(() => {});
       }
     };
   }, [token]);
+
+  // Request permission manually via UI toggle
+  const requestOneSignalPermission = async () => {
+    try {
+      const OneSignal = await getOneSignal();
+      console.log("📣 Requesting OneSignal push permission...");
+      
+      await OneSignal.Notifications.requestPermission();
+      
+      const permission = OneSignal.Notifications.permission ? "granted" : "denied";
+      setOneSignalPermission(permission);
+
+      const subId = OneSignal.User.PushSubscription.id;
+      const isOptedIn = OneSignal.User.PushSubscription.optedIn;
+
+      if (subId && isOptedIn) {
+        setOneSignalSubscriptionId(subId);
+        await api.post("/notifications/register-onesignal", { subscriptionId: subId });
+        toast.success("Push notifications enabled successfully! 🔔");
+        return subId;
+      } else {
+        toast.error("Push permission not granted or failed.");
+        return null;
+      }
+    } catch (err) {
+      console.error("❌ OneSignal Request Permission error:", err);
+      toast.error("Failed to request push notification permission.");
+      return null;
+    }
+  };
+
+  // Disable push notifications manually via UI
+  const disableOneSignalNotifications = async () => {
+    try {
+      const OneSignal = await getOneSignal();
+      console.log("📣 Disabling OneSignal push notifications...");
+
+      // Pull active subscription ID
+      const subId = OneSignal.User.PushSubscription.id;
+      
+      if (subId) {
+        // Call backend to unregister
+        await api.delete("/notifications/unregister-onesignal", {
+          data: { subscriptionId: subId },
+        });
+      }
+
+      // Opt out of push notifications in OneSignal
+      await OneSignal.User.PushSubscription.optOut();
+      
+      setOneSignalSubscriptionId(null);
+      setOneSignalPermission("default");
+      toast.success("Push notifications disabled successfully.");
+    } catch (err) {
+      console.error("❌ OneSignal Disable error:", err);
+      toast.error("Failed to disable push notifications.");
+    }
+  };
+
+  // Trigger test push notification from backend
+  const sendTestPushNotification = async () => {
+    try {
+      if (!oneSignalSubscriptionId) {
+        toast.error("Please enable push notifications first!");
+        return;
+      }
+
+      const response = await api.post("/notifications/send-onesignal-test", {
+        subscriptionId: oneSignalSubscriptionId
+      });
+
+      if (response.data?.success) {
+        toast.success("Test push notification dispatched! 🚀 Check your desktop/device.");
+      } else {
+        toast.error(response.data?.message || "Failed to dispatch test push.");
+      }
+    } catch (err) {
+      console.error("❌ Send Test Push error:", err);
+      toast.error(err.response?.data?.message || "Error dispatching test push notification.");
+    }
+  };
 
   // ✅ Load existing notifications from DB
   useEffect(() => {
@@ -248,7 +437,6 @@ export function NotificationProvider({ children }) {
   }, [token]);
 
   // ✅ Handle Socket.IO live updates
-  // ✅ Handle Socket.IO live updates
   useEffect(() => {
     if (!token) return;
 
@@ -267,6 +455,18 @@ export function NotificationProvider({ children }) {
 
     socketInstance.on("notification", (notif) => {
       console.log("🔔 Received notification:", notif);
+
+      // Smart Socket Notification Deduplication:
+      // Prevents duplicate notifications of the exact same ID or message within 3.5 seconds
+      const notifKey = notif._id || notif.message;
+      if (seenNotifsRef.current.has(notifKey)) {
+        console.log("⚠️ Bypassed duplicate socket notification:", notifKey);
+        return;
+      }
+      seenNotifsRef.current.add(notifKey);
+      setTimeout(() => {
+        seenNotifsRef.current.delete(notifKey);
+      }, 3500);
 
       setNotifications((prev) => [notif, ...prev]);
       setHasUnread(true);
@@ -331,7 +531,12 @@ export function NotificationProvider({ children }) {
         setHasUnread,
         markAllAsRead,
         markOneAsRead,
-        fcmToken,
+        oneSignalSubscriptionId,
+        oneSignalPermission,
+        oneSignalError,
+        requestOneSignalPermission,
+        disableOneSignalNotifications,
+        sendTestPushNotification,
       }}
     >
       {children}

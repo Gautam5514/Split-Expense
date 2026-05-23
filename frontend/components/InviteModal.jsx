@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { X, Copy, Share2, Download } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { api } from "@/lib/api"; // ✅ use your configured axios instance
 
 export default function InviteModal({ groupId, token, onClose }) {

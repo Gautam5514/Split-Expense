@@ -145,3 +145,109 @@ main:has(.auth-page-wrapper),
 main:has(.h-screen) {
   padding-top: 0 !important;
 }
+
+/* Premium Glassmorphic Toasts */
+.glass-toast-premium {
+  background: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(20px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.06), 
+    0 1px 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 20px 40px -15px rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+  border-radius: 20px !important;
+  padding: 14px 22px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.dark .glass-toast-premium {
+  background: rgba(10, 10, 12, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.4), 
+    0 1px 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 20px 40px -15px rgba(0, 0, 0, 0.3) !important;
+  color: #f8fafc !important;
+}
+
+/* Dynamic glow indicators for premium success/error/loading states */
+.glass-toast-premium.success {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(16, 185, 129, 0.1), 
+    0 1px 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 20px 40px -15px rgba(16, 185, 129, 0.05) !important;
+}
+
+.dark .glass-toast-premium.success {
+  border-color: rgba(52, 211, 153, 0.2) !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.4), 
+    0 0 20px 0 rgba(52, 211, 153, 0.08),
+    0 20px 40px -15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.glass-toast-premium.error {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(239, 68, 68, 0.1), 
+    0 1px 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 20px 40px -15px rgba(239, 68, 68, 0.05) !important;
+}
+
+.dark .glass-toast-premium.error {
+  border-color: rgba(248, 113, 113, 0.2) !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.4), 
+    0 0 20px 0 rgba(248, 113, 113, 0.08),
+    0 20px 40px -15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.glass-toast-premium.loading {
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(99, 102, 241, 0.1), 
+    0 1px 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 20px 40px -15px rgba(99, 102, 241, 0.05) !important;
+}
+
+.dark .glass-toast-premium.loading {
+  border-color: rgba(129, 140, 248, 0.2) !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.4), 
+    0 0 20px 0 rgba(129, 140, 248, 0.08),
+    0 20px 40px -15px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Center all toasts perfectly and make them fully responsive on mobile/tablet screens */
+@media (max-w: 768px) {
+  /* Target the fixed hot-toast parent container */
+  div[style*="position: fixed"] {
+    left: 1rem !important;
+    right: 1rem !important;
+    top: 1rem !important;
+    width: calc(100vw - 2rem) !important;
+  }
+
+  /* Force hot-toast alignment flex wrappers to center the alerts */
+  div[style*="position: fixed"] > div {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  /* Make the premium glass toast card expand gracefully and center text contents */
+  .glass-toast-premium {
+    width: 100% !important;
+    max-w: 100% !important;
+    margin: 0 auto !important;
+    border-radius: 16px !important;
+    padding: 11px 18px !important;
+    font-size: 0.825rem !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+}

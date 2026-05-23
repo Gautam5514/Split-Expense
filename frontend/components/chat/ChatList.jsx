@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import socket, { connectSocket } from "@/lib/socket";
 import { Search, MoreVertical, MessageSquarePlus, Users, Trash2, X, Check } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
+import AddContactModal from "@/components/chat/AddContactModal";
 
 export default function ChatList({ onSelect, activeFriend }) {
   const [friends, setFriends] = useState([]);
@@ -14,6 +15,22 @@ export default function ChatList({ onSelect, activeFriend }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const pressTimerRef = useRef(null);
   const longPressTriggeredRef = useRef(false);
+  const [showAddContact, setShowAddContact] = useState(false);
+
+  const handleContactAdded = (newContact) => {
+    setFriends((prev) => {
+      if (prev.some((f) => f._id === newContact._id)) return prev;
+      return [newContact, ...prev];
+    });
+    onSelect(newContact);
+    
+    api.get("/chat/my-contacts").then((res) => {
+      const sorted = (res.data.items || []).sort(
+        (a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0)
+      );
+      setFriends(sorted);
+    }).catch(() => {});
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -200,13 +217,21 @@ export default function ChatList({ onSelect, activeFriend }) {
           </div>
         ) : (
           <div className="flex gap-2 text-muted-foreground">
-            <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground" title="Contacts">
+            <button 
+              onClick={() => setShowAddContact(true)}
+              className="rounded-lg p-2 transition hover:bg-background hover:text-foreground cursor-pointer" 
+              title="Add Contact"
+            >
               <Users className="w-4 h-4" />
             </button>
-            <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground" title="New chat">
+            <button 
+              onClick={() => setShowAddContact(true)}
+              className="rounded-lg p-2 transition hover:bg-background hover:text-foreground cursor-pointer" 
+              title="New Chat"
+            >
               <MessageSquarePlus className="w-4 h-4" />
             </button>
-            <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground" title="More">
+            <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground cursor-pointer" title="More">
               <MoreVertical className="w-4 h-4" />
             </button>
           </div>
@@ -330,6 +355,13 @@ export default function ChatList({ onSelect, activeFriend }) {
           </div>
         )}
       </div>
+
+      {showAddContact && (
+        <AddContactModal
+          onClose={() => setShowAddContact(false)}
+          onSelectContact={handleContactAdded}
+        />
+      )}
     </aside>
   );
 }

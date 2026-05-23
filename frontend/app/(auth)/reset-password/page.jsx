@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { Eye, EyeOff, Lock, Loader2, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 

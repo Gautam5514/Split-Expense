@@ -3,14 +3,23 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { 
   Loader2, Save, Camera, User, Mail, Phone, MapPin, 
-  Globe, Briefcase, Quote, CheckCircle2 
+  Globe, Briefcase, Quote, CheckCircle2, BellRing, Send, AlertCircle
 } from "lucide-react";
+import { useNotifications } from "@/context/NotificationContext";
 
 export default function ProfilePage() {
   const { token } = useAuth();
+  const { 
+    oneSignalSubscriptionId, 
+    oneSignalPermission, 
+    oneSignalError,
+    requestOneSignalPermission, 
+    disableOneSignalNotifications, 
+    sendTestPushNotification 
+  } = useNotifications();
   const [profile, setProfile] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -233,6 +242,114 @@ export default function ProfilePage() {
             </div>
           </div>
         </form>
+
+        {/* ── Web Push Notification Settings ── */}
+        <div className="mt-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300">
+          <div className="relative overflow-hidden border-b border-slate-100 dark:border-slate-800 px-8 py-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-500/5 via-transparent to-indigo-500/5" />
+            <div className="relative flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-500 ring-1 ring-violet-500/15">
+                <BellRing size={22} className="animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Push Notifications</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  Receive instant alerts about expenses, groups, and settlements even when offline.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8 space-y-6">
+            {/* Status Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-150 dark:border-slate-800/50">
+              <div className="space-y-1">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Current Status</span>
+                <div className="flex items-center gap-2">
+                  <div className={`h-2.5 w-2.5 rounded-full ${
+                    oneSignalPermission === "granted" && oneSignalSubscriptionId
+                      ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
+                      : oneSignalPermission === "denied"
+                      ? "bg-rose-500"
+                      : "bg-amber-500"
+                  }`} />
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    {oneSignalPermission === "granted" && oneSignalSubscriptionId
+                      ? "Active & Subscribed"
+                      : oneSignalPermission === "denied"
+                      ? "Blocked / Denied by Browser"
+                      : "Not Enabled"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {/* Toggle Button */}
+                {oneSignalPermission === "granted" && oneSignalSubscriptionId ? (
+                  <button
+                    type="button"
+                    onClick={disableOneSignalNotifications}
+                    className="px-6 py-2.5 border border-rose-500/20 text-rose-500 dark:text-rose-400 font-semibold rounded-xl hover:bg-rose-500/10 transition-all text-sm active:scale-95 duration-200 cursor-pointer"
+                  >
+                    Disable Notifications
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={requestOneSignalPermission}
+                    disabled={oneSignalPermission === "denied"}
+                    className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-xl hover:opacity-90 transition-all text-sm shadow-lg hover:shadow-violet-500/20 active:scale-95 duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {oneSignalPermission === "denied" ? "Permission Blocked" : "Enable Push Notifications"}
+                  </button>
+                )}
+
+                {/* Send Test Push Button */}
+                <button
+                  type="button"
+                  onClick={sendTestPushNotification}
+                  disabled={!oneSignalSubscriptionId}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-semibold rounded-xl hover:opacity-90 transition-all text-sm shadow-md active:scale-95 duration-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <Send size={15} />
+                  Send Test Push
+                </button>
+              </div>
+            </div>
+
+            {oneSignalError && (
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-950/50 text-amber-750 dark:text-amber-300 text-xs animate-fade-in">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold">OneSignal Environment Notice</p>
+                  <p>
+                    OneSignal is configured to run on <strong>https://split-expense-vert.vercel.app</strong>. If you are currently testing on <strong>localhost</strong>, please verify that you have enabled <strong>Local Testing</strong> inside your OneSignal dashboard settings. Push features are bypassed on non-local development servers to avoid browser security origin crashes.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Instruction helper */}
+            {oneSignalPermission === "denied" && (
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-950/50 text-rose-700 dark:text-rose-300 text-xs animate-fade-in">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold">Notifications are blocked</p>
+                  <p>
+                    You have blocked notifications for this site. To enable them, click the lock icon next to the URL in your browser address bar and change the notification permission to "Allow".
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {oneSignalPermission !== "denied" && !oneSignalSubscriptionId && (
+              <p className="text-xs text-slate-400 ml-1">
+                💡 Setup takes a single click. When prompted, select "Allow" to authorize browser-level push alerts. Works even when the website is closed!
+              </p>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );

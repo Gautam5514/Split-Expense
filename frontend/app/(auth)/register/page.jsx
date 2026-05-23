@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { Eye, EyeOff, User, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebaseClient";
@@ -43,7 +43,11 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { setToken } = useAuth();
+  const { token, setToken } = useAuth();
+
+  useEffect(() => {
+    if (token) router.replace("/users");
+  }, [token, router]);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -94,7 +98,7 @@ export default function RegisterPage() {
       const res = await api.post("/auth/google", { token: firebaseToken });
       setToken(res.data.token);
       toast.success("Account created successfully!");
-      router.push("/dashboard");
+      router.push("/users");
     } catch (err) {
       const data = err?.response?.data;
       if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
@@ -112,7 +116,7 @@ export default function RegisterPage() {
       const res = await api.post("/auth/google", { token: firebaseToken });
       setToken(res.data.token);
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
-      router.push("/dashboard");
+      router.push("/users");
     } catch (err) {
       console.error("Google Sign-Up error:", err);
       if (err.code === "auth/unauthorized-domain" || err.message?.includes("auth/unauthorized-domain")) {

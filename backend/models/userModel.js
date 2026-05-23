@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
     },
   ],
   webPushTokens: [{ type: String }],
+  oneSignalSubscriptionIds: [{ type: String }],
   hiddenDirectChats: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   hiddenGroupChats: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
   resetPasswordToken: { type: String, default: null },
