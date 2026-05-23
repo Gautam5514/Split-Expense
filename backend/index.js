@@ -30,11 +30,21 @@ const server = createServer(app);
 // -----------------------------------------
 //  CORS
 // -----------------------------------------
-const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000")
+  .split(",")
+  .map((u) => u.trim())
+  .filter(Boolean);
+
+const corsOriginHandler = (origin, callback) => {
+  // Allow non-browser requests (e.g. Postman, server-to-server)
+  if (!origin) return callback(null, true);
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+  callback(new Error(`CORS: origin ${origin} not allowed`));
+};
 
 app.use(
   cors({
-    origin: frontendUrl,
+    origin: corsOriginHandler,
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -48,7 +58,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // -----------------------------------------
 export const io = new Server(server, {
   cors: {
-    origin: frontendUrl,
+    origin: corsOriginHandler,
     methods: ["GET", "POST"],
     credentials: true,
   },

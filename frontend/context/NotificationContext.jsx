@@ -253,7 +253,7 @@ export function NotificationProvider({ children }) {
     if (!token) return;
 
     const socketInstance = io(API_URL, {
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
     });
