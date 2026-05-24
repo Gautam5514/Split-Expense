@@ -34,7 +34,7 @@ const NAV_LINKS = [
   { href: "/chat", icon: MessageCircle, label: "Messages" },
   { href: "/dashboard", icon: PlusCircle, label: "Groups", highlight: true },
   { href: "/groupchat", icon: MessageCircleMore, label: "Chatroom" },
-  { href: "/ai", icon: Bot, label: "AI Agent" },
+  { href: "/ai", icon: Bot, label: "AI" },
 ];
 
 export default function Navbar() {
@@ -412,7 +412,7 @@ export default function Navbar() {
               pathname === "/ai" ? "text-violet-400" : "text-foreground/40 hover:text-foreground/70"
             }`}>
             <Bot size={18} />
-            <span className="text-[9px] font-semibold">AI Agent</span>
+            <span className="text-[9px] font-semibold">AI</span>
             {pathname === "/ai" && <span className="w-1 h-1 rounded-full bg-violet-400 mt-0.5 animate-pulse" />}
           </Link>
         </div>

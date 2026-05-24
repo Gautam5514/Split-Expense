@@ -251,3 +251,14 @@ main:has(.h-screen) {
     justify-content: center !important;
   }
 }
+
+/* Bulletproof CSS rules to completely hide OneSignal floating notification widgets to optimize bottom navigation layout */
+#onesignal-bell-container,
+.onesignal-bell-launcher,
+.onesignal-bell-launcher-button,
+#onesignal-slidedown-container {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

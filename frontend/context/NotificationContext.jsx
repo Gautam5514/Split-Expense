@@ -266,7 +266,7 @@ export function NotificationProvider({ children }) {
           ...(safariWebId ? { safari_web_id: safariWebId } : {}),
           allowLocalhostAsSecureOrigin: true,
           notifyButton: {
-            enable: true,
+            enable: false,
           },
         });
 

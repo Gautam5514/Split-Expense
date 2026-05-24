@@ -444,48 +444,51 @@ export default function GroupDetailPage() {
           <div className="bg-card border border-border rounded-2xl p-2 shadow-sm flex gap-1">
             <button
               onClick={() => setActiveTab("feed")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+              className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === "feed"
                   ? "bg-primary text-primary-foreground shadow"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
-              <Receipt size={16} />
-              Expenses Log
+              <Receipt size={15} />
+              <span className="sm:hidden">Log</span>
+              <span className="hidden sm:inline">Expenses Log</span>
             </button>
             <button
               onClick={() => setActiveTab("breakdown")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+              className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === "breakdown"
                   ? "bg-primary text-primary-foreground shadow"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
-              <TrendingUp size={16} />
-              Spend Owners
+              <TrendingUp size={15} />
+              <span className="sm:hidden">Spend</span>
+              <span className="hidden sm:inline">Spend Owners</span>
             </button>
             {/* Balances Tab only on Mobile/Tablet */}
             <button
               onClick={() => setActiveTab("balances")}
-              className={`lg:hidden flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+              className={`lg:hidden flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === "balances"
                   ? "bg-primary text-primary-foreground shadow"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
-              <Wallet2 size={16} />
+              <Wallet2 size={15} />
               Balances
             </button>
             <button
               onClick={() => setActiveTab("notes")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+              className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === "notes"
                   ? "bg-primary text-primary-foreground shadow"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
-              <BookOpen size={16} />
-              Shared Notes
+              <BookOpen size={15} />
+              <span className="sm:hidden">Notes</span>
+              <span className="hidden sm:inline">Shared Notes</span>
             </button>
           </div>
 
@@ -502,16 +505,18 @@ export default function GroupDetailPage() {
                   transition={{ duration: 0.2 }}
                   className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6"
                 >
-                  <div className="flex items-center justify-between border-b border-border pb-4">
-                    <div>
-                      <h3 className="font-bold text-lg text-foreground">Chronological Log</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">Every expense recorded in this group in order of time.</p>
+                  <div className="flex items-center justify-between border-b border-border pb-4 gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-base sm:text-lg text-foreground">Chronological Log</h3>
+                      <p className="hidden sm:block text-xs text-muted-foreground mt-0.5">Every expense recorded in this group in order of time.</p>
                     </div>
                     <button
                       onClick={() => setShowExpenseModal(true)}
-                      className="flex items-center gap-1.5 bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-xl shadow-sm text-sm hover:opacity-95 transition cursor-pointer"
+                      className="flex items-center gap-1.5 bg-primary text-primary-foreground font-semibold px-3 sm:px-4 py-2 rounded-xl shadow-sm text-xs sm:text-sm hover:opacity-95 transition cursor-pointer shrink-0"
                     >
-                      <PlusCircle size={15} /> Add Expense
+                      <PlusCircle size={14} />
+                      <span className="sm:hidden">Add</span>
+                      <span className="hidden sm:inline">Add Expense</span>
                     </button>
                   </div>
 
@@ -535,59 +540,57 @@ export default function GroupDetailPage() {
                           return (
                             <div
                               key={exp._id}
-                              className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/20 hover:border-primary/40 shadow-sm transition-all duration-200"
+                              className="flex items-center gap-3 p-3.5 rounded-xl border border-border bg-muted/20 hover:border-primary/40 shadow-sm transition-all duration-200"
                             >
-                              <div className="flex items-center gap-3 min-w-0">
-                                {/* Category Icon */}
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/10 text-primary">
-                                  <Icon size={18} />
-                                </div>
-                                <div className="min-w-0">
-                                  <h4 className="font-semibold text-foreground truncate text-sm sm:text-base">
-                                    {exp.description}
-                                  </h4>
-                                  <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-1.5">
-                                    <span>Paid by <span className="font-medium text-foreground">{exp.paidBy?.name || "Someone"}</span></span>
-                                    <span className="text-muted-foreground/30">•</span>
-                                    <span className="flex items-center gap-1">
-                                      <CalendarDays size={12} />
-                                      {expenseSummary.date.format(new Date(exp.date))}
-                                    </span>
-                                    {exp.category && exp.category !== "general" && (
-                                      <>
-                                        <span className="text-muted-foreground/30">•</span>
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 capitalize">
-                                          {exp.category}
-                                        </span>
-                                      </>
-                                    )}
-                                  </p>
-                                </div>
+                              {/* Category Icon */}
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/10 text-primary">
+                                <Icon size={16} />
                               </div>
 
-                              <div className="flex items-center gap-3 shrink-0">
-                                <div className="text-right">
-                                  <span className="block font-bold text-sm sm:text-base text-foreground">
-                                    {expenseSummary.currency.format(exp.amount)}
-                                  </span>
-                                  <span className="block text-[10px] text-muted-foreground capitalize">
-                                    {exp.splitType} split
-                                  </span>
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                {/* Title + Amount row */}
+                                <div className="flex items-center justify-between gap-2">
+                                  <h4 className="font-semibold text-foreground truncate text-sm">
+                                    {exp.description}
+                                  </h4>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <span className="font-bold text-sm text-foreground">
+                                      {expenseSummary.currency.format(exp.amount)}
+                                    </span>
+                                    {exp.ocrText && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedOcr(exp);
+                                          setShowOcrModal(true);
+                                        }}
+                                        className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-all cursor-pointer"
+                                        title="View Scanned Bill"
+                                      >
+                                        <Eye size={13} />
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
 
-                                {exp.ocrText && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedOcr(exp);
-                                      setShowOcrModal(true);
-                                    }}
-                                    className="p-1.5 rounded-lg border border-border hover:border-primary/50 hover:bg-card text-muted-foreground hover:text-primary transition-all duration-200 cursor-pointer"
-                                    title="View Scanned Bill details"
-                                  >
-                                    <Eye size={15} />
-                                  </button>
-                                )}
+                                {/* Single metadata line */}
+                                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground truncate">
+                                  <span className="font-medium text-foreground/70 truncate max-w-[90px]">{exp.paidBy?.name || "Someone"}</span>
+                                  <span className="text-muted-foreground/30 shrink-0">·</span>
+                                  <CalendarDays size={10} className="shrink-0" />
+                                  <span className="shrink-0">{expenseSummary.date.format(new Date(exp.date))}</span>
+                                  <span className="text-muted-foreground/30 shrink-0">·</span>
+                                  <span className="shrink-0 capitalize">{exp.splitType} split</span>
+                                  {exp.category && exp.category !== "general" && (
+                                    <>
+                                      <span className="text-muted-foreground/30 shrink-0">·</span>
+                                      <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 capitalize shrink-0">
+                                        {exp.category}
+                                      </span>
+                                    </>
+                                  )}
+                                </p>
                               </div>
                             </div>
                           );
