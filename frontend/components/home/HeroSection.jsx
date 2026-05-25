@@ -88,7 +88,7 @@ export default function HeroSection() {
       </div>
 
       {/* Image indicator dots */}
-      <div className="absolute bottom-[52%] left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+      <div className="absolute top-[370px] xs:top-[390px] sm:top-[420px] md:top-auto md:bottom-[52%] left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
         {BG_IMAGES.map((_, i) => (
           <button
             key={i}
@@ -103,23 +103,6 @@ export default function HeroSection() {
       {/* ── Above-fold content ── */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 pt-28 flex flex-col items-center">
 
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-7 flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium"
-          style={{
-            background: "rgba(139,92,246,0.15)",
-            border: "1px solid rgba(139,92,246,0.35)",
-            color: "#c4b5fd",
-            backdropFilter: "blur(12px)",
-          }}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-          AI-powered expense splitting &nbsp;·&nbsp;
-          <span className="text-violet-200/60 text-xs">v2.0 🚀</span>
-        </motion.div>
 
         {/* Headline */}
         <motion.h1
@@ -208,7 +191,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 70 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1, delay: 0.5, type: "spring", stiffness: 55, damping: 18 }}
-          className="w-full max-w-6xl mx-auto"
+          className="w-full max-w-6xl mx-auto px-2 sm:px-0 overflow-hidden"
         >
           {/* Browser chrome */}
           <div
@@ -245,7 +228,7 @@ export default function HeroSection() {
               </div>
 
               {/* URL bar */}
-              <div className="flex-1 flex items-center justify-center">
+              <div className="hidden sm:flex flex-1 items-center justify-center">
                 <div
                   className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs text-white/35"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", maxWidth: 280, width: "100%" }}
@@ -278,7 +261,7 @@ export default function HeroSection() {
           >
             {/* ── Sidebar ── */}
             <div
-              className="w-52 flex-shrink-0 flex flex-col py-5 px-3"
+              className="hidden md:flex w-52 flex-shrink-0 flex flex-col py-5 px-3"
               style={{ borderRight: "1px solid rgba(255,255,255,0.06)" }}
             >
               {/* Logo */}
@@ -353,16 +336,16 @@ export default function HeroSection() {
 
               {/* Top bar */}
               <div
-                className="flex items-center justify-between px-6 py-3.5 flex-shrink-0"
+                className="flex items-center justify-between px-4 sm:px-6 py-3.5 flex-shrink-0"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
               >
                 <div>
-                  <h2 className="text-sm font-bold text-white">Good morning, Felix 👋</h2>
-                  <p className="text-[10px] text-white/30 mt-0.5">April 26, 2025 · 4 pending expenses</p>
+                  <h2 className="text-xs sm:text-sm font-bold text-white leading-tight">Good morning, Felix 👋</h2>
+                  <p className="text-[9px] sm:text-[10px] text-white/30 mt-0.5">April 26, 2025 · 4 pending expenses</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <div
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/35"
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/35"
                     style={{
                       background: "rgba(255,255,255,0.04)",
                       border: "1px solid rgba(255,255,255,0.07)",
@@ -372,11 +355,11 @@ export default function HeroSection() {
                     <span>Search expenses…</span>
                   </div>
                   <button
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs text-white font-bold"
+                    className="flex items-center gap-1 px-2 py-1.5 sm:px-3.5 rounded-xl text-[10px] sm:text-xs text-white font-bold whitespace-nowrap"
                     style={{ background: "linear-gradient(135deg,#8b5cf6,#6366f1)" }}
                   >
-                    <Plus className="w-3 h-3" />
-                    Add Expense
+                    <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    <span>Add Expense</span>
                   </button>
                 </div>
               </div>
@@ -385,10 +368,10 @@ export default function HeroSection() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Left: main content */}
-                <div className="flex-1 p-5 flex flex-col gap-4 overflow-hidden min-w-0">
+                <div className="flex-1 p-4 sm:p-5 flex flex-col gap-4 overflow-y-auto min-w-0 scrollbar-none sm:custom-scrollbar">
 
                   {/* Balance cards */}
-                  <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-3 flex-shrink-0">
                     {[
                       { label: "Total Expenses", value: "₹60,600", sub: "This month", Icon: Receipt, color: "text-white" },
                       { label: "You Owe", value: "₹3,240", sub: "2 groups", Icon: TrendingDown, color: "text-red-400", bg: "rgba(239,68,68,0.08)", border: "rgba(239,68,68,0.2)" },
@@ -396,18 +379,18 @@ export default function HeroSection() {
                     ].map(({ label, value, sub, Icon, color, bg, border }) => (
                       <div
                         key={label}
-                        className="p-3.5 rounded-2xl"
+                        className="p-2 sm:p-3.5 rounded-xl sm:rounded-2xl"
                         style={{
                           background: bg || "rgba(255,255,255,0.04)",
                           border: `1px solid ${border || "rgba(255,255,255,0.08)"}`,
                         }}
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-[9px] text-white/40 uppercase tracking-widest font-semibold">{label}</p>
-                          <Icon className={`w-3.5 h-3.5 ${color}`} />
+                        <div className="flex items-center justify-between mb-1 sm:mb-2">
+                          <p className="text-[8px] sm:text-[9px] text-white/40 uppercase tracking-widest font-semibold truncate">{label}</p>
+                          <Icon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${color} flex-shrink-0`} />
                         </div>
-                        <p className={`text-base font-extrabold ${color}`}>{value}</p>
-                        <p className="text-[9px] text-white/25 mt-0.5">{sub}</p>
+                        <p className={`text-xs sm:text-base font-extrabold ${color}`}>{value}</p>
+                        <p className="text-[8px] sm:text-[9px] text-white/25 mt-0.5 truncate">{sub}</p>
                       </div>
                     ))}
                   </div>
@@ -418,11 +401,11 @@ export default function HeroSection() {
                       <h3 className="text-xs font-bold text-white">Your Groups</h3>
                       <span className="text-[9px] text-violet-400 cursor-pointer font-semibold">View all →</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {GROUPS.map(({ name, emoji, members, total, color, pct }) => (
                         <div
                           key={name}
-                          className="p-3 rounded-2xl cursor-pointer"
+                          className="p-2 sm:p-3 rounded-xl sm:rounded-2xl cursor-pointer"
                           style={{
                             background: "rgba(255,255,255,0.04)",
                             border: "1px solid rgba(255,255,255,0.07)",
@@ -457,7 +440,7 @@ export default function HeroSection() {
                       {EXPENSES.map(({ name, person, amount, time, emoji, settled }) => (
                         <div
                           key={name}
-                          className="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer"
+                          className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl cursor-pointer"
                           style={{ border: "1px solid rgba(255,255,255,0.05)" }}
                         >
                           <div className="flex items-center gap-2.5">
@@ -489,7 +472,7 @@ export default function HeroSection() {
 
                 {/* Right panel */}
                 <div
-                  className="w-52 flex-shrink-0 flex flex-col p-4 gap-4 overflow-hidden"
+                  className="hidden lg:flex w-52 flex-shrink-0 flex flex-col p-4 gap-4 overflow-hidden"
                   style={{ borderLeft: "1px solid rgba(255,255,255,0.05)" }}
                 >
                   {/* AI insight */}
