@@ -95,7 +95,7 @@ export default function GroupChatList({ onSelect, activeGroup }) {
   };
 
   return (
-    <aside className="flex h-full w-full flex-col border-r border-border bg-card md:w-[360px] lg:w-[410px] md:shrink-0">
+    <aside className={`flex h-full w-full flex-col border-r border-border bg-card md:w-[360px] lg:w-[410px] md:shrink-0 ${activeGroup ? "hidden md:flex" : "flex"}`}>
 
       {/* Header */}
       <div className="h-16 bg-muted/80 px-4 flex items-center justify-between shrink-0 border-b border-border">

@@ -10,7 +10,7 @@ import {
   PieChart, Pie, Cell
 } from "recharts";
 import {
-  Loader2, Plus, ArrowRight, Wallet, Users, Sparkles, TrendingUp, Calendar, 
+  Loader2, Plus, ArrowRight, Wallet, Users, Sparkles, TrendingUp, Calendar,
   CheckCircle, Trash2, ShieldCheck, Flame, PieChart as PieIcon, Coins, Landmark
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,12 +40,12 @@ const getCategoryColor = (cat, index) => {
 export default function UserDashboardPage() {
   const router = useRouter();
   const { token } = useAuth();
-  
+
   const [analytics, setAnalytics] = useState(null);
   const [groups, setGroups] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   const [groupName, setGroupName] = useState("");
   const [creating, setCreating] = useState(false);
   const [activePieIndex, setActivePieIndex] = useState(-1);
@@ -149,25 +149,26 @@ export default function UserDashboardPage() {
       <div className="absolute top-40 right-20 w-80 h-80 bg-indigo-500/10 rounded-full filter blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto space-y-10 relative z-10">
-        
+
         {/* ── HEADER & QUICK CREATE ── */}
         <div className="flex flex-col lg:flex-row gap-8 justify-between items-start lg:items-center">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 text-violet-500 text-xs font-semibold ring-1 ring-violet-500/15 mb-3">
-              <Sparkles size={12} className="animate-spin-slow" />
-              Smart Finance Dashboard
-            </span>
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-2 text-slate-900 dark:text-white leading-tight">
-              Welcome back, <span className="bg-gradient-to-r from-violet-500 via-indigo-400 to-fuchsia-500 bg-clip-text text-transparent">{profile?.name || "User"}</span>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex flex-col items-start"
+          >
+
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+              Hi, <span className="bg-gradient-to-r from-violet-500 via-indigo-400 to-fuchsia-500 bg-clip-text text-transparent font-extrabold">{profile?.name || "User"}</span>
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-xl">
-              Track your shared spending, active travels, and visual insights in one premium space.
+            <p className="text-slate-400 dark:text-slate-500 text-xs sm:text-sm font-semibold max-w-sm mt-1">
+              Your shared expenses and active trip insights.
             </p>
           </motion.div>
 
-          <motion.form 
+          <motion.form
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            onSubmit={handleCreateGroup} 
+            onSubmit={handleCreateGroup}
             className="w-full lg:w-auto relative group"
           >
             <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
@@ -194,26 +195,26 @@ export default function UserDashboardPage() {
 
         {/* ── KEY METRIC SUMMARIES ── */}
         {analytics && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            <SummaryCard 
-              title="This Month" 
+            <SummaryCard
+              title="This Month"
               value={`₹${analytics.monthlySummary?.totalSpent?.toLocaleString() || 0}`}
               subtitle={analytics.monthlySummary?.topCategory ? `Top Category: ${getCategoryLabel(analytics.monthlySummary.topCategory)}` : "No spending recorded this month."}
               icon={<Calendar className="w-5 h-5 text-violet-500" />}
               gradient="from-violet-500/10 via-transparent to-indigo-500/5"
             />
-            <SummaryCard 
-              title="This Year" 
+            <SummaryCard
+              title="This Year"
               value={`₹${analytics.yearlySummary?.totalSpent?.toLocaleString() || 0}`}
               subtitle={`${analytics.yearlySummary?.year || new Date().getFullYear()} Total Travel Spend`}
               icon={<TrendingUp className="w-5 h-5 text-indigo-500" />}
               gradient="from-indigo-500/10 via-transparent to-pink-500/5"
             />
-            <SummaryCard 
-              title="Smart Insight" 
+            <SummaryCard
+              title="Smart Insight"
               value={analytics.insight?.type === 'tight_month' ? 'Tight Budget' : analytics.insight?.type === 'saving_month' ? 'Smart Saving' : 'Steady Spend'}
               subtitle={analytics.insight?.message || "All systems look robust. Your expense curve looks healthy."}
               icon={<Sparkles className="w-5 h-5 text-fuchsia-500" />}
@@ -231,7 +232,7 @@ export default function UserDashboardPage() {
             className="grid grid-cols-1 lg:grid-cols-5 gap-6"
           >
             {/* Chart 1: Monthly Trends (Area Chart) */}
-            <div className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between">
+            <div className="min-w-0 lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -246,13 +247,13 @@ export default function UserDashboardPage() {
                 </div>
               </div>
 
-              <div className="h-64 sm:h-72 w-full text-xs">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-64 sm:h-72 min-h-64 min-w-0 w-full text-xs">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <AreaChart data={analytics.trends} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.25}/>
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0}/>
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.1)" />
@@ -266,7 +267,7 @@ export default function UserDashboardPage() {
             </div>
 
             {/* Chart 2: Category Breakdown (Donut Chart) */}
-            <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between">
+            <div className="min-w-0 lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -278,9 +279,9 @@ export default function UserDashboardPage() {
               </div>
 
               {pieData.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                  <div className="h-48 sm:h-52 relative flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height="100%">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center min-w-0">
+                  <div className="h-48 sm:h-52 min-h-48 min-w-0 w-full relative flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                       <PieChart>
                         <Pie
                           data={pieData}
@@ -292,9 +293,9 @@ export default function UserDashboardPage() {
                           onMouseLeave={() => setActivePieIndex(-1)}
                         >
                           {pieData.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={entry.color} 
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.color}
                               stroke={activePieIndex === index ? entry.color : "transparent"}
                               strokeWidth={activePieIndex === index ? 6 : 0}
                               style={{ outline: "none", cursor: "pointer", filter: activePieIndex === index ? "drop-shadow(0 0 8px rgba(139,92,246,0.3))" : "none" }}
@@ -342,8 +343,8 @@ export default function UserDashboardPage() {
 
         {/* ── ACTIVE GROUPS / ACTIVE TRAVELS ── */}
         <div className="w-full">
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="w-full space-y-6"
           >
@@ -355,13 +356,13 @@ export default function UserDashboardPage() {
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Settle balances and split bills instantly inside these rooms</p>
               </div>
-              
+
               <Link href="/dashboard" className="text-sm font-bold text-violet-500 hover:text-violet-400 flex items-center gap-1 transition-colors group/link cursor-pointer">
                 View all rooms
                 <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
               </Link>
             </div>
-            
+
             {activeGroups.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {activeGroups.slice(0, 6).map((group, index) => {
@@ -377,9 +378,9 @@ export default function UserDashboardPage() {
                       className="block relative group/card h-full"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-indigo-500/10 rounded-3xl blur opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
-                      
+
                       <div className="relative p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-violet-500/30 transition-all shadow-sm hover:shadow-xl flex flex-col justify-between gap-5 h-full">
-                        
+
                         <Link href={`/groups/${group._id}`} className="block space-y-4">
                           <div className="flex justify-between items-start gap-4">
                             <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 line-clamp-1 group-hover/card:text-violet-500 transition-colors">
@@ -404,7 +405,7 @@ export default function UserDashboardPage() {
                               </span>
                             )}
                           </div>
-                          
+
                           {group.members?.length > 0 && (
                             <div className="text-xs text-slate-400 font-medium line-clamp-1">
                               {group.members.map((m) => m.name || m.email).join(", ")}
@@ -463,16 +464,16 @@ export default function UserDashboardPage() {
 function SummaryCard({ title, value, subtitle, icon, isInsight, insightType, gradient }) {
   let indicatorColor = "bg-violet-500";
   if (isInsight) {
-    indicatorColor = 
+    indicatorColor =
       insightType === "tight_month" ? "bg-rose-500" :
-      insightType === "saving_month" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" :
-      "bg-fuchsia-500 shadow-[0_0_8px_rgba(217,70,239,0.5)]";
+        insightType === "saving_month" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" :
+          "bg-fuchsia-500 shadow-[0_0_8px_rgba(217,70,239,0.5)]";
   }
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-violet-500/20 shadow-lg hover:shadow-xl transition-all duration-300 group/sum h-full">
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-40 group-hover/sum:opacity-70 transition-opacity duration-300`} />
-      
+
       <div className="relative p-6 sm:p-7 flex flex-col h-full gap-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

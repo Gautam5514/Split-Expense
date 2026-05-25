@@ -22,12 +22,19 @@ import {
   CheckCircle2,
   Clock3,
   BellRing,
+  Settings,
+  Palette,
+  Download,
+  HelpCircle,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import useTheme from "@/hooks/useTheme";
 import { useNotifications } from "@/context/NotificationContext";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebaseClient";
+import { api } from "@/lib/api";
+import toast from "@/lib/toast";
 
 const NAV_LINKS = [
   { href: "/users", icon: Home, label: "Home" },
@@ -48,6 +55,7 @@ export default function Navbar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [scrolled, setScrolled] = useState(false);
+  const [profile, setProfile] = useState(null);
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
@@ -68,6 +76,16 @@ export default function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (token) {
+      api.get("/profile")
+        .then((res) => setProfile(res.data))
+        .catch((err) => console.error("Error loading profile:", err));
+    } else {
+      setProfile(null);
+    }
+  }, [token]);
 
   const handleLogout = async () => {
     try {
@@ -317,38 +335,111 @@ export default function Navbar() {
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-xl hover:bg-foreground/5 transition-all"
+                className={`flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-2xl transition-all duration-200 ${
+                  dropdownOpen 
+                    ? "bg-violet-500/10 ring-2 ring-violet-500 dark:ring-violet-400/90" 
+                    : "hover:bg-foreground/5"
+                }`}
               >
-                {user?.photoURL ? (
-                  <img src={user.photoURL} className="w-7 h-7 rounded-lg border border-white/10 object-cover" alt="avatar" />
+                {profile?.avatar || user?.photoURL ? (
+                  <img 
+                    src={profile?.avatar || user?.photoURL} 
+                    className="w-7 h-7 rounded-xl border border-white/10 object-cover shadow-sm" 
+                    alt="avatar" 
+                  />
                 ) : (
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shadow-sm"
                     style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}>
-                    <User size={14} className="text-white" />
+                    <User size={13} className="text-white" />
                   </div>
                 )}
                 <ChevronDown
-                  size={13}
-                  className={`text-foreground/40 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+                  size={12}
+                  className={`text-foreground/40 transition-transform duration-300 ${dropdownOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-44 rounded-2xl shadow-2xl py-1.5 z-50 overflow-hidden bg-background/80 backdrop-blur-2xl border border-foreground/10">
-                  <Link
-                    href="/profile"
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-colors"
-                  >
-                    <User size={14} className="text-foreground/40" /> Profile
-                  </Link>
-                  <div className="my-1 mx-3 h-px bg-border" />
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <LogOut size={14} /> Logout
-                  </button>
+                <div 
+                  className="absolute right-0 mt-3 w-72 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] p-1.5 z-50 overflow-hidden bg-white/95 dark:bg-[#090d16]/95 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-2xl transition-all duration-200 transform origin-top-right animate-in fade-in slide-in-from-top-2"
+                >
+                  {/* Profile Header */}
+                  <div className="flex items-center gap-3 px-3 py-3 border-b border-slate-100 dark:border-slate-800/50 mb-1">
+                    {profile?.avatar || user?.photoURL ? (
+                      <div className="relative group shrink-0">
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full blur opacity-30 group-hover:opacity-60 transition duration-300"></div>
+                        <img 
+                          src={profile?.avatar || user?.photoURL} 
+                          className="relative w-10 h-10 rounded-full border border-white/20 object-cover shadow-sm" 
+                          alt="avatar" 
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-violet-500/20 shadow-sm"
+                        style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}>
+                        <span className="text-white font-bold text-sm">
+                          {(profile?.name || user?.displayName || "U").charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-white truncate leading-tight">
+                        {profile?.name || user?.displayName || "User"}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5 font-medium">
+                        {profile?.email || user?.email || "No email"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Menu Options */}
+                  <div className="space-y-0.5">
+                    <DropdownItem
+                      href="/profile"
+                      onClick={() => setDropdownOpen(false)}
+                      icon={<User size={14} />}
+                      label="Profile"
+                    />
+                    <DropdownItem
+                      href="/theme"
+                      onClick={() => setDropdownOpen(false)}
+                      icon={<Palette size={14} />}
+                      label="Themes"
+                    />
+                    <DropdownItem
+                      href="/settings"
+                      onClick={() => setDropdownOpen(false)}
+                      icon={<Settings size={14} />}
+                      label="Settings"
+                    />
+                    <DropdownItem
+                      href="/notification"
+                      onClick={() => setDropdownOpen(false)}
+                      icon={<Bell size={14} />}
+                      label="Notification Settings"
+                    />
+                    <DropdownItem
+                      href="/downloadapp"
+                      onClick={() => setDropdownOpen(false)}
+                      icon={<Download size={14} />}
+                      label="Download Apps"
+                    />
+                    <DropdownItem
+                      href="/helps"
+                      onClick={() => setDropdownOpen(false)}
+                      icon={<HelpCircle size={14} />}
+                      label="Help"
+                    />
+
+                    <div className="my-1 mx-2 h-px bg-slate-100 dark:bg-slate-800/50" />
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-rose-500 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all hover:translate-x-0.5"
+                    >
+                      <LogOut size={14} /> Logout
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -430,5 +521,29 @@ export default function Navbar() {
         </div>
       )}
     </>
+  );
+}
+
+// ── HELPER COMPONENT FOR PROFILE DROPDOWN ──
+function DropdownItem({ href, onClick, icon, label }) {
+  const content = (
+    <div className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-violet-500 dark:hover:text-violet-400 hover:bg-violet-500/5 dark:hover:bg-violet-500/10 rounded-xl transition-all duration-150 hover:translate-x-0.5 cursor-pointer">
+      <span className="text-slate-400 dark:text-slate-500 group-hover:text-violet-500 dark:group-hover:text-violet-400 transition-colors shrink-0">{icon}</span>
+      <span>{label}</span>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} onClick={onClick} className="block group">
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button onClick={onClick} type="button" className="w-full text-left block group">
+      {content}
+    </button>
   );
 }

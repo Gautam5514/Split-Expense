@@ -4,9 +4,9 @@ import { api } from "@/lib/api";
 import socket, { connectSocket } from "@/lib/socket";
 import ChatInput from "./ChatInput";
 import VoicePlayer from "../chat/VoicePlayer";
-import { Search, MoreVertical, X, AlertCircle, Loader2, RotateCw, Info } from "lucide-react";
+import { Search, MoreVertical, X, AlertCircle, Loader2, RotateCw, Info, ArrowLeft } from "lucide-react";
 
-export default function GroupChatWindow({ activeGroup }) {
+export default function GroupChatWindow({ activeGroup, onBack }) {
   const [messages, setMessages] = useState([]);
   const [me, setMe] = useState(null);
   const bottomRef = useRef(null);
@@ -230,25 +230,36 @@ export default function GroupChatWindow({ activeGroup }) {
 
       {/* HEADER */}
       <div className="h-16 bg-muted/90 px-4 flex items-center justify-between border-b border-border shrink-0 z-10">
-        <div className="flex items-center gap-3 cursor-pointer">
-          {activeGroup.members?.[0]?.photoURL ? (
-            <img
-              src={activeGroup.members[0].photoURL}
-              alt={activeGroup.name}
-              className="w-10 h-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className={`w-10 h-10 flex items-center justify-center rounded-full text-white font-bold ${getAvatarColor(activeGroup.name)}`}>
-              {activeGroup.name?.charAt(0)}
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Back Arrow for Mobile/Tablet */}
+          <button
+            onClick={onBack}
+            className="md:hidden p-1.5 hover:bg-background rounded-full transition mr-1 cursor-pointer shrink-0"
+            title="Back to list"
+          >
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+          </button>
+
+          <div className="flex items-center gap-3 cursor-pointer min-w-0">
+            {activeGroup.members?.[0]?.photoURL ? (
+              <img
+                src={activeGroup.members[0].photoURL}
+                alt={activeGroup.name}
+                className="w-10 h-10 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <div className={`w-10 h-10 flex items-center justify-center rounded-full text-white font-bold shrink-0 ${getAvatarColor(activeGroup.name)}`}>
+                {activeGroup.name?.charAt(0)}
+              </div>
+            )}
+            <div className="flex min-w-0 flex-col justify-center">
+              <span className="truncate text-foreground text-base font-semibold leading-tight">
+                {activeGroup.name}
+              </span>
+              <span className="text-[13px] text-muted-foreground leading-tight truncate max-w-[300px]">
+                {activeGroup.members?.map(m => m.name).join(", ") || "Tap for info"}
+              </span>
             </div>
-          )}
-          <div className="flex min-w-0 flex-col justify-center">
-            <span className="truncate text-foreground text-base font-semibold leading-tight">
-              {activeGroup.name}
-            </span>
-            <span className="text-[13px] text-muted-foreground leading-tight truncate max-w-[300px]">
-              {activeGroup.members?.map(m => m.name).join(", ") || "Tap for info"}
-            </span>
           </div>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">

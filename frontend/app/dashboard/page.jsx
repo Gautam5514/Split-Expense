@@ -136,7 +136,7 @@ export default function DashboardPage() {
   const hasCompletedGroups = completedGroups.length > 0;
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-12 px-6">
+    <div className="min-h-screen bg-background text-foreground pt-12 pb-32 sm:pb-12 px-6">
       <div className="max-w-7xl mx-auto space-y-12">
 
         {/* 🧭 Header Section */}

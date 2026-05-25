@@ -272,7 +272,7 @@ export default function GroupDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-8 px-4 sm:px-6 md:px-8 space-y-8">
+    <div className="min-h-screen bg-background text-foreground pt-8 pb-32 sm:pb-8 px-4 sm:px-6 md:px-8 space-y-8">
       
       {/* 🚀 PREMIUM GLASSMORPHIC HEADER */}
       <div className="max-w-7xl mx-auto">
@@ -424,12 +424,30 @@ export default function GroupDetailPage() {
                 </div>
               )}
             </div>
-            <button 
-              onClick={() => setShowInviteModal(true)} 
-              className="text-[11px] text-primary hover:underline font-bold cursor-pointer"
-            >
-              + Invite Friends
-            </button>
+            {isCreator ? (
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setShowAddMember(true)} 
+                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold cursor-pointer"
+                >
+                  + Add Member
+                </button>
+                <span className="text-[10px] text-muted-foreground">|</span>
+                <button 
+                  onClick={() => setShowInviteModal(true)} 
+                  className="text-[11px] text-primary hover:underline font-bold cursor-pointer"
+                >
+                  + Invite Friends
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setShowAddMember(true)} 
+                className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold cursor-pointer"
+              >
+                + Add Member
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -925,13 +943,15 @@ export default function GroupDetailPage() {
                     )}
 
                     <div className="pt-3 border-t border-border flex flex-col gap-2.5">
-                      <button
-                        onClick={() => setShowInviteModal(true)}
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold py-2.5 rounded-xl shadow hover:opacity-95 transition-all cursor-pointer"
-                      >
-                        <QrCode size={14} />
-                        Invite Friends (Link / QR)
-                      </button>
+                      {isCreator && (
+                        <button
+                          onClick={() => setShowInviteModal(true)}
+                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold py-2.5 rounded-xl shadow hover:opacity-95 transition-all cursor-pointer"
+                        >
+                          <QrCode size={14} />
+                          Invite Friends (Link / QR)
+                        </button>
+                      )}
 
                       <button
                         onClick={() => setShowAddMember(true)}
@@ -1122,13 +1142,15 @@ export default function GroupDetailPage() {
             <div className="pt-3 border-t border-border flex flex-col gap-2.5">
               
               {/* QR Invite popup trigger */}
-              <button
-                onClick={() => setShowInviteModal(true)}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold py-2.5 rounded-xl shadow hover:opacity-95 transition-all cursor-pointer"
-              >
-                <QrCode size={14} />
-                Invite Friends (Link / QR)
-              </button>
+              {isCreator && (
+                <button
+                  onClick={() => setShowInviteModal(true)}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold py-2.5 rounded-xl shadow hover:opacity-95 transition-all cursor-pointer"
+                >
+                  <QrCode size={14} />
+                  Invite Friends (Link / QR)
+                </button>
+              )}
 
               {/* Add member search widget toggle */}
               <button

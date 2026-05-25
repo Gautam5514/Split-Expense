@@ -13,6 +13,35 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState([]);
+  const [activeTab, setActiveTab] = useState("search"); // "search" | "email"
+  const [manualEmail, setManualEmail] = useState("");
+
+  const addManualEmail = (e) => {
+    e?.preventDefault();
+    const email = manualEmail.trim().toLowerCase();
+    if (!email) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    if (exclude.includes(email)) {
+      toast.error("This user is already in the group.");
+      return;
+    }
+
+    if (selected.includes(email)) {
+      toast.error("This email is already selected.");
+      return;
+    }
+
+    setSelected((prev) => [...prev, email]);
+    setManualEmail("");
+    toast.success("Email added to list!");
+  };
+
   const searchTerm = debounced.trim();
   const hasSearch = query.trim().length > 0;
 
@@ -92,106 +121,168 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
               </h2>
             </div>
             <p className="text-xs text-muted-foreground">
-              Search for users by name or email, select them, and add them to this group.
+              Add friends to your trip instantly by email or search for registered members.
             </p>
           </div>
 
+          {/* Tab Switcher */}
+          <div className="flex border-b border-border px-6 bg-slate-50/50 dark:bg-slate-900/10">
+            <button
+              onClick={() => setActiveTab("search")}
+              className={`flex items-center gap-2 pb-3 pt-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer ${
+                activeTab === "search"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Search size={14} /> Add from Search
+            </button>
+            <button
+              onClick={() => setActiveTab("email")}
+              className={`flex items-center gap-2 pb-3 pt-3 text-xs sm:text-sm font-bold border-b-2 transition-all ml-6 cursor-pointer ${
+                activeTab === "email"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Mail size={14} /> Send Email
+            </button>
+          </div>
+
           <div className="p-6 space-y-5">
-            {/* Search Input Box */}
-            <div className="relative">
-              <Search className="absolute left-3.5 top-3.5 text-muted-foreground/60" size={16} />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name or email address..."
-                className="w-full bg-slate-100/50 dark:bg-slate-900/50 text-foreground text-sm rounded-xl pl-10 pr-4 py-3 border border-border focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all outline-none"
-                autoFocus
-              />
-              {query && (
-                <button
-                  onClick={() => setQuery("")}
-                  className="absolute right-3.5 top-3.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-
-            {/* Helper State */}
-            {!hasSearch && (
-              <div className="text-xs text-muted-foreground flex items-center gap-2 px-1">
-                <Mail size={14} className="text-violet-500 animate-pulse" />
-                <span>Search name or email to view matching registered SplitEase users.</span>
-              </div>
-            )}
-
-            {/* Results Grid - Spacious List View for complete Name and Email Visibility */}
-            <div className="max-h-[280px] min-h-[160px] overflow-y-auto custom-scrollbar pr-1">
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-xs">
-                  <Loader2 size={24} className="animate-spin text-primary mb-2" />
-                  Searching user catalog...
+            {activeTab === "search" ? (
+              <>
+                {/* Search Input Box */}
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-3.5 text-muted-foreground/60" size={16} />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search by name or email address..."
+                    className="w-full bg-slate-100/50 dark:bg-slate-900/50 text-foreground text-sm rounded-xl pl-10 pr-4 py-3 border border-border focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all outline-none"
+                    autoFocus
+                  />
+                  {query && (
+                    <button
+                      onClick={() => setQuery("")}
+                      className="absolute right-3.5 top-3.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
-              ) : options.length > 0 ? (
-                <div className="divide-y divide-border/50">
-                  {options.map((u) => {
-                    const isChecked = selectedSet.has(u.email);
-                    return (
-                      <div
-                        key={u._id}
-                        onClick={() => toggle(u.email)}
-                        className="flex items-center justify-between py-3 px-2 hover:bg-foreground/5 rounded-xl transition-all duration-200 cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          {u.photoURL ? (
-                            <img
-                              src={u.photoURL}
-                              alt={u.name || "User"}
-                              className="w-10 h-10 rounded-full object-cover border border-border shadow-sm"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shadow-inner">
-                              {u.name ? u.name.charAt(0).toUpperCase() : "U"}
+
+                {/* Helper State */}
+                {!hasSearch && (
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 px-1">
+                    <Mail size={14} className="text-violet-500 animate-pulse" />
+                    <span>Search name or email to view matching registered SplitEase users.</span>
+                  </div>
+                )}
+
+                {/* Results Grid - Spacious List View */}
+                <div className="max-h-[240px] min-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-xs">
+                      <Loader2 size={24} className="animate-spin text-primary mb-2" />
+                      Searching user catalog...
+                    </div>
+                  ) : options.length > 0 ? (
+                    <div className="divide-y divide-border/50">
+                      {options.map((u) => {
+                        const isChecked = selectedSet.has(u.email);
+                        return (
+                          <div
+                            key={u._id}
+                            onClick={() => toggle(u.email)}
+                            className="flex items-center justify-between py-3 px-2 hover:bg-foreground/5 rounded-xl transition-all duration-200 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              {u.photoURL ? (
+                                <img
+                                  src={u.photoURL}
+                                  alt={u.name || "User"}
+                                  className="w-10 h-10 rounded-full object-cover border border-border shadow-sm"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shadow-inner">
+                                  {u.name ? u.name.charAt(0).toUpperCase() : "U"}
+                                </div>
+                              )}
+
+                              {/* Full Name & Email completely visible and readable */}
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm text-foreground truncate">
+                                  {u.name || "Unnamed User"}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {u.email}
+                                </p>
+                              </div>
                             </div>
-                          )}
 
-                          {/* Full Name & Email completely visible and readable */}
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm text-foreground truncate">
-                              {u.name || "Unnamed User"}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {u.email}
-                            </p>
+                            {/* Interactive select check circle */}
+                            <div
+                              className={`flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border transition-all ${
+                                isChecked
+                                  ? "bg-primary border-primary text-primary-foreground scale-110 shadow-sm"
+                                  : "border-border text-transparent hover:border-primary/50"
+                              }`}
+                            >
+                              <Check size={14} className="stroke-[3px]" />
+                            </div>
                           </div>
-                        </div>
+                        );
+                      })}
+                    </div>
+                  ) : hasSearch ? (
+                    <div className="text-center py-16 text-xs text-muted-foreground italic">
+                      No registered users found matching &quot;{query}&quot;
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-xs text-center px-4">
+                      <UserPlus className="text-muted-foreground/30 mb-2" size={32} />
+                      <p className="font-semibold text-foreground/75">Select members to add</p>
+                      <p className="mt-1 text-muted-foreground/60">Search for members in the search input above to begin.</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Manual Email Input */}
+                <form onSubmit={addManualEmail} className="flex gap-2.5">
+                  <input
+                    type="email"
+                    value={manualEmail}
+                    onChange={(e) => setManualEmail(e.target.value)}
+                    placeholder="Enter friend's email address..."
+                    className="flex-grow bg-slate-100/50 dark:bg-slate-900/50 text-foreground text-sm rounded-xl px-4 py-3 border border-border focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all outline-none"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:opacity-95 transition cursor-pointer shrink-0"
+                  >
+                    <Plus size={16} /> Add Email
+                  </button>
+                </form>
 
-                        {/* Interactive select check circle */}
-                        <div
-                          className={`flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border transition-all ${
-                            isChecked
-                              ? "bg-primary border-primary text-primary-foreground scale-110 shadow-sm"
-                              : "border-border text-transparent hover:border-primary/50"
-                          }`}
-                        >
-                          <Check size={14} className="stroke-[3px]" />
-                        </div>
-                      </div>
-                    );
-                  })}
+                {/* Info details */}
+                <div className="bg-slate-50 dark:bg-slate-900/25 border border-border/50 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                    <Mail size={16} className="text-violet-500 animate-pulse" />
+                    <span>How Invite by Email works</span>
+                  </div>
+                  <ul className="text-xs text-muted-foreground space-y-2 list-disc list-inside leading-relaxed">
+                    <li>Enter any email address manually to quickly queue them for this group.</li>
+                    <li>If they are already registered, they will be instantly added to your active trip room.</li>
+                    <li>If they are not registered yet, we will register their email invitation details so they join your trip automatically upon signing up!</li>
+                  </ul>
                 </div>
-              ) : hasSearch ? (
-                <div className="text-center py-16 text-xs text-muted-foreground italic">
-                  No registered users found matching &quot;{query}&quot;
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-xs text-center px-4">
-                  <UserPlus className="text-muted-foreground/30 mb-2" size={32} />
-                  <p className="font-semibold text-foreground/75">Select members to add</p>
-                  <p className="mt-1 text-muted-foreground/60">Search for members in the search input above to begin.</p>
-                </div>
-              )}
-            </div>
+                <div className="min-h-[60px]" />
+              </>
+            )}
 
             {/* Selected Chips panel */}
             {selected.length > 0 && (

@@ -12,6 +12,33 @@ import { BellRing, Clock3, ReceiptText, UsersRound, AlertTriangle, AlertCircle, 
 const NotificationContext = createContext();
 
 const getOneSignal = async () => (await import("react-onesignal")).default;
+const ONESIGNAL_PRODUCTION_HOST = "split-expense-vert.vercel.app";
+
+const getOneSignalOriginStatus = () => {
+  if (typeof window === "undefined") {
+    return { supported: false, reason: "OneSignal can only run in the browser." };
+  }
+
+  const hostname = window.location.hostname;
+  const enableLocalTesting = process.env.NEXT_PUBLIC_ONESIGNAL_ENABLE_LOCAL === "true";
+
+  if (hostname === ONESIGNAL_PRODUCTION_HOST) {
+    return { supported: true, hostname };
+  }
+
+  if ((hostname === "localhost" || hostname === "127.0.0.1") && enableLocalTesting) {
+    return { supported: true, hostname };
+  }
+
+  return {
+    supported: false,
+    hostname,
+    reason:
+      hostname === "localhost" || hostname === "127.0.0.1"
+        ? "OneSignal local testing is disabled. Set NEXT_PUBLIC_ONESIGNAL_ENABLE_LOCAL=true only after enabling Local Testing in the OneSignal dashboard."
+        : `OneSignal is configured for https://${ONESIGNAL_PRODUCTION_HOST}. Push is bypassed on ${hostname}.`,
+  };
+};
 
 const unregisterLegacyFirebaseWorkers = async () => {
   if (typeof navigator === "undefined" || !navigator.serviceWorker?.getRegistrations) {
@@ -207,7 +234,8 @@ export function NotificationProvider({ children }) {
     const setupOneSignal = async () => {
       const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
       const safariWebId = process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID;
-      const currentHostname = window.location.hostname;
+      const originStatus = getOneSignalOriginStatus();
+      const currentHostname = originStatus.hostname;
 
       if (!appId) {
         const warnMsg = "OneSignal App ID is missing. Set NEXT_PUBLIC_ONESIGNAL_APP_ID in frontend/.env and restart Next.js.";
@@ -216,7 +244,10 @@ export function NotificationProvider({ children }) {
         return;
       }
 
-
+      if (!originStatus.supported) {
+        setOneSignalError(originStatus.reason);
+        return;
+      }
 
       // 🧠 2. Intercept global errors to prevent Next.js dev crash overlays
       const handleGlobalError = (event) => {
@@ -243,19 +274,6 @@ export function NotificationProvider({ children }) {
       }
 
       try {
-        const isProduction = 
-          currentHostname === "split-expense-vert.vercel.app" || 
-          currentHostname.endsWith(".vercel.app");
-        const isLocal = currentHostname === "localhost" || currentHostname === "127.0.0.1";
-
-        // Gracefully bypass if running on an unsupported development domain/IP
-        if (!isProduction && !isLocal) {
-          const warnMsg = `⚠️ OneSignal: Domain '${currentHostname}' is not configured. Push is bypassed. Use localhost or https://split-expense-vert.vercel.app to test.`;
-          console.warn(warnMsg);
-          setOneSignalError(warnMsg);
-          return;
-        }
-
         console.log("📣 Initializing OneSignal...", {
           appId,
           origin: window.location.origin,
@@ -310,8 +328,13 @@ export function NotificationProvider({ children }) {
         OneSignal.User.PushSubscription.addEventListener("change", pushSubscriptionChangeListener);
 
       } catch (err) {
-        console.error("❌ OneSignal setup failed:", err);
-        setOneSignalError(err.message || "Initialization failed.");
+        const message = err.message || "Initialization failed.";
+        if (message.includes("Can only be used on") || message.includes(ONESIGNAL_PRODUCTION_HOST)) {
+          setOneSignalError("OneSignal origin mismatch. Push is bypassed for this environment.");
+        } else {
+          console.error("❌ OneSignal setup failed:", err);
+          setOneSignalError(message);
+        }
       } finally {
         // Remove the error interceptors after bootstrap has finished
         setTimeout(() => {
@@ -340,6 +363,13 @@ export function NotificationProvider({ children }) {
   // Request permission manually via UI toggle
   const requestOneSignalPermission = async () => {
     try {
+      const originStatus = getOneSignalOriginStatus();
+      if (!originStatus.supported) {
+        setOneSignalError(originStatus.reason);
+        toast.error(originStatus.reason);
+        return null;
+      }
+
       const OneSignal = await getOneSignal();
       console.log("📣 Requesting OneSignal push permission...");
       
@@ -370,6 +400,15 @@ export function NotificationProvider({ children }) {
   // Disable push notifications manually via UI
   const disableOneSignalNotifications = async () => {
     try {
+      const originStatus = getOneSignalOriginStatus();
+      if (!originStatus.supported) {
+        setOneSignalSubscriptionId(null);
+        setOneSignalPermission("default");
+        setOneSignalError(originStatus.reason);
+        toast.success("Push notifications are already disabled here.");
+        return;
+      }
+
       const OneSignal = await getOneSignal();
       console.log("📣 Disabling OneSignal push notifications...");
 
