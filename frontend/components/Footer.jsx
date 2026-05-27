@@ -72,14 +72,14 @@ export default function Footer() {
       style={{ background: "#080810" }}
     >
       {/* Top gradient line */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent" />
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
 
       {/* Background glow */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.12) 0%, transparent 70%)",
+            "radial-gradient(ellipse at 50% 0%, rgba(8,145,178,0.12) 0%, transparent 70%)",
         }}
       />
 
@@ -120,8 +120,8 @@ export default function Footer() {
                     border: "1px solid rgba(255,255,255,0.08)",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(139,92,246,0.2)";
-                    e.currentTarget.style.border = "1px solid rgba(139,92,246,0.35)";
+                    e.currentTarget.style.background = "rgba(8,145,178,0.2)";
+                    e.currentTarget.style.border = "1px solid rgba(8,145,178,0.35)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "rgba(255,255,255,0.06)";
@@ -137,8 +137,8 @@ export default function Footer() {
           {/* Newsletter */}
           <div className="max-w-sm w-full">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-              <p className="text-xs font-bold uppercase tracking-widest text-violet-400">Newsletter</p>
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <p className="text-xs font-bold uppercase tracking-widest text-cyan-400">Newsletter</p>
             </div>
             <h3 className="text-white font-bold text-lg leading-snug mb-1">
               Get tips on smarter expense splitting
@@ -168,8 +168,8 @@ export default function Footer() {
                     border: "1px solid rgba(255,255,255,0.1)",
                   }}
                   onFocus={(e) => {
-                    e.target.style.border = "1px solid rgba(139,92,246,0.5)";
-                    e.target.style.boxShadow = "0 0 0 3px rgba(139,92,246,0.1)";
+                    e.target.style.border = "1px solid rgba(8,145,178,0.5)";
+                    e.target.style.boxShadow = "0 0 0 3px rgba(8,145,178,0.1)";
                   }}
                   onBlur={(e) => {
                     e.target.style.border = "1px solid rgba(255,255,255,0.1)";
@@ -180,8 +180,8 @@ export default function Footer() {
                   type="submit"
                   className="flex items-center gap-1.5 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0"
                   style={{
-                    background: "linear-gradient(135deg,#8b5cf6,#6366f1)",
-                    boxShadow: "0 0 20px rgba(139,92,246,0.35)",
+                    background: "linear-gradient(135deg,#0891B2,#0E7490)",
+                    boxShadow: "0 0 20px rgba(8,145,178,0.35)",
                   }}
                 >
                   Subscribe

@@ -14,8 +14,8 @@ const logos = [
 ];
 
 const stats = [
-  { icon: Users, value: "2,000+", label: "Active Groups", color: "#8b5cf6" },
-  { icon: TrendingUp, value: "₹50L+", label: "Total Split", color: "#6366f1" },
+  { icon: Users, value: "2,000+", label: "Active Groups", color: "#0891B2" },
+  { icon: TrendingUp, value: "₹50L+", label: "Total Split", color: "#0E7490" },
   { icon: Star, value: "4.9 / 5", label: "User Rating", color: "#f59e0b" },
   { icon: Globe, value: "120+", label: "Cities Covered", color: "#ec4899" },
 ];
@@ -25,13 +25,13 @@ export default function LogoSlider() {
     <section className="relative py-16 overflow-hidden bg-background">
 
       {/* Subtle top & bottom gradient lines */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-400/30 to-transparent" />
-      <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-400/30 to-transparent" />
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
+      <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
 
       {/* Soft background glow */}
       <div className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(139,92,246,0.06) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(8,145,178,0.06) 0%, transparent 70%)",
         }}
       />
 
@@ -47,25 +47,25 @@ export default function LogoSlider() {
         >
           {/* Decorative line + label */}
           <div className="flex items-center gap-4 mb-5">
-            <div className="h-px w-20 bg-gradient-to-r from-transparent to-violet-400/50" />
+            <div className="h-px w-20 bg-gradient-to-r from-transparent to-cyan-400/50" />
             <span
               className="text-[11px] font-extrabold uppercase tracking-[0.2em] px-3 py-1 rounded-full"
               style={{
-                background: "rgba(139,92,246,0.1)",
-                border: "1px solid rgba(139,92,246,0.25)",
-                color: "#a78bfa",
+                background: "rgba(8,145,178,0.1)",
+                border: "1px solid rgba(8,145,178,0.25)",
+                color: "#22D3EE",
               }}
             >
               Social Proof
             </span>
-            <div className="h-px w-20 bg-gradient-to-l from-transparent to-violet-400/50" />
+            <div className="h-px w-20 bg-gradient-to-l from-transparent to-cyan-400/50" />
           </div>
 
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-center tracking-tight text-foreground">
             Loved by{" "}
             <span
               className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #ec4899 100%)" }}
+              style={{ backgroundImage: "linear-gradient(135deg, #0891B2 0%, #0E7490 50%, #ec4899 100%)" }}
             >
               travelers worldwide
             </span>
@@ -92,8 +92,8 @@ export default function LogoSlider() {
               transition={{ duration: 0.5, delay: 0.1 + i * 0.08 }}
               className="group flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-300 hover:-translate-y-0.5"
               style={{
-                background: "rgba(139,92,246,0.04)",
-                border: "1px solid rgba(139,92,246,0.12)",
+                background: "rgba(8,145,178,0.04)",
+                border: "1px solid rgba(8,145,178,0.12)",
               }}
             >
               <div
@@ -133,10 +133,10 @@ export default function LogoSlider() {
               {logos.map(({ src, name }, i) => (
                 <div
                   key={`${setIdx}-${i}`}
-                  className="group flex items-center gap-3 px-5 py-3 rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-violet-400/30 cursor-default select-none"
+                  className="group flex items-center gap-3 px-5 py-3 rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-400/30 cursor-default select-none"
                   style={{
-                    background: "rgba(139,92,246,0.04)",
-                    border: "1px solid rgba(139,92,246,0.1)",
+                    background: "rgba(8,145,178,0.04)",
+                    border: "1px solid rgba(8,145,178,0.1)",
                     backdropFilter: "blur(8px)",
                   }}
                 >

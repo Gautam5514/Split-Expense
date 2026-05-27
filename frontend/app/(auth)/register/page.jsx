@@ -11,31 +11,31 @@ import { api } from "@/lib/api";
 const steps = [
   {
     number: "01",
-    gradient: "from-indigo-500 to-violet-600",
-    glow: "rgba(99,102,241,0.35)",
+    gradient: "from-teal-500 to-cyan-600",
+    glow: "rgba(8,145,178,0.35)",
     title: "Create a group",
     desc: "Add your friends, roommates, or travel buddies to a shared group.",
   },
   {
     number: "02",
-    gradient: "from-violet-500 to-purple-600",
-    glow: "rgba(139,92,246,0.35)",
+    gradient: "from-cyan-500 to-sky-600",
+    glow: "rgba(8,145,178,0.35)",
     title: "Log expenses",
     desc: "Record who paid and split the bill any way you like.",
   },
   {
     number: "03",
-    gradient: "from-purple-500 to-pink-600",
-    glow: "rgba(168,85,247,0.35)",
+    gradient: "from-sky-500 to-teal-600",
+    glow: "rgba(14,165,233,0.35)",
     title: "Settle up",
     desc: "See exactly who owes what and mark debts as paid in one tap.",
   },
 ];
 
 const avatars = [
-  { label: "A", color: "#6366f1" },
-  { label: "M", color: "#8b5cf6" },
-  { label: "J", color: "#a855f7" },
+  { label: "A", color: "#0891B2" },
+  { label: "M", color: "#0E7490" },
+  { label: "J", color: "#0EA5E9" },
   { label: "R", color: "#ec4899" },
 ];
 
@@ -139,17 +139,17 @@ export default function RegisterPage() {
       {/* ── Left visual panel ── */}
       <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden flex-col justify-center px-12 py-8">
         {/* bg */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#0c1445 0%,#1a0533 55%,#0f0c29 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#032040 0%,#052235 55%,#03101F 100%)" }} />
         {/* grid */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(139,92,246,1) 1px,transparent 1px),linear-gradient(90deg,rgba(139,92,246,1) 1px,transparent 1px)", backgroundSize: "56px 56px" }} />
+        <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "linear-gradient(rgba(8,145,178,1) 1px,transparent 1px),linear-gradient(90deg,rgba(8,145,178,1) 1px,transparent 1px)", backgroundSize: "56px 56px" }} />
         {/* orbs */}
-        <div className="absolute w-[440px] h-[440px] rounded-full pointer-events-none" style={{ bottom: "-10%", left: "-5%", background: "radial-gradient(circle,rgba(139,92,246,0.15) 0%,transparent 70%)" }} />
-        <div className="absolute w-[320px] h-[320px] rounded-full pointer-events-none" style={{ top: "5%", right: "-5%", background: "radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)" }} />
+        <div className="absolute w-[440px] h-[440px] rounded-full pointer-events-none" style={{ bottom: "-10%", left: "-5%", background: "radial-gradient(circle,rgba(8,145,178,0.15) 0%,transparent 70%)" }} />
+        <div className="absolute w-[320px] h-[320px] rounded-full pointer-events-none" style={{ top: "5%", right: "-5%", background: "radial-gradient(circle,rgba(14,116,144,0.12) 0%,transparent 70%)" }} />
 
         <div className="relative z-10 max-w-[400px]">
           {/* logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
+            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(8,145,178,0.4)" }}>
               <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
             <span className="text-2xl font-black text-white tracking-tight">SplitEase</span>
@@ -158,7 +158,7 @@ export default function RegisterPage() {
           {/* headline */}
           <h1 className="text-[2.2rem] font-extrabold text-white leading-[1.15] mb-3">
             Built for groups,<br />
-            <span style={{ background: "linear-gradient(90deg,#a78bfa,#c084fc,#e879f9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <span style={{ background: "linear-gradient(90deg,#22D3EE,#0EA5E9,#38BDF8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               loved by friends.
             </span>
           </h1>
@@ -175,7 +175,7 @@ export default function RegisterPage() {
                     <span className="text-white text-xs font-black">{step.number}</span>
                   </div>
                   {i < steps.length - 1 && (
-                    <div className="absolute left-1/2 top-full -translate-x-1/2 w-px mt-0.5" style={{ height: "16px", background: "linear-gradient(to bottom,rgba(139,92,246,0.4),transparent)" }} />
+                    <div className="absolute left-1/2 top-full -translate-x-1/2 w-px mt-0.5" style={{ height: "16px", background: "linear-gradient(to bottom,rgba(8,145,178,0.4),transparent)" }} />
                   )}
                 </div>
                 <div className="pb-3">
@@ -190,7 +190,7 @@ export default function RegisterPage() {
           <div className="mt-6 flex items-center gap-4 rounded-2xl px-4 py-3 border border-white/[0.07]" style={{ background: "rgba(255,255,255,0.03)" }}>
             <div className="flex -space-x-2">
               {avatars.map((a) => (
-                <div key={a.label} className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ring-2 ring-[#0c1445]" style={{ background: a.color }}>
+                <div key={a.label} className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ring-2 ring-[#032040]" style={{ background: a.color }}>
                   {a.label}
                 </div>
               ))}
@@ -204,7 +204,7 @@ export default function RegisterPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 h-[100dvh] flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#0d0d18" }}>
+      <div className="flex-1 h-[100dvh] flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#04111F" }}>
         <div className="w-full max-w-[380px] py-4">
           {/* mobile logo */}
           <div className="flex items-center gap-2.5 mb-5 lg:hidden justify-center">
@@ -237,7 +237,7 @@ export default function RegisterPage() {
               <div className="w-full border-t border-white/[0.08]" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-4 text-[10px] font-medium text-slate-600 uppercase tracking-[0.2em]" style={{ background: "#0d0d18" }}>
+              <span className="px-4 text-[10px] font-medium text-slate-600 uppercase tracking-[0.2em]" style={{ background: "#04111F" }}>
                 or sign up with email
               </span>
             </div>
@@ -250,9 +250,9 @@ export default function RegisterPage() {
               <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Full name</label>
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
-                  background: focused === "name" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: errors.name ? "#f87171" : (focused === "name" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
-                  boxShadow: errors.name ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "name" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
+                  background: focused === "name" ? "rgba(8,145,178,0.06)" : "rgba(255,255,255,0.04)",
+                  borderColor: errors.name ? "#f87171" : (focused === "name" ? "rgba(8,145,178,0.6)" : "rgba(255,255,255,0.08)"),
+                  boxShadow: errors.name ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "name" ? "0 0 0 3px rgba(8,145,178,0.1)" : "none"),
                 }}>
                 <User className="absolute left-4 w-4 h-4 text-slate-600" />
                 <input
@@ -271,9 +271,9 @@ export default function RegisterPage() {
               <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Email address</label>
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
-                  background: focused === "email" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: errors.email ? "#f87171" : (focused === "email" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
-                  boxShadow: errors.email ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "email" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
+                  background: focused === "email" ? "rgba(8,145,178,0.06)" : "rgba(255,255,255,0.04)",
+                  borderColor: errors.email ? "#f87171" : (focused === "email" ? "rgba(8,145,178,0.6)" : "rgba(255,255,255,0.08)"),
+                  boxShadow: errors.email ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "email" ? "0 0 0 3px rgba(8,145,178,0.1)" : "none"),
                 }}>
                 <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
                 <input
@@ -292,9 +292,9 @@ export default function RegisterPage() {
               <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Password</label>
               <div className="relative flex items-center rounded-xl border transition-all duration-200"
                 style={{
-                  background: focused === "password" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: errors.password ? "#f87171" : (focused === "password" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
-                  boxShadow: errors.password ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "password" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
+                  background: focused === "password" ? "rgba(8,145,178,0.06)" : "rgba(255,255,255,0.04)",
+                  borderColor: errors.password ? "#f87171" : (focused === "password" ? "rgba(8,145,178,0.6)" : "rgba(255,255,255,0.08)"),
+                  boxShadow: errors.password ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "password" ? "0 0 0 3px rgba(8,145,178,0.1)" : "none"),
                 }}>
                 <Lock className="absolute left-4 w-4 h-4 text-slate-600" />
                 <input
@@ -331,9 +331,9 @@ export default function RegisterPage() {
             <button
               type="submit" disabled={isLoading}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
-              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(99,102,241,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+              style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 4px 20px rgba(8,145,178,0.35)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(8,145,178,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(8,145,178,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
               {isLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Creating account…</> : <>Create account <ArrowRight className="w-4 h-4" /></>}
             </button>
@@ -348,7 +348,7 @@ export default function RegisterPage() {
 
           <p className="mt-2.5 text-center text-xs text-slate-500">
             Already have an account?{" "}
-            <a href="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+            <a href="/login" className="text-sky-400 hover:text-sky-300 font-semibold transition-colors">
               Sign in →
             </a>
           </p>

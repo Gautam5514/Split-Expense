@@ -8,12 +8,12 @@ import { useAuth } from "@/context/AuthContext";
 import MemberPicker from "@/components/MemberPicker";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import InviteModal from "@/components/InviteModal";
+import Image from "next/image";
 import {
   ArrowLeftCircle,
   Loader2,
   Wallet2,
   PlusCircle,
-  Users2,
   StarIcon,
   X,
   Receipt,
@@ -30,14 +30,14 @@ import {
   Trash2,
   ChevronDown,
   CalendarDays,
-  UserPlus,
   QrCode,
   ArrowUpRight,
   ArrowDownLeft,
-  DollarSign,
   TrendingUp,
   BookOpen,
   CheckCircle,
+  UserPlus,
+  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import NotepadSection from "@/components/Notepad/NotepadSection";
@@ -56,6 +56,17 @@ const categoryIcons = {
   general: FileText,
 };
 
+const INR = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+
+const fmtDate = new Intl.DateTimeFormat("en-IN", {
+  day: "2-digit",
+  month: "short",
+});
+
 export default function GroupDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -73,10 +84,9 @@ export default function GroupDetailPage() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [selectedOcr, setSelectedOcr] = useState(null);
   const [expandedPayerId, setExpandedPayerId] = useState(null);
-  const [activeTab, setActiveTab] = useState("feed"); // "feed" | "breakdown" | "notes"
+  const [activeTab, setActiveTab] = useState("feed");
   const [showAllExpenses, setShowAllExpenses] = useState(false);
 
-  // Fetch Group Details
   const fetchGroup = async () => {
     try {
       setLoading(true);
@@ -121,9 +131,7 @@ export default function GroupDetailPage() {
       setAdding(true);
       const res = await api.post(`/groups/${groupId}/members`, { emails });
       setGroup(res.data);
-      toast.success(
-        `Added ${emails.length} member${emails.length > 1 ? "s" : ""}`
-      );
+      toast.success(`Added ${emails.length} member${emails.length > 1 ? "s" : ""}`);
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to add members");
     } finally {
@@ -136,7 +144,7 @@ export default function GroupDetailPage() {
       const res = await api.delete(`/groups/${groupId}/members/${userId}`);
       setGroup(res.data);
       toast.success("Member removed");
-      fetchBalances(); // Refresh balances in case someone was removed
+      fetchBalances();
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to remove member");
     }
@@ -162,7 +170,7 @@ export default function GroupDetailPage() {
         exactSplits: [{ userId: toUser.userId, share: Number(amount) }],
         paidBy: fromUser.userId,
       });
-      toast.success("Settlement payment recorded!");
+      toast.success("Settlement recorded!");
       fetchExpenses();
       fetchBalances();
     } catch (e) {
@@ -173,72 +181,40 @@ export default function GroupDetailPage() {
   };
 
   const getCurrentUserId = () => {
-    try {
-      return token ? JSON.parse(atob(token.split(".")[1]))?.id : null;
-    } catch {
-      return null;
-    }
+    try { return token ? JSON.parse(atob(token.split(".")[1]))?.id : null; }
+    catch { return null; }
   };
 
   const isCreator =
-    group &&
-    String(group.createdBy?._id || group.createdBy) === String(getCurrentUserId());
+    group && String(group.createdBy?._id || group.createdBy) === String(getCurrentUserId());
 
   const expenseSummary = useMemo(() => {
-    const currency = new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    });
-
-    const date = new Intl.DateTimeFormat("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-
     const byPayer = expenses.reduce((acc, expense) => {
       const payerId = String(expense.paidBy?._id || "unknown");
       if (!acc[payerId]) {
-        acc[payerId] = {
-          id: payerId,
-          name: expense.paidBy?.name || "Unknown spender",
-          email: expense.paidBy?.email || "",
-          total: 0,
-          items: [],
-        };
+        acc[payerId] = { id: payerId, name: expense.paidBy?.name || "Unknown", email: expense.paidBy?.email || "", total: 0, items: [] };
       }
-
       acc[payerId].total += Number(expense.amount) || 0;
       acc[payerId].items.push(expense);
       return acc;
     }, {});
-
     return {
-      currency,
-      date,
       payers: Object.values(byPayer).sort((a, b) => b.total - a.total),
-      total: expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0),
+      total: expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
     };
   }, [expenses]);
 
   const currentUserBalance = useMemo(() => {
     if (!balances?.balances) return 0;
-    const currentUid = getCurrentUserId();
-    const userBal = balances.balances.find((b) => String(b.userId) === String(currentUid));
-    return userBal ? Number(userBal.balance) : 0;
+    const uid = getCurrentUserId();
+    const b = balances.balances.find((b) => String(b.userId) === String(uid));
+    return b ? Number(b.balance) : 0;
   }, [balances, token]);
 
   const handleDeleteTrip = async () => {
-    const confirmed = window.confirm(
-      "Delete this trip and all of its expenses, notes, and group messages?"
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm("Delete this trip and all of its expenses, notes, and messages?")) return;
     try {
-      await api.delete(`/groups/${groupId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/groups/${groupId}`, { headers: { Authorization: `Bearer ${token}` } });
       toast.success("Trip deleted");
       router.push("/dashboard");
     } catch (e) {
@@ -246,499 +222,319 @@ export default function GroupDetailPage() {
     }
   };
 
-  const goBack = () => router.push("/dashboard");
-  const goToChat = () => router.push(`/groupchat?groupId=${groupId}`);
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[80vh] bg-background text-muted-foreground">
-        <Loader2 className="animate-spin mr-2" /> Loading group details…
+      <div className="flex flex-col items-center justify-center h-[80vh] gap-3 bg-background">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-muted-foreground text-sm">Loading group details…</p>
       </div>
     );
   }
 
   if (!group) {
     return (
-      <div className="max-w-3xl mx-auto p-6 text-foreground bg-card">
-        <p className="mb-3">Group not found.</p>
-        <button
-          className="text-primary underline flex items-center gap-1"
-          onClick={() => router.push("/dashboard")}
-        >
-          <ArrowLeftCircle size={14} /> Back to Dashboard
+      <div className="max-w-md mx-auto p-8 text-center">
+        <p className="text-muted-foreground mb-4">Group not found.</p>
+        <button onClick={() => router.push("/dashboard")} className="text-primary underline text-sm">
+          Back to Dashboard
         </button>
       </div>
     );
   }
 
+  const tabs = [
+    { key: "feed", label: "Expenses Log", icon: Receipt },
+    { key: "breakdown", label: "Spend Owners", icon: TrendingUp },
+    { key: "notes", label: "Shared Notes", icon: BookOpen },
+  ];
+
+  const displayedExpenses = expenses.length > 10 && !showAllExpenses ? expenses.slice(0, 9) : expenses;
+
   return (
-    <div className="min-h-screen bg-background text-foreground pt-8 pb-32 sm:pb-8 px-4 sm:px-6 md:px-8 space-y-8">
-      
-      {/* 🚀 PREMIUM GLASSMORPHIC HEADER */}
-      <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full bg-card border border-border p-6 rounded-2xl shadow-sm relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5 pointer-events-none" />
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
+    <div className="min-h-screen bg-background text-foreground pt-6 pb-32 sm:pb-10 px-4 sm:px-6 md:px-8">
+      <div className="max-w-6xl mx-auto space-y-5">
+
+        {/* ── HEADER ── */}
+        <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  {group.isCompleted ? "Completed" : "Active Group"}
-                </span>
-              </div>
-              <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent mt-2">
+              <span className={`inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                group.isCompleted
+                  ? "bg-muted text-muted-foreground"
+                  : "bg-cyan-100 dark:bg-cyan-950/70 text-cyan-700 dark:text-cyan-300"
+              }`}>
+                {group.isCompleted ? "Completed" : "Active Group"}
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground mt-2 leading-tight">
                 {group.name}
               </h1>
-              <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
-                <StarIcon size={14} className="text-amber-500 fill-amber-500" />
-                Created by <span className="font-semibold text-foreground">{group.createdBy?.name || "You"}</span>
+              <p className="text-muted-foreground text-sm flex items-center gap-1.5 mt-1">
+                <StarIcon size={13} className="text-amber-500 fill-amber-500 shrink-0" />
+                Created by{" "}
+                <span className="font-semibold text-foreground">{group.createdBy?.name || "You"}</span>
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Group Chat */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={goToChat}
-                className="flex items-center gap-2 bg-primary hover:bg-primary/95 text-primary-foreground text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md transition-all cursor-pointer"
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg border border-border hover:bg-muted/50 transition cursor-pointer"
               >
-                <MessageCircleMore size={16} />
-                Group Chat
-              </motion.button>
-
+                <ArrowLeftCircle size={15} /> Back
+              </button>
               {isCreator && (
                 <button
                   type="button"
                   onClick={handleDeleteTrip}
-                  className="flex items-center gap-2 text-sm font-semibold text-destructive hover:text-destructive/80 px-3 py-2 rounded-xl transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 text-sm font-semibold text-destructive border border-destructive/25 hover:bg-destructive/5 px-3 py-2 rounded-lg transition cursor-pointer"
                 >
-                  <Trash2 size={16} />
-                  Delete Group
+                  <Trash2 size={15} /> Delete Group
                 </button>
               )}
-
-              {/* Back */}
               <button
-                onClick={goBack}
-                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl border border-border bg-card transition-all cursor-pointer"
+                onClick={() => router.push(`/groupchat?groupId=${groupId}`)}
+                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold px-4 py-2 rounded-lg shadow transition cursor-pointer"
               >
-                <ArrowLeftCircle size={16} /> Back
+                <MessageCircleMore size={15} /> Group Chat
               </button>
             </div>
           </div>
-        </motion.div>
-      </div>
+        </div>
 
-      {/* 💳 QUICK FINTECH INFO CARDS */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Card 1: Total Spent */}
-        <div className="bg-card border border-border/80 p-5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-300">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-bl-full pointer-events-none group-hover:bg-indigo-500/10 transition-colors" />
-          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Total Group Spend</p>
-          <p className="text-2xl font-black text-foreground mt-2 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-            {expenseSummary.currency.format(expenseSummary.total)}
-          </p>
-          <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            <span>Across {expenses.length} logged expense items</span>
+        {/* ── STAT CARDS ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Total Spend */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Group Spend</p>
+            <p className="text-2xl font-black text-foreground mt-2">{INR.format(expenseSummary.total)}</p>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Across {expenses.length} logged expense{expenses.length !== 1 ? "s" : ""}
+            </p>
           </div>
-        </div>
 
-        {/* Card 2: Personal Balance Position */}
-        <div className={`bg-card border p-5 rounded-2xl shadow-sm relative overflow-hidden group transition-all duration-300 ${
-          currentUserBalance > 0.01 
-            ? "border-emerald-500/20 hover:border-emerald-500/40" 
-            : currentUserBalance < -0.01 
-            ? "border-rose-500/20 hover:border-rose-500/40" 
-            : "border-border/80 hover:border-primary/30"
-        }`}>
-          <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full pointer-events-none transition-colors ${
-            currentUserBalance > 0.01 
-              ? "bg-emerald-500/5 group-hover:bg-emerald-500/10" 
-              : currentUserBalance < -0.01 
-              ? "bg-rose-500/5 group-hover:bg-rose-500/10" 
-              : "bg-primary/5 group-hover:bg-primary/10"
-          }`} />
-          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Your Balance Position</p>
-          
-          {currentUserBalance > 0.01 ? (
-            <>
-              <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
-                +{expenseSummary.currency.format(Math.abs(currentUserBalance))}
-              </p>
-              <div className="flex items-center gap-1 mt-2 text-[10px] text-emerald-600 dark:text-emerald-400">
-                <ArrowUpRight size={12} />
-                <span>You are owed overall by this group</span>
-              </div>
-            </>
-          ) : currentUserBalance < -0.01 ? (
-            <>
-              <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2">
-                -{expenseSummary.currency.format(Math.abs(currentUserBalance))}
-              </p>
-              <div className="flex items-center gap-1 mt-2 text-[10px] text-rose-600 dark:text-rose-400">
-                <ArrowDownLeft size={12} />
-                <span>You owe money to others in this group</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-2xl font-black text-muted-foreground mt-2">
-                Settled Up
-              </p>
-              <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
-                <CheckCircle size={12} className="text-primary" />
-                <span>All balances are settled or zero</span>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Card 3: Active Members */}
-        <div className="bg-card border border-border/80 p-5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-bl-full pointer-events-none group-hover:bg-purple-500/10 transition-colors" />
-          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Active Group Size</p>
-          <p className="text-2xl font-black text-foreground mt-2 bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-            {group.members?.length || 0} Members
-          </p>
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center -space-x-1.5 overflow-hidden">
-              {group.members?.slice(0, 4).map((m, i) => (
-                m.photoURL ? (
-                  <img key={m._id || i} className="inline-block h-5 w-5 rounded-full ring-2 ring-card object-cover" src={m.photoURL} alt="" />
-                ) : (
-                  <div key={m._id || i} className="inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-card bg-neutral-700 text-[8px] font-bold text-white uppercase">
-                    {m.name?.charAt(0) || "U"}
-                  </div>
-                )
-              ))}
-              {group.members?.length > 4 && (
-                <div className="inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-card bg-muted text-[8px] font-bold text-muted-foreground border border-border">
-                  +{group.members.length - 4}
-                </div>
-              )}
-            </div>
-            {isCreator ? (
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => setShowAddMember(true)} 
-                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold cursor-pointer"
-                >
-                  + Add Member
-                </button>
-                <span className="text-[10px] text-muted-foreground">|</span>
-                <button 
-                  onClick={() => setShowInviteModal(true)} 
-                  className="text-[11px] text-primary hover:underline font-bold cursor-pointer"
-                >
-                  + Invite Friends
-                </button>
-              </div>
+          {/* Balance Position */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Your Balance Position</p>
+            {currentUserBalance > 0.01 ? (
+              <>
+                <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
+                  +{INR.format(Math.abs(currentUserBalance))}
+                </p>
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1.5 flex items-center gap-1">
+                  <ArrowUpRight size={11} /> You are owed by this group
+                </p>
+              </>
+            ) : currentUserBalance < -0.01 ? (
+              <>
+                <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2">
+                  -{INR.format(Math.abs(currentUserBalance))}
+                </p>
+                <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1.5 flex items-center gap-1">
+                  <ArrowDownLeft size={11} /> You owe others in this group
+                </p>
+              </>
             ) : (
-              <button 
-                onClick={() => setShowAddMember(true)} 
-                className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold cursor-pointer"
-              >
-                + Add Member
-              </button>
+              <>
+                <p className="text-2xl font-black text-muted-foreground mt-2">Settled Up</p>
+                <p className="text-[11px] text-primary mt-1.5 flex items-center gap-1">
+                  <CheckCircle size={11} /> All balances are settled
+                </p>
+              </>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* 🟦 DUAL PANEL LAYOUT */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-8">
-        
-        {/* ===================== LEFT COLUMN: EXPENSES & NOTES ===================== */}
-        <div className="space-y-6">
-          
-          {/* Tab Switcher Card */}
-          <div className="bg-card border border-border rounded-2xl p-2 shadow-sm flex gap-1">
-            <button
-              onClick={() => setActiveTab("feed")}
-              className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                activeTab === "feed"
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <Receipt size={15} />
-              <span className="sm:hidden">Log</span>
-              <span className="hidden sm:inline">Expenses Log</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("breakdown")}
-              className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                activeTab === "breakdown"
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <TrendingUp size={15} />
-              <span className="sm:hidden">Spend</span>
-              <span className="hidden sm:inline">Spend Owners</span>
-            </button>
-            {/* Balances Tab only on Mobile/Tablet */}
-            <button
-              onClick={() => setActiveTab("balances")}
-              className={`lg:hidden flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                activeTab === "balances"
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <Wallet2 size={15} />
-              Balances
-            </button>
-            <button
-              onClick={() => setActiveTab("notes")}
-              className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                activeTab === "notes"
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <BookOpen size={15} />
-              <span className="sm:hidden">Notes</span>
-              <span className="hidden sm:inline">Shared Notes</span>
-            </button>
-          </div>
-
-          {/* Dynamic Tab Body */}
-          <div className="min-h-[400px]">
-            <AnimatePresence mode="wait">
-              {/* Tab 1: Chronological Expenses Feed */}
-              {activeTab === "feed" && (
-                <motion.div
-                  key="feed"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6"
-                >
-                  <div className="flex items-center justify-between border-b border-border pb-4 gap-3">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-base sm:text-lg text-foreground">Chronological Log</h3>
-                      <p className="hidden sm:block text-xs text-muted-foreground mt-0.5">Every expense recorded in this group in order of time.</p>
+          {/* Members */}
+          <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Active Group Size</p>
+            <p className="text-2xl font-black text-foreground mt-2">
+              {group.members?.length || 0} Members
+            </p>
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex -space-x-2">
+                {group.members?.slice(0, 4).map((m, i) =>
+                  m.photoURL ? (
+                    <Image key={m._id || i} src={m.photoURL} alt={m.name || ""} width={22} height={22}
+                      className="w-5.5 h-5.5 rounded-full ring-2 ring-card object-cover" />
+                  ) : (
+                    <div key={m._id || i} className="w-5.5 h-5.5 rounded-full ring-2 ring-card bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
+                      {m.name?.charAt(0) || "U"}
                     </div>
-                    <button
-                      onClick={() => setShowExpenseModal(true)}
-                      className="flex items-center gap-1.5 bg-primary text-primary-foreground font-semibold px-3 sm:px-4 py-2 rounded-xl shadow-sm text-xs sm:text-sm hover:opacity-95 transition cursor-pointer shrink-0"
-                    >
-                      <PlusCircle size={14} />
-                      <span className="sm:hidden">Add</span>
-                      <span className="hidden sm:inline">Add Expense</span>
+                  )
+                )}
+                {group.members?.length > 4 && (
+                  <div className="w-5.5 h-5.5 rounded-full ring-2 ring-card bg-muted flex items-center justify-center text-[9px] font-bold text-muted-foreground">
+                    +{group.members.length - 4}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-[11px] font-semibold">
+                <button onClick={() => setShowAddMember(true)} className="text-primary hover:underline cursor-pointer">Add Member</button>
+                {isCreator && (
+                  <>
+                    <span className="text-muted-foreground">|</span>
+                    <button onClick={() => setShowInviteModal(true)} className="text-primary hover:underline cursor-pointer">Invite Friends</button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── TWO-COLUMN LAYOUT ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-5">
+
+          {/* LEFT: TABS + CONTENT */}
+          <div className="space-y-4">
+            {/* Tab bar */}
+            <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1 shadow-sm w-fit">
+              {tabs.map(({ key, label, icon: Icon }) => (
+                <button key={key} onClick={() => setActiveTab(key)}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    activeTab === key
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}>
+                  <Icon size={14} />
+                  <span>{label}</span>
+                </button>
+              ))}
+              <button onClick={() => setActiveTab("balances")}
+                className={`lg:hidden flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  activeTab === "balances"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}>
+                <Wallet2 size={14} />
+                <span>Balances</span>
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <AnimatePresence mode="wait">
+
+              {/* Expenses Log */}
+              {activeTab === "feed" && (
+                <motion.div key="feed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
+                  className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+                  <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border">
+                    <h3 className="font-bold text-base text-foreground">Chronological Log</h3>
+                    <button onClick={() => setShowExpenseModal(true)}
+                      className="flex items-center gap-1.5 bg-primary text-primary-foreground font-semibold px-3 py-1.5 rounded-lg text-sm hover:opacity-90 transition cursor-pointer">
+                      <PlusCircle size={14} /> Add Expense
                     </button>
                   </div>
 
                   {expenses.length === 0 ? (
-                    <div className="text-center py-16 border-2 border-dashed border-border rounded-2xl bg-muted/40">
-                      <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted flex items-center justify-center text-primary">
-                        <Receipt size={22} />
+                    <div className="text-center py-16 px-6">
+                      <div className="w-12 h-12 rounded-2xl bg-primary/8 flex items-center justify-center mx-auto mb-3">
+                        <Receipt className="text-primary/50" size={22} />
                       </div>
-                      <p className="font-semibold text-foreground">No expenses recorded</p>
-                      <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-                        Add an expense to start tracking and splitting costs among group members.
-                      </p>
+                      <p className="font-semibold text-foreground text-sm">No expenses recorded</p>
+                      <p className="text-xs text-muted-foreground mt-1">Add an expense to start splitting costs.</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="space-y-3.5">
-                        {((expenses.length > 10 && !showAllExpenses) ? expenses.slice(0, 9) : expenses).map((exp) => {
-                          const catKey = exp.category?.toLowerCase() || "misc";
-                          const Icon = categoryIcons[catKey] || FileText;
-
-                          return (
-                            <div
-                              key={exp._id}
-                              className="flex items-center gap-3 p-3.5 rounded-xl border border-border bg-muted/20 hover:border-primary/40 shadow-sm transition-all duration-200"
-                            >
-                              {/* Category Icon */}
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/10 text-primary">
-                                <Icon size={16} />
-                              </div>
-
-                              {/* Content */}
-                              <div className="flex-1 min-w-0">
-                                {/* Title + Amount row */}
-                                <div className="flex items-center justify-between gap-2">
-                                  <h4 className="font-semibold text-foreground truncate text-sm">
-                                    {exp.description}
-                                  </h4>
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    <span className="font-bold text-sm text-foreground">
-                                      {expenseSummary.currency.format(exp.amount)}
-                                    </span>
-                                    {exp.ocrText && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedOcr(exp);
-                                          setShowOcrModal(true);
-                                        }}
-                                        className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-all cursor-pointer"
-                                        title="View Scanned Bill"
-                                      >
-                                        <Eye size={13} />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Single metadata line */}
-                                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground truncate">
-                                  <span className="font-medium text-foreground/70 truncate max-w-[90px]">{exp.paidBy?.name || "Someone"}</span>
-                                  <span className="text-muted-foreground/30 shrink-0">·</span>
-                                  <CalendarDays size={10} className="shrink-0" />
-                                  <span className="shrink-0">{expenseSummary.date.format(new Date(exp.date))}</span>
-                                  <span className="text-muted-foreground/30 shrink-0">·</span>
-                                  <span className="shrink-0 capitalize">{exp.splitType} split</span>
-                                  {exp.category && exp.category !== "general" && (
-                                    <>
-                                      <span className="text-muted-foreground/30 shrink-0">·</span>
-                                      <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 capitalize shrink-0">
-                                        {exp.category}
-                                      </span>
-                                    </>
-                                  )}
-                                </p>
-                              </div>
+                    <>
+                      {displayedExpenses.map((exp, idx) => {
+                        const catKey = exp.category?.toLowerCase() || "misc";
+                        const Icon = categoryIcons[catKey] || FileText;
+                        return (
+                          <div key={exp._id}
+                            className={`flex items-center gap-3 px-5 sm:px-6 py-3.5 hover:bg-muted/25 transition ${
+                              idx < displayedExpenses.length - 1 ? "border-b border-border" : ""
+                            }`}>
+                            <div className="w-9 h-9 rounded-xl bg-primary/8 border border-primary/10 flex items-center justify-center shrink-0 text-primary">
+                              <Icon size={15} />
                             </div>
-                          );
-                        })}
-                      </div>
-
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-foreground text-sm truncate">{exp.description}</p>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                Paid by {exp.paidBy?.name || "Someone"} · {fmtDate.format(new Date(exp.date))}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {exp.category && exp.category !== "general" && (
+                                <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded bg-primary/8 text-primary border border-primary/10">
+                                  {exp.category}
+                                </span>
+                              )}
+                              {exp.ocrText && (
+                                <button type="button"
+                                  onClick={() => { setSelectedOcr(exp); setShowOcrModal(true); }}
+                                  className="text-muted-foreground hover:text-primary p-1 rounded cursor-pointer transition">
+                                  <Eye size={13} />
+                                </button>
+                              )}
+                              <span className="font-bold text-sm text-foreground">{INR.format(exp.amount)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
                       {expenses.length > 10 && (
-                        <div className="flex justify-center pt-2">
-                          <button
-                            onClick={() => setShowAllExpenses(!showAllExpenses)}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-foreground hover:bg-primary border border-primary/20 bg-primary/5 hover:border-primary px-4.5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer"
-                          >
-                            {showAllExpenses ? "✕ Show Less Logs" : `➕ View All Logs (${expenses.length})`}
+                        <div className="px-6 py-3.5 border-t border-border text-center">
+                          <button onClick={() => setShowAllExpenses(!showAllExpenses)}
+                            className="text-sm font-semibold text-primary hover:text-primary/80 transition cursor-pointer">
+                            {showAllExpenses ? "Show Less" : `View All Logs (${expenses.length})`}
                           </button>
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </motion.div>
               )}
 
-              {/* Tab 2: Spend Owners accordion */}
+              {/* Spend Owners */}
               {activeTab === "breakdown" && (
-                <motion.div
-                  key="breakdown"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6"
-                >
-                  <div>
-                    <h3 className="font-bold text-lg text-foreground">Spend Owners</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Spend breakdown grouped by payer. Click a card to see individual items.</p>
+                <motion.div key="breakdown" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
+                  className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+                  <div className="px-5 sm:px-6 py-4 border-b border-border">
+                    <h3 className="font-bold text-base text-foreground">Spend Owners</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Breakdown by payer — tap to expand</p>
                   </div>
-
                   {expenses.length === 0 ? (
-                    <div className="text-center py-16 text-muted-foreground">No records to break down.</div>
+                    <div className="text-center py-14 text-muted-foreground text-sm">No records to break down.</div>
                   ) : (
-                    <div className="divide-y divide-border border border-border rounded-2xl overflow-hidden shadow-sm">
+                    <div className="divide-y divide-border">
                       {expenseSummary.payers.map((payer) => {
                         const isOpen = expandedPayerId === payer.id;
-                        const firstLetter = payer.name.charAt(0).toUpperCase();
-
                         return (
-                          <div key={payer.id} className="bg-card">
-                            <button
-                              type="button"
+                          <div key={payer.id}>
+                            <button type="button"
                               onClick={() => setExpandedPayerId(isOpen ? null : payer.id)}
-                              className="w-full grid grid-cols-[1.4fr_0.8fr_0.8fr_40px] items-center px-5 py-4 text-left transition hover:bg-muted/30 cursor-pointer"
-                            >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary text-sm">
-                                  {firstLetter || "U"}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="font-semibold text-foreground truncate text-sm">{payer.name}</p>
-                                  <p className="text-xs text-muted-foreground truncate">{payer.email}</p>
-                                </div>
+                              className="w-full flex items-center gap-3 px-5 sm:px-6 py-4 text-left hover:bg-muted/25 transition cursor-pointer">
+                              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                                {payer.name.charAt(0).toUpperCase()}
                               </div>
-
-                              <div>
-                                <p className="font-bold text-foreground">
-                                  {expenseSummary.currency.format(payer.total)}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-foreground text-sm truncate">{payer.name}</p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {payer.items.length} expense{payer.items.length !== 1 ? "s" : ""}
                                 </p>
                               </div>
-
-                              <div>
-                                <p className="text-xs text-muted-foreground">
-                                  {payer.items.length} {payer.items.length === 1 ? "expense" : "expenses"}
-                                </p>
-                              </div>
-
-                              <ChevronDown
-                                size={18}
-                                className={`justify-self-end text-muted-foreground transition-transform ${
-                                  isOpen ? "rotate-180 text-primary" : ""
-                                }`}
-                              />
+                              <span className="font-bold text-foreground text-sm shrink-0">{INR.format(payer.total)}</span>
+                              <ChevronDown size={16}
+                                className={`text-muted-foreground transition-transform shrink-0 ${isOpen ? "rotate-180 text-primary" : ""}`} />
                             </button>
-
                             <AnimatePresence initial={false}>
                               {isOpen && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                  className="overflow-hidden border-t border-border bg-muted/10"
-                                >
-                                  <div className="px-5 py-4 space-y-2">
+                                <motion.div initial={{ height: 0 }} animate={{ height: "auto" }}
+                                  exit={{ height: 0 }} transition={{ duration: 0.2 }}
+                                  className="overflow-hidden bg-muted/20 border-t border-border">
+                                  <div className="px-5 sm:px-6 py-3 space-y-2">
                                     {payer.items.map((exp) => {
-                                      const catKey = exp.category?.toLowerCase() || "misc";
-                                      const Icon = categoryIcons[catKey] || FileText;
-
+                                      const Icon = categoryIcons[exp.category?.toLowerCase()] || FileText;
                                       return (
-                                        <div
-                                          key={exp._id}
-                                          className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
-                                        >
-                                          <div className="flex items-center gap-3 min-w-0">
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted border border-border text-primary">
-                                              <Icon size={14} />
-                                            </div>
-                                            <div className="min-w-0">
-                                              <p className="truncate text-xs font-semibold text-foreground">{exp.description}</p>
-                                              <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                                                <CalendarDays size={11} />
-                                                {expenseSummary.date.format(new Date(exp.date))}
-                                              </p>
-                                            </div>
+                                        <div key={exp._id}
+                                          className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-2.5 shadow-sm">
+                                          <div className="w-7 h-7 rounded-lg bg-primary/8 flex items-center justify-center text-primary shrink-0">
+                                            <Icon size={13} />
                                           </div>
-                                          
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold text-foreground">
-                                              {expenseSummary.currency.format(exp.amount)}
-                                            </span>
-                                            {exp.ocrText && (
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  setSelectedOcr(exp);
-                                                  setShowOcrModal(true);
-                                                }}
-                                                className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-muted"
-                                              >
-                                                <Eye size={14} />
-                                              </button>
-                                            )}
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-semibold text-foreground truncate">{exp.description}</p>
+                                            <p className="text-[10px] text-muted-foreground">{fmtDate.format(new Date(exp.date))}</p>
                                           </div>
+                                          <span className="text-xs font-bold text-foreground shrink-0">{INR.format(exp.amount)}</span>
                                         </div>
                                       );
                                     })}
@@ -754,465 +550,199 @@ export default function GroupDetailPage() {
                 </motion.div>
               )}
 
-              {/* Tab 3: Notepad Section */}
+              {/* Notes */}
               {activeTab === "notes" && (
-                <motion.div
-                  key="notes"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
+                <motion.div key="notes" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
                   <NotepadSection groupId={groupId} />
                 </motion.div>
               )}
 
-              {/* Tab 4: Balances & Members (Mobile/Tablet Only) */}
+              {/* Balances — mobile only */}
               {activeTab === "balances" && (
-                <motion.div
-                  key="balances"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6 lg:hidden"
-                >
-                  {/* Group Balances Widget */}
-                  <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
-                    <div className="flex items-center justify-between border-b border-border pb-3">
-                      <h3 className="font-bold text-foreground flex items-center gap-2">
-                        <Wallet2 className="text-primary" size={18} />
-                        Group Balances
-                      </h3>
-                      <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
-                        Real-Time
-                      </span>
-                    </div>
-
-                    {!balances?.balances?.length ? (
-                      <div className="text-center py-6 text-muted-foreground text-xs">
-                        No active balances. Add expenses to calculate.
-                      </div>
-                    ) : (
-                      <div className="space-y-2.5">
-                        {balances.balances.map((b, i) => {
-                          const balNum = Number(b.balance);
-                          const isCreditor = balNum > 0.01;
-                          const isDebtor = balNum < -0.01;
-
-                          return (
-                            <div
-                              key={b.userId || i}
-                              className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-border/60 text-xs hover:border-primary/30 transition-all"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                {isCreditor ? (
-                                  <div className="h-6 w-6 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                    <ArrowUpRight size={13} />
-                                  </div>
-                                ) : isDebtor ? (
-                                  <div className="h-6 w-6 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                                    <ArrowDownLeft size={13} />
-                                  </div>
-                                ) : (
-                                  <div className="h-6 w-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0">
-                                    <CheckCircle size={13} />
-                                  </div>
-                                )}
-                                <span className="text-foreground font-semibold truncate">{b.name}</span>
-                              </div>
-
-                              <span
-                                className={`font-bold ${
-                                  isCreditor
-                                    ? "text-emerald-600 dark:text-emerald-400"
-                                    : isDebtor
-                                    ? "text-rose-600 dark:text-rose-400"
-                                    : "text-muted-foreground"
-                                }`}
-                              >
-                                {isCreditor
-                                  ? `+₹${Math.abs(balNum).toFixed(0)}`
-                                  : isDebtor
-                                  ? `-₹${Math.abs(balNum).toFixed(0)}`
-                                  : "Settled"}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {balances?.suggestions?.length > 0 && (
-                      <div className="pt-4 border-t border-border space-y-3">
-                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          💡 Smart Settlements
-                        </h4>
-                        <div className="space-y-2.5">
-                          {balances.suggestions.map((s, i) => (
-                            <div
-                              key={i}
-                              className="bg-muted/40 border border-border p-3.5 rounded-xl text-xs flex flex-col gap-2.5 hover:border-primary/30 transition shadow-sm"
-                            >
-                              <div className="leading-relaxed">
-                                <span className="font-bold text-rose-600 dark:text-rose-400">{s.from.name}</span>
-                                <span className="text-muted-foreground"> owes </span>
-                                <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{s.amount.toFixed(0)}</span>
-                                <span className="text-muted-foreground"> to </span>
-                                <span className="font-semibold text-primary">{s.to.name}</span>
-                              </div>
-                              
-                              <button
-                                onClick={() => handleRecordSettlement(s.from, s.to, s.amount)}
-                                className="w-full flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 hover:border-primary/20 font-bold py-2 rounded-lg transition-all cursor-pointer"
-                              >
-                                <CheckCircle size={13} />
-                                Record Settlement
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Group Members Widget */}
-                  <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-5">
-                    <div className="flex items-center justify-between border-b border-border pb-3">
-                      <h3 className="font-bold text-foreground flex items-center gap-2">
-                        <Users2 className="text-primary" size={18} />
-                        Group Members
-                      </h3>
-                      <span className="text-xs text-muted-foreground">
-                        {group.members?.length || 0} total
-                      </span>
-                    </div>
-
-                    {group.members?.length ? (
-                      <div className="space-y-3.5 max-h-60 overflow-y-auto pr-1">
-                        {group.members.map((m) => {
-                          const isCreatorUser = String(group.createdBy?._id || group.createdBy) === String(m._id);
-                          
-                          return (
-                            <div
-                              key={m._id}
-                              className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-muted/30 transition group relative"
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                {m.photoURL ? (
-                                  <img
-                                    src={m.photoURL}
-                                    alt={m.name}
-                                    className="w-7 h-7 rounded-full object-cover border border-border"
-                                  />
-                                ) : (
-                                  <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0">
-                                    {m.name ? m.name.charAt(0).toUpperCase() : "U"}
-                                  </div>
-                                )}
-                                <div className="min-w-0 text-xs">
-                                  <p className="font-semibold text-foreground truncate">{m.name || "Unnamed User"}</p>
-                                  <p className="text-[10px] text-muted-foreground truncate">{m.email}</p>
-                                </div>
-                              </div>
-
-                              <div className="shrink-0 flex items-center">
-                                {isCreatorUser ? (
-                                  <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                    Owner
-                                  </span>
-                                ) : (
-                                  isCreator && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemove(m._id)}
-                                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1 rounded-md transition cursor-pointer"
-                                      title={`Remove ${m.name}`}
-                                    >
-                                      <X size={13} />
-                                    </button>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground text-xs">No members.</div>
-                    )}
-
-                    <div className="pt-3 border-t border-border flex flex-col gap-2.5">
-                      {isCreator && (
-                        <button
-                          onClick={() => setShowInviteModal(true)}
-                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold py-2.5 rounded-xl shadow hover:opacity-95 transition-all cursor-pointer"
-                        >
-                          <QrCode size={14} />
-                          Invite Friends (Link / QR)
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => setShowAddMember(true)}
-                        className="w-full flex items-center justify-center gap-2 text-xs font-semibold border border-border hover:bg-muted text-foreground py-2.5 rounded-xl transition-all cursor-pointer shadow-sm"
-                      >
-                        ➕ Add Group Member
-                      </button>
-                    </div>
-                  </div>
+                <motion.div key="balances" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
+                  className="space-y-4 lg:hidden">
+                  <BalancesCard balances={balances} onSettle={handleRecordSettlement} />
+                  <MembersCard group={group} isCreator={isCreator}
+                    onAdd={() => setShowAddMember(true)}
+                    onInvite={() => setShowInviteModal(true)}
+                    onRemove={handleRemove} />
                 </motion.div>
               )}
+
             </AnimatePresence>
           </div>
-        </div>
 
-        {/* ===================== RIGHT COLUMN: SIDEBAR (BALANCES & MEMBERS) ===================== */}
-        <div className="hidden lg:block space-y-6">
-          
-          {/* 1. Group Balances & Settlement Suggestions Card */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                <Wallet2 className="text-primary" size={18} />
-                Group Balances
-              </h3>
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
-                Real-Time
-              </span>
-            </div>
-
-            {/* Balances List */}
-            {!balances?.balances?.length ? (
-              <div className="text-center py-6 text-muted-foreground text-xs">
-                No active balances. Add expenses to calculate.
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {balances.balances.map((b, i) => {
-                  const balNum = Number(b.balance);
-                  const isCreditor = balNum > 0.01;
-                  const isDebtor = balNum < -0.01;
-
-                  return (
-                    <div
-                      key={b.userId || i}
-                      className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-border/60 text-xs hover:border-primary/30 transition-all"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {isCreditor ? (
-                          <div className="h-6 w-6 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                            <ArrowUpRight size={13} />
-                          </div>
-                        ) : isDebtor ? (
-                          <div className="h-6 w-6 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                            <ArrowDownLeft size={13} />
-                          </div>
-                        ) : (
-                          <div className="h-6 w-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0">
-                            <CheckCircle size={13} />
-                          </div>
-                        )}
-                        <span className="text-foreground font-semibold truncate">{b.name}</span>
-                      </div>
-
-                      <span
-                        className={`font-bold ${
-                          isCreditor
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : isDebtor
-                            ? "text-rose-600 dark:text-rose-400"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {isCreditor
-                          ? `+₹${Math.abs(balNum).toFixed(0)}`
-                          : isDebtor
-                          ? `-₹${Math.abs(balNum).toFixed(0)}`
-                          : "Settled"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Smart Settlement Suggestions */}
-            {balances?.suggestions?.length > 0 && (
-              <div className="pt-4 border-t border-border space-y-3">
-                <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  💡 Smart Settlements
-                </h4>
-                <div className="space-y-2.5">
-                  {balances.suggestions.map((s, i) => (
-                    <div
-                      key={i}
-                      className="bg-muted/40 border border-border p-3.5 rounded-xl text-xs flex flex-col gap-2.5 hover:border-primary/30 transition shadow-sm"
-                    >
-                      <div className="leading-relaxed">
-                        <span className="font-bold text-rose-600 dark:text-rose-400">{s.from.name}</span>
-                        <span className="text-muted-foreground"> owes </span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{s.amount.toFixed(0)}</span>
-                        <span className="text-muted-foreground"> to </span>
-                        <span className="font-semibold text-primary">{s.to.name}</span>
-                      </div>
-                      
-                      <button
-                        onClick={() => handleRecordSettlement(s.from, s.to, s.amount)}
-                        className="w-full flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 hover:border-primary/20 font-bold py-2 rounded-lg transition-all cursor-pointer"
-                      >
-                        <CheckCircle size={13} />
-                        Record Settlement
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 2. Group Members & Invites Card */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-5">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                <Users2 className="text-primary" size={18} />
-                Group Members
-              </h3>
-              <span className="text-xs text-muted-foreground">
-                {group.members?.length || 0} total
-              </span>
-            </div>
-
-            {/* Dynamic Members List */}
-            {group.members?.length ? (
-              <div className="space-y-3.5 max-h-60 overflow-y-auto pr-1">
-                {group.members.map((m) => {
-                  const isCreatorUser = String(group.createdBy?._id || group.createdBy) === String(m._id);
-                  
-                  return (
-                    <div
-                      key={m._id}
-                      className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-muted/30 transition group relative"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {m.photoURL ? (
-                          <img
-                            src={m.photoURL}
-                            alt={m.name}
-                            className="w-7 h-7 rounded-full object-cover border border-border"
-                          />
-                        ) : (
-                          <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0">
-                            {m.name ? m.name.charAt(0).toUpperCase() : "U"}
-                          </div>
-                        )}
-                        <div className="min-w-0 text-xs">
-                          <p className="font-semibold text-foreground truncate">{m.name || "Unnamed User"}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">{m.email}</p>
-                        </div>
-                      </div>
-
-                      <div className="shrink-0 flex items-center">
-                        {isCreatorUser ? (
-                          <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                            Owner
-                          </span>
-                        ) : (
-                          isCreator && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemove(m._id)}
-                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1 rounded-md transition cursor-pointer"
-                              title={`Remove ${m.name}`}
-                            >
-                              <X size={13} />
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-6 text-muted-foreground text-xs">No members.</div>
-            )}
-
-            {/* Quick Actions Panel */}
-            <div className="pt-3 border-t border-border flex flex-col gap-2.5">
-              
-              {/* QR Invite popup trigger */}
-              {isCreator && (
-                <button
-                  onClick={() => setShowInviteModal(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold py-2.5 rounded-xl shadow hover:opacity-95 transition-all cursor-pointer"
-                >
-                  <QrCode size={14} />
-                  Invite Friends (Link / QR)
-                </button>
-              )}
-
-              {/* Add member search widget toggle */}
-              <button
-                onClick={() => setShowAddMember(true)}
-                className="w-full flex items-center justify-center gap-2 text-xs font-semibold border border-border hover:bg-muted text-foreground py-2.5 rounded-xl transition-all cursor-pointer shadow-sm"
-              >
-                ➕ Add Group Member
-              </button>
-            </div>
+          {/* RIGHT SIDEBAR */}
+          <div className="hidden lg:flex flex-col gap-5">
+            <BalancesCard balances={balances} onSettle={handleRecordSettlement} />
+            <MembersCard group={group} isCreator={isCreator}
+              onAdd={() => setShowAddMember(true)}
+              onInvite={() => setShowInviteModal(true)}
+              onRemove={handleRemove} />
           </div>
         </div>
-
       </div>
 
-      {/* ➕ ADD EXPENSE MODAL */}
+      {/* MODALS */}
       <AnimatePresence>
         {showExpenseModal && (
-          <AddExpenseModal
-            group={group}
-            onClose={() => setShowExpenseModal(false)}
-            onSuccess={handleExpenseAdded}
-          />
+          <AddExpenseModal group={group} onClose={() => setShowExpenseModal(false)} onSuccess={handleExpenseAdded} />
         )}
       </AnimatePresence>
-
-      {/* 📱 QR / LINK INVITE MODAL */}
       <AnimatePresence>
         {showInviteModal && (
-          <InviteModal
-            groupId={groupId}
-            token={token}
-            onClose={() => setShowInviteModal(false)}
-          />
+          <InviteModal groupId={groupId} token={token} onClose={() => setShowInviteModal(false)} />
         )}
       </AnimatePresence>
-
-      {/* 📂 OCR MODAL */}
       <AnimatePresence>
         {showOcrModal && selectedOcr && (
-          <OcrViewModal
-            ocrText={selectedOcr.ocrText}
-            imageUrl={selectedOcr.imageUrl}
-            onClose={() => setShowOcrModal(false)}
-          />
+          <OcrViewModal ocrText={selectedOcr.ocrText} imageUrl={selectedOcr.imageUrl} onClose={() => setShowOcrModal(false)} />
         )}
       </AnimatePresence>
-
-      {/* ➕ ADD MEMBER MODAL */}
       <AnimatePresence>
         {showAddMember && (
           <MemberPicker
             groupId={groupId}
             exclude={group.members.map((m) => m.email)}
             onClose={() => setShowAddMember(false)}
-            onSubmit={(selectedEmails) => {
-              handleAddMembers(selectedEmails);
-              setShowAddMember(false);
-            }}
+            onSubmit={(emails) => { handleAddMembers(emails); setShowAddMember(false); }}
           />
         )}
       </AnimatePresence>
+    </div>
+  );
+}
 
+/* ── Group Balances sidebar card ── */
+function BalancesCard({ balances, onSettle }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <h3 className="font-bold text-base text-foreground">Group Balances</h3>
+        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/40">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          LIVE
+        </span>
+      </div>
+
+      {!balances?.balances?.length ? (
+        <div className="text-center py-10 px-5 text-muted-foreground text-xs">
+          No balances yet. Add expenses to calculate.
+        </div>
+      ) : (
+        <div className="divide-y divide-border">
+          {balances.balances.map((b, i) => {
+            const bal = Number(b.balance);
+            const isUp = bal > 0.01;
+            const isDown = bal < -0.01;
+            return (
+              <div key={b.userId || i} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/25 transition">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                  isUp ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : isDown ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                  : "bg-muted text-muted-foreground"
+                }`}>
+                  {isUp ? <ArrowUpRight size={14} /> : isDown ? <ArrowDownLeft size={14} /> : <CheckCircle size={14} />}
+                </div>
+                <span className="flex-1 text-sm font-semibold text-foreground truncate">{b.name}</span>
+                <span className={`text-sm font-bold shrink-0 ${
+                  isUp ? "text-emerald-600 dark:text-emerald-400"
+                  : isDown ? "text-rose-600 dark:text-rose-400"
+                  : "text-muted-foreground"
+                }`}>
+                  {isUp ? `+₹${Math.abs(bal).toFixed(0)}` : isDown ? `-₹${Math.abs(bal).toFixed(0)}` : "Settled"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {balances?.suggestions?.length > 0 && (
+        <div className="border-t border-border px-5 py-4 space-y-3">
+          <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+            <Zap size={12} className="text-amber-500" /> Smart Settlements
+          </h4>
+          {balances.suggestions.map((s, i) => (
+            <div key={i} className="bg-muted/40 border border-border rounded-xl p-3.5 space-y-2.5">
+              <p className="text-xs leading-relaxed">
+                <span className="font-bold text-rose-600 dark:text-rose-400">{s.from.name}</span>
+                <span className="text-muted-foreground"> owes </span>
+                <span className="font-bold text-foreground">₹{s.amount.toFixed(0)}</span>
+                <span className="text-muted-foreground"> to </span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{s.to.name}</span>
+              </p>
+              <button onClick={() => onSettle(s.from, s.to, s.amount)}
+                className="w-full flex items-center justify-center gap-1.5 border border-primary/25 text-primary hover:bg-primary/8 font-semibold py-2 rounded-lg text-xs transition cursor-pointer">
+                <CheckCircle size={13} /> Record Settlement
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Members sidebar card ── */
+function MembersCard({ group, isCreator, onAdd, onInvite, onRemove }) {
+  const creatorId = String(group.createdBy?._id || group.createdBy);
+
+  return (
+    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <h3 className="font-bold text-base text-foreground">Members ({group.members?.length || 0})</h3>
+      </div>
+
+      <div className="divide-y divide-border">
+        {group.members?.map((m) => {
+          const isMemberCreator = String(m._id) === creatorId;
+          return (
+            <div key={m._id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/25 transition group">
+              {m.photoURL ? (
+                <Image src={m.photoURL} alt={m.name || ""} width={36} height={36}
+                  className="w-9 h-9 rounded-full object-cover ring-1 ring-border shrink-0" />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                  {m.name?.charAt(0)?.toUpperCase() || "U"}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{m.name || "Unnamed"}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{m.email}</p>
+              </div>
+              <div className="shrink-0">
+                {isMemberCreator ? (
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/15">
+                    OWNER
+                  </span>
+                ) : isCreator ? (
+                  <button type="button" onClick={() => onRemove(m._id)}
+                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/8 p-1.5 rounded-lg transition cursor-pointer opacity-0 group-hover:opacity-100"
+                    title={`Remove ${m.name}`}>
+                    <X size={13} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="px-5 py-4 space-y-2.5 border-t border-border">
+        {isCreator && (
+          <button onClick={onInvite}
+            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2.5 rounded-xl text-sm shadow transition cursor-pointer">
+            <QrCode size={15} /> Invite Friends (Link/QR)
+          </button>
+        )}
+        <button onClick={onAdd}
+          className="w-full flex items-center justify-center gap-2 border border-border hover:bg-muted/50 text-foreground font-semibold py-2.5 rounded-xl text-sm transition cursor-pointer">
+          <UserPlus size={15} /> Add Group Member
+        </button>
+      </div>
     </div>
   );
 }

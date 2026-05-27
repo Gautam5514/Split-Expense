@@ -102,8 +102,8 @@ export default function ChatList({ onSelect, activeFriend }) {
       "bg-emerald-500",
       "bg-cyan-600",
       "bg-blue-600",
-      "bg-indigo-500",
-      "bg-violet-600",
+      "bg-cyan-600",
+      "bg-teal-600",
     ];
     const index = name ? name.charCodeAt(0) % colors.length : 0;
     return colors[index];

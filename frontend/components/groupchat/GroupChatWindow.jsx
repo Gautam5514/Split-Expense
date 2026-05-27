@@ -24,18 +24,18 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
     const colors = [
       "text-orange-500",
       "text-pink-500",
-      "text-purple-500",
+      "text-teal-600",
       "text-blue-500",
       "text-teal-600",
       "text-red-500",
-      "text-indigo-500",
+      "text-cyan-600",
     ];
     const index = name ? name.charCodeAt(0) % colors.length : 0;
     return colors[index];
   };
 
   const getAvatarColor = (name) => {
-    const colors = ["bg-orange-500", "bg-pink-500", "bg-purple-500", "bg-blue-500", "bg-teal-600", "bg-emerald-600", "bg-indigo-500"];
+    const colors = ["bg-orange-500", "bg-pink-500", "bg-cyan-600", "bg-blue-500", "bg-teal-600", "bg-emerald-600", "bg-sky-600"];
     return colors[(name?.charCodeAt(0) || 0) % colors.length];
   };
 

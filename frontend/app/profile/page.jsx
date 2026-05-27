@@ -104,8 +104,8 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-20 pt-28">
       {/* Decorative Ambient Blur Orbs */}
-      <div className="absolute top-20 left-10 w-80 h-80 bg-violet-500/10 rounded-full filter blur-[100px] pointer-events-none" />
-      <div className="absolute top-40 right-20 w-96 h-96 bg-indigo-500/10 rounded-full filter blur-[120px] pointer-events-none" />
+      <div className="absolute top-20 left-10 w-80 h-80 bg-cyan-500/10 rounded-full filter blur-[100px] pointer-events-none" />
+      <div className="absolute top-40 right-20 w-96 h-96 bg-cyan-500/10 rounded-full filter blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6 w-full">
         
@@ -120,7 +120,7 @@ export default function ProfilePage() {
 
         {/* Headline Header */}
         <div className="flex items-start gap-4 pb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500 ring-1 ring-indigo-500/15 shrink-0 shadow-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-600 ring-1 ring-cyan-500/15 shrink-0 shadow-sm">
             <User size={22} className="animate-pulse" />
           </div>
           <div>

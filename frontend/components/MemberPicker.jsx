@@ -113,9 +113,9 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
           </button>
 
           {/* Header */}
-          <div className="border-b border-border p-6 bg-gradient-to-r from-violet-500/5 to-indigo-500/5">
+          <div className="border-b border-border p-6 bg-gradient-to-r from-cyan-500/5 to-teal-500/5">
             <div className="flex items-center gap-2 mb-1">
-              <UserPlus className="text-violet-500" size={22} />
+              <UserPlus className="text-cyan-600 dark:text-cyan-400" size={22} />
               <h2 className="text-xl font-bold text-foreground">
                 Add Group Members
               </h2>
@@ -175,7 +175,7 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
                 {/* Helper State */}
                 {!hasSearch && (
                   <div className="text-xs text-muted-foreground flex items-center gap-2 px-1">
-                    <Mail size={14} className="text-violet-500 animate-pulse" />
+                    <Mail size={14} className="text-cyan-600 dark:text-cyan-400 animate-pulse" />
                     <span>Search name or email to view matching registered SplitEase users.</span>
                   </div>
                 )}
@@ -262,7 +262,7 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
                   />
                   <button
                     type="submit"
-                    className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:opacity-95 transition cursor-pointer shrink-0"
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:opacity-95 transition cursor-pointer shrink-0"
                   >
                     <Plus size={16} /> Add Email
                   </button>
@@ -271,7 +271,7 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
                 {/* Info details */}
                 <div className="bg-slate-50 dark:bg-slate-900/25 border border-border/50 rounded-2xl p-5 space-y-3">
                   <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                    <Mail size={16} className="text-violet-500 animate-pulse" />
+                    <Mail size={16} className="text-cyan-600 dark:text-cyan-400 animate-pulse" />
                     <span>How Invite by Email works</span>
                   </div>
                   <ul className="text-xs text-muted-foreground space-y-2 list-disc list-inside leading-relaxed">
@@ -290,13 +290,13 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
                 {selected.slice(0, 6).map((email) => (
                   <div
                     key={email}
-                    className="flex items-center gap-1 bg-violet-500/10 text-violet-500 dark:text-violet-400 border border-violet-500/20 px-3 py-1 rounded-full text-xs font-semibold"
+                    className="flex items-center gap-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 dark:text-cyan-400 border border-cyan-500/20 px-3 py-1 rounded-full text-xs font-semibold"
                   >
                     <span className="max-w-[150px] truncate">{email}</span>
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); toggle(email); }}
-                      className="text-violet-500 hover:text-violet-700 transition cursor-pointer"
+                      className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 transition cursor-pointer"
                     >
                       <X size={12} />
                     </button>
@@ -325,7 +325,7 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
                 type="button"
                 onClick={submit}
                 disabled={selected.length === 0}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 transition disabled:opacity-50 cursor-pointer shadow-lg shadow-indigo-600/15"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-cyan-600 to-teal-600 hover:opacity-95 transition disabled:opacity-50 cursor-pointer shadow-lg shadow-cyan-600/15"
               >
                 Add {selected.length} {selected.length === 1 ? "Member" : "Members"}
               </button>

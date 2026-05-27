@@ -20,7 +20,7 @@ export default function ChatWindow({ activeFriend, onBack }) {
 
   // Avatar color helper
   const getColorForName = (name) => {
-    const colors = ["bg-teal-500", "bg-emerald-500", "bg-cyan-600", "bg-blue-600", "bg-indigo-500"];
+    const colors = ["bg-teal-500", "bg-emerald-500", "bg-cyan-600", "bg-blue-600", "bg-cyan-700"];
     const index = name ? name.charCodeAt(0) % colors.length : 0;
     return colors[index];
   };

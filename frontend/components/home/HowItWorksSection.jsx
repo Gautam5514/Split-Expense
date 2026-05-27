@@ -28,14 +28,14 @@ export default function HowItWorksSection() {
 
           <StepCard
             icon={<Users className="w-8 h-8 text-white" />}
-            color="bg-indigo-500"
+            color="bg-cyan-600"
             step="01"
             title="Create Group"
             desc="Start a trip in seconds and invite your friends via link or QR code."
           />
           <StepCard
             icon={<DollarSign className="w-8 h-8 text-white" />}
-            color="bg-purple-500"
+            color="bg-teal-600"
             step="02"
             title="Add Expenses"
             desc="Log bills as you go. Split equally, by percentage, or by exact amounts."
@@ -63,7 +63,7 @@ function StepCard({ icon, color, step, title, desc }) {
       className="relative z-10 flex flex-col items-center text-center p-6"
     >
       <div
-        className={`w-16 h-16 rounded-2xl ${color} shadow-lg shadow-indigo-500/20 flex items-center justify-center mb-6 relative`}
+        className={`w-16 h-16 rounded-2xl ${color} shadow-lg shadow-cyan-500/20 flex items-center justify-center mb-6 relative`}
       >
         {icon}
         <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center text-sm font-bold text-foreground shadow-sm">

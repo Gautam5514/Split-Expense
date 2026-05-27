@@ -19,8 +19,8 @@ export default function NotificationPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-20 pt-28">
       {/* Decorative Blur Orbs */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-violet-500/10 rounded-full filter blur-[100px] pointer-events-none" />
-      <div className="absolute top-40 right-20 w-80 h-80 bg-indigo-500/10 rounded-full filter blur-[120px] pointer-events-none" />
+      <div className="absolute top-20 left-10 w-72 h-72 bg-cyan-500/10 rounded-full filter blur-[100px] pointer-events-none" />
+      <div className="absolute top-40 right-20 w-80 h-80 bg-cyan-500/10 rounded-full filter blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6 w-full">
         
@@ -38,7 +38,7 @@ export default function NotificationPage() {
           
           {/* Header section inside card */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-5 border-b border-slate-100 dark:border-slate-800/60 pb-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-500 ring-1 ring-violet-500/15 shrink-0 shadow-inner">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-500/15 shrink-0 shadow-inner">
               <BellRing size={26} className="animate-pulse" />
             </div>
             <div>
@@ -86,7 +86,7 @@ export default function NotificationPage() {
                   type="button"
                   onClick={requestOneSignalPermission}
                   disabled={oneSignalPermission === "denied"}
-                  className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-full hover:opacity-90 transition-all text-xs shadow-lg hover:shadow-violet-500/20 active:scale-95 duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-bold rounded-full hover:opacity-90 transition-all text-xs shadow-lg hover:shadow-cyan-500/20 active:scale-95 duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {oneSignalPermission === "denied" ? "Permission Blocked" : "Enable Push Notifications"}
                 </button>

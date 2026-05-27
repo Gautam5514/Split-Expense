@@ -9,17 +9,17 @@ import Link from "next/link";
 
 const CAPABILITIES = [
   {
-    icon: <Users className="w-5 h-5 text-violet-500" />,
+    icon: <Users className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />,
     title: "Create Shared Group Rooms",
     desc: "Organize settlements for specific trips, roommate rentals, or group adventures. Add members with zero friction."
   },
   {
-    icon: <Receipt className="w-5 h-5 text-indigo-500" />,
+    icon: <Receipt className="w-5 h-5 text-cyan-600" />,
     title: "Split Bills & Add Expenses",
     desc: "Catalog bills into premium categories (Food, Travel, Rent, Shopping, Leisure) and instantly split them evenly or custom."
   },
   {
-    icon: <Coins className="w-5 h-5 text-fuchsia-500" />,
+    icon: <Coins className="w-5 h-5 text-sky-500" />,
     title: "Visual Spending Trajectory",
     desc: "Dynamic charts (Area Trends & Donut Breakdown) analyze your settlements and display category distributions instantly."
   },
@@ -74,8 +74,8 @@ export default function HelpPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-20 pt-28">
       {/* Decorative Orbs */}
-      <div className="absolute top-20 left-10 w-80 h-80 bg-violet-500/10 rounded-full filter blur-[100px] pointer-events-none" />
-      <div className="absolute top-40 right-20 w-96 h-96 bg-indigo-500/10 rounded-full filter blur-[120px] pointer-events-none" />
+      <div className="absolute top-20 left-10 w-80 h-80 bg-cyan-500/10 rounded-full filter blur-[100px] pointer-events-none" />
+      <div className="absolute top-40 right-20 w-96 h-96 bg-cyan-500/10 rounded-full filter blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6 w-full">
         
@@ -90,7 +90,7 @@ export default function HelpPage() {
 
         {/* Headline Header */}
         <div className="flex items-start gap-4 pb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-500 ring-1 ring-violet-500/15 shrink-0 shadow-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-500/15 shrink-0 shadow-sm">
             <HelpCircle size={22} className="animate-pulse" />
           </div>
           <div>
@@ -145,7 +145,7 @@ export default function HelpPage() {
           {activeTab === "guide" && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 ml-1">
-                <BookOpen size={18} className="text-violet-500" />
+                <BookOpen size={18} className="text-cyan-600 dark:text-cyan-400" />
                 How SplitEase Helps You
               </h3>
               
@@ -156,7 +156,7 @@ export default function HelpPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                 <div className="space-y-2.5 p-5 border border-slate-100 dark:border-slate-800/80 rounded-[20px] bg-slate-50/20 dark:bg-slate-850/10">
-                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center font-black text-xs text-violet-500">1</div>
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center font-black text-xs text-cyan-600 dark:text-cyan-400">1</div>
                   <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">Create a Room</h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
                     Name your trip or shared apartment and initialize a dedicated space for group tracking.
@@ -164,7 +164,7 @@ export default function HelpPage() {
                 </div>
 
                 <div className="space-y-2.5 p-5 border border-slate-100 dark:border-slate-800/80 rounded-[20px] bg-slate-50/20 dark:bg-slate-850/10">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center font-black text-xs text-indigo-500">2</div>
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center font-black text-xs text-cyan-600">2</div>
                   <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">Add Joint Bills</h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
                     Log who paid for what (e.g. food, gas, or tickets). Choose custom categories and amounts.
@@ -172,7 +172,7 @@ export default function HelpPage() {
                 </div>
 
                 <div className="space-y-2.5 p-5 border border-slate-100 dark:border-slate-800/80 rounded-[20px] bg-slate-50/20 dark:bg-slate-850/10">
-                  <div className="w-8 h-8 rounded-lg bg-fuchsia-500/10 flex items-center justify-center font-black text-xs text-fuchsia-500">3</div>
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center font-black text-xs text-sky-500">3</div>
                   <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">Settle Balance</h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
                     SplitEase does the math and suggests the simplest direct debt transactions to settle everything up.
@@ -180,8 +180,8 @@ export default function HelpPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4.5 rounded-[22px] bg-violet-500/5 border border-violet-500/10 text-violet-750 dark:text-violet-300 text-xs leading-relaxed">
-                <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5 text-violet-500 animate-pulse" />
+              <div className="flex items-start gap-3 p-4.5 rounded-[22px] bg-cyan-500/5 border border-cyan-500/10 text-cyan-700 dark:text-cyan-300 text-xs leading-relaxed">
+                <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5 text-cyan-600 dark:text-cyan-400 animate-pulse" />
                 <p>
                   <strong>Pro Tip:</strong> Personalize your experience! Head over to your <strong>Themes</strong> panel via the top-right profile dropdown to custom design your dashboard colors and button accent configurations.
                 </p>
@@ -194,7 +194,7 @@ export default function HelpPage() {
           {activeTab === "features" && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 ml-1">
-                <Award size={18} className="text-violet-500" />
+                <Award size={18} className="text-cyan-600 dark:text-cyan-400" />
                 Core Capabilities & Features
               </h3>
               <p className="text-sm text-slate-550 dark:text-slate-400 leading-relaxed ml-1">
@@ -205,7 +205,7 @@ export default function HelpPage() {
                 {CAPABILITIES.map((feature, i) => (
                   <div 
                     key={i} 
-                    className="flex gap-4 p-4.5 rounded-[20px] border border-slate-100 dark:border-slate-850/80 bg-slate-50/20 dark:bg-slate-900/10 hover:border-violet-500/10 transition-colors"
+                    className="flex gap-4 p-4.5 rounded-[20px] border border-slate-100 dark:border-slate-850/80 bg-slate-50/20 dark:bg-slate-900/10 hover:border-cyan-500/10 transition-colors"
                   >
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-855 shrink-0 border border-black/[0.05]">
                       {feature.icon}
@@ -224,7 +224,7 @@ export default function HelpPage() {
           {activeTab === "faq" && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 ml-1">
-                <HelpCircle size={18} className="text-violet-500" />
+                <HelpCircle size={18} className="text-cyan-600 dark:text-cyan-400" />
                 Frequently Asked Questions
               </h3>
               <p className="text-sm text-slate-550 dark:text-slate-400 leading-relaxed ml-1">
@@ -242,7 +242,7 @@ export default function HelpPage() {
                     >
                       <button
                         onClick={() => toggleFaq(i)}
-                        className="w-full flex items-center justify-between p-5 text-left font-extrabold text-sm text-slate-800 dark:text-slate-200 hover:text-violet-500 dark:hover:text-violet-400 transition-colors cursor-pointer"
+                        className="w-full flex items-center justify-between p-5 text-left font-extrabold text-sm text-slate-800 dark:text-slate-200 hover:text-cyan-600 dark:text-cyan-400 dark:hover:text-cyan-400 transition-colors cursor-pointer"
                       >
                         <span>{faq.q}</span>
                         {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -259,14 +259,14 @@ export default function HelpPage() {
               </div>
 
               {/* Dynamic Support CTA card inside main dashboard card */}
-              <div className="p-6 border border-dashed border-violet-500/20 rounded-[24px] bg-violet-500/5 flex flex-col sm:flex-row items-center gap-4 justify-between mt-6">
+              <div className="p-6 border border-dashed border-cyan-500/20 rounded-[24px] bg-cyan-500/5 flex flex-col sm:flex-row items-center gap-4 justify-between mt-6">
                 <div className="space-y-1 text-center sm:text-left">
-                  <h4 className="text-sm font-bold text-violet-600 dark:text-violet-300">Still have questions?</h4>
+                  <h4 className="text-sm font-bold text-teal-600 dark:text-cyan-300">Still have questions?</h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Our SplitEase AI assistant is ready to help 24/7 with any calculations.</p>
                 </div>
                 <Link
                   href="/ai"
-                  className="px-6 py-3.5 bg-violet-500 hover:bg-violet-600 text-white font-extrabold text-xs rounded-full shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                  className="px-6 py-3.5 bg-cyan-600 hover:bg-teal-600 text-white font-extrabold text-xs rounded-full shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
                 >
                   Chat with SplitEase AI
                 </Link>

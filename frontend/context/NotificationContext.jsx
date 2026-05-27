@@ -93,15 +93,15 @@ const getNotificationMeta = (type) => {
       label: "Expense update",
       Icon: ReceiptText,
       iconClass: "bg-emerald-500/10 text-emerald-500 ring-emerald-500/15",
-      accentClass: "from-emerald-500/20 via-transparent to-violet-500/10",
+      accentClass: "from-emerald-500/20 via-transparent to-teal-500/10",
     };
   }
 
   return {
     label: "Group update",
     Icon: UsersRound,
-    iconClass: "bg-violet-500/10 text-violet-500 ring-violet-500/15",
-    accentClass: "from-violet-500/20 via-transparent to-indigo-500/10",
+    iconClass: "bg-cyan-500/10 text-cyan-600 ring-cyan-500/15",
+    accentClass: "from-cyan-500/20 via-transparent to-teal-500/10",
   };
 };
 
@@ -187,7 +187,7 @@ function NotificationToast({ notif, visible }) {
             </p>
 
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-3">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-500 dark:text-indigo-400 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">
                 <BellRing size={12} className="animate-bounce" />
                 <span>SplitEase Live</span>
               </div>

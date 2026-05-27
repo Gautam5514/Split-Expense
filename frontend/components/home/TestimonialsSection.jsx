@@ -8,8 +8,8 @@ export default function TestimonialsSection() {
     <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-        <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-purple-600 rounded-full blur-[150px] opacity-30" />
-        <div className="absolute bottom-[-100px] left-[-100px] w-96 h-96 bg-indigo-600 rounded-full blur-[150px] opacity-30" />
+        <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-cyan-600 rounded-full blur-[150px] opacity-20" />
+        <div className="absolute bottom-[-100px] left-[-100px] w-96 h-96 bg-teal-600 rounded-full blur-[150px] opacity-20" />
       </div>
 
       <div className="container mx-auto max-w-6xl px-6 relative z-10">
@@ -52,10 +52,10 @@ function TestimonialCard({ quote, author, role }) {
           <Star key={i} size={16} fill="currentColor" />
         ))}
       </div>
-      <p className="text-lg text-indigo-50 italic mb-6">'{quote}'</p>
+      <p className="text-lg text-slate-100 italic mb-6">'{quote}'</p>
       <div>
         <p className="font-bold text-white">{author}</p>
-        <p className="text-sm text-indigo-200">{role}</p>
+        <p className="text-sm text-cyan-200">{role}</p>
       </div>
     </motion.div>
   );

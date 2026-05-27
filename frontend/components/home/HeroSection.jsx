@@ -32,8 +32,8 @@ const BG_IMAGES = [
 ];
 
 const GROUPS = [
-  { name: "Goa Trip", emoji: "🏖️", members: 4, total: "₹12,400", color: "#8b5cf6", pct: 65 },
-  { name: "Monthly Rent", emoji: "🏠", members: 3, total: "₹45,000", color: "#6366f1", pct: 90 },
+  { name: "Goa Trip", emoji: "🏖️", members: 4, total: "₹12,400", color: "#0891B2", pct: 65 },
+  { name: "Monthly Rent", emoji: "🏠", members: 3, total: "₹45,000", color: "#0E7490", pct: 90 },
   { name: "Office Lunch", emoji: "🍕", members: 8, total: "₹3,200", color: "#ec4899", pct: 40 },
   { name: "Movie Night", emoji: "🎬", members: 5, total: "₹1,800", color: "#f59e0b", pct: 100 },
 ];
@@ -82,7 +82,7 @@ export default function HeroSection() {
 
         {/* Dark overlay layers */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black" />
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-950/50 via-transparent to-indigo-950/50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-950/50 via-transparent to-teal-950/50" />
         {/* Bottom fade so mockup blends */}
         <div className="absolute bottom-0 inset-x-0 h-64 bg-gradient-to-t from-black to-transparent" />
       </div>
@@ -115,7 +115,7 @@ export default function HeroSection() {
           <br />
           <span
             className="bg-clip-text text-transparent"
-            style={{ backgroundImage: "linear-gradient(135deg, #a78bfa 0%, #818cf8 40%, #f472b6 100%)" }}
+            style={{ backgroundImage: "linear-gradient(135deg, #22D3EE 0%, #38BDF8 40%, #34D399 100%)" }}
           >
             not friendships.
           </span>
@@ -143,8 +143,8 @@ export default function HeroSection() {
             onClick={() => router.push("/register")}
             className="group flex items-center gap-2 px-7 py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
             style={{
-              background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
-              boxShadow: "0 0 40px rgba(139,92,246,0.45), 0 4px 20px rgba(0,0,0,0.3)",
+              background: "linear-gradient(135deg, #0891B2, #0E7490)",
+              boxShadow: "0 0 40px rgba(8,145,178,0.45), 0 4px 20px rgba(0,0,0,0.3)",
             }}
           >
             <Zap className="w-4 h-4" />
@@ -176,7 +176,7 @@ export default function HeroSection() {
               <img
                 key={n}
                 src={`https://api.dicebear.com/7.x/notionists/svg?seed=${n}&backgroundColor=c4b5fd`}
-                className="w-7 h-7 rounded-full border-2 border-black/60 bg-violet-900 object-cover"
+                className="w-7 h-7 rounded-full border-2 border-black/60 bg-teal-900 object-cover"
                 alt={n}
               />
             ))}
@@ -283,15 +283,15 @@ export default function HeroSection() {
                     style={
                       active
                         ? {
-                            background: "linear-gradient(135deg,rgba(139,92,246,0.28),rgba(99,102,241,0.18))",
-                            border: "1px solid rgba(139,92,246,0.25)",
+                            background: "linear-gradient(135deg,rgba(8,145,178,0.28),rgba(6,182,212,0.18))",
+                            border: "1px solid rgba(8,145,178,0.25)",
                           }
                         : {}
                     }
                   >
                     <div
                       className={`flex items-center gap-2.5 text-xs font-medium ${
-                        active ? "text-white" : sparkle ? "text-violet-400" : "text-white/40"
+                        active ? "text-white" : sparkle ? "text-cyan-400" : "text-white/40"
                       }`}
                     >
                       {sparkle ? (
@@ -304,7 +304,7 @@ export default function HeroSection() {
                     {badge && (
                       <span
                         className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{ background: "rgba(139,92,246,0.3)", color: "#c4b5fd" }}
+                        style={{ background: "rgba(8,145,178,0.3)", color: "#67E8F9" }}
                       >
                         {badge}
                       </span>
@@ -320,7 +320,7 @@ export default function HeroSection() {
               >
                 <img
                   src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=c4b5fd"
-                  className="w-7 h-7 rounded-lg object-cover bg-violet-900"
+                  className="w-7 h-7 rounded-lg object-cover bg-teal-900"
                   alt="user"
                 />
                 <div className="flex-1 min-w-0">
@@ -356,7 +356,7 @@ export default function HeroSection() {
                   </div>
                   <button
                     className="flex items-center gap-1 px-2 py-1.5 sm:px-3.5 rounded-xl text-[10px] sm:text-xs text-white font-bold whitespace-nowrap"
-                    style={{ background: "linear-gradient(135deg,#8b5cf6,#6366f1)" }}
+                    style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)" }}
                   >
                     <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     <span>Add Expense</span>
@@ -399,7 +399,7 @@ export default function HeroSection() {
                   <div className="flex-shrink-0">
                     <div className="flex items-center justify-between mb-2.5">
                       <h3 className="text-xs font-bold text-white">Your Groups</h3>
-                      <span className="text-[9px] text-violet-400 cursor-pointer font-semibold">View all →</span>
+                      <span className="text-[9px] text-cyan-400 cursor-pointer font-semibold">View all →</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {GROUPS.map(({ name, emoji, members, total, color, pct }) => (
@@ -434,7 +434,7 @@ export default function HeroSection() {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-xs font-bold text-white">Recent Expenses</h3>
-                      <span className="text-[9px] text-violet-400 cursor-pointer font-semibold">View all →</span>
+                      <span className="text-[9px] text-cyan-400 cursor-pointer font-semibold">View all →</span>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       {EXPENSES.map(({ name, person, amount, time, emoji, settled }) => (
@@ -479,19 +479,19 @@ export default function HeroSection() {
                   <div
                     className="p-3.5 rounded-2xl"
                     style={{
-                      background: "linear-gradient(135deg,rgba(139,92,246,0.2),rgba(99,102,241,0.1))",
-                      border: "1px solid rgba(139,92,246,0.28)",
+                      background: "linear-gradient(135deg,rgba(8,145,178,0.2),rgba(6,182,212,0.1))",
+                      border: "1px solid rgba(8,145,178,0.28)",
                     }}
                   >
                     <div className="flex items-center gap-1.5 mb-2">
-                      <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                      <span className="text-[10px] font-bold text-violet-300">AI Insight</span>
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="text-[10px] font-bold text-cyan-300">AI Insight</span>
                     </div>
                     <p className="text-[10px] text-white/60 leading-relaxed">
                       You spend <strong className="text-white/90">₹2,400 more</strong> on dining while
                       traveling. Set a travel dining budget?
                     </p>
-                    <button className="mt-2 flex items-center gap-1 text-[9px] font-bold text-violet-400 hover:text-violet-300 transition-colors">
+                    <button className="mt-2 flex items-center gap-1 text-[9px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors">
                       Ask AI <ChevronRight className="w-2.5 h-2.5" />
                     </button>
                   </div>
@@ -515,7 +515,7 @@ export default function HeroSection() {
                           <div className="flex items-center gap-2">
                             <img
                               src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=c4b5fd`}
-                              className="w-6 h-6 rounded-lg bg-violet-900"
+                              className="w-6 h-6 rounded-lg bg-teal-900"
                               alt={name}
                             />
                             <div>
@@ -525,7 +525,7 @@ export default function HeroSection() {
                           </div>
                           <div className="text-right">
                             <p className="text-[10px] font-bold text-emerald-400">{amount}</p>
-                            <button className="text-[8px] text-violet-400 font-semibold">Remind</button>
+                            <button className="text-[8px] text-cyan-400 font-semibold">Remind</button>
                           </div>
                         </div>
                       ))}
@@ -536,7 +536,7 @@ export default function HeroSection() {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Spending</p>
-                      <span className="text-[9px] text-violet-400 font-semibold flex items-center gap-0.5">
+                      <span className="text-[9px] text-cyan-400 font-semibold flex items-center gap-0.5">
                         <TrendingUp className="w-2.5 h-2.5" /> +12%
                       </span>
                     </div>
@@ -544,14 +544,14 @@ export default function HeroSection() {
                       <svg viewBox="0 0 150 55" className="w-full h-full" preserveAspectRatio="none">
                         <defs>
                           <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="rgba(139,92,246,0.5)" />
-                            <stop offset="100%" stopColor="rgba(139,92,246,0)" />
+                            <stop offset="0%" stopColor="rgba(8,145,178,0.45)" />
+                            <stop offset="100%" stopColor="rgba(8,145,178,0)" />
                           </linearGradient>
                         </defs>
                         <path
                           d="M0,50 C18,44 28,30 45,25 C62,20 72,36 88,22 C104,8 118,26 135,10 L150,5"
                           fill="none"
-                          stroke="#8b5cf6"
+                          stroke="#22D3EE"
                           strokeWidth="2"
                           strokeLinecap="round"
                         />
@@ -573,8 +573,8 @@ export default function HeroSection() {
                     <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-2">Categories</p>
                     <div className="flex flex-col gap-1.5">
                       {[
-                        { label: "Food & Dining", pct: 42, color: "#8b5cf6" },
-                        { label: "Travel", pct: 28, color: "#6366f1" },
+                        { label: "Food & Dining", pct: 42, color: "#0891B2" },
+                        { label: "Travel", pct: 28, color: "#0E7490" },
                         { label: "Utilities", pct: 30, color: "#ec4899" },
                       ].map(({ label, pct, color }) => (
                         <div key={label}>

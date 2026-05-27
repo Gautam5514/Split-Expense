@@ -195,7 +195,7 @@ export default function SettingsPage() {
     return (
       <div className="flex flex-col justify-center items-center h-[80vh] gap-4">
         <div className="relative">
-          <div className="w-12 h-12 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
         </div>
         <p className="text-muted-foreground animate-pulse font-medium text-sm">Loading settings panel...</p>
       </div>
@@ -205,8 +205,8 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-20 pt-28">
       {/* Decorative Orbs */}
-      <div className="absolute top-20 left-10 w-80 h-80 bg-violet-500/10 rounded-full filter blur-[100px] pointer-events-none" />
-      <div className="absolute top-40 right-20 w-96 h-96 bg-indigo-500/10 rounded-full filter blur-[120px] pointer-events-none" />
+      <div className="absolute top-20 left-10 w-80 h-80 bg-cyan-500/10 rounded-full filter blur-[100px] pointer-events-none" />
+      <div className="absolute top-40 right-20 w-96 h-96 bg-cyan-500/10 rounded-full filter blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6 w-full">
         
@@ -221,7 +221,7 @@ export default function SettingsPage() {
 
         {/* Headline */}
         <div className="flex items-start gap-4 pb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-500 ring-1 ring-violet-500/15 shrink-0 shadow-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-500/15 shrink-0 shadow-sm">
             <Settings size={22} className="animate-pulse" />
           </div>
           <div>
@@ -243,7 +243,7 @@ export default function SettingsPage() {
               {/* SECTION: System Preferences */}
               <div className="space-y-5">
                 <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/60 pb-3">
-                  <Coins size={18} className="text-violet-500" />
+                  <Coins size={18} className="text-cyan-600 dark:text-cyan-400" />
                   <h3 className="text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-350">System Preferences</h3>
                 </div>
 
@@ -256,7 +256,7 @@ export default function SettingsPage() {
                     <select
                       value={currency}
                       onChange={(e) => handleCurrencyChange(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-750 rounded-full px-5 py-3.5 text-sm font-semibold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-violet-500/20 appearance-none cursor-pointer"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-750 rounded-full px-5 py-3.5 text-sm font-semibold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500/20 appearance-none cursor-pointer"
                     >
                       <option value="INR" className="dark:bg-slate-900">INR (₹) Indian Rupee</option>
                       <option value="USD" className="dark:bg-slate-900">USD ($) US Dollar</option>
@@ -277,7 +277,7 @@ export default function SettingsPage() {
                     <select
                       value={splitStrategy}
                       onChange={(e) => handleStrategyChange(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-750 rounded-full px-5 py-3.5 text-sm font-semibold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-violet-500/20 appearance-none cursor-pointer"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-750 rounded-full px-5 py-3.5 text-sm font-semibold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500/20 appearance-none cursor-pointer"
                     >
                       <option value="equal" className="dark:bg-slate-900">Split Evenly (Default)</option>
                       <option value="ratio" className="dark:bg-slate-900">Settle by Exact Ratio %</option>
@@ -296,7 +296,7 @@ export default function SettingsPage() {
                     <select
                       value={profileVisibility}
                       onChange={(e) => handleVisibilityChange(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-750 rounded-full px-5 py-3.5 text-sm font-semibold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-violet-500/20 appearance-none cursor-pointer"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-750 rounded-full px-5 py-3.5 text-sm font-semibold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500/20 appearance-none cursor-pointer"
                     >
                       <option value="public" className="dark:bg-slate-900">Public (Visible in group searches)</option>
                       <option value="friends" className="dark:bg-slate-900">Group Members Only</option>
@@ -310,7 +310,7 @@ export default function SettingsPage() {
               {/* SECTION: Security & Privacy */}
               <div className="space-y-5">
                 <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/60 pb-3">
-                  <KeyRound size={18} className="text-violet-500" />
+                  <KeyRound size={18} className="text-cyan-600 dark:text-cyan-400" />
                   <h3 className="text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-350">Security & Credentials</h3>
                 </div>
 
@@ -324,7 +324,7 @@ export default function SettingsPage() {
                     onClick={handlePasswordReset}
                     className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 border border-slate-200 dark:border-slate-750 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full font-extrabold text-xs text-slate-700 dark:text-slate-300 transition-all cursor-pointer shadow-sm"
                   >
-                    <Mail size={14} className="text-violet-500" />
+                    <Mail size={14} className="text-cyan-600 dark:text-cyan-400" />
                     Trigger Password Reset Email
                   </button>
                 </div>
@@ -339,7 +339,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={handleTwoFactorToggle}
                     className={`w-12 h-6.5 rounded-full p-1 transition-all duration-300 relative cursor-pointer shrink-0 ${
-                      twoFactorAuth ? "bg-violet-500" : "bg-slate-200 dark:bg-slate-800"
+                      twoFactorAuth ? "bg-cyan-500" : "bg-slate-200 dark:bg-slate-800"
                     }`}
                   >
                     <span className={`w-4.5 h-4.5 rounded-full bg-white shadow-md block transition-transform duration-300 ${
@@ -357,7 +357,7 @@ export default function SettingsPage() {
               {/* SECTION: Diagnostics & Data */}
               <div className="space-y-5">
                 <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/60 pb-3">
-                  <Database size={18} className="text-violet-500" />
+                  <Database size={18} className="text-cyan-600 dark:text-cyan-400" />
                   <h3 className="text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-350">Workspace Diagnostics</h3>
                 </div>
 
@@ -369,7 +369,7 @@ export default function SettingsPage() {
                   </div>
                   <button
                     onClick={handleExportData}
-                    className="p-3 rounded-full bg-violet-500/10 hover:bg-violet-500/20 text-violet-500 shrink-0 transition-colors cursor-pointer border border-violet-500/10 shadow-inner"
+                    className="p-3 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 shrink-0 transition-colors cursor-pointer border border-cyan-500/10 shadow-inner"
                   >
                     <Download size={15} />
                   </button>

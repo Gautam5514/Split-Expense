@@ -41,10 +41,10 @@ const QUICK_PROMPTS = [
     title: "Trip Spend Analysis",
     subtitle: "Show breakdown across active trips",
     prompt: "How much did I spend across my recent groups?",
-    color: "from-violet-500/20 to-indigo-500/20",
-    border: "group-hover:border-violet-500/40",
-    iconColor: "text-violet-500 dark:text-violet-400",
-    iconBg: "bg-violet-500/10 dark:bg-violet-500/20",
+    color: "from-cyan-500/20 to-cyan-500/20",
+    border: "group-hover:border-cyan-500/40",
+    iconColor: "text-cyan-600 dark:text-cyan-400 dark:text-cyan-400",
+    iconBg: "bg-cyan-500/10 dark:bg-cyan-500/20",
   },
   {
     icon: ReceiptText,
@@ -447,11 +447,11 @@ export default function AiPage() {
     >
       {/* Ambient Glows */}
       <div
-        className="absolute top-[-25%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-[120px] pointer-events-none animate-pulse"
+        className="absolute top-[-25%] left-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-500/5 dark:bg-cyan-500/10 blur-[120px] pointer-events-none animate-pulse"
         style={{ animationDuration: "8s" }}
       />
       <div
-        className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] rounded-full bg-violet-500/4 dark:bg-violet-600/8 blur-[150px] pointer-events-none animate-pulse"
+        className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] rounded-full bg-cyan-500/5 dark:bg-cyan-600/8 blur-[150px] pointer-events-none animate-pulse"
         style={{ animationDuration: "12s" }}
       />
 
@@ -720,7 +720,7 @@ function ChatBubble({ message }) {
     >
       {/* Bot Avatar */}
       {!isUser && (
-        <div className="relative flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 shadow-md border border-white/10 mt-1">
+        <div className="relative flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-600 via-teal-600 to-cyan-700 shadow-md border border-white/10 mt-1">
           <Bot size={15} className="text-white" />
         </div>
       )}
@@ -734,7 +734,7 @@ function ChatBubble({ message }) {
           className={`px-5 py-4 rounded-2xl text-[14px] leading-relaxed shadow-sm relative overflow-hidden transition-all duration-300
             ${
               isUser
-                ? "bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-br-sm shadow-md border border-indigo-400/20"
+                ? "bg-gradient-to-br from-cyan-600 to-teal-600 text-white rounded-br-sm shadow-md border border-cyan-400/20"
                 : isError
                 ? "bg-red-500/5 border border-red-500/20 text-red-700 dark:text-red-200 rounded-bl-sm"
                 : "bg-slate-50 border border-slate-200/70 text-slate-800 dark:bg-white/[0.02] dark:border-white/[0.04] dark:text-zinc-100 rounded-bl-sm"
@@ -865,7 +865,7 @@ function parseInlineMarkdown(text, isUser) {
           className={`px-1.5 py-0.5 rounded text-[11.5px] font-mono font-medium ${
             isUser
               ? "bg-white/20 text-white"
-              : "bg-[#f4f4f5] dark:bg-[#111] text-indigo-600 dark:text-indigo-400 border border-border/50"
+              : "bg-[#f4f4f5] dark:bg-[#111] text-teal-600 dark:text-sky-400 border border-border/50"
           }`}
         >
           {part.slice(1, -1)}
@@ -999,7 +999,7 @@ function FormattedText({ text, isUser }) {
                 return (
                   <blockquote
                     key={i}
-                    className="pl-4 border-l-2 py-1.5 px-3 rounded-r-xl my-2 text-[13px] border-indigo-500 bg-indigo-500/5 text-muted-foreground"
+                    className="pl-4 border-l-2 py-1.5 px-3 rounded-r-xl my-2 text-[13px] border-cyan-500 bg-cyan-500/5 text-muted-foreground"
                   >
                     {parseInlineMarkdown(trimmed.slice(2), false)}
                   </blockquote>
@@ -1113,9 +1113,9 @@ function ThinkingBubble({ onStop }) {
       transition={{ duration: 0.16 }}
       className="flex items-start gap-4.5"
     >
-      <div className="relative flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-md border border-white/10 mt-1">
+      <div className="relative flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-600 to-teal-600 shadow-md border border-white/10 mt-1">
         <Bot size={15} className="text-white" />
-        <span className="absolute -inset-0.5 rounded-xl animate-ping bg-indigo-500/20" />
+        <span className="absolute -inset-0.5 rounded-xl animate-ping bg-cyan-500/20" />
       </div>
 
       <div className="flex flex-col gap-1.5 items-start">
@@ -1252,7 +1252,7 @@ function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop }) {
           className={`rounded-2xl border bg-card shadow-sm relative overflow-hidden transition-all duration-300 ${
             loading
               ? "border-border/30"
-              : "border-border/80 focus-within:border-primary/40 focus-within:shadow-[0_0_20px_rgba(99,102,241,0.06)]"
+              : "border-border/80 focus-within:border-primary/40 focus-within:shadow-[0_0_20px_rgba(8,145,178,0.06)]"
           }`}
         >
           {/* Neon inner edge highlight in dark mode */}
@@ -1318,7 +1318,7 @@ function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop }) {
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold tracking-wide transition-all duration-200 shadow-sm
                   ${
                     canSend
-                      ? "bg-primary text-white shadow-indigo-500/10 hover:shadow-indigo-500/20 hover:scale-[1.01] hover:-translate-y-px active:translate-y-0 cursor-pointer"
+                      ? "bg-primary text-white shadow-cyan-500/10 hover:shadow-cyan-500/20 hover:scale-[1.01] hover:-translate-y-px active:translate-y-0 cursor-pointer"
                       : "bg-muted text-muted-foreground/40 cursor-not-allowed border border-border/20"
                   }`}
               >

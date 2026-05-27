@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -25,102 +26,123 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
+/* ── Light Mode — Ocean Breeze Premium ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --card: #ffffff;
-  --card-foreground: #171717;
-  --popover: #ffffff;
-  --popover-foreground: #171717;
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
-  --secondary: #f3f4f6;
-  --secondary-foreground: #1f2937;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --accent: #f3f4f6;
-  --accent-foreground: #1f2937;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #4f46e5;
-  --radius: 0.5rem;
+  --background: #F4F7FB;
+  --foreground: #0B1929;
+
+  --card: #FFFFFF;
+  --card-foreground: #0B1929;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #0B1929;
+
+  /* Primary: Teal Blue — trust, travel, water */
+  --primary: #0891B2;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #EEF6F9;
+  --secondary-foreground: #155E75;
+
+  --muted: #F0F4F8;
+  --muted-foreground: #64748B;
+
+  /* Accent: Warm Amber — adventure, energy, sunset */
+  --accent: #F97316;
+  --accent-foreground: #FFFFFF;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #DCE5F0;
+  --input: #DCE5F0;
+  --ring: #0891B2;
+  --radius: 0.625rem;
 }
 
+/* ── Dark Mode — Deep Ocean Night ── */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --card: #0a0a0a;
-  --card-foreground: #ededed;
-  --popover: #0a0a0a;
-  --popover-foreground: #ededed;
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-  --secondary: #1f2937;
-  --secondary-foreground: #f9fafb;
-  --muted: #1f2937;
-  --muted-foreground: #9ca3af;
-  --accent: #1f2937;
-  --accent-foreground: #f9fafb;
-  --destructive: #7f1d1d;
-  --destructive-foreground: #fef2f2;
-  --border: #374151;
-  --input: #374151;
-  --ring: #6366f1;
+  --background: #060E1C;
+  --foreground: #EDF4FF;
+
+  --card: #0D1B30;
+  --card-foreground: #EDF4FF;
+
+  --popover: #0D1B30;
+  --popover-foreground: #EDF4FF;
+
+  /* Primary: Bright Cyan — glows beautifully in dark */
+  --primary: #22D3EE;
+  --primary-foreground: #03101F;
+
+  --secondary: #102038;
+  --secondary-foreground: #BAD1E8;
+
+  --muted: #102038;
+  --muted-foreground: #94A3B8;
+
+  /* Accent: Warm Orange in dark */
+  --accent: #FB923C;
+  --accent-foreground: #03101F;
+
+  --destructive: #F87171;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #1C3456;
+  --input: #1C3456;
+  --ring: #22D3EE;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
 }
 
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Custom scrollbar for notification dropdown */
+/* ── Scrollbar Styling ── */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(8, 145, 178, 0.2);
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(8, 145, 178, 0.4);
 }
 
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.15);
+}
 
-/* In globals.css */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.3);
+}
+
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-
-  /* WhatsApp Custom Scrollbar */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
-  }
 }
 
-/* WhatsApp Background Pattern Simulation */
+/* WhatsApp Background Pattern */
 .wa-bg-pattern {
   background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
   background-repeat: repeat;
@@ -140,92 +162,66 @@ html {
   animation-play-state: paused;
 }
 
-/* Eliminate global top header padding for isolated, full-screen auth pages */
+/* Eliminate global top header padding for isolated full-screen auth pages */
 main:has(.auth-page-wrapper),
 main:has(.h-screen) {
   padding-top: 0 !important;
 }
 
-/* Premium Glassmorphic Toasts */
+/* ── Premium Glassmorphic Toasts ── */
 .glass-toast-premium {
-  background: rgba(255, 255, 255, 0.72) !important;
-  backdrop-filter: blur(20px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
-  border: 1px solid rgba(226, 232, 240, 0.8) !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(0, 0, 0, 0.06), 
-    0 1px 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 20px 40px -15px rgba(0, 0, 0, 0.05) !important;
-  color: #0f172a !important;
-  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(220, 229, 240, 0.95) !important;
+  box-shadow:
+    0 10px 30px -10px rgba(8, 145, 178, 0.08),
+    0 1px 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 20px 40px -15px rgba(0, 0, 0, 0.06) !important;
+  color: #0B1929 !important;
+  border-radius: 16px !important;
   padding: 14px 22px !important;
   font-weight: 600 !important;
   font-size: 0.875rem !important;
+  font-family: 'Inter', sans-serif !important;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .dark .glass-toast-premium {
-  background: rgba(10, 10, 12, 0.72) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(0, 0, 0, 0.4), 
-    0 1px 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 20px 40px -15px rgba(0, 0, 0, 0.3) !important;
-  color: #f8fafc !important;
+  background: rgba(13, 27, 48, 0.92) !important;
+  border: 1px solid rgba(28, 52, 86, 0.95) !important;
+  box-shadow:
+    0 10px 30px -10px rgba(0, 0, 0, 0.5),
+    0 1px 1px 0 rgba(34, 211, 238, 0.04) inset,
+    0 20px 40px -15px rgba(0, 0, 0, 0.4) !important;
+  color: #EDF4FF !important;
 }
 
-/* Dynamic glow indicators for premium success/error/loading states */
 .glass-toast-premium.success {
   border-color: rgba(16, 185, 129, 0.3) !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(16, 185, 129, 0.1), 
-    0 1px 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 20px 40px -15px rgba(16, 185, 129, 0.05) !important;
 }
 
 .dark .glass-toast-premium.success {
   border-color: rgba(52, 211, 153, 0.2) !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(0, 0, 0, 0.4), 
-    0 0 20px 0 rgba(52, 211, 153, 0.08),
-    0 20px 40px -15px rgba(0, 0, 0, 0.3) !important;
 }
 
 .glass-toast-premium.error {
   border-color: rgba(239, 68, 68, 0.3) !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(239, 68, 68, 0.1), 
-    0 1px 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 20px 40px -15px rgba(239, 68, 68, 0.05) !important;
 }
 
 .dark .glass-toast-premium.error {
   border-color: rgba(248, 113, 113, 0.2) !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(0, 0, 0, 0.4), 
-    0 0 20px 0 rgba(248, 113, 113, 0.08),
-    0 20px 40px -15px rgba(0, 0, 0, 0.3) !important;
 }
 
 .glass-toast-premium.loading {
-  border-color: rgba(99, 102, 241, 0.3) !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(99, 102, 241, 0.1), 
-    0 1px 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 20px 40px -15px rgba(99, 102, 241, 0.05) !important;
+  border-color: rgba(8, 145, 178, 0.3) !important;
 }
 
 .dark .glass-toast-premium.loading {
-  border-color: rgba(129, 140, 248, 0.2) !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(0, 0, 0, 0.4), 
-    0 0 20px 0 rgba(129, 140, 248, 0.08),
-    0 20px 40px -15px rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(34, 211, 238, 0.2) !important;
 }
 
-/* Center all toasts perfectly and make them fully responsive on mobile/tablet screens */
-@media (max-w: 768px) {
-  /* Target the fixed hot-toast parent container */
+@media (max-width: 768px) {
   div[style*="position: fixed"] {
     left: 1rem !important;
     right: 1rem !important;
@@ -233,26 +229,23 @@ main:has(.h-screen) {
     width: calc(100vw - 2rem) !important;
   }
 
-  /* Force hot-toast alignment flex wrappers to center the alerts */
   div[style*="position: fixed"] > div {
     justify-content: center !important;
     width: 100% !important;
   }
 
-  /* Make the premium glass toast card expand gracefully and center text contents */
   .glass-toast-premium {
     width: 100% !important;
-    max-w: 100% !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
-    border-radius: 16px !important;
+    border-radius: 14px !important;
     padding: 11px 18px !important;
     font-size: 0.825rem !important;
     text-align: center !important;
-    justify-content: center !important;
   }
 }
 
-/* Bulletproof CSS rules to completely hide OneSignal floating notification widgets to optimize bottom navigation layout */
+/* Hide OneSignal floating widgets */
 #onesignal-bell-container,
 .onesignal-bell-launcher,
 .onesignal-bell-launcher-button,

@@ -82,10 +82,10 @@ export default function AddContactModal({ onClose, onSelectContact }) {
           className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/80 dark:bg-slate-950/80 text-foreground shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border p-5 bg-gradient-to-r from-violet-500/5 to-indigo-500/5">
+          <div className="flex items-center justify-between border-b border-border p-5 bg-gradient-to-r from-cyan-500/5 to-teal-500/5">
             <div>
               <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <MessageSquarePlus className="text-violet-500" size={20} />
+                <MessageSquarePlus className="text-cyan-600 dark:text-cyan-400" size={20} />
                 Start new conversation
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">Find anyone on SplitEase to start chatting</p>

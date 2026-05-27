@@ -21,11 +21,11 @@ const expenseCards = [
   },
   {
     initial: "M",
-    gradient: "from-violet-400 to-purple-500",
+    gradient: "from-cyan-400 to-teal-500",
     title: "Airbnb — Miami",
     meta: "Maya paid · 5 people",
     amount: "$620.00",
-    amountColor: "text-violet-400",
+    amountColor: "text-cyan-400",
     sub: "you owe $124.00",
     offset: "ml-5",
   },
@@ -145,22 +145,22 @@ export default function LoginPage() {
 
   return (
     /* h-[100dvh] + overflow-hidden = zero scroll */
-    <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex" style={{ background: "#08080f" }}>
+    <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex" style={{ background: "#030B16" }}>
 
       {/* ── Left visual panel ── */}
       <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden flex-col justify-center px-12 py-8">
         {/* bg */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#0f0c29 0%,#1a0533 50%,#0c1445 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#03101F 0%,#062035 50%,#031A30 100%)" }} />
         {/* grid */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(139,92,246,1) 1px,transparent 1px),linear-gradient(90deg,rgba(139,92,246,1) 1px,transparent 1px)", backgroundSize: "56px 56px" }} />
+        <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "linear-gradient(rgba(8,145,178,1) 1px,transparent 1px),linear-gradient(90deg,rgba(8,145,178,1) 1px,transparent 1px)", backgroundSize: "56px 56px" }} />
         {/* orbs */}
-        <div className="absolute w-[460px] h-[460px] rounded-full pointer-events-none" style={{ top: "5%", left: "-10%", background: "radial-gradient(circle,rgba(99,102,241,0.18) 0%,transparent 70%)" }} />
-        <div className="absolute w-[360px] h-[360px] rounded-full pointer-events-none" style={{ bottom: "0%", right: "-5%", background: "radial-gradient(circle,rgba(139,92,246,0.15) 0%,transparent 70%)" }} />
+        <div className="absolute w-[460px] h-[460px] rounded-full pointer-events-none" style={{ top: "5%", left: "-10%", background: "radial-gradient(circle,rgba(8,145,178,0.18) 0%,transparent 70%)" }} />
+        <div className="absolute w-[360px] h-[360px] rounded-full pointer-events-none" style={{ bottom: "0%", right: "-5%", background: "radial-gradient(circle,rgba(14,116,144,0.15) 0%,transparent 70%)" }} />
 
         <div className="relative z-10 max-w-[400px]">
           {/* logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
+            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(8,145,178,0.4)" }}>
               <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
             <span className="text-2xl font-black text-white tracking-tight">SplitEase</span>
@@ -169,7 +169,7 @@ export default function LoginPage() {
           {/* headline */}
           <h1 className="text-[2.2rem] font-extrabold text-white leading-[1.15] mb-3">
             Share expenses,<br />
-            <span style={{ background: "linear-gradient(90deg,#818cf8,#a78bfa,#c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <span style={{ background: "linear-gradient(90deg,#22D3EE,#38BDF8,#0EA5E9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               not the hassle.
             </span>
           </h1>
@@ -209,7 +209,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 h-[100dvh] flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#0d0d18" }}>
+      <div className="flex-1 h-[100dvh] flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#04111F" }}>
         <div className="w-full max-w-[380px] py-4">
           {/* mobile logo */}
           <div className="flex items-center gap-2.5 mb-5 lg:hidden justify-center">
@@ -259,9 +259,9 @@ export default function LoginPage() {
                   </label>
                   <div className="relative flex items-center rounded-xl border transition-all duration-200"
                     style={{
-                      background: focused === "email" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                      borderColor: errors.email ? "#f87171" : (focused === "email" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
-                      boxShadow: errors.email ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "email" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
+                      background: focused === "email" ? "rgba(8,145,178,0.06)" : "rgba(255,255,255,0.04)",
+                      borderColor: errors.email ? "#f87171" : (focused === "email" ? "rgba(8,145,178,0.6)" : "rgba(255,255,255,0.08)"),
+                      boxShadow: errors.email ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "email" ? "0 0 0 3px rgba(8,145,178,0.1)" : "none"),
                     }}>
                     <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
                     <input
@@ -286,16 +286,16 @@ export default function LoginPage() {
                         setEmailSent(false);
                         setErrors({});
                       }}
-                      className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer outline-none"
+                      className="text-[11px] text-sky-400 hover:text-sky-300 transition-colors cursor-pointer outline-none"
                     >
                       Forgot password?
                     </button>
                   </div>
                   <div className="relative flex items-center rounded-xl border transition-all duration-200"
                     style={{
-                      background: focused === "password" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                      borderColor: errors.password ? "#f87171" : (focused === "password" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
-                      boxShadow: errors.password ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "password" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
+                      background: focused === "password" ? "rgba(8,145,178,0.06)" : "rgba(255,255,255,0.04)",
+                      borderColor: errors.password ? "#f87171" : (focused === "password" ? "rgba(8,145,178,0.6)" : "rgba(255,255,255,0.08)"),
+                      boxShadow: errors.password ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "password" ? "0 0 0 3px rgba(8,145,178,0.1)" : "none"),
                     }}>
                     <Lock className="absolute left-4 w-4 h-4 text-slate-600" />
                     <input
@@ -316,9 +316,9 @@ export default function LoginPage() {
                 <button
                   type="submit" disabled={isLoading}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(99,102,241,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                  style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 4px 20px rgba(8,145,178,0.35)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(8,145,178,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(8,145,178,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
                 >
                   {isLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Signing in…</> : <>Sign in <ArrowRight className="w-4 h-4" /></>}
                 </button>
@@ -326,7 +326,7 @@ export default function LoginPage() {
 
               <p className="mt-5 text-center text-sm text-slate-500">
                 Don't have an account?{" "}
-                <a href="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+                <a href="/register" className="text-sky-400 hover:text-sky-300 font-semibold transition-colors">
                   Create one free →
                 </a>
               </p>
@@ -348,9 +348,9 @@ export default function LoginPage() {
                   </label>
                   <div className="relative flex items-center rounded-xl border transition-all duration-200"
                     style={{
-                      background: focused === "forgotEmail" ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.04)",
-                      borderColor: errors.forgotEmail ? "#f87171" : (focused === "forgotEmail" ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"),
-                      boxShadow: errors.forgotEmail ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "forgotEmail" ? "0 0 0 3px rgba(99,102,241,0.1)" : "none"),
+                      background: focused === "forgotEmail" ? "rgba(8,145,178,0.06)" : "rgba(255,255,255,0.04)",
+                      borderColor: errors.forgotEmail ? "#f87171" : (focused === "forgotEmail" ? "rgba(8,145,178,0.6)" : "rgba(255,255,255,0.08)"),
+                      boxShadow: errors.forgotEmail ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "forgotEmail" ? "0 0 0 3px rgba(8,145,178,0.1)" : "none"),
                     }}>
                     <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
                     <input
@@ -368,9 +368,9 @@ export default function LoginPage() {
                 <button
                   type="submit" disabled={forgotLoading}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28 rgba(99,102,241,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                  style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 4px 20px rgba(8,145,178,0.35)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28 rgba(8,145,178,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(8,145,178,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
                 >
                   {forgotLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Sending…</> : <>Send Reset Link <ArrowRight className="w-4 h-4" /></>}
                 </button>
@@ -383,7 +383,7 @@ export default function LoginPage() {
                   setEmailSent(false);
                   setErrors({});
                 }}
-                className="mt-6 w-full text-center text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-semibold cursor-pointer outline-none"
+                className="mt-6 w-full text-center text-sm text-sky-400 hover:text-sky-300 transition-colors font-semibold cursor-pointer outline-none"
               >
                 ← Back to Sign in
               </button>
@@ -392,13 +392,13 @@ export default function LoginPage() {
             <>
               {/* Check your email screen */}
               <div className="text-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-4 text-indigo-400">
+                <div className="w-16 h-16 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mx-auto mb-4 text-sky-400">
                   <Mail className="w-7 h-7" />
                 </div>
                 <h2 className="text-xl font-bold text-white mb-2">Check your inbox</h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   We sent a password reset link to<br />
-                  <span className="text-indigo-400 font-semibold">{forgotEmail}</span>
+                  <span className="text-sky-400 font-semibold">{forgotEmail}</span>
                 </p>
               </div>
 
@@ -414,7 +414,7 @@ export default function LoginPage() {
                   onClick={() => { setEmailSent(false); }}
                   className="w-full text-center text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer outline-none block"
                 >
-                  Didn't receive it? <span className="text-indigo-400 font-semibold hover:underline">Resend reset link</span>
+                  Didn't receive it? <span className="text-sky-400 font-semibold hover:underline">Resend reset link</span>
                 </button>
 
                 <button
@@ -424,7 +424,7 @@ export default function LoginPage() {
                     setEmailSent(false);
                     setErrors({});
                   }}
-                  className="w-full text-center text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-semibold cursor-pointer outline-none block"
+                  className="w-full text-center text-sm text-sky-400 hover:text-sky-300 transition-colors font-semibold cursor-pointer outline-none block"
                 >
                   ← Return to Sign in
                 </button>

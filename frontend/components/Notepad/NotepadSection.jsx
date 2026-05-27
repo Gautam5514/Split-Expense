@@ -89,7 +89,7 @@ export default function NotepadSection({ groupId }) {
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white text-sm font-medium px-4 py-2 rounded-lg shadow"
+            className="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:opacity-90 text-white text-sm font-medium px-4 py-2 rounded-lg shadow"
           >
             <PlusCircle size={16} />
             New Notepad

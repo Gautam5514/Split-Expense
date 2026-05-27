@@ -16,7 +16,7 @@ const PRESETS = [
     bgLight: "#ffffff",
     textDark: "#ededed",
     textLight: "#171717",
-    primary: "#6366f1",
+    primary: "#0E7490",
     borderDark: "#374151",
     borderLight: "#e5e7eb"
   },
@@ -114,8 +114,8 @@ const LIGHT_TEXTS = [
 ];
 
 const ACCENTS = [
-  { hex: "#6366f1", label: "Indigo" },
-  { hex: "#8b5cf6", label: "Violet" },
+  { hex: "#0E7490", label: "Indigo" },
+  { hex: "#0891B2", label: "Violet" },
   { hex: "#10b981", label: "Emerald" },
   { hex: "#f97316", label: "Orange" },
   { hex: "#ff007f", label: "Magenta" },
@@ -190,7 +190,7 @@ export default function ThemeCustomizerPage() {
   useEffect(() => {
     setLocalBg(customBg || (theme === "dark" ? "#0a0a0a" : "#ffffff"));
     setLocalText(customText || (theme === "dark" ? "#ededed" : "#171717"));
-    setLocalPrimary(customPrimary || "#6366f1");
+    setLocalPrimary(customPrimary || "#0E7490");
     setLocalBorder(customBorder || (theme === "dark" ? "#374151" : "#e5e7eb"));
   }, [customBg, customText, customPrimary, customBorder, theme]);
 
@@ -227,7 +227,7 @@ export default function ThemeCustomizerPage() {
     resetColors();
     setLocalBg(theme === "dark" ? "#0a0a0a" : "#ffffff");
     setLocalText(theme === "dark" ? "#ededed" : "#171717");
-    setLocalPrimary("#6366f1");
+    setLocalPrimary("#0E7490");
     setLocalBorder(theme === "dark" ? "#374151" : "#e5e7eb");
     toast.success("Reverted workspace color settings to defaults!");
   };
@@ -239,8 +239,8 @@ export default function ThemeCustomizerPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-20 pt-28">
       {/* Decorative Orbs */}
-      <div className="absolute top-20 left-10 w-80 h-80 bg-violet-500/10 rounded-full filter blur-[100px] pointer-events-none" />
-      <div className="absolute top-40 right-20 w-96 h-96 bg-indigo-500/10 rounded-full filter blur-[120px] pointer-events-none" />
+      <div className="absolute top-20 left-10 w-80 h-80 bg-cyan-500/10 rounded-full filter blur-[100px] pointer-events-none" />
+      <div className="absolute top-40 right-20 w-96 h-96 bg-cyan-500/10 rounded-full filter blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6 w-full">
         
@@ -265,7 +265,7 @@ export default function ThemeCustomizerPage() {
 
         {/* Headline */}
         <div className="flex items-start gap-4 pb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-500 ring-1 ring-violet-500/15 shrink-0 shadow-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-500/15 shrink-0 shadow-sm">
             <Palette size={22} className="animate-pulse" />
           </div>
           <div>
@@ -289,7 +289,7 @@ export default function ThemeCustomizerPage() {
                   onClick={() => { if (theme !== "light") toggleTheme(); }}
                   className={`flex items-center justify-center gap-2 px-5 py-3 rounded-full font-extrabold text-xs transition-all active:scale-95 cursor-pointer ${
                     theme === "light"
-                      ? "bg-white dark:bg-slate-800 text-violet-600 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm"
+                      ? "bg-white dark:bg-slate-800 text-teal-600 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm"
                       : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350"
                   }`}
                 >
@@ -300,7 +300,7 @@ export default function ThemeCustomizerPage() {
                   onClick={() => { if (theme !== "dark") toggleTheme(); }}
                   className={`flex items-center justify-center gap-2 px-5 py-3 rounded-full font-extrabold text-xs transition-all active:scale-95 cursor-pointer ${
                     theme === "dark"
-                      ? "bg-white dark:bg-slate-800 text-violet-500 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm"
+                      ? "bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm"
                       : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350"
                   }`}
                 >
@@ -313,7 +313,7 @@ export default function ThemeCustomizerPage() {
             {/* Presets Grid */}
             <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 block ml-1">
-                <Sparkles size={14} className="text-violet-500" />
+                <Sparkles size={14} className="text-cyan-600 dark:text-cyan-400" />
                 Premium Theme Presets
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -321,10 +321,10 @@ export default function ThemeCustomizerPage() {
                   <button
                     key={preset.name}
                     onClick={() => selectPreset(preset)}
-                    className="flex flex-col text-left p-4 rounded-[20px] border border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-850/10 hover:border-violet-500/30 dark:hover:border-violet-500/30 hover:bg-violet-500/5 transition-all duration-200 cursor-pointer group"
+                    className="flex flex-col text-left p-4 rounded-[20px] border border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-850/10 hover:border-cyan-500/30 dark:hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all duration-200 cursor-pointer group"
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-sm font-bold text-slate-850 dark:text-slate-100 group-hover:text-violet-500 transition-colors">
+                      <span className="text-sm font-bold text-slate-850 dark:text-slate-100 group-hover:text-cyan-600 dark:text-cyan-400 transition-colors">
                         {preset.name}
                       </span>
                       <div className="flex gap-1">
@@ -356,13 +356,13 @@ export default function ThemeCustomizerPage() {
                       onClick={() => setLocalBg(option.hex)}
                       className={`flex items-center gap-2 p-2.5 rounded-[16px] border text-xs font-semibold transition-all cursor-pointer ${
                         localBg === option.hex
-                          ? "border-violet-500 ring-2 ring-violet-500/20 bg-slate-50 dark:bg-slate-850"
+                          ? "border-cyan-500 ring-2 ring-cyan-500/20 bg-slate-50 dark:bg-slate-850"
                           : "border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-transparent"
                       }`}
                     >
                       <span className="w-4.5 h-4.5 rounded-md border border-black/10 shrink-0" style={{ backgroundColor: option.hex }} />
                       <span className="text-slate-700 dark:text-slate-350 truncate">{option.label}</span>
-                      {localBg === option.hex && <Check size={12} className="ml-auto text-violet-500 shrink-0" />}
+                      {localBg === option.hex && <Check size={12} className="ml-auto text-cyan-600 dark:text-cyan-400 shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -380,7 +380,7 @@ export default function ThemeCustomizerPage() {
                       onClick={() => setLocalText(option.hex)}
                       className={`flex items-center gap-2 p-2.5 rounded-[16px] border text-xs font-semibold transition-all cursor-pointer ${
                         localText === option.hex
-                          ? "border-violet-500 ring-2 ring-violet-500/20 bg-slate-50 dark:bg-slate-850"
+                          ? "border-cyan-500 ring-2 ring-cyan-500/20 bg-slate-50 dark:bg-slate-850"
                           : "border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-transparent"
                       }`}
                     >
@@ -388,7 +388,7 @@ export default function ThemeCustomizerPage() {
                         T
                       </span>
                       <span className="text-slate-700 dark:text-slate-350 truncate">{option.label}</span>
-                      {localText === option.hex && <Check size={12} className="ml-auto text-violet-500 shrink-0" />}
+                      {localText === option.hex && <Check size={12} className="ml-auto text-cyan-600 dark:text-cyan-400 shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -406,13 +406,13 @@ export default function ThemeCustomizerPage() {
                       onClick={() => setLocalPrimary(option.hex)}
                       className={`flex items-center gap-2 p-2.5 rounded-[16px] border text-xs font-semibold transition-all cursor-pointer ${
                         localPrimary === option.hex
-                          ? "border-violet-500 ring-2 ring-violet-500/20 bg-slate-50 dark:bg-slate-850"
+                          ? "border-cyan-500 ring-2 ring-cyan-500/20 bg-slate-50 dark:bg-slate-850"
                           : "border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-transparent"
                       }`}
                     >
                       <span className="w-4.5 h-4.5 rounded-md border border-black/10 shrink-0" style={{ backgroundColor: option.hex }} />
                       <span className="text-slate-700 dark:text-slate-350 truncate">{option.label}</span>
-                      {localPrimary === option.hex && <Check size={12} className="ml-auto text-violet-500 shrink-0" />}
+                      {localPrimary === option.hex && <Check size={12} className="ml-auto text-cyan-600 dark:text-cyan-400 shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -430,13 +430,13 @@ export default function ThemeCustomizerPage() {
                       onClick={() => setLocalBorder(option.hex)}
                       className={`flex items-center gap-2 p-2.5 rounded-[16px] border text-xs font-semibold transition-all cursor-pointer ${
                         localBorder === option.hex
-                          ? "border-violet-500 ring-2 ring-violet-500/20 bg-slate-50 dark:bg-slate-850"
+                          ? "border-cyan-500 ring-2 ring-cyan-500/20 bg-slate-50 dark:bg-slate-850"
                           : "border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 bg-transparent"
                       }`}
                     >
                       <span className="w-4.5 h-4.5 rounded-md shrink-0 border-2" style={{ borderColor: option.hex, backgroundColor: "transparent" }} />
                       <span className="text-slate-700 dark:text-slate-350 truncate">{option.label}</span>
-                      {localBorder === option.hex && <Check size={12} className="ml-auto text-violet-500 shrink-0" />}
+                      {localBorder === option.hex && <Check size={12} className="ml-auto text-cyan-600 dark:text-cyan-400 shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -450,7 +450,7 @@ export default function ThemeCustomizerPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={!contrastCheck.safe}
-                className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:opacity-95 text-white font-extrabold text-xs rounded-full shadow-lg hover:shadow-violet-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.01] active:scale-99 cursor-pointer"
+                className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-600 to-teal-600 hover:opacity-95 text-white font-extrabold text-xs rounded-full shadow-lg hover:shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.01] active:scale-99 cursor-pointer"
               >
                 Apply Custom Theme
               </button>

@@ -33,7 +33,7 @@ export default function GroupChatList({ onSelect, activeGroup }) {
   }, []);
 
   const getColorForName = (name) => {
-    const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-teal-500", "bg-indigo-500"];
+    const colors = ["bg-blue-500", "bg-green-500", "bg-teal-600", "bg-teal-500", "bg-cyan-600"];
     const index = name ? name.charCodeAt(0) % colors.length : 0;
     return colors[index];
   };

@@ -5,14 +5,15 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import toast from "@/lib/toast";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Users,
   Plus,
-  Wallet,
   Loader2,
-  Sparkles,
-  CheckCircle,
+  CheckCircle2,
   Trash2,
+  LayoutGrid,
+  CheckCircle,
 } from "lucide-react";
 import InviteModal from "@/components/InviteModal";
 
@@ -20,8 +21,6 @@ export default function DashboardPage() {
   const { token } = useAuth();
   const [groups, setGroups] = useState([]);
   const [view, setView] = useState("active");
-  const [createdGroups, setCreatedGroups] = useState([]);
-  const [joinedGroups, setJoinedGroups] = useState([]);
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -37,57 +36,31 @@ export default function DashboardPage() {
     api
       .get("/groups")
       .then((res) => {
-        const allGroups = res.data || [];
-        setGroups(allGroups);
-        categorizeGroups(allGroups);
+        setGroups(res.data || []);
       })
       .catch(() => toast.error("Failed to fetch groups"))
       .finally(() => setLoading(false));
   };
 
-  const categorizeGroups = (groups) => {
-    if (!token) return;
+
+  const markCompleted = async (e, groupId) => {
+    e.preventDefault();
+    e.stopPropagation();
     try {
-      const userId = JSON.parse(atob(token.split(".")[1])).id;
-
-      const created = groups.filter(
-        (g) => g.createdBy === userId || g.createdBy?._id === userId
-      );
-
-      const joined = groups.filter((g) => {
-        const isMember = g.members?.some((m) => m._id === userId);
-        const isCreator = g.createdBy === userId || g.createdBy?._id === userId;
-        return isMember && !isCreator;
+      await api.put(`/groups/${groupId}/complete`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      setCreatedGroups(created);
-      setJoinedGroups(joined);
-    } catch (err) {
-      setCreatedGroups(groups);
-      setJoinedGroups([]);
-    }
-  };
-
-  const markCompleted = async (groupId) => {
-    try {
-      await api.put(
-        `/groups/${groupId}/complete`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
       toast.success("Marked as completed!");
       fetchGroups();
-    } catch (err) {
+    } catch {
       toast.error("Failed to mark as completed");
     }
   };
 
-  const deleteTrip = async (groupId) => {
-    const confirmed = window.confirm(
-      "Delete this trip and all of its expenses, notes, and group messages?"
-    );
-    if (!confirmed) return;
-
+  const deleteTrip = async (e, groupId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm("Delete this trip and all of its expenses, notes, and group messages?")) return;
     try {
       await api.delete(`/groups/${groupId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -99,13 +72,12 @@ export default function DashboardPage() {
     }
   };
 
-
   const createGroup = async (e) => {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) { setNameError("Group name is required."); return; }
-    if (trimmed.length < 2) { setNameError("Group name must be at least 2 characters."); return; }
-    if (trimmed.length > 100) { setNameError("Group name must be under 100 characters."); return; }
+    if (trimmed.length < 2) { setNameError("Must be at least 2 characters."); return; }
+    if (trimmed.length > 100) { setNameError("Must be under 100 characters."); return; }
     setNameError("");
     try {
       setCreating(true);
@@ -123,6 +95,8 @@ export default function DashboardPage() {
     }
   };
 
+  // Backend sets status="active" for groups the user created,
+  // status="inactive" for groups the user was added to.
   const activeCreatedGroups = groups.filter(
     (g) => g.status === "active" && !g.isCompleted
   );
@@ -131,76 +105,64 @@ export default function DashboardPage() {
   );
   const completedGroups = groups.filter((g) => g.isCompleted);
 
-  const hasActiveGroups =
-    activeCreatedGroups.length > 0 || activeJoinedGroups.length > 0;
-  const hasCompletedGroups = completedGroups.length > 0;
+  const hasActiveGroups = activeCreatedGroups.length > 0 || activeJoinedGroups.length > 0;
 
   return (
-    <div className="min-h-screen bg-background text-foreground pt-12 pb-32 sm:pb-12 px-6">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <div className="min-h-screen bg-background text-foreground pt-10 pb-32 sm:pb-12 px-6">
+      <div className="max-w-5xl mx-auto space-y-8">
 
-        {/* 🧭 Header Section */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
-          <div className="text-center sm:text-left">
-            <h1 className="text-4xl font-extrabold flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center border border-indigo-500/20 shadow-md flex-shrink-0">
-                <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
-              </div>
-              SplitEase
-            </h1>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div>
+            <h1 className="text-3xl font-extrabold text-primary">Groups</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Manage your trips, groups & expenses effortlessly
+              Manage your trips, groups &amp; expenses effortlessly.
             </p>
           </div>
 
-          {/* 👇 Create Group Input */}
-          <form
-            onSubmit={createGroup}
-            className="flex flex-col gap-1 w-full sm:w-auto"
-          >
+          <form onSubmit={createGroup} className="flex flex-col gap-1 w-full sm:w-auto">
             <div className="flex items-center gap-2">
               <input
                 placeholder="Enter new group name"
-                className={`flex-grow rounded-lg bg-card text-foreground border p-2 px-3 shadow-sm focus:ring-2 focus:ring-primary ${nameError ? "border-red-500 focus:ring-red-500" : "border-border"}`}
+                className={`flex-grow rounded-lg bg-card text-foreground border p-2 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary ${
+                  nameError ? "border-destructive focus:ring-destructive" : "border-border"
+                }`}
                 value={name}
                 onChange={(e) => { setName(e.target.value); if (nameError) setNameError(""); }}
               />
               <button
                 type="submit"
                 disabled={creating}
-                className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-lg disabled:opacity-60"
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-60 shrink-0"
               >
-                {creating ? (
-                  <Loader2 className="animate-spin w-4 h-4" />
-                ) : (
-                  <Plus size={18} />
-                )}
-                {creating ? "Creating..." : "Create"}
+                {creating ? <Loader2 className="animate-spin w-4 h-4" /> : <Plus size={16} />}
+                {creating ? "Creating…" : "Create"}
               </button>
             </div>
-            {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
+            {nameError && <p className="text-destructive text-xs mt-0.5">{nameError}</p>}
           </form>
         </div>
 
-        {/* Tabs - Active / Completed */}
+        {/* Underline Tabs */}
         {!loading && groups.length > 0 && (
-          <div className="flex justify-center sm:justify-end gap-3 mt-4">
+          <div className="flex items-center gap-6 border-b border-border">
             <button
               onClick={() => setView("active")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition border ${view === "active"
-                  ? "bg-primary text-primary-foreground border-transparent"
-                  : "bg-card border-border text-muted-foreground hover:text-primary"
-                }`}
+              className={`pb-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                view === "active"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
             >
               Active Trips
             </button>
-
             <button
               onClick={() => setView("completed")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition border ${view === "completed"
-                  ? "bg-purple-600 text-white border-transparent"
-                  : "bg-card border-border text-muted-foreground hover:text-purple-600"
-                }`}
+              className={`pb-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                view === "completed"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
             >
               Completed Trips
             </button>
@@ -209,60 +171,47 @@ export default function DashboardPage() {
 
         {/* Loader */}
         {loading && (
-          <div className="flex justify-center py-16">
+          <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-primary w-6 h-6" />
           </div>
         )}
 
-        {/* 🚀 No Groups (Onboarding Card) */}
+        {/* Empty state */}
         {!loading && groups.length === 0 && (
-          <div className="bg-card border border-border rounded p-10 text-center shadow-lg">
-            <Users className="mx-auto mb-4 text-primary" size={38} />
-            <h2 className="text-xl font-semibold mb-2 text-primary">
-              No groups yet
-            </h2>
-            <p className="text-muted-foreground text-sm mb-4">
+          <div className="bg-card border border-border rounded-xl p-12 text-center shadow-sm">
+            <Users className="mx-auto mb-4 text-primary" size={36} />
+            <h2 className="text-lg font-semibold text-foreground mb-1">No groups yet</h2>
+            <p className="text-muted-foreground text-sm">
               Create your first group above and start splitting expenses.
-            </p>
-            <p className="text-muted-foreground/60 text-xs italic">
-              “Good trips become great when expenses stay fair.”
             </p>
           </div>
         )}
 
-        {/* Active Trips View */}
+        {/* Active Trips */}
         {!loading && view === "active" && (
-          <div className="space-y-10">
-            {/* Your Groups */}
+          <div className="space-y-8">
             {activeCreatedGroups.length > 0 && (
               <section>
-                <h2 className="text-xl font-bold mb-4 text-primary">
-                  Your Groups
-                </h2>
-
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <h2 className="text-base font-bold text-primary mb-4">Your Groups</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
                   {activeCreatedGroups.map((g) => (
                     <GroupCard
                       key={g._id}
                       group={g}
-                      onMarkCompleted={markCompleted}
-                      onDeleteTrip={deleteTrip}
                       isCreator
                       view="active"
+                      onMarkCompleted={markCompleted}
+                      onDeleteTrip={deleteTrip}
                     />
                   ))}
                 </div>
               </section>
             )}
 
-            {/* Joined Groups */}
             {activeJoinedGroups.length > 0 && (
               <section>
-                <h2 className="text-xl font-bold mb-4 text-purple-600">
-                  Groups You’re Added To
-                </h2>
-
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <h2 className="text-base font-bold text-primary mb-4">Groups You&apos;re Added To</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
                   {activeJoinedGroups.map((g) => (
                     <GroupCard
                       key={g._id}
@@ -276,9 +225,7 @@ export default function DashboardPage() {
             )}
 
             {!hasActiveGroups && groups.length > 0 && (
-              <div className="text-center text-muted-foreground py-10">
-                <p>No active trips found.</p>
-              </div>
+              <p className="text-center text-muted-foreground py-12 text-sm">No active trips found.</p>
             )}
           </div>
         )}
@@ -286,18 +233,15 @@ export default function DashboardPage() {
         {/* Completed Trips */}
         {!loading && view === "completed" && (
           <section>
-            {hasCompletedGroups ? (
+            {completedGroups.length > 0 ? (
               <>
-                <h2 className="text-xl font-bold mb-4 text-purple-600">
-                  Completed Trips
-                </h2>
-
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <h2 className="text-base font-bold text-primary mb-4">Completed Trips</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
                   {completedGroups.map((g) => (
                     <GroupCard
                       key={g._id}
                       group={g}
-                      isCreator={createdGroups.some((cg) => cg._id === g._id)}
+                      isCreator={g.status === "active"}
                       onDeleteTrip={deleteTrip}
                       view="completed"
                     />
@@ -305,15 +249,12 @@ export default function DashboardPage() {
                 </div>
               </>
             ) : (
-              <div className="text-center text-muted-foreground py-10">
-                <p>No completed trips yet.</p>
-              </div>
+              <p className="text-center text-muted-foreground py-12 text-sm">No completed trips yet.</p>
             )}
           </section>
         )}
       </div>
 
-      {/* Invite Modal */}
       {inviteGroupId && (
         <InviteModal
           groupId={inviteGroupId}
@@ -325,134 +266,127 @@ export default function DashboardPage() {
   );
 }
 
-/* 🟩 Group Card Design (Premium Fintech UI) */
-function GroupCard({
-  group,
-  isCreator = false,
-  view = "active",
-  onMarkCompleted,
-  onDeleteTrip,
-}) {
-  const handleCheckboxClick = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onMarkCompleted(group._id);
-  };
+const avatarColors = [
+  "bg-cyan-500 text-white",
+  "bg-teal-500 text-white",
+  "bg-emerald-500 text-white",
+  "bg-rose-500 text-white",
+  "bg-amber-500 text-white",
+  "bg-blue-500 text-white",
+  "bg-violet-500 text-white",
+];
 
-  const handleDeleteClick = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onDeleteTrip?.(group._id);
-  };
+function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted, onDeleteTrip }) {
+  const hasActions = isCreator && (view === "active" || view === "completed");
 
   return (
     <Link
       href={`/groups/${group._id}`}
-      className="group relative bg-card border border-border hover:shadow-md rounded p-5 transition-all duration-300  flex flex-col justify-between hover:border-primary/50"
+      className="group flex flex-col bg-card border border-border rounded-xl shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 overflow-hidden"
     >
-      <div>
-        <div className="flex items-start justify-between">
-          <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-            {group.name}
-          </h3>
-
-          <Wallet
-            size={20}
-            className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0"
-          />
+      {/* Card body */}
+      <div className="flex-1 p-5 space-y-4">
+        {/* Icon + name */}
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <LayoutGrid className="w-4 h-4 text-primary" />
+          </div>
+          <div className="min-w-0 pt-0.5">
+            <h3 className="font-bold text-foreground text-base leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+              {group.name}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {group.members?.length || 0} Member{group.members?.length !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
 
-        {group.members?.length > 0 ? (
-          <div className="mt-3.5 flex items-center gap-2">
-            <div className="flex -space-x-2.5 overflow-hidden">
-              {group.members.slice(0, 4).map((m, i) => {
-                const nameStr = m.name || m.email || "User";
-                const initial = nameStr.charAt(0).toUpperCase();
-                const colors = [
-                  "from-violet-500 to-indigo-500",
-                  "from-emerald-500 to-teal-500",
-                  "from-rose-500 to-pink-500",
-                  "from-amber-500 to-orange-500",
-                  "from-cyan-500 to-blue-500",
-                ];
-                const colorBg = colors[i % colors.length];
-
-                return m.photoURL ? (
-                  <img
+        {/* Member avatars */}
+        {group.members?.length > 0 && (
+          <div className="flex items-center gap-2.5">
+            <div className="flex -space-x-2.5">
+              {group.members.slice(0, 3).map((m, i) => {
+                const photo = m.photoURL || m.profileImage?.url;
+                const label = (m.name || m.email || "?").charAt(0).toUpperCase();
+                return photo ? (
+                  <Image
                     key={m._id || i}
-                    className="inline-block h-7 w-7 rounded-full ring-2 ring-card object-cover"
-                    src={m.photoURL}
-                    alt={nameStr}
-                    title={nameStr}
+                    src={photo}
+                    alt={m.name || m.email}
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-full ring-2 ring-card object-cover"
                   />
                 ) : (
                   <div
                     key={m._id || i}
-                    className={`inline-flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-card bg-gradient-to-br ${colorBg} text-[10px] font-bold text-white uppercase shadow-sm`}
-                    title={nameStr}
+                    title={m.name || m.email}
+                    className={`w-8 h-8 rounded-full ring-2 ring-card flex items-center justify-center text-[11px] font-bold ${avatarColors[i % avatarColors.length]}`}
                   >
-                    {initial}
+                    {label}
                   </div>
                 );
               })}
-              {group.members.length > 4 && (
-                <div className="inline-flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-card bg-muted text-[10px] font-bold text-muted-foreground border border-border">
-                  +{group.members.length - 4}
+              {group.members.length > 3 && (
+                <div className="w-8 h-8 rounded-full ring-2 ring-card bg-muted flex items-center justify-center text-[11px] font-bold text-muted-foreground">
+                  +{group.members.length - 3}
                 </div>
               )}
             </div>
-            
-            <span className="text-[11px] text-muted-foreground/75 font-semibold">
-              {group.members.length} Member{group.members.length !== 1 && "s"}
+            <span className="text-xs text-muted-foreground">
+              {group.members
+                .slice(0, 2)
+                .map((m) => m.name || m.email)
+                .join(", ")}
+              {group.members.length > 2 && ` +${group.members.length - 2} more`}
             </span>
           </div>
-        ) : (
-          <p className="text-xs text-muted-foreground/60 mt-3 italic">No members added yet</p>
         )}
       </div>
 
-      <div className="mt-4">
-        {/* Mark Completed */}
-        {isCreator && view === "active" && (
-          <div
-            onClick={handleCheckboxClick}
-            className="flex items-center gap-2 cursor-pointer p-1 rounded-md hover:bg-muted w-full"
-          >
-            <input
-              type="checkbox"
-              id={`completed-${group._id}`}
-              checked={group.isCompleted}
-              readOnly
-              className="w-4 h-4 accent-primary cursor-pointer pointer-events-none"
-            />
-            <label
-              htmlFor={`completed-${group._id}`}
-              className="text-sm cursor-pointer text-foreground flex items-center gap-1"
-            >
-              <CheckCircle size={14} className="text-primary" />
-              Mark as Completed
-            </label>
-          </div>
-        )}
-
-        {/* Completed Label */}
-        {view === "completed" && (
-          <div className="text-primary flex items-center gap-1 text-sm font-medium">
-            <CheckCircle size={16} /> Trip Completed
-          </div>
-        )}
-
-        {isCreator && (
-          <button
-            type="button"
-            onClick={handleDeleteClick}
-            className="mt-3 flex items-center gap-2 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors"
-          >
-            <Trash2 size={15} />
-            Delete Trip
-          </button>
-        )}
-      </div>
+      {/* Footer actions */}
+      {hasActions && (
+        <div
+          className="border-t border-border px-5 py-3 flex items-center justify-between"
+          onClick={(e) => e.preventDefault()}
+        >
+          {view === "active" ? (
+            <>
+              <button
+                type="button"
+                onClick={(e) => onMarkCompleted(e, group._id)}
+                className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                <CheckCircle2 size={15} />
+                Mark as Completed
+              </button>
+              <button
+                type="button"
+                onClick={(e) => onDeleteTrip(e, group._id)}
+                className="flex items-center gap-1.5 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors"
+              >
+                <Trash2 size={15} />
+                Delete
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5 text-sm font-medium text-primary">
+                <CheckCircle size={15} />
+                Trip Completed
+              </div>
+              <button
+                type="button"
+                onClick={(e) => onDeleteTrip(e, group._id)}
+                className="flex items-center gap-1.5 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors"
+              >
+                <Trash2 size={15} />
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </Link>
   );
 }

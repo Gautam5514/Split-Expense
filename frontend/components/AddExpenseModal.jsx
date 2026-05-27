@@ -117,7 +117,7 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
           </button>
 
           {/* Header */}
-          <div className="p-6 border-b bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-border">
+          <div className="p-6 border-b bg-gradient-to-r from-cyan-50 via-teal-50 to-sky-50 dark:from-cyan-950 dark:via-teal-950 dark:to-sky-950 border-border">
             <div className="flex items-center gap-2 mb-1">
               <Wallet2 className="text-primary" size={22} />
               <h2 className="text-xl font-semibold text-foreground">
@@ -228,7 +228,7 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 transition disabled:opacity-60"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-cyan-600 to-teal-600 hover:opacity-90 transition disabled:opacity-60"
               >
                 {loading ? (
                   <>

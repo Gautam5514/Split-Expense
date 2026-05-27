@@ -52,7 +52,7 @@ export default function AddStepForm({ onAdd }) {
       <button
         type="submit"
         disabled={loading || !title.trim()}
-        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium px-3 py-2.5 rounded-lg hover:opacity-90 transition disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-teal-600 text-white text-sm font-medium px-3 py-2.5 rounded-lg hover:opacity-90 transition disabled:opacity-50"
       >
         {loading ? (
           <>

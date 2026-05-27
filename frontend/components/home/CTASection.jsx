@@ -22,7 +22,7 @@ export default function CTASection() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(139,92,246,0.08) 0%, transparent 70%)",
+            "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(8,145,178,0.08) 0%, transparent 70%)",
         }}
       />
 
@@ -34,17 +34,17 @@ export default function CTASection() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="relative overflow-hidden rounded-3xl text-center"
           style={{
-            background: "linear-gradient(135deg, #1e1040 0%, #160d36 40%, #1a0a3d 70%, #0f0a2e 100%)",
-            border: "1px solid rgba(139,92,246,0.25)",
+            background: "linear-gradient(135deg, #021830 0%, #031D3A 40%, #042040 70%, #031525 100%)",
+            border: "1px solid rgba(8,145,178,0.25)",
             boxShadow:
-              "0 0 0 1px rgba(139,92,246,0.1), 0 40px 80px -20px rgba(139,92,246,0.3), 0 0 120px rgba(99,102,241,0.15)",
+              "0 0 0 1px rgba(8,145,178,0.1), 0 40px 80px -20px rgba(8,145,178,0.3), 0 0 120px rgba(14,116,144,0.15)",
           }}
         >
           {/* Dot-grid texture */}
           <div
             className="absolute inset-0 pointer-events-none opacity-[0.04]"
             style={{
-              backgroundImage: "radial-gradient(circle, #a78bfa 1px, transparent 1px)",
+              backgroundImage: "radial-gradient(circle, rgba(34,211,238,0.5) 1px, transparent 1px)",
               backgroundSize: "24px 24px",
             }}
           />
@@ -53,7 +53,7 @@ export default function CTASection() {
           <div
             className="absolute -top-24 -left-24 w-72 h-72 rounded-full pointer-events-none"
             style={{
-              background: "radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)",
+              background: "radial-gradient(circle, rgba(8,145,178,0.3) 0%, transparent 70%)",
               filter: "blur(40px)",
             }}
           />
@@ -66,7 +66,7 @@ export default function CTASection() {
           />
 
           {/* Top gradient line */}
-          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
 
           <div className="relative z-10 px-8 md:px-20 py-16 md:py-20">
 
@@ -78,12 +78,12 @@ export default function CTASection() {
               transition={{ delay: 0.15 }}
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-7"
               style={{
-                background: "rgba(139,92,246,0.2)",
-                border: "1px solid rgba(139,92,246,0.4)",
-                color: "#c4b5fd",
+                background: "rgba(8,145,178,0.2)",
+                border: "1px solid rgba(8,145,178,0.4)",
+                color: "#67E8F9",
               }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
               2,000+ groups already splitting smarter
             </motion.div>
 
@@ -100,7 +100,7 @@ export default function CTASection() {
                 className="bg-clip-text text-transparent"
                 style={{
                   backgroundImage:
-                    "linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #f472b6 100%)",
+                    "linear-gradient(135deg, #22D3EE 0%, #38BDF8 50%, #34D399 100%)",
                 }}
               >
                 mental math.
@@ -131,8 +131,8 @@ export default function CTASection() {
                 onClick={() => router.push("/register")}
                 className="group flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-white text-base transition-all hover:scale-105 active:scale-95"
                 style={{
-                  background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
-                  boxShadow: "0 0 40px rgba(139,92,246,0.5), 0 4px 20px rgba(0,0,0,0.3)",
+                  background: "linear-gradient(135deg, #0891B2, #0E7490)",
+                  boxShadow: "0 0 40px rgba(8,145,178,0.5), 0 4px 20px rgba(0,0,0,0.3)",
                 }}
               >
                 <Zap className="w-4 h-4" />
@@ -162,7 +162,7 @@ export default function CTASection() {
             >
               {PERKS.map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-1.5 text-xs text-white/35 font-medium">
-                  <Icon className="w-3.5 h-3.5 text-violet-400/70" />
+                  <Icon className="w-3.5 h-3.5 text-cyan-400/70" />
                   {text}
                 </div>
               ))}
