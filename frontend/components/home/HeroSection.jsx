@@ -80,11 +80,11 @@ export default function HeroSection() {
           />
         </AnimatePresence>
 
-        {/* Dark overlay layers */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black" />
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-950/50 via-transparent to-teal-950/50" />
-        {/* Bottom fade so mockup blends */}
-        <div className="absolute bottom-0 inset-x-0 h-64 bg-gradient-to-t from-black to-transparent" />
+        {/* Overlay — lighter in light mode, dark in dark mode */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/85 dark:from-black/75 dark:via-black/60 dark:to-black" />
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-950/25 via-transparent to-teal-950/25 dark:from-cyan-950/50 dark:to-teal-950/50" />
+        {/* Bottom fade blends into page background */}
+        <div className="absolute bottom-0 inset-x-0 h-64 bg-gradient-to-t from-background to-transparent" />
       </div>
 
       {/* Image indicator dots */}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, ArrowRight, Wallet, Sparkles } from "lucide-react";
+import { Mail, ArrowRight, Sparkles } from "lucide-react";
 
 const GithubIcon = (p) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...p}>
@@ -22,41 +22,32 @@ const InstagramIcon = (p) => (
   </svg>
 );
 
-const LinkedinIcon = (p) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...p}>
-    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-  </svg>
-);
-
 const LINKS = {
   Product: [
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "AI Assistant", href: "/ai" },
-    { label: "Group Chat", href: "/groupchat" },
-    { label: "Expense Tracking", href: "/dashboard" },
-    { label: "Split Calculator", href: "/dashboard" },
+    { label: "Dashboard",         href: "/dashboard" },
+    { label: "AI Assistant",      href: "/ai" },
+    { label: "Group Chat",        href: "/groupchat" },
+    { label: "Expense Tracking",  href: "/dashboard" },
   ],
   Company: [
-    { label: "About Us", href: "/about" },
-    { label: "Careers", href: "/careers" },
-    { label: "Blog", href: "/blog" },
-    { label: "Contact", href: "/contact" },
+    { label: "About Us",  href: "/about" },
+    { label: "Blog",      href: "/blog" },
+    { label: "Contact",   href: "/contact" },
   ],
   Social: [
-    { label: "Twitter / X", href: "https://twitter.com", icon: XIcon },
-    { label: "Instagram", href: "https://instagram.com", icon: InstagramIcon },
-    { label: "LinkedIn", href: "https://linkedin.com", icon: LinkedinIcon },
-    { label: "GitHub", href: "https://github.com", icon: GithubIcon },
+    { label: "Twitter / X", href: "https://twitter.com",   icon: XIcon },
+    { label: "Instagram",   href: "https://instagram.com", icon: InstagramIcon },
+    { label: "GitHub",      href: "https://github.com",    icon: GithubIcon },
   ],
   Legal: [
-    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Privacy Policy",   href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
-    { label: "Cookie Policy", href: "/cookies" },
+    { label: "Cookie Policy",    href: "/cookies" },
   ],
 };
 
 export default function Footer() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail]       = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e) => {
@@ -67,68 +58,48 @@ export default function Footer() {
   };
 
   return (
-    <footer
-      className="relative w-full overflow-hidden"
-      style={{ background: "#080810" }}
-    >
-      {/* Top gradient line */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+    <footer className="relative w-full overflow-hidden border-t border-border bg-card">
 
-      {/* Background glow */}
+      {/* Top accent line */}
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+      {/* Soft glow */}
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 0%, rgba(8,145,178,0.12) 0%, transparent 70%)",
-        }}
+        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px]"
+        style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(8,145,178,0.07) 0%, transparent 70%)" }}
       />
 
-      {/* ── Main content ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-10 pt-16 pb-10">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-10 pt-14 pb-8">
 
-        {/* Top row: brand + newsletter */}
-        <div className="flex flex-col lg:flex-row justify-between gap-12 mb-16">
+        {/* Brand + newsletter row */}
+        <div className="flex flex-col lg:flex-row justify-between gap-12 mb-14">
 
           {/* Brand */}
           <div className="max-w-xs">
             <div className="flex items-center gap-2.5 mb-4">
-              <div
-                className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center border border-white/10"
-              >
+              <div className="w-8 h-8 rounded-xl overflow-hidden border border-border flex items-center justify-center">
                 <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
               </div>
-              <span className="text-white font-extrabold text-xl tracking-tight">SplitEase</span>
+              <span className="font-extrabold text-xl text-foreground tracking-tight">SplitEase</span>
             </div>
-            <p className="text-sm text-white/40 leading-relaxed font-medium">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               The smartest way to split expenses with friends, family, and groups — powered by AI.
             </p>
-            <div className="flex items-center gap-3 mt-5">
+            <div className="flex items-center gap-2.5 mt-5">
               {[
-                { Icon: GithubIcon, href: "https://github.com" },
-                { Icon: XIcon, href: "https://twitter.com" },
+                { Icon: GithubIcon,    href: "https://github.com" },
+                { Icon: XIcon,         href: "https://twitter.com" },
                 { Icon: InstagramIcon, href: "https://instagram.com" },
-                { Icon: Mail, href: "mailto:hello@splitease.app" },
+                { Icon: Mail,          href: "mailto:hello@splitease.app" },
               ].map(({ Icon, href }, i) => (
                 <a
                   key={i}
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:scale-110"
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(8,145,178,0.2)";
-                    e.currentTarget.style.border = "1px solid rgba(8,145,178,0.35)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                    e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)";
-                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-muted border border-border text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
                 >
-                  <Icon className="w-3.5 h-3.5 text-white/50" />
+                  <Icon className="w-3.5 h-3.5" />
                 </a>
               ))}
             </div>
@@ -137,23 +108,17 @@ export default function Footer() {
           {/* Newsletter */}
           <div className="max-w-sm w-full">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              <p className="text-xs font-bold uppercase tracking-widest text-cyan-400">Newsletter</p>
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">Newsletter</p>
             </div>
-            <h3 className="text-white font-bold text-lg leading-snug mb-1">
+            <h3 className="text-foreground font-bold text-lg leading-snug mb-1">
               Get tips on smarter expense splitting
             </h3>
-            <p className="text-sm text-white/35 mb-5">No spam. Unsubscribe any time.</p>
+            <p className="text-sm text-muted-foreground mb-5">No spam. Unsubscribe any time.</p>
 
             {submitted ? (
-              <div
-                className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-emerald-400"
-                style={{
-                  background: "rgba(52,211,153,0.1)",
-                  border: "1px solid rgba(52,211,153,0.25)",
-                }}
-              >
-                ✅ You're on the list — welcome aboard!
+              <div className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
+                You&apos;re on the list — welcome aboard!
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex gap-2">
@@ -162,27 +127,11 @@ export default function Footer() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="flex-1 px-4 py-3 rounded-xl text-sm text-white/80 placeholder-white/25 outline-none transition-all"
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.border = "1px solid rgba(8,145,178,0.5)";
-                    e.target.style.boxShadow = "0 0 0 3px rgba(8,145,178,0.1)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.border = "1px solid rgba(255,255,255,0.1)";
-                    e.target.style.boxShadow = "none";
-                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm text-foreground placeholder:text-muted-foreground bg-background border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/10 outline-none transition-all"
                 />
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0"
-                  style={{
-                    background: "linear-gradient(135deg,#0891B2,#0E7490)",
-                    boxShadow: "0 0 20px rgba(8,145,178,0.35)",
-                  }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 transition-all flex-shrink-0"
                 >
                   Subscribe
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -192,11 +141,11 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* ── Link columns ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
+        {/* Link columns */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {Object.entries(LINKS).map(([category, links]) => (
             <div key={category}>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/30 mb-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground/60 mb-4">
                 {category}
               </p>
               <ul className="flex flex-col gap-2.5">
@@ -204,9 +153,11 @@ export default function Footer() {
                   <li key={label}>
                     <Link
                       href={href}
-                      className="flex items-center gap-2 text-sm text-white/45 font-medium transition-all hover:text-white group"
+                      className="flex items-center gap-2 text-sm text-muted-foreground font-medium hover:text-foreground group transition-colors"
                     >
-                      {Icon && <Icon className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />}
+                      {Icon && (
+                        <Icon className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                      )}
                       <span className="group-hover:translate-x-0.5 transition-transform">{label}</span>
                     </Link>
                   </li>
@@ -216,28 +167,27 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* ── Bottom bar ── */}
-        <div
-          className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <p className="text-xs text-white/25 font-medium">
-            © {new Date().getFullYear()} Hellobj. All rights reserved.
+        {/* Bottom bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-border">
+          <p className="text-xs text-muted-foreground font-medium">
+            © {new Date().getFullYear()} SplitEase Financial. All rights reserved.
           </p>
-       
+          <p className="text-xs text-muted-foreground/50 font-medium">
+            Built with ♥ for travelers everywhere
+          </p>
         </div>
       </div>
 
-      {/* ── Giant faded brand watermark ── */}
+      {/* Giant watermark */}
       <div
         className="relative w-full overflow-hidden select-none pointer-events-none"
-        style={{ height: "clamp(80px, 14vw, 180px)" }}
+        style={{ height: "clamp(60px, 10vw, 140px)" }}
       >
         <p
           className="absolute bottom-0 left-1/2 -translate-x-1/2 font-black leading-none whitespace-nowrap tracking-tighter"
           style={{
-            fontSize: "clamp(80px, 16vw, 200px)",
-            background: "linear-gradient(to bottom, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 100%)",
+            fontSize: "clamp(70px, 14vw, 180px)",
+            background: "linear-gradient(to bottom, rgba(8,145,178,0.09) 0%, transparent 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
