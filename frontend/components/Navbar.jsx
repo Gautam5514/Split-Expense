@@ -233,12 +233,12 @@ export default function Navbar() {
                 </button>
 
                 {notifOpen && (
-                  <div className="fixed inset-x-4 top-[78px] mx-auto md:absolute md:inset-x-auto md:right-0 md:top-auto mt-3 w-auto md:w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl z-50 overflow-hidden bg-background/97 backdrop-blur-2xl border border-border">
+                  <div className="fixed inset-x-4 top-[78px] mx-auto md:absolute md:inset-x-auto md:right-0 md:top-auto mt-3 w-auto md:w-[380px] max-w-[calc(100vw-2rem)] rounded-xl shadow-2xl z-50 overflow-hidden bg-background/97 backdrop-blur-2xl border border-border">
                     <div className="relative overflow-hidden border-b border-border px-4 py-4">
                       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/8 via-transparent to-teal-500/8" />
                       <div className="relative flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-500/15">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-500/10">
                             <BellRing size={18} />
                           </div>
                           <div>
@@ -351,9 +351,9 @@ export default function Navbar() {
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-3 w-72 rounded-[22px] shadow-[0_20px_50px_rgba(0,0,0,0.25)] p-1.5 z-50 overflow-hidden bg-white/97 dark:bg-[#0a1828]/97 border border-slate-200/70 dark:border-slate-700/60 backdrop-blur-2xl">
+                  <div className="absolute right-0 mt-3 w-72 rounded-[10px] shadow-[0_20px_50px_rgba(0,0,0,0.25)] p-1.5 z-50 overflow-hidden bg-card/97 border border-border/70 backdrop-blur-2xl">
                     {/* Profile Header */}
-                    <div className="flex items-center gap-3 px-3 py-3 border-b border-slate-100 dark:border-slate-800/50 mb-1">
+                    <div className="flex items-center gap-3 px-3 py-3 border-b border-border/50 mb-1">
                       {profile?.avatar || user?.photoURL ? (
                         <div className="relative group shrink-0">
                           <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
@@ -372,10 +372,10 @@ export default function Navbar() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-white truncate leading-tight">
+                        <h4 className="text-sm font-bold text-foreground truncate leading-tight">
                           {profile?.name || user?.displayName || "User"}
                         </h4>
-                        <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5 font-medium">
+                        <p className="text-[11px] text-muted-foreground truncate mt-0.5 font-medium">
                           {profile?.email || user?.email || "No email"}
                         </p>
                       </div>
@@ -386,11 +386,10 @@ export default function Navbar() {
                       <DropdownItem href="/profile" onClick={() => setDropdownOpen(false)} icon={<User size={14} />} label="Profile" />
                       <DropdownItem href="/theme" onClick={() => setDropdownOpen(false)} icon={<Palette size={14} />} label="Themes" />
                       <DropdownItem href="/settings" onClick={() => setDropdownOpen(false)} icon={<Settings size={14} />} label="Settings" />
-                      <DropdownItem href="/notification" onClick={() => setDropdownOpen(false)} icon={<Bell size={14} />} label="Notification Settings" />
                       <DropdownItem href="/downloadapp" onClick={() => setDropdownOpen(false)} icon={<Download size={14} />} label="Download Apps" />
                       <DropdownItem href="/helps" onClick={() => setDropdownOpen(false)} icon={<HelpCircle size={14} />} label="Help" />
 
-                      <div className="my-1 mx-2 h-px bg-slate-100 dark:bg-slate-800/50" />
+                      <div className="my-1 mx-2 h-px bg-border" />
 
                       <button
                         onClick={handleLogout}
@@ -469,8 +468,8 @@ export default function Navbar() {
 
 function DropdownItem({ href, onClick, icon, label }) {
   const content = (
-    <div className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10 rounded-xl transition-all duration-150 hover:translate-x-0.5 cursor-pointer">
-      <span className="text-slate-400 dark:text-slate-500 transition-colors shrink-0">{icon}</span>
+    <div className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-foreground hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10 rounded-xl transition-all duration-150 hover:translate-x-0.5 cursor-pointer">
+      <span className="text-muted-foreground transition-colors shrink-0">{icon}</span>
       <span>{label}</span>
     </div>
   );

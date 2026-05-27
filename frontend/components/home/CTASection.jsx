@@ -2,167 +2,122 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Zap, Star, Shield, Smartphone } from "lucide-react";
+import { ArrowRight, Zap, Shield, Smartphone, Star, Sparkles } from "lucide-react";
 
 const PERKS = [
-  { icon: Zap, text: "Free forever plan" },
-  { icon: Shield, text: "No credit card needed" },
-  { icon: Smartphone, text: "Web, iOS & Android" },
-  { icon: Star, text: "4.9★ rated by users" },
+  { icon: Zap,        text: "Free forever" },
+  { icon: Shield,     text: "No card needed" },
+  { icon: Smartphone, text: "iOS & Android" },
+  { icon: Star,       text: "4.9★ rating" },
 ];
 
 export default function CTASection() {
   const router = useRouter();
 
   return (
-    <section className="relative py-24 px-6 overflow-hidden bg-background">
+    <section className="relative overflow-hidden bg-background px-4 py-20 sm:px-6 sm:py-28">
 
-      {/* Soft ambient glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(8,145,178,0.08) 0%, transparent 70%)",
-        }}
-      />
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-1/2 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/8 blur-3xl dark:bg-cyan-500/12" />
+      </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto">
+      <div className="relative z-10 mx-auto max-w-4xl">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 36 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="relative overflow-hidden rounded-3xl text-center"
-          style={{
-            background: "linear-gradient(135deg, #021830 0%, #031D3A 40%, #042040 70%, #031525 100%)",
-            border: "1px solid rgba(8,145,178,0.25)",
-            boxShadow:
-              "0 0 0 1px rgba(8,145,178,0.1), 0 40px 80px -20px rgba(8,145,178,0.3), 0 0 120px rgba(14,116,144,0.15)",
-          }}
+          className="relative overflow-hidden rounded-xl border border-cyan-200/60 bg-white px-6 py-14 text-center shadow-[0_20px_60px_-10px_rgba(8,145,178,0.13)] sm:px-12 sm:py-20 dark:border-cyan-400/20 dark:bg-[#031827] dark:shadow-[0_40px_100px_-30px_rgba(8,145,178,0.5)]"
         >
-          {/* Dot-grid texture */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.04]"
-            style={{
-              backgroundImage: "radial-gradient(circle, rgba(34,211,238,0.5) 1px, transparent 1px)",
-              backgroundSize: "24px 24px",
-            }}
-          />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(8,145,178,0.06),transparent_60%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.16),transparent_45%),linear-gradient(160deg,#02101f,#031d33_50%,#031525)]" />
 
-          {/* Glowing orbs inside card */}
-          <div
-            className="absolute -top-24 -left-24 w-72 h-72 rounded-full pointer-events-none"
-            style={{
-              background: "radial-gradient(circle, rgba(8,145,178,0.3) 0%, transparent 70%)",
-              filter: "blur(40px)",
-            }}
-          />
-          <div
-            className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full pointer-events-none"
-            style={{
-              background: "radial-gradient(circle, rgba(236,72,153,0.2) 0%, transparent 70%)",
-              filter: "blur(50px)",
-            }}
-          />
+          {/* Top line */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent dark:via-cyan-300/50" />
 
-          {/* Top gradient line */}
-          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+          <div className="relative z-10 mx-auto max-w-2xl">
 
-          <div className="relative z-10 px-8 md:px-20 py-16 md:py-20">
-
-            {/* Badge */}
+            {/* Live dot badge */}
             <motion.div
-              initial={{ opacity: 0, y: -12 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.15 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-7"
-              style={{
-                background: "rgba(8,145,178,0.2)",
-                border: "1px solid rgba(8,145,178,0.4)",
-                color: "#67E8F9",
-              }}
+              transition={{ delay: 0.1 }}
+              className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3.5 py-1.5 text-xs font-bold text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-400/10 dark:text-cyan-300"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              2,000+ groups already splitting smarter
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-500 opacity-70 dark:bg-cyan-300" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-600 dark:bg-cyan-300" />
+              </span>
+              2,000+ groups active right now
             </motion.div>
 
             {/* Headline */}
             <motion.h2
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="text-4xl sm:text-5xl md:text-6xl font-black text-white leading-tight tracking-tight mb-5"
+              transition={{ delay: 0.18 }}
+              className="text-4xl font-black leading-[1.06] tracking-tight text-gray-900 sm:text-5xl md:text-6xl dark:text-white"
             >
-              Stop doing the{" "}
-              <span
-                className="bg-clip-text text-transparent"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(135deg, #22D3EE 0%, #38BDF8 50%, #34D399 100%)",
-                }}
-              >
-                mental math.
+              Split bills.{" "}
+              <span className="bg-gradient-to-r from-cyan-600 via-sky-500 to-emerald-500 bg-clip-text text-transparent dark:from-cyan-300 dark:via-sky-300 dark:to-emerald-300">
+                Not friendships.
               </span>
             </motion.h2>
 
             {/* Subtext */}
             <motion.p
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.28 }}
-              className="text-base md:text-lg text-white/45 max-w-xl mx-auto leading-relaxed mb-10 font-medium"
+              transition={{ delay: 0.26 }}
+              className="mx-auto mt-4 max-w-md text-base font-medium text-gray-500 sm:text-lg dark:text-white/45"
             >
-              SplitEase handles every bill, every trip, every dinner — so you
-              never have to awkwardly bring up who owes what again.
+              Group expenses, settled fairly — in seconds.
             </motion.p>
 
             {/* CTA Buttons */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.35 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10"
+              transition={{ delay: 0.34 }}
+              className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
             >
               <button
                 onClick={() => router.push("/register")}
-                className="group flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-white text-base transition-all hover:scale-105 active:scale-95"
-                style={{
-                  background: "linear-gradient(135deg, #0891B2, #0E7490)",
-                  boxShadow: "0 0 40px rgba(8,145,178,0.5), 0 4px 20px rgba(0,0,0,0.3)",
-                }}
+                className="group relative w-full overflow-hidden rounded px-8 py-4 text-base font-black text-[#021820] shadow-[0_12px_36px_rgba(8,145,178,0.28)] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_18px_48px_rgba(8,145,178,0.42)] active:scale-95 sm:w-auto"
               >
-                <Zap className="w-4 h-4" />
-                Create Free Account
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                <span className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-sky-400 to-emerald-400 dark:from-cyan-300 dark:via-sky-300 dark:to-emerald-300" />
+                <span className="absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-white/25 transition-all duration-700 group-hover:left-[130%]" />
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Get Started Free
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </span>
               </button>
 
               <button
                 onClick={() => router.push("/login")}
-                className="flex items-center gap-2 px-8 py-4 rounded-2xl font-semibold text-white/70 text-base transition-all hover:scale-105 active:scale-95 hover:text-white"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                }}
+                className="w-full rounded border border-gray-200 bg-gray-100 px-8 py-4 text-base font-semibold text-gray-600 transition-all duration-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 active:scale-95 sm:w-auto dark:border-white/10 dark:bg-white/[0.05] dark:text-white/60 dark:hover:bg-white/[0.09] dark:hover:text-white"
               >
-                Sign in instead
+                Sign in
               </button>
             </motion.div>
 
-            {/* Perks row */}
+            {/* Perks */}
             <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.45 }}
-              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+              transition={{ delay: 0.44 }}
+              className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-gray-200/80 pt-6 dark:border-white/8"
             >
               {PERKS.map(({ icon: Icon, text }) => (
-                <div key={text} className="flex items-center gap-1.5 text-xs text-white/35 font-medium">
-                  <Icon className="w-3.5 h-3.5 text-cyan-400/70" />
+                <div key={text} className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-white/35">
+                  <Icon className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400/80" />
                   {text}
                 </div>
               ))}

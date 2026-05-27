@@ -1,204 +1,148 @@
 "use client";
 
-import { 
-  Download, ArrowLeft, Smartphone, ShieldCheck, QrCode, Sparkles, 
-  Play, Apple, Zap, Flame, Info, CheckCircle2
-} from "lucide-react";
-import Link from "next/link";
-import toast from "@/lib/toast";
+import { WifiOff, Bell, Lock } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+
+const BUILD_URL = "https://expo.dev/accounts/gautampandit/projects/splitApp/builds/f7aba359-04fc-46bb-86bd-203fe4ab2971";
+
+const FEATURES = [
+  {
+    icon: <WifiOff size={20} className="text-white" />,
+    title: "Works Offline",
+    desc: "Track expenses even without internet",
+  },
+  {
+    icon: <Bell size={20} className="text-white" />,
+    title: "Push Notifications",
+    desc: "Get instant alerts for new expenses",
+  },
+  {
+    icon: <Lock size={20} className="text-white" />,
+    title: "Secure & Private",
+    desc: "Your data is encrypted and safe",
+  },
+];
 
 export default function DownloadAppPage() {
-  const buildUrl = "https://expo.dev/accounts/gautampandit/projects/splitApp/builds/f7aba359-04fc-46bb-86bd-203fe4ab2971";
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(buildUrl);
-    toast.success("Build link copied to clipboard! 📋");
-  };
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-20 pt-28">
-      {/* Decorative Blur Orbs */}
-      <div className="absolute top-20 left-10 w-80 h-80 bg-cyan-500/10 rounded-full filter blur-[100px] pointer-events-none" />
-      <div className="absolute top-40 right-20 w-96 h-96 bg-cyan-500/10 rounded-full filter blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-background pt-8 pb-28 sm:pb-20 px-3 sm:px-4">
+      <div className="max-w-md mx-auto space-y-6">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6 w-full">
-        
-        {/* Navigation Head */}
-        <Link 
-          href="/users" 
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer group pl-2"
-        >
-          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-          Back to Overview
-        </Link>
-
-        {/* Headline Header */}
-        <div className="flex items-start gap-4 pb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-500 ring-1 ring-sky-500/15 shrink-0 shadow-sm">
-            <Smartphone size={22} className="animate-pulse" />
+        {/* Phone mockup + headline */}
+        <div className="flex flex-col items-center text-center space-y-5">
+          {/* Phone mockup */}
+          <div className="w-56 h-44 bg-card border border-border rounded-xl shadow-sm flex items-end justify-center overflow-hidden px-6 pt-4">
+            <div className="w-full">
+              {/* fake phone shell */}
+              <div className="mx-auto w-28 bg-slate-900 rounded-t-2xl overflow-hidden shadow-xl">
+                <div className="h-5 flex items-center justify-center">
+                  <div className="w-8 h-1 bg-slate-700 rounded-full" />
+                </div>
+                {/* screen */}
+                <div className="bg-white px-2 py-2 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="h-1.5 w-12 bg-slate-200 rounded" />
+                    <div className="h-1.5 w-5 bg-cyan-400 rounded" />
+                  </div>
+                  {/* donut chart mock */}
+                  <div className="flex justify-center py-1">
+                    <div className="w-10 h-10 rounded-full border-4 border-cyan-500 border-r-slate-200 flex items-center justify-center">
+                      <div className="w-3 h-3 rounded-full bg-cyan-500" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="h-1 bg-slate-100 rounded w-full" />
+                    <div className="h-1 bg-slate-100 rounded w-4/5" />
+                    <div className="h-1 bg-slate-100 rounded w-3/5" />
+                  </div>
+                  {/* button row */}
+                  <div className="flex gap-1 pt-1">
+                    <div className="flex-1 h-3 bg-cyan-500 rounded" />
+                    <div className="flex-1 h-3 bg-slate-100 rounded" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Install SplitEase Mobile</h1>
-            <p className="text-sm text-slate-550 dark:text-slate-400 mt-1 leading-relaxed max-w-xl font-medium">
-              Access your shared expense settlement rooms, communicate with roommates, and manage travel budgets on the go.
+
+          {/* Headline */}
+          <div className="space-y-2">
+            <h1 className="text-2xl font-extrabold text-foreground">Take SplitEase Everywhere</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
+              Manage your groups and expenses on the go — available on iOS and Android.
             </p>
           </div>
-        </div>
 
-        {/* ── Single Large Unified Card Shell ── */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[32px] sm:rounded-[40px] shadow-sm p-6 sm:p-10 space-y-10">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 items-start">
-            
-            {/* LEFT COLUMN: Android APK Build (3 Cols) */}
-            <div className="lg:col-span-3 space-y-6">
-              
-              <div className="space-y-2.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[10px] font-bold uppercase tracking-wider border border-cyan-500/15">
-                  <Zap size={10} /> Android Client Build
-                </span>
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">Download Android App (APK)</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Install our active client build manually via Expo immediately to manage your group settlements natively.
-                </p>
+          {/* Store buttons */}
+          <div className="flex gap-3 flex-wrap justify-center">
+            {/* App Store */}
+            <a
+              href={BUILD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 bg-slate-900 dark:bg-slate-800 text-white px-4 py-2.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-700 transition cursor-pointer shadow-sm"
+            >
+              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white shrink-0">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+              </svg>
+              <div className="text-left leading-tight">
+                <p className="text-[9px] font-medium uppercase tracking-wider opacity-80">Download on the</p>
+                <p className="text-sm font-bold">App Store</p>
               </div>
+            </a>
 
-              {/* Install Action Card */}
-              <div className="p-5 border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 rounded-[20px] flex flex-col sm:flex-row items-center gap-5 justify-between">
-                <div className="space-y-1 text-center sm:text-left">
-                  <div className="text-sm font-extrabold text-slate-800 dark:text-slate-200">SplitEase Mobile Client</div>
-                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Format: APK / OTA Compatible</div>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
-                  <a
-                    href={buildUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-cyan-600 to-teal-600 hover:opacity-95 text-white font-extrabold text-xs rounded-full shadow-md transition-all active:scale-95 duration-150 text-center cursor-pointer shrink-0"
-                  >
-                    <Download size={14} />
-                    Download APK Build
-                  </a>
-                  <button
-                    onClick={handleCopyLink}
-                    className="px-5 py-3.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-extrabold text-xs rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                  >
-                    Copy Link
-                  </button>
-                </div>
+            {/* Google Play */}
+            <a
+              href={BUILD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 bg-slate-900 dark:bg-slate-800 text-white px-4 py-2.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-700 transition cursor-pointer shadow-sm"
+            >
+              <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0">
+                <path fill="#4FC3F7" d="M3 20.5v-17c0-.83 1-.83 1.5-.5l15 8.5-15 8.5c-.5.33-1.5.33-1.5-.5z" />
+                <path fill="#4DB6AC" d="M3 3.5l8.5 8.5L3 20.5V3.5z" opacity=".6" />
+                <path fill="#FFB300" d="M19.5 12l-8 4.5 2-4.5-2-4.5 8 4.5z" />
+                <path fill="#F06292" d="M11.5 16.5L3 20.5l8.5-8.5v8.5z" opacity=".8" />
+              </svg>
+              <div className="text-left leading-tight">
+                <p className="text-[9px] font-medium uppercase tracking-wider opacity-80">Get it on</p>
+                <p className="text-sm font-bold">Google Play</p>
               </div>
-
-              {/* Instructions and Notice */}
-              <div className="space-y-3.5 border-t border-slate-100 dark:border-slate-800/60 pt-6">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest block ml-1">How to Install manually:</h4>
-                <ol className="text-xs text-slate-500 dark:text-slate-400 space-y-2.5 list-decimal list-inside pl-1 leading-relaxed">
-                  <li>Tap the <strong>Download APK Build</strong> button above on your Android phone.</li>
-                  <li>In the Expo project screen, click <strong>Download Build</strong> to save the installer.</li>
-                  <li>Open the downloaded `.apk` file and grant installation permissions if prompted.</li>
-                  <li>Launch SplitEase from your drawer and sign in using your regular account details!</li>
-                </ol>
-              </div>
-
-              <div className="flex items-start gap-3 p-4.5 rounded-[22px] bg-cyan-500/5 border border-cyan-500/10 text-cyan-700 dark:text-cyan-300 text-xs leading-relaxed">
-                <Info className="w-5 h-5 shrink-0 mt-0.5 text-cyan-600 dark:text-cyan-400" />
-                <p>
-                   <strong>Note:</strong> Since this is a direct developer APK build, your browser or OS may flag an 'Unknown App' dialog. Be assured that SplitEase builds are entirely secure and sandbox verified.
-                </p>
-              </div>
-
-            </div>
-
-            {/* RIGHT COLUMN: QR Scanner & Store Launch (2 Cols) */}
-            <div className="lg:col-span-2 space-y-8">
-              
-              {/* QR Code Scanner (Nested for alignment, but styled as a card panel inside unified sheet) */}
-              <div className="flex flex-col items-center justify-between text-center p-5 rounded-[24px] bg-slate-50/50 dark:bg-slate-900/10 border border-slate-200 dark:border-slate-800/60 min-h-[300px] relative overflow-hidden">
-                <div className="space-y-1.5 mt-1">
-                  <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-1.5">
-                    <QrCode size={16} className="text-sky-500" />
-                    Scan to Install
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed max-w-[200px]">
-                    Point your phone's camera at this code to open the direct build download instantly.
-                  </p>
-                </div>
-
-                {/* Styled Mock QR Code scanner frame */}
-                <div className="relative p-3.5 border border-slate-200/50 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-950/20 my-4 flex items-center justify-center">
-                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-fuchsia-500 rounded-tl-lg" />
-                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-fuchsia-500 rounded-tr-lg" />
-                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-fuchsia-500 rounded-bl-lg" />
-                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-fuchsia-500 rounded-br-lg" />
-                  
-                  <div className="w-32 h-32 border border-slate-200 dark:border-slate-700/60 rounded-2xl flex flex-col justify-around p-2.5 bg-white shadow-inner select-none relative">
-                    <div className="flex justify-between">
-                      <div className="w-7 h-7 border-[2.5px] border-slate-900 rounded flex items-center justify-center shrink-0"><div className="w-3 h-3 bg-slate-900 rounded-sm" /></div>
-                      <div className="w-7 h-7 border-[2.5px] border-slate-900 rounded flex items-center justify-center shrink-0"><div className="w-3 h-3 bg-slate-900 rounded-sm" /></div>
-                    </div>
-                    <div className="flex flex-col gap-1 items-center py-2 opacity-80">
-                      <div className="flex gap-1"><div className="w-1.5 h-1.5 bg-slate-900 rounded-full" /><div className="w-1.5 h-1.5 bg-slate-900 rounded-full" /><div className="w-1.5 h-1.5 bg-slate-900 rounded-full" /></div>
-                      <div className="flex gap-1"><div className="w-1.5 h-1.5 bg-slate-900 rounded-full" /><div className="w-1.5 h-1.5 bg-slate-900 rounded-full" /><div className="w-1.5 h-1.5 bg-slate-900 rounded-full" /></div>
-                    </div>
-                    <div className="flex justify-between">
-                      <div className="w-7 h-7 border-[2.5px] border-slate-900 rounded flex items-center justify-center shrink-0"><div className="w-3 h-3 bg-slate-900 rounded-sm" /></div>
-                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 shrink-0"><div className="w-2 h-2 bg-cyan-500 rounded-full" /></div>
-                    </div>
-                    <div className="absolute inset-x-0 h-0.5 bg-fuchsia-500 shadow-[0_0_6px_rgba(217,70,239,0.8)] top-1/2 animate-bounce pointer-events-none" />
-                  </div>
-                </div>
-
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  splitApp Build v1.0.0
-                </div>
-              </div>
-
-              {/* Play Store & App Store Coming Soon Section */}
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-450 dark:text-slate-400 flex items-center gap-1.5 block ml-1">
-                  <Sparkles size={13} className="text-cyan-600 dark:text-cyan-400 animate-pulse" />
-                  Official Store Launches
-                </h3>
-                
-                <div className="space-y-2.5">
-                  {/* Google Play Store */}
-                  <div className="flex items-center justify-between p-4 border border-slate-100 dark:border-slate-850 rounded-[20px] bg-slate-50/50 dark:bg-slate-900/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                        <Play size={15} className="text-emerald-500 fill-emerald-500" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Google Play Store</h4>
-                        <p className="text-[10px] text-slate-400">Android marketplace</p>
-                      </div>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/15 text-[8px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                      Coming Soon
-                    </span>
-                  </div>
-
-                  {/* Apple App Store */}
-                  <div className="flex items-center justify-between p-4 border border-slate-100 dark:border-slate-850 rounded-[20px] bg-slate-50/50 dark:bg-slate-900/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
-                        <Apple size={15} className="text-cyan-600 dark:text-cyan-400 fill-cyan-500" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Apple App Store</h4>
-                        <p className="text-[10px] text-slate-400">iOS marketplace</p>
-                      </div>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/15 text-[8px] font-black uppercase tracking-wider text-teal-600 dark:text-cyan-400">
-                      Coming Soon
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
+            </a>
           </div>
 
+          <p className="text-xs text-muted-foreground">Available on iOS 14+ and Android 8.0+</p>
+        </div>
+
+        {/* QR code card */}
+        <div className="bg-card border border-border rounded-xl shadow-sm p-6 flex flex-col items-center gap-4 text-center">
+          <p className="text-sm font-semibold text-foreground">Or scan to download</p>
+
+          <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-inner">
+            <QRCodeSVG
+              value={BUILD_URL}
+              size={150}
+              bgColor="#ffffff"
+              fgColor="#0f172a"
+              level="M"
+              includeMargin={false}
+            />
+          </div>
+
+          <p className="text-xs text-muted-foreground">Point your phone camera at the QR code</p>
+        </div>
+
+        {/* Feature highlights */}
+        <div className="grid grid-cols-3 gap-4">
+          {FEATURES.map((f, i) => (
+            <div key={i} className="flex flex-col items-center text-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-cyan-600 flex items-center justify-center shadow-md shadow-cyan-600/20">
+                {f.icon}
+              </div>
+              <p className="text-xs font-bold text-foreground leading-snug">{f.title}</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
         </div>
 
       </div>

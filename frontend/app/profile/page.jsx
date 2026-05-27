@@ -6,24 +6,27 @@ import { useAuth } from "@/context/AuthContext";
 import toast from "@/lib/toast";
 import { 
   Loader2, Save, Camera, User, Mail, Phone, MapPin, 
-  Globe, Briefcase, Quote, CheckCircle2, BellRing, Send, AlertCircle, ArrowLeft
+  Globe, Briefcase, Quote, CheckCircle2, ArrowLeft, Pencil, X, Check,
+  Lock, SquarePen
 } from "lucide-react";
-import { useNotifications } from "@/context/NotificationContext";
+import Loader3D from "@/components/Loader3D";
 import Link from "next/link";
+
+const TIMEZONES = [
+  "Pacific Time (PT)", "Mountain Time (MT)", "Central Time (CT)",
+  "Eastern Time (ET)", "UTC", "India Standard Time (IST)",
+  "Central European Time (CET)", "Japan Standard Time (JST)",
+  "Australian Eastern Time (AET)",
+];
 
 export default function ProfilePage() {
   const { token } = useAuth();
-  const { 
-    oneSignalSubscriptionId, 
-    oneSignalPermission, 
-    oneSignalError,
-    requestOneSignalPermission, 
-    disableOneSignalNotifications, 
-    sendTestPushNotification 
-  } = useNotifications();
-  const [profile, setProfile] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [profile, setProfile]   = useState({});
+  const [form, setForm]         = useState({});
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saved, setSaved]       = useState(false);
 
   useEffect(() => {
     if (token) fetchProfile();
@@ -31,31 +34,44 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const res = await api.get("/profile", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setProfile(res.data || {});
-    } catch (err) {
-      console.error(err);
+      const res = await api.get("/profile");
+      const data = res.data || {};
+      setProfile(data);
+      setForm(data);
+    } catch {
       toast.error("Failed to load profile");
     } finally {
       setLoading(false);
     }
   };
 
+  const startEdit = () => {
+    setForm({ ...profile });
+    setIsEditing(true);
+    setSaved(false);
+  };
+
+  const cancelEdit = () => {
+    setForm({ ...profile });
+    setIsEditing(false);
+  };
+
   const handleChange = (e) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     try {
       setSaving(true);
-      await api.put("/profile", profile, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      toast.success("Profile updated successfully!");
-    } catch (err) {
+      const res = await api.put("/profile", form);
+      const updated = { ...form, ...(res.data || {}) };
+      setProfile(updated);
+      setForm(updated);
+      setIsEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
       toast.error("Error saving profile");
     } finally {
       setSaving(false);
@@ -65,204 +81,231 @@ export default function ProfilePage() {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const toBase64 = (file) =>
+    const toBase64 = (f) =>
       new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(f);
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
       });
-
-    const loadingToast = toast.loading("Uploading photo...");
+    const id = toast.loading("Uploading photo...");
     try {
       const base64 = await toBase64(file);
-      const res = await api.post(
-        "/profile/image",
-        { file: base64 },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setProfile({ ...profile, profileImage: res.data.profileImage });
-      toast.success("Photo updated!", { id: loadingToast });
-    } catch (err) {
-      toast.error("Upload failed", { id: loadingToast });
+      const res = await api.post("/profile/image", { file: base64 });
+      const updated = { ...profile, profileImage: res.data.profileImage };
+      setProfile(updated);
+      setForm(updated);
+      toast.success("Photo updated!", { id });
+    } catch {
+      toast.error("Upload failed", { id });
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center h-[80vh] gap-4">
-        <div className="relative">
-            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-        </div>
-        <p className="text-muted-foreground animate-pulse font-medium">Loading your profile...</p>
-      </div>
-    );
+    return <Loader3D message="Loading your personal profile..." />;
   }
 
+  const displayData = isEditing ? form : profile;
+
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-20 pt-28">
-      {/* Decorative Ambient Blur Orbs */}
-      <div className="absolute top-20 left-10 w-80 h-80 bg-cyan-500/10 rounded-full filter blur-[100px] pointer-events-none" />
-      <div className="absolute top-40 right-20 w-96 h-96 bg-cyan-500/10 rounded-full filter blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-background pt-8 pb-28 sm:pb-20 px-3 sm:px-4">
+      <div className="max-w-2xl mx-auto space-y-4">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6 w-full">
-        
-        {/* Navigation Head */}
-        <Link 
-          href="/users" 
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer group pl-2"
-        >
-          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-          Back to Overview
-        </Link>
+        {/* Page title */}
+        <div>
+          <h1 className="text-2xl font-extrabold text-foreground">My Profile</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage your personal information</p>
+        </div>
 
-        {/* Headline Header */}
-        <div className="flex items-start gap-4 pb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-600 ring-1 ring-cyan-500/15 shrink-0 shadow-sm">
-            <User size={22} className="animate-pulse" />
+        {/* Avatar card */}
+        <div className="bg-card border border-border rounded-xl shadow-sm p-5 sm:p-8 flex flex-col items-center gap-2">
+          <div className="relative group">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-slate-100 dark:border-border shadow bg-muted flex items-center justify-center">
+              {profile.profileImage?.url ? (
+                <img src={profile.profileImage.url} className="w-full h-full object-cover" alt="Profile" />
+              ) : (
+                <User size={40} className="text-slate-400" />
+              )}
+            </div>
+            <label
+              htmlFor="profileImageInput"
+              className="absolute bottom-0 right-0 w-7 h-7 bg-foreground text-background rounded-full flex items-center justify-center shadow cursor-pointer hover:scale-110 transition-transform"
+            >
+              <Camera size={13} />
+              <input id="profileImageInput" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+            </label>
           </div>
-          <div>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Personal Profile</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed max-w-xl">
-              Manage your personal metadata, profile photograph, location coordinates, and occupation info.
-            </p>
+
+          <div className="text-center mt-1">
+            <p className="text-lg font-bold text-foreground">{profile.name || "—"}</p>
+            <p className="text-sm text-muted-foreground">{profile.email || "—"}</p>
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-6">
-          
-          {/* Main Card */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[32px] sm:rounded-[40px] shadow-sm p-6 sm:p-10 space-y-8">
-            
-            {/* Profile Header Section */}
-            <div className="flex flex-col md:flex-row items-center md:items-end gap-6 pb-2">
-              <div className="relative group">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 dark:border-slate-800 shadow-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  {profile.profileImage?.url ? (
-                    <img src={profile.profileImage.url} className="w-full h-full object-cover" alt="Profile" />
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-full text-slate-400">
-                      <User size={48} />
-                    </div>
-                  )}
-                </div>
-                <label 
-                  htmlFor="profileImageInput" 
-                  className="absolute bottom-1 right-1 p-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full shadow-md cursor-pointer hover:scale-110 transition-transform active:scale-95 border border-slate-200 dark:border-slate-700"
-                >
-                  <Camera size={16} />
-                  <input id="profileImageInput" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                </label>
+        {/* Personal info card */}
+        <form onSubmit={handleSave}>
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
+
+            {/* Section header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User size={16} className="text-cyan-600 dark:text-cyan-400" />
+                <h2 className="text-base font-bold text-foreground">Personal Information</h2>
               </div>
 
-              <div className="flex-1 text-center md:text-left mb-2 space-y-1">
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white flex items-center justify-center md:justify-start gap-2">
-                  {profile.name || "Set your name"}
-                  {profile.name && <CheckCircle2 className="text-blue-500" size={20} />}
-                </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center md:justify-start gap-1.5 font-medium">
-                  <Mail size={15} /> {profile.email}
-                </p>
-              </div>
-
-              <div className="pb-2 w-full md:w-auto">
+              {!isEditing ? (
                 <button
-                  type="submit"
-                  disabled={saving}
-                  className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-extrabold text-xs rounded-full hover:opacity-90 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+                  type="button"
+                  onClick={startEdit}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 border border-cyan-500/30 rounded px-3 py-1.5 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition cursor-pointer"
                 >
-                  {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={14} />}
-                  {saving ? "Saving..." : "Save Profile"}
+                  <SquarePen size={13} /> Edit
                 </button>
-              </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-muted transition cursor-pointer"
+                >
+                  <X size={13} /> Cancel
+                </button>
+              )}
             </div>
 
-            <hr className="border-slate-100 dark:border-slate-800" />
+            {/* 2-col grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field
+                label="Full Name"
+                name="name"
+                value={displayData.name || ""}
+                onChange={handleChange}
+                editing={isEditing}
+                placeholder="Your full name"
+              />
 
-            {/* Form Content */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-              
-              {/* Left Column: Contact & Location */}
-              <div className="space-y-6">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Contact & Location</h3>
-                <div className="space-y-4">
-                  <Input 
-                    icon={<Phone size={18} />} 
-                    label="Mobile Number" 
-                    name="mobile" 
-                    placeholder="+1 234 567 890" 
-                    value={profile.mobile || ""} 
-                    onChange={handleChange} 
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input 
-                      icon={<MapPin size={18} />} 
-                      label="City" 
-                      name="city" 
-                      placeholder="New York" 
-                      value={profile.city || ""} 
-                      onChange={handleChange} 
-                    />
-                    <Input 
-                      icon={<Globe size={18} />} 
-                      label="State" 
-                      name="state" 
-                      placeholder="NY" 
-                      value={profile.state || ""} 
-                      onChange={handleChange} 
-                    />
-                  </div>
-                  <Input 
-                    icon={<MapPin size={18} className="text-pink-500" />} 
-                    label="Favorite Place" 
-                    name="favoritePlace" 
-                    placeholder="Santorini, Greece" 
-                    value={profile.favoritePlace || ""} 
-                    onChange={handleChange} 
-                  />
-                </div>
-              </div>
+              <Field
+                label="Email Address"
+                name="email"
+                value={profile.email || ""}
+                onChange={() => {}}
+                editing={false}
+                locked
+                placeholder="—"
+              />
 
-              {/* Right Column: Professional & Bio */}
-              <div className="space-y-6">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Professional Info</h3>
-                <div className="space-y-4">
-                  <Select
-                    icon={<Briefcase size={18} />}
-                    label="Profession"
-                    name="profession"
-                    value={profile.profession || ""}
+              <Field
+                label="Mobile Number"
+                name="mobile"
+                value={displayData.mobile || ""}
+                onChange={handleChange}
+                editing={isEditing}
+                placeholder="+1 (555) 123-4567"
+              />
+
+              <Field
+                label="City"
+                name="city"
+                value={displayData.city || ""}
+                onChange={handleChange}
+                editing={isEditing}
+                placeholder="San Francisco"
+              />
+
+              <Field
+                label="State"
+                name="state"
+                value={displayData.state || ""}
+                onChange={handleChange}
+                editing={isEditing}
+                placeholder="CA"
+              />
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-foreground">Timezone</label>
+                {isEditing ? (
+                  <select
+                    name="timezone"
+                    value={displayData.timezone || ""}
                     onChange={handleChange}
-                    options={["Student", "Working Professional", "Freelancer", "Entrepreneur", "Other"]}
-                  />
-                  <Input 
-                    icon={<Globe size={18} />} 
-                    label="Timezone" 
-                    name="timezone" 
-                    placeholder="UTC+5:30" 
-                    value={profile.timezone || ""} 
-                    onChange={handleChange} 
-                  />
-                  <div className="relative group">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Bio / Quote</label>
-                    <div className="relative">
-                      <Quote className="absolute top-3.5 left-4 text-slate-400" size={16} />
-                      <textarea
-                        name="bio"
-                        rows={3}
-                        value={profile.bio || ""}
-                        onChange={handleChange}
-                        placeholder="Write something about yourself..."
-                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-3xl pl-12 pr-5 py-3.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none font-semibold"
-                      />
-                    </div>
+                    className="w-full bg-muted/60 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50 transition appearance-none cursor-pointer"
+                  >
+                    <option value="">Select timezone…</option>
+                    {TIMEZONES.map((tz) => (
+                      <option key={tz} value={tz}>{tz}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="px-3 py-2.5 text-sm text-foreground bg-muted/60/50 border border-border rounded-lg min-h-[42px]">
+                    {displayData.timezone || <span className="text-muted-foreground">—</span>}
                   </div>
-                </div>
+                )}
               </div>
 
+              <Field
+                label="Favorite Place"
+                name="favoritePlace"
+                value={displayData.favoritePlace || ""}
+                onChange={handleChange}
+                editing={isEditing}
+                placeholder="e.g., The Local Coffee Shop"
+              />
             </div>
+
+            {/* Profession — full width */}
+            <Field
+              label="Profession"
+              name="profession"
+              value={displayData.profession || ""}
+              onChange={handleChange}
+              editing={isEditing}
+              placeholder="Software Engineer"
+            />
+
+            {/* Bio — full width */}
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-foreground">Bio</label>
+              {isEditing ? (
+                <textarea
+                  name="bio"
+                  rows={3}
+                  value={displayData.bio || ""}
+                  onChange={handleChange}
+                  placeholder="Write something about yourself..."
+                  className="w-full bg-muted/60 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50 transition resize-none"
+                />
+              ) : (
+                <div className="px-3 py-2.5 text-sm text-foreground bg-muted/60/50 border border-border rounded-lg min-h-[72px] whitespace-pre-wrap">
+                  {displayData.bio || <span className="text-muted-foreground">—</span>}
+                </div>
+              )}
+            </div>
+
+            {/* Footer row — success message + save button */}
+            {(saved || isEditing) && (
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+                {saved && !isEditing && (
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 size={15} />
+                    Profile updated successfully!
+                  </span>
+                )}
+
+                {isEditing && (
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-cyan-700 hover:bg-cyan-800 text-white text-sm font-bold rounded-xl transition disabled:opacity-60 cursor-pointer shadow-sm"
+                  >
+                    {saving ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : (
+                      <Check size={15} />
+                    )}
+                    {saving ? "Saving…" : "Save Changes"}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </form>
 
@@ -271,51 +314,27 @@ export default function ProfilePage() {
   );
 }
 
-/* UI Helper Components with fully rounded styling */
-function Input({ label, icon, ...props }) {
+function Field({ label, name, value, onChange, editing, placeholder, locked = false }) {
   return (
-    <div className="relative group">
-      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">
+    <div className="flex flex-col gap-1">
+      <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
         {label}
+        {locked && <Lock size={11} className="text-muted-foreground/60" />}
       </label>
-      <div className="relative flex items-center">
-        <div className="absolute left-4 text-slate-400 group-focus-within:text-primary transition-colors">
-          {icon}
-        </div>
+      {editing && !locked ? (
         <input
-          {...props}
-          className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-full pl-12 pr-5 py-3.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold"
+          type="text"
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="w-full bg-muted/60 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50 transition"
         />
-      </div>
-    </div>
-  );
-}
-
-function Select({ label, icon, options, ...props }) {
-  return (
-    <div className="relative group">
-      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">
-        {label}
-      </label>
-      <div className="relative flex items-center">
-        <div className="absolute left-4 text-slate-400 group-focus-within:text-primary transition-colors">
-          {icon}
+      ) : (
+        <div className={`px-3 py-2.5 text-sm border rounded-lg min-h-[42px] ${locked ? "bg-muted/30 text-muted-foreground border-border/50 cursor-not-allowed" : "bg-muted/40 text-foreground border-border"}`}>
+          {value || <span className="text-muted-foreground">—</span>}
         </div>
-        <select
-          {...props}
-          className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-full pl-12 pr-10 py-3.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all appearance-none font-semibold cursor-pointer"
-        >
-          <option value="">Select...</option>
-          {options.map((opt) => (
-            <option key={opt} value={opt} className="dark:bg-slate-900">
-              {opt}
-            </option>
-          ))}
-        </select>
-        <div className="absolute right-4 pointer-events-none text-slate-400">
-          <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

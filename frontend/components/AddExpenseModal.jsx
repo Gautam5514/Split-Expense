@@ -98,26 +98,31 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-0 sm:px-4"
       >
         {/* Main Modal Box */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 25 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 25 }}
-          transition={{ type: "spring", stiffness: 140, damping: 18 }}
-          className="relative w-full max-w-3xl bg-card border border-border rounded-3xl shadow-xl overflow-hidden"
+          initial={{ y: "100%", opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: "100%", opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="relative w-full sm:max-w-2xl bg-card border border-border rounded-t-3xl sm:rounded-3xl shadow-xl overflow-hidden max-h-[92dvh] overflow-y-auto"
         >
+          {/* Drag handle (mobile) */}
+          <div className="flex justify-center pt-3 pb-1 sm:hidden">
+            <div className="w-10 h-1 rounded-full bg-border" />
+          </div>
+
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-muted transition"
           >
-            <X size={22} />
+            <X size={20} />
           </button>
 
           {/* Header */}
-          <div className="p-6 border-b bg-gradient-to-r from-cyan-50 via-teal-50 to-sky-50 dark:from-cyan-950 dark:via-teal-950 dark:to-sky-950 border-border">
+          <div className="px-5 pt-3 pb-4 sm:p-6 border-b bg-gradient-to-r from-cyan-50 via-teal-50 to-sky-50 dark:from-cyan-950 dark:via-teal-950 dark:to-sky-950 border-border">
             <div className="flex items-center gap-2 mb-1">
               <Wallet2 className="text-primary" size={22} />
               <h2 className="text-xl font-semibold text-foreground">
@@ -131,10 +136,10 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
             </p>
           </div>
 
-          {/* Form - NO scrolling, compact layout */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Row 1 - Description + Amount */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">
                   Description
@@ -165,7 +170,7 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
             </div>
 
             {/* Row 2 - Category + File Upload */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">
                   Category
@@ -216,7 +221,7 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
             </div>
 
             {/* Buttons */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <div className="flex justify-end gap-3 pt-3 border-t border-border">
               <button
                 type="button"
                 onClick={onClose}

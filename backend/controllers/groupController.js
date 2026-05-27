@@ -9,7 +9,7 @@ import User from "../models/userModel.js";
 import { createNotification } from "../controllers/notificationController.js";
 import UserProfile from "../models/userProfileModel.js";
 import crypto from "crypto";
-import QRCode from "qrcode";
+import { sendEmail } from "../utils/emailService.js";
 
 // Helper utilities
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
@@ -178,7 +178,6 @@ export const addMembersByEmail = async (req, res) => {
     const { emails } = req.body;
     const { groupId } = req.params;
 
-    // 1️⃣ Validate input
     if (!Array.isArray(emails) || emails.length === 0)
       return res.status(400).json({ field: "emails", message: "Please provide at least one email address." });
     if (emails.length > 20)
@@ -190,75 +189,195 @@ export const addMembersByEmail = async (req, res) => {
         message: `Invalid email format: ${invalidEmails.slice(0, 3).join(", ")}`,
       });
 
-    // 2️⃣ Find the group
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found." });
 
     const uid = asId(req.user);
-    if (!sameId(group.createdBy, uid)) {
-      return res
-        .status(403)
-        .json({ message: "Only the group creator can add members." });
-    }
+    if (!sameId(group.createdBy, uid))
+      return res.status(403).json({ message: "Only the group creator can add members." });
 
-    // 3️⃣ Find users by email
-    const users = await User.find(
-      { email: { $in: emails.map((e) => e.toLowerCase().trim()) } },
+    const normalizedEmails = emails.map((e) => e.toLowerCase().trim());
+
+    // Split into registered vs unregistered
+    const registeredUsers = await User.find(
+      { email: { $in: normalizedEmails } },
       "_id email name"
     );
+    const registeredEmails = new Set(registeredUsers.map((u) => u.email));
+    const unregisteredEmails = normalizedEmails.filter((e) => !registeredEmails.has(e));
 
-    if (!users.length) {
-      return res.status(404).json({ message: "No matching users found." });
-    }
+    // Add registered users to group
+    let updated = null;
+    if (registeredUsers.length > 0) {
+      const userIds = registeredUsers.map((u) => new mongoose.Types.ObjectId(u._id));
 
-    // 4️⃣ Convert all IDs to proper ObjectId (important!)
-    const userIds = users.map((u) => new mongoose.Types.ObjectId(u._id));
+      if (!group.members.map(String).includes(String(group.createdBy))) {
+        group.members.push(group.createdBy);
+      }
+      group.members = Array.from(
+        new Set([...group.members.map(String), ...userIds.map(String)])
+      ).map((id) => new mongoose.Types.ObjectId(id));
+      await group.save();
 
-    // 🟢 FIX 1: Make sure the creator is always in members
-    if (!group.members.map(String).includes(String(group.createdBy))) {
-      group.members.push(group.createdBy);
-    }
+      updated = await Group.findById(groupId)
+        .populate("members", "name email")
+        .populate("createdBy", "name email");
 
-    // 🟢 FIX 2: Add new members properly in-memory (not just updateOne)
-    group.members = Array.from(
-      new Set([...group.members.map(String), ...userIds.map(String)])
-    ).map((id) => new mongoose.Types.ObjectId(id));
-
-    await group.save();
-
-    // ✅ Re-fetch with populated data
-    const updated = await Group.findById(groupId)
-      .populate("members", "name email")
-      .populate("createdBy", "name email");
-
-    // Notify new members
-    await createNotification(
-      userIds,
-      `You were added to group "${group.name}" by ${req.user.name}`,
-      `/groups/${group._id}`,
-      "group"
-    );
-
-    // Notify existing members
-    const existingMembers = group.members
-      .map(String)
-      .filter((id) => !userIds.map(String).includes(id) && id !== String(uid));
-    if (existingMembers.length > 0) {
-      const addedNames = users.map((u) => u.name || u.email).join(", ");
       await createNotification(
-        existingMembers,
-        `${req.user.name} added ${addedNames} to "${group.name}"`,
+        userIds,
+        `You were added to group "${group.name}" by ${req.user.name}`,
         `/groups/${group._id}`,
         "group"
       );
+
+      const existingMemberIds = group.members
+        .map(String)
+        .filter((id) => !userIds.map(String).includes(id) && id !== String(uid));
+      if (existingMemberIds.length > 0) {
+        const addedNames = registeredUsers.map((u) => u.name || u.email).join(", ");
+        await createNotification(
+          existingMemberIds,
+          `${req.user.name} added ${addedNames} to "${group.name}"`,
+          `/groups/${group._id}`,
+          "group"
+        );
+      }
     }
 
-    res.json(updated);
+    // Send invitation emails to unregistered addresses
+    if (unregisteredEmails.length > 0) {
+      // Ensure group has an invite code
+      if (!group.inviteCode) {
+        group.inviteCode = crypto.randomBytes(4).toString("hex");
+        await group.save();
+      }
+
+      const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim();
+      const joinLink = `${frontendUrl}/join/${group.inviteCode}`;
+      const inviterName = req.user.name || "A friend";
+
+      const emailPromises = unregisteredEmails.map((email) =>
+        sendEmail({
+          to: email,
+          subject: `${inviterName} invited you to split expenses on SplitEase`,
+          html: buildInviteEmailHtml({ inviterName, groupName: group.name, joinLink, email }),
+        }).catch((err) => console.error(`Failed to send invite to ${email}:`, err.message))
+      );
+      await Promise.all(emailPromises);
+    }
+
+    // Build response
+    const finalGroup = updated || await Group.findById(groupId)
+      .populate("members", "name email")
+      .populate("createdBy", "name email");
+
+    res.json({
+      group: finalGroup,
+      added: registeredUsers.length,
+      invited: unregisteredEmails.length,
+      invitedEmails: unregisteredEmails,
+    });
   } catch (err) {
     console.error("❌ addMembersByEmail:", err.message);
     res.status(500).json({ message: err.message });
   }
 };
+
+function buildInviteEmailHtml({ inviterName, groupName, joinLink, email }) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>You're invited to SplitEase</title>
+</head>
+<body style="margin:0;padding:0;background:#F4F7FB;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F7FB;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(8,145,178,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#0891B2,#14b8a6);padding:32px 36px;text-align:center;">
+              <div style="font-size:28px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">
+                💸 SplitEase
+              </div>
+              <div style="color:rgba(255,255,255,0.85);font-size:13px;margin-top:6px;">
+                Split expenses. Stay friends.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 36px 24px;">
+              <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#0B1929;">
+                You've been invited! 🎉
+              </h2>
+              <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.6;">
+                <strong style="color:#0B1929;">${inviterName}</strong> invited you to join the group
+                <strong style="color:#0891B2;">"${groupName}"</strong> on SplitEase — the easiest way to track and split shared expenses with friends.
+              </p>
+
+              <!-- Group card -->
+              <div style="background:#EEF6F9;border:1px solid #DCE5F0;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
+                <div style="font-size:12px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Group</div>
+                <div style="font-size:18px;font-weight:800;color:#0B1929;">${groupName}</div>
+                <div style="font-size:12px;color:#64748B;margin-top:2px;">Invited by ${inviterName}</div>
+              </div>
+
+              <!-- CTA button -->
+              <div style="text-align:center;margin:28px 0;">
+                <a href="${joinLink}" style="display:inline-block;background:linear-gradient(135deg,#0891B2,#14b8a6);color:#ffffff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 36px;border-radius:12px;box-shadow:0 4px 14px rgba(8,145,178,0.3);">
+                  Join "${groupName}" →
+                </a>
+              </div>
+
+              <p style="margin:0 0 8px;font-size:13px;color:#64748B;line-height:1.6;">
+                Click the button above to create your free account and you'll be automatically added to the group. No credit card required.
+              </p>
+
+              <!-- What is SplitEase -->
+              <div style="border-top:1px solid #DCE5F0;margin-top:24px;padding-top:20px;">
+                <div style="font-size:13px;font-weight:700;color:#0B1929;margin-bottom:10px;">What is SplitEase?</div>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding:4px 0;font-size:13px;color:#475569;">✅ &nbsp;Track group expenses in real-time</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;font-size:13px;color:#475569;">💡 &nbsp;Smart settlements — pay the fewest people</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;font-size:13px;color:#475569;">📊 &nbsp;See exactly who owes what</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;font-size:13px;color:#475569;">💬 &nbsp;Group chat built in</td>
+                  </tr>
+                </table>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#F4F7FB;padding:20px 36px;text-align:center;border-top:1px solid #DCE5F0;">
+              <p style="margin:0 0 6px;font-size:12px;color:#94A3B8;">
+                This invitation was sent to <strong>${email}</strong> by ${inviterName}.
+              </p>
+              <p style="margin:0;font-size:11px;color:#CBD5E1;">
+                If you didn't expect this email, you can safely ignore it.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
 
 export const removeMember = async (req, res) => {
   try {
@@ -421,15 +540,13 @@ export const generateInviteLink = async (req, res) => {
       await group.save();
     }
 
-    const joinLink = `${process.env.FRONTEND_URL || "https://splitease.app"}/join/${group.inviteCode}`;
-
-    // Generate base64 QR code
-    const qrBase64 = await QRCode.toDataURL(joinLink);
+    const frontendUrl = (process.env.FRONTEND_URL || "https://splitease.app").split(",")[0].trim();
+    const joinLink = `${frontendUrl}/join/${group.inviteCode}`;
 
     res.json({
       success: true,
+      inviteCode: group.inviteCode,
       joinLink,
-      qrBase64,
     });
   } catch (err) {
     console.error("generateInviteLink error:", err.message);

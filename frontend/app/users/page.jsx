@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
+import Loader3D from "@/components/Loader3D";
 
 const COLORS = ["#0891B2", "#0E7490", "#22D3EE", "#14b8a6", "#f59e0b", "#0284C7"];
 
@@ -51,6 +52,9 @@ export default function UserDashboardPage() {
   const [groupName, setGroupName]           = useState("");
   const [creating, setCreating]             = useState(false);
   const [activePieIndex, setActivePieIndex] = useState(-1);
+  const [mounted, setMounted]               = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, []);
@@ -143,12 +147,7 @@ export default function UserDashboardPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-screen gap-3 bg-background">
-        <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin" />
-        <p className="text-muted-foreground text-sm font-medium animate-pulse">Loading your dashboard…</p>
-      </div>
-    );
+    return <Loader3D message="Analyzing budget trajectory..." />;
   }
 
   const activeGroups = groups.filter((g) => !g.isCompleted);
@@ -167,7 +166,7 @@ export default function UserDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 sm:pb-12 pt-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background pb-28 sm:pb-12 pt-4 sm:pt-6 px-3 sm:px-4 lg:px-8">
       {/* Decorative blur orbs */}
       <div className="fixed top-16 -left-16 w-72 h-72 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none -z-0" />
       <div className="fixed top-40 -right-16 w-80 h-80 bg-teal-500/5 rounded-full blur-[120px] pointer-events-none -z-0" />
@@ -200,7 +199,7 @@ export default function UserDashboardPage() {
                 placeholder="New group / trip name..."
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                className="bg-transparent outline-none px-3 py-2 text-foreground placeholder:text-muted-foreground w-full sm:w-52 text-sm"
+                className="bg-transparent outline-none px-3 py-2 text-foreground placeholder:text-muted-foreground w-full text-sm"
               />
               <button
                 type="submit"
@@ -220,7 +219,7 @@ export default function UserDashboardPage() {
   initial={{ opacity: 0, y: 16 }}
   animate={{ opacity: 1, y: 0 }}
   transition={{ delay: 0.05 }}
-  className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+  className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3"
 >
   <StatCard
     label="Total Groups"
@@ -600,7 +599,7 @@ const StatCard = ({
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
       className="
         relative overflow-hidden rounded-xl border
-        border-border/60 bg-white/80 dark:bg-zinc-900/70
+        border-border/60 bg-card/80
         backdrop-blur-xl p-4 sm:p-5
          hover:shadow
         transition-all 

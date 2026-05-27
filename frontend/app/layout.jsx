@@ -4,6 +4,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
 import MainWrapper from "@/components/MainWrapper";
+import AppFooter from "@/components/AppFooter";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 
@@ -65,6 +66,7 @@ export default function RootLayout({ children }) {
               <MainWrapper>
                 {children}
               </MainWrapper>
+              <AppFooter />
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>

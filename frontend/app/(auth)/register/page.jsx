@@ -98,7 +98,13 @@ export default function RegisterPage() {
       const res = await api.post("/auth/google", { token: firebaseToken });
       setToken(res.data.token);
       toast.success("Account created successfully!");
-      router.push("/users");
+      const pendingInvite = localStorage.getItem("pendingInvite");
+      if (pendingInvite) {
+        localStorage.removeItem("pendingInvite");
+        router.push(`/join/${pendingInvite}`);
+      } else {
+        router.push("/users");
+      }
     } catch (err) {
       const data = err?.response?.data;
       if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
@@ -116,7 +122,13 @@ export default function RegisterPage() {
       const res = await api.post("/auth/google", { token: firebaseToken });
       setToken(res.data.token);
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
-      router.push("/users");
+      const pendingInvite = localStorage.getItem("pendingInvite");
+      if (pendingInvite) {
+        localStorage.removeItem("pendingInvite");
+        router.push(`/join/${pendingInvite}`);
+      } else {
+        router.push("/users");
+      }
     } catch (err) {
       console.error("Google Sign-Up error:", err);
       if (err.code === "auth/unauthorized-domain" || err.message?.includes("auth/unauthorized-domain")) {

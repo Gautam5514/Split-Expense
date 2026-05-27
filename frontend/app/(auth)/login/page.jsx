@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "@/lib/toast";
 import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
@@ -109,7 +110,13 @@ export default function LoginPage() {
       const res = await api.post("/auth/google", { token: firebaseToken });
       setToken(res.data.token);
       toast.success("Login successful!");
-      router.push("/users");
+      const pendingInvite = localStorage.getItem("pendingInvite");
+      if (pendingInvite) {
+        localStorage.removeItem("pendingInvite");
+        router.push(`/join/${pendingInvite}`);
+      } else {
+        router.push("/users");
+      }
     } catch (err) {
       const data = err?.response?.data;
       if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
@@ -127,7 +134,13 @@ export default function LoginPage() {
       const res = await api.post("/auth/google", { token: firebaseToken });
       setToken(res.data.token);
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
-      router.push("/users");
+      const pendingInvite = localStorage.getItem("pendingInvite");
+      if (pendingInvite) {
+        localStorage.removeItem("pendingInvite");
+        router.push(`/join/${pendingInvite}`);
+      } else {
+        router.push("/users");
+      }
     } catch (err) {
       console.error("Google Sign-In error:", err);
       if (err.code === "auth/unauthorized-domain" || err.message?.includes("auth/unauthorized-domain")) {
@@ -325,18 +338,33 @@ export default function LoginPage() {
               </form>
 
               <p className="mt-5 text-center text-sm text-slate-500">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <a href="/register" className="text-sky-400 hover:text-sky-300 font-semibold transition-colors">
                   Create one free →
                 </a>
               </p>
+
+              <nav className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-semibold text-slate-500">
+                <Link href="/privacy" className="hover:text-sky-300 transition-colors">
+                  Privacy Policy
+                </Link>
+                <Link href="/terms" className="hover:text-sky-300 transition-colors">
+                  Terms
+                </Link>
+                <Link href="/help-center" className="hover:text-sky-300 transition-colors">
+                  Help Center
+                </Link>
+                <Link href="/contact" className="hover:text-sky-300 transition-colors">
+                  Contact Us
+                </Link>
+              </nav>
             </>
           ) : !emailSent ? (
             <>
               {/* heading */}
               <div className="mb-5">
                 <h2 className="text-2xl font-bold text-white mb-1">Forgot password</h2>
-                <p className="text-slate-400 text-sm">Enter your email and we'll send you a secure reset link</p>
+                <p className="text-slate-400 text-sm">Enter your email and we&apos;ll send you a secure reset link</p>
               </div>
 
               {/* form */}
@@ -403,7 +431,7 @@ export default function LoginPage() {
               </div>
 
               <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 text-sm text-slate-400 leading-relaxed mb-6 space-y-2">
-                <p>• Check your spam folder if you don't see it.</p>
+                <p>• Check your spam folder if you don&apos;t see it.</p>
                 <p>• The link expires in <span className="text-white font-semibold">15 minutes</span>.</p>
                 <p>• You can safely close this tab after clicking the link.</p>
               </div>
@@ -414,7 +442,7 @@ export default function LoginPage() {
                   onClick={() => { setEmailSent(false); }}
                   className="w-full text-center text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer outline-none block"
                 >
-                  Didn't receive it? <span className="text-sky-400 font-semibold hover:underline">Resend reset link</span>
+                  Didn&apos;t receive it? <span className="text-sky-400 font-semibold hover:underline">Resend reset link</span>
                 </button>
 
                 <button

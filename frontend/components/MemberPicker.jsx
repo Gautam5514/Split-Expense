@@ -94,16 +94,21 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4"
       >
         {/* Main Glass Modal */}
         <motion.div
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/20 dark:border-white/10 bg-white/80 dark:bg-slate-950/80 text-foreground shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl"
+          initial={{ y: "100%", opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: "100%", opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="relative w-full sm:max-w-2xl overflow-hidden rounded-t-3xl sm:rounded-3xl border border-border/50 bg-card/95 text-foreground shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl max-h-[88dvh] overflow-y-auto"
         >
+          {/* Drag handle (mobile) */}
+          <div className="flex justify-center pt-3 pb-1 sm:hidden">
+            <div className="w-10 h-1 rounded-full bg-border" />
+          </div>
+
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -113,7 +118,7 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
           </button>
 
           {/* Header */}
-          <div className="border-b border-border p-6 bg-gradient-to-r from-cyan-500/5 to-teal-500/5">
+          <div className="border-b border-border px-5 pt-3 pb-4 sm:p-6 bg-gradient-to-r from-cyan-500/5 to-teal-500/5">
             <div className="flex items-center gap-2 mb-1">
               <UserPlus className="text-cyan-600 dark:text-cyan-400" size={22} />
               <h2 className="text-xl font-bold text-foreground">
@@ -126,7 +131,7 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
           </div>
 
           {/* Tab Switcher */}
-          <div className="flex border-b border-border px-6 bg-slate-50/50 dark:bg-slate-900/10">
+          <div className="flex border-b border-border px-6 bg-muted/30">
             <button
               onClick={() => setActiveTab("search")}
               className={`flex items-center gap-2 pb-3 pt-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer ${
@@ -159,7 +164,7 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search by name or email address..."
-                    className="w-full bg-slate-100/50 dark:bg-slate-900/50 text-foreground text-sm rounded-xl pl-10 pr-4 py-3 border border-border focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all outline-none"
+                    className="w-full bg-muted/60 text-foreground text-sm rounded-xl pl-10 pr-4 py-3 border border-border focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all outline-none"
                     autoFocus
                   />
                   {query && (
@@ -257,7 +262,7 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
                     value={manualEmail}
                     onChange={(e) => setManualEmail(e.target.value)}
                     placeholder="Enter friend's email address..."
-                    className="flex-grow bg-slate-100/50 dark:bg-slate-900/50 text-foreground text-sm rounded-xl px-4 py-3 border border-border focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all outline-none"
+                    className="flex-grow bg-muted/60 text-foreground text-sm rounded-xl px-4 py-3 border border-border focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all outline-none"
                     autoFocus
                   />
                   <button
@@ -269,15 +274,15 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
                 </form>
 
                 {/* Info details */}
-                <div className="bg-slate-50 dark:bg-slate-900/25 border border-border/50 rounded-2xl p-5 space-y-3">
+                <div className="bg-muted/30 border border-border/50 rounded-2xl p-5 space-y-3">
                   <div className="flex items-center gap-2 text-sm font-bold text-foreground">
                     <Mail size={16} className="text-cyan-600 dark:text-cyan-400 animate-pulse" />
                     <span>How Invite by Email works</span>
                   </div>
                   <ul className="text-xs text-muted-foreground space-y-2 list-disc list-inside leading-relaxed">
-                    <li>Enter any email address manually to quickly queue them for this group.</li>
-                    <li>If they are already registered, they will be instantly added to your active trip room.</li>
-                    <li>If they are not registered yet, we will register their email invitation details so they join your trip automatically upon signing up!</li>
+                    <li>Enter any email — registered or not — and tap <strong>Add Email</strong>.</li>
+                    <li><strong>Already on SplitEase?</strong> They&apos;ll be added to the group instantly.</li>
+                    <li><strong>Not registered?</strong> We&apos;ll automatically send them a personalised invitation email with a direct join link.</li>
                   </ul>
                 </div>
                 <div className="min-h-[60px]" />

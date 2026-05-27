@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import MemberPicker from "@/components/MemberPicker";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import InviteModal from "@/components/InviteModal";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 import Image from "next/image";
 import {
   ArrowLeftCircle,
@@ -42,6 +43,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import NotepadSection from "@/components/Notepad/NotepadSection";
 import OcrViewModal from "@/components/OcrViewModal";
+import Loader3D from "@/components/Loader3D";
 
 const categoryIcons = {
   food: Utensils,
@@ -74,6 +76,7 @@ export default function GroupDetailPage() {
   const groupId = useMemo(() => params?.id, [params]);
 
   const [group, setGroup] = useState(null);
+  const [meId, setMeId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [expenses, setExpenses] = useState([]);
@@ -82,6 +85,7 @@ export default function GroupDetailPage() {
   const [showOcrModal, setShowOcrModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedOcr, setSelectedOcr] = useState(null);
   const [expandedPayerId, setExpandedPayerId] = useState(null);
   const [activeTab, setActiveTab] = useState("feed");
@@ -119,6 +123,8 @@ export default function GroupDetailPage() {
 
   useEffect(() => {
     if (groupId) {
+      // Fetch current user's MongoDB _id — Firebase token payload doesn't carry it
+      api.get("/users/me").then((r) => setMeId(r.data?._id || r.data?.id || null)).catch(() => {});
       fetchGroup();
       fetchExpenses();
       fetchBalances();
@@ -130,8 +136,19 @@ export default function GroupDetailPage() {
     try {
       setAdding(true);
       const res = await api.post(`/groups/${groupId}/members`, { emails });
-      setGroup(res.data);
-      toast.success(`Added ${emails.length} member${emails.length > 1 ? "s" : ""}`);
+      const { added = 0, invited = 0, group: updatedGroup } = res.data;
+
+      if (updatedGroup) setGroup(updatedGroup);
+
+      if (added > 0 && invited > 0) {
+        toast.success(`${added} member${added !== 1 ? "s" : ""} added, invitation email${invited !== 1 ? "s" : ""} sent to ${invited} unregistered address${invited !== 1 ? "es" : ""}`);
+      } else if (added > 0) {
+        toast.success(`${added} member${added !== 1 ? "s" : ""} added successfully!`);
+      } else if (invited > 0) {
+        toast.success(`Invitation email${invited !== 1 ? "s" : ""} sent to ${invited} address${invited !== 1 ? "es" : ""}! They'll join automatically after signing up.`);
+      }
+
+      fetchGroup();
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to add members");
     } finally {
@@ -180,13 +197,8 @@ export default function GroupDetailPage() {
     }
   };
 
-  const getCurrentUserId = () => {
-    try { return token ? JSON.parse(atob(token.split(".")[1]))?.id : null; }
-    catch { return null; }
-  };
-
   const isCreator =
-    group && String(group.createdBy?._id || group.createdBy) === String(getCurrentUserId());
+    group && meId && String(group.createdBy?._id || group.createdBy) === String(meId);
 
   const expenseSummary = useMemo(() => {
     const byPayer = expenses.reduce((acc, expense) => {
@@ -205,30 +217,25 @@ export default function GroupDetailPage() {
   }, [expenses]);
 
   const currentUserBalance = useMemo(() => {
-    if (!balances?.balances) return 0;
-    const uid = getCurrentUserId();
-    const b = balances.balances.find((b) => String(b.userId) === String(uid));
+    if (!balances?.balances || !meId) return 0;
+    const b = balances.balances.find((b) => String(b.userId) === String(meId));
     return b ? Number(b.balance) : 0;
-  }, [balances, token]);
+  }, [balances, meId]);
 
   const handleDeleteTrip = async () => {
-    if (!window.confirm("Delete this trip and all of its expenses, notes, and messages?")) return;
     try {
       await api.delete(`/groups/${groupId}`, { headers: { Authorization: `Bearer ${token}` } });
       toast.success("Trip deleted");
       router.push("/dashboard");
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to delete trip");
+    } finally {
+      setShowDeleteConfirm(false);
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[80vh] gap-3 bg-background">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-        <p className="text-muted-foreground text-sm">Loading group details…</p>
-      </div>
-    );
+    return <Loader3D message="Entering trip room..." />;
   }
 
   if (!group) {
@@ -251,7 +258,7 @@ export default function GroupDetailPage() {
   const displayedExpenses = expenses.length > 10 && !showAllExpenses ? expenses.slice(0, 9) : expenses;
 
   return (
-    <div className="min-h-screen bg-background text-foreground pt-6 pb-32 sm:pb-10 px-4 sm:px-6 md:px-8">
+    <div className="min-h-screen bg-background text-foreground pt-4 sm:pt-6 pb-32 sm:pb-12 px-3 sm:px-4 md:px-6">
       <div className="max-w-6xl mx-auto space-y-5">
 
         {/* ── HEADER ── */}
@@ -278,33 +285,33 @@ export default function GroupDetailPage() {
             <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button
                 onClick={() => router.push("/dashboard")}
-                className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg border border-border hover:bg-muted/50 transition cursor-pointer"
+                className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg border border-border hover:bg-muted/50 transition cursor-pointer"
               >
-                <ArrowLeftCircle size={15} /> Back
+                <ArrowLeftCircle size={14} /> <span className="hidden sm:inline">Back</span>
               </button>
               {isCreator && (
                 <button
                   type="button"
-                  onClick={handleDeleteTrip}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-destructive border border-destructive/25 hover:bg-destructive/5 px-3 py-2 rounded-lg transition cursor-pointer"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-destructive border border-destructive/25 hover:bg-destructive/5 px-3 py-2 rounded-lg transition cursor-pointer"
                 >
-                  <Trash2 size={15} /> Delete Group
+                  <Trash2 size={14} /> <span className="hidden sm:inline">Delete</span>
                 </button>
               )}
               <button
                 onClick={() => router.push(`/groupchat?groupId=${groupId}`)}
-                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold px-4 py-2 rounded-lg shadow transition cursor-pointer"
+                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg shadow transition cursor-pointer"
               >
-                <MessageCircleMore size={15} /> Group Chat
+                <MessageCircleMore size={14} /> <span className="sm:inline">Chat</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* ── STAT CARDS ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           {/* Total Spend */}
-          <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+          <div className="col-span-2 sm:col-span-1 bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Group Spend</p>
             <p className="text-2xl font-black text-foreground mt-2">{INR.format(expenseSummary.total)}</p>
             <p className="text-[11px] text-muted-foreground mt-1.5">
@@ -313,7 +320,7 @@ export default function GroupDetailPage() {
           </div>
 
           {/* Balance Position */}
-          <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+          <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Your Balance Position</p>
             {currentUserBalance > 0.01 ? (
               <>
@@ -344,7 +351,7 @@ export default function GroupDetailPage() {
           </div>
 
           {/* Members */}
-          <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+          <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Active Group Size</p>
             <p className="text-2xl font-black text-foreground mt-2">
               {group.members?.length || 0} Members
@@ -385,28 +392,30 @@ export default function GroupDetailPage() {
 
           {/* LEFT: TABS + CONTENT */}
           <div className="space-y-4">
-            {/* Tab bar */}
-            <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1 shadow-sm w-fit">
-              {tabs.map(({ key, label, icon: Icon }) => (
-                <button key={key} onClick={() => setActiveTab(key)}
-                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                    activeTab === key
+            {/* Tab bar — horizontally scrollable on mobile */}
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1 shadow-sm w-max min-w-full sm:w-fit">
+                {tabs.map(({ key, label, icon: Icon }) => (
+                  <button key={key} onClick={() => setActiveTab(key)}
+                    className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      activeTab === key
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    }`}>
+                    <Icon size={13} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+                <button onClick={() => setActiveTab("balances")}
+                  className={`lg:hidden flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    activeTab === "balances"
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}>
-                  <Icon size={14} />
-                  <span>{label}</span>
+                  <Wallet2 size={13} />
+                  <span>Balances</span>
                 </button>
-              ))}
-              <button onClick={() => setActiveTab("balances")}
-                className={`lg:hidden flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === "balances"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}>
-                <Wallet2 size={14} />
-                <span>Balances</span>
-              </button>
+              </div>
             </div>
 
             {/* Tab Content */}
@@ -586,6 +595,13 @@ export default function GroupDetailPage() {
       </div>
 
       {/* MODALS */}
+      <ConfirmDeleteModal
+        isOpen={showDeleteConfirm}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteTrip}
+        title={`Delete "${group.name}"?`}
+        description={`You're about to permanently delete this trip. All expenses, notes, group messages, and member data will be removed forever.`}
+      />
       <AnimatePresence>
         {showExpenseModal && (
           <AddExpenseModal group={group} onClose={() => setShowExpenseModal(false)} onSuccess={handleExpenseAdded} />

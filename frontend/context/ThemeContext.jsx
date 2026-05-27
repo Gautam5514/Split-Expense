@@ -4,122 +4,206 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext();
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState("light");
-  const [mounted, setMounted] = useState(false);
+/* ── Tiny HSL colour helpers ─────────────────────────────────────────── */
+function hexToHsl(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return [h * 360, s * 100, l * 100];
+}
 
-  // Custom theme overrides
-  const [customBg, setCustomBg] = useState("");
-  const [customText, setCustomText] = useState("");
+function hslToHex(h, s, l) {
+  h /= 360; s /= 100; l /= 100;
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  const toHex = (x) => Math.round(x * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function lighten(hex, amt) {
+  if (!hex || !hex.startsWith("#") || hex.length < 7) return hex;
+  try {
+    const [h, s, l] = hexToHsl(hex);
+    return hslToHex(h, s, Math.min(100, Math.max(0, l + amt)));
+  } catch { return hex; }
+}
+
+/* ── Derive a full, balanced palette from a single bg hex + primary ── */
+function derivePalette(bg, primary, isDark) {
+  if (isDark) {
+    // bg is a very dark color — lift derived surfaces progressively
+    return {
+      "--background":         bg,
+      "--foreground":         "#E4EAF2",
+      "--card":               lighten(bg, 7),
+      "--card-foreground":    "#E4EAF2",
+      "--popover":            lighten(bg, 7),
+      "--popover-foreground": "#E4EAF2",
+      "--primary":            primary,
+      "--primary-foreground": "#ffffff",
+      "--secondary":          lighten(bg, 12),
+      "--secondary-foreground":"#A8BECF",
+      "--muted":              lighten(bg, 12),
+      "--muted-foreground":   "#8494A6",
+      "--accent":             lighten(bg, 12),
+      "--accent-foreground":  "#E4EAF2",
+      "--border":             lighten(bg, 18),
+      "--input":              lighten(bg, 18),
+      "--ring":               primary,
+    };
+  } else {
+    // bg is a light tinted color — cards are white, muted is slightly darker
+    return {
+      "--background":         bg,
+      "--foreground":         "#1A2332",
+      "--card":               "#ffffff",
+      "--card-foreground":    "#1A2332",
+      "--popover":            "#ffffff",
+      "--popover-foreground": "#1A2332",
+      "--primary":            primary,
+      "--primary-foreground": "#ffffff",
+      "--secondary":          lighten(bg, -4),
+      "--secondary-foreground":"#155E75",
+      "--muted":              lighten(bg, -4),
+      "--muted-foreground":   "#667085",
+      "--accent":             lighten(bg, -4),
+      "--accent-foreground":  "#1A2332",
+      "--border":             lighten(bg, -10),
+      "--input":              lighten(bg, -10),
+      "--ring":               primary,
+    };
+  }
+}
+
+const PALETTE_VARS = [
+  "--background", "--foreground",
+  "--card", "--card-foreground",
+  "--popover", "--popover-foreground",
+  "--primary", "--primary-foreground",
+  "--secondary", "--secondary-foreground",
+  "--muted", "--muted-foreground",
+  "--accent", "--accent-foreground",
+  "--border", "--input", "--ring",
+];
+
+export function ThemeProvider({ children }) {
+  const [theme, setTheme]     = useState("light");
+  const [mounted, setMounted] = useState(false);
+  const [font, setFontState]  = useState("inter");
+
+  // Store bg + primary for the active custom preset
+  const [customBg,      setCustomBg]      = useState("");
   const [customPrimary, setCustomPrimary] = useState("");
-  const [customBorder, setCustomBorder] = useState("");
 
   useEffect(() => {
     setMounted(true);
-    // Check local storage or system preference
     const storedTheme = localStorage.getItem("theme");
     if (storedTheme) {
       setTheme(storedTheme);
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       setTheme("dark");
     }
-
-    // Load custom properties
     setCustomBg(localStorage.getItem("customBg") || "");
-    setCustomText(localStorage.getItem("customText") || "");
     setCustomPrimary(localStorage.getItem("customPrimary") || "");
-    setCustomBorder(localStorage.getItem("customBorder") || "");
+    setFontState(localStorage.getItem("appFont") || "inter");
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
 
     const root = window.document.documentElement;
-    
-    // Class names
+
+    // Apply theme class
     root.classList.remove("light", "dark");
     root.classList.add(theme);
     localStorage.setItem("theme", theme);
 
-    // Apply custom styling overrides
-    if (customBg) {
-      root.style.setProperty("--background", customBg);
-      root.style.setProperty("--card", customBg);
-      root.style.setProperty("--popover", customBg);
-      localStorage.setItem("customBg", customBg);
+    // Apply palette or reset to CSS defaults
+    if (customBg && customPrimary) {
+      const isDark = theme === "dark";
+      const palette = derivePalette(customBg, customPrimary, isDark);
+      Object.entries(palette).forEach(([k, v]) =>
+        root.style.setProperty(k, v)
+      );
     } else {
-      root.style.removeProperty("--background");
-      root.style.removeProperty("--card");
-      root.style.removeProperty("--popover");
-      localStorage.removeItem("customBg");
+      // Remove all custom overrides → CSS :root / .dark take over
+      PALETTE_VARS.forEach((v) => root.style.removeProperty(v));
     }
 
-    if (customText) {
-      root.style.setProperty("--foreground", customText);
-      root.style.setProperty("--card-foreground", customText);
-      root.style.setProperty("--popover-foreground", customText);
-      localStorage.setItem("customText", customText);
-    } else {
-      root.style.removeProperty("--foreground");
-      root.style.removeProperty("--card-foreground");
-      root.style.removeProperty("--popover-foreground");
-      localStorage.removeItem("customText");
-    }
+    // Font
+    const fontMap = {
+      inter:     '"Inter", ui-sans-serif, system-ui, sans-serif',
+      poppins:   '"Poppins", ui-sans-serif, system-ui, sans-serif',
+      nunito:    '"Nunito", ui-sans-serif, system-ui, sans-serif',
+      "dm-sans": '"DM Sans", ui-sans-serif, system-ui, sans-serif',
+      jakarta:   '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif',
+      outfit:    '"Outfit", ui-sans-serif, system-ui, sans-serif',
+    };
+    root.style.setProperty("--font-sans", fontMap[font] || fontMap.inter);
+    localStorage.setItem("appFont", font);
 
-    if (customPrimary) {
-      root.style.setProperty("--primary", customPrimary);
-      root.style.setProperty("--ring", customPrimary);
-      localStorage.setItem("customPrimary", customPrimary);
-    } else {
-      root.style.removeProperty("--primary");
-      root.style.removeProperty("--ring");
-      localStorage.removeItem("customPrimary");
-    }
-
-    if (customBorder) {
-      root.style.setProperty("--border", customBorder);
-      root.style.setProperty("--input", customBorder);
-      localStorage.setItem("customBorder", customBorder);
-    } else {
-      root.style.removeProperty("--border");
-      root.style.removeProperty("--input");
-      localStorage.removeItem("customBorder");
-    }
-
-  }, [theme, mounted, customBg, customText, customPrimary, customBorder]);
+  }, [theme, mounted, customBg, customPrimary, font]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
-  const applyColors = ({ bg, text, primary, border }) => {
-    setCustomBg(bg || "");
-    setCustomText(text || "");
-    setCustomPrimary(primary || "");
-    setCustomBorder(border || "");
+  // Called by theme page preset handler — only needs bg + primary
+  const applyColors = ({ bg, primary }) => {
+    const bgVal      = bg      || "";
+    const primaryVal = primary || "";
+    setCustomBg(bgVal);
+    setCustomPrimary(primaryVal);
+    if (bgVal)      localStorage.setItem("customBg",      bgVal);
+    else            localStorage.removeItem("customBg");
+    if (primaryVal) localStorage.setItem("customPrimary", primaryVal);
+    else            localStorage.removeItem("customPrimary");
   };
+
+  const setFont = (f) => setFontState(f);
 
   const resetColors = () => {
     setCustomBg("");
-    setCustomText("");
     setCustomPrimary("");
-    setCustomBorder("");
     localStorage.removeItem("customBg");
-    localStorage.removeItem("customText");
     localStorage.removeItem("customPrimary");
-    localStorage.removeItem("customBorder");
+    // Legacy cleanup
+    ["customText", "customBorder"].forEach((k) => localStorage.removeItem(k));
   };
 
   return (
-    <ThemeContext.Provider value={{ 
-      theme, 
-      toggleTheme, 
-      customBg, 
-      customText, 
-      customPrimary, 
-      customBorder, 
-      applyColors, 
-      resetColors 
+    <ThemeContext.Provider value={{
+      theme, toggleTheme,
+      customBg, customPrimary,
+      applyColors, resetColors,
+      font, setFont,
     }}>
       {children}
     </ThemeContext.Provider>

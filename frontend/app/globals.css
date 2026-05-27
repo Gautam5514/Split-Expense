@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -30,71 +31,67 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-/* ── Light Mode — Ocean Breeze Premium ── */
+/* ── Light Mode — Soft Paper ── */
 :root {
-  --background: #F4F7FB;
-  --foreground: #0B1929;
+  --background: #F5F7FA;
+  --foreground: #1A2332;
 
   --card: #FFFFFF;
-  --card-foreground: #0B1929;
+  --card-foreground: #1A2332;
 
   --popover: #FFFFFF;
-  --popover-foreground: #0B1929;
+  --popover-foreground: #1A2332;
 
-  /* Primary: Teal Blue — trust, travel, water */
   --primary: #0891B2;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #EEF6F9;
+  --secondary: #EDF5F8;
   --secondary-foreground: #155E75;
 
-  --muted: #F0F4F8;
-  --muted-foreground: #64748B;
+  --muted: #EEF2F7;
+  --muted-foreground: #667085;
 
-  /* Accent: Warm Amber — adventure, energy, sunset */
-  --accent: #F97316;
-  --accent-foreground: #FFFFFF;
+  --accent: #EEF2F7;
+  --accent-foreground: #1A2332;
 
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
-  --border: #DCE5F0;
-  --input: #DCE5F0;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
   --ring: #0891B2;
   --radius: 0.625rem;
 }
 
-/* ── Dark Mode — Deep Ocean Night ── */
+/* ── Dark Mode — Deep Slate ── */
 .dark {
-  --background: #060E1C;
-  --foreground: #EDF4FF;
+  --background: #0F1623;
+  --foreground: #E4EAF2;
 
-  --card: #0D1B30;
-  --card-foreground: #EDF4FF;
+  --card: #18222F;
+  --card-foreground: #E4EAF2;
 
-  --popover: #0D1B30;
-  --popover-foreground: #EDF4FF;
+  --popover: #18222F;
+  --popover-foreground: #E4EAF2;
 
-  /* Primary: Bright Cyan — glows beautifully in dark */
-  --primary: #22D3EE;
-  --primary-foreground: #03101F;
+  --primary: #0EA5E9;
+  --primary-foreground: #0A1628;
 
-  --secondary: #102038;
-  --secondary-foreground: #BAD1E8;
+  --secondary: #1C2B3C;
+  --secondary-foreground: #A8BECF;
 
-  --muted: #102038;
-  --muted-foreground: #94A3B8;
+  --muted: #1C2B3C;
+  --muted-foreground: #8494A6;
 
-  /* Accent: Warm Orange in dark */
-  --accent: #FB923C;
-  --accent-foreground: #03101F;
+  --accent: #1C2B3C;
+  --accent-foreground: #E4EAF2;
 
   --destructive: #F87171;
   --destructive-foreground: #FFFFFF;
 
-  --border: #1C3456;
-  --input: #1C3456;
-  --ring: #22D3EE;
+  --border: #243347;
+  --input: #243347;
+  --ring: #0EA5E9;
 }
 
 body {
@@ -245,13 +242,27 @@ main:has(.h-screen) {
   }
 }
 
-/* Hide OneSignal floating widgets */
-#onesignal-bell-container,
-.onesignal-bell-launcher,
-.onesignal-bell-launcher-button,
-#onesignal-slidedown-container {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
+
+
+/* ── 3D Loading Animations & Utilities ── */
+@keyframes spin-3d {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+  }
+  100% {
+    transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg);
+  }
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.animate-spin-3d {
+  transform-style: preserve-3d;
+  animation: spin-3d 12s linear infinite;
 }

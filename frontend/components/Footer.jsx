@@ -237,7 +237,7 @@ export default function Footer() {
           className="absolute bottom-0 left-1/2 -translate-x-1/2 font-black leading-none whitespace-nowrap tracking-tighter"
           style={{
             fontSize: "clamp(80px, 16vw, 200px)",
-            background: "linear-gradient(to bottom, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 100%)",
+            background: "linear-gradient(to bottom, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",

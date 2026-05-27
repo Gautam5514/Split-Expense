@@ -16,6 +16,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import InviteModal from "@/components/InviteModal";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
 export default function DashboardPage() {
   const { token } = useAuth();
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [inviteGroupId, setInviteGroupId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, name }
 
   useEffect(() => {
     if (!token) return;
@@ -57,18 +59,18 @@ export default function DashboardPage() {
     }
   };
 
-  const deleteTrip = async (e, groupId) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!window.confirm("Delete this trip and all of its expenses, notes, and group messages?")) return;
+  const confirmDeleteTrip = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/groups/${groupId}`, {
+      await api.delete(`/groups/${deleteTarget.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Trip deleted");
       fetchGroups();
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to delete trip");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -108,23 +110,23 @@ export default function DashboardPage() {
   const hasActiveGroups = activeCreatedGroups.length > 0 || activeJoinedGroups.length > 0;
 
   return (
-    <div className="min-h-screen bg-background text-foreground pt-10 pb-32 sm:pb-12 px-6">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background text-foreground pt-8 pb-32 sm:pb-12 px-3 sm:px-6">
+      <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-primary">Groups</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-primary">Groups</h1>
             <p className="text-muted-foreground text-sm mt-1">
               Manage your trips, groups &amp; expenses effortlessly.
             </p>
           </div>
 
-          <form onSubmit={createGroup} className="flex flex-col gap-1 w-full sm:w-auto">
+          <form onSubmit={createGroup} className="flex flex-col gap-1 w-full">
             <div className="flex items-center gap-2">
               <input
                 placeholder="Enter new group name"
-                className={`flex-grow rounded-lg bg-card text-foreground border p-2 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary ${
+                className={`flex-grow rounded-xl bg-card text-foreground border p-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary ${
                   nameError ? "border-destructive focus:ring-destructive" : "border-border"
                 }`}
                 value={name}
@@ -133,7 +135,7 @@ export default function DashboardPage() {
               <button
                 type="submit"
                 disabled={creating}
-                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-60 shrink-0"
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-3 rounded-xl text-sm font-semibold transition disabled:opacity-60 shrink-0"
               >
                 {creating ? <Loader2 className="animate-spin w-4 h-4" /> : <Plus size={16} />}
                 {creating ? "Creating…" : "Create"}
@@ -145,7 +147,7 @@ export default function DashboardPage() {
 
         {/* Underline Tabs */}
         {!loading && groups.length > 0 && (
-          <div className="flex items-center gap-6 border-b border-border">
+          <div className="flex items-center gap-4 sm:gap-6 border-b border-border">
             <button
               onClick={() => setView("active")}
               className={`pb-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
@@ -178,7 +180,7 @@ export default function DashboardPage() {
 
         {/* Empty state */}
         {!loading && groups.length === 0 && (
-          <div className="bg-card border border-border rounded-xl p-12 text-center shadow-sm">
+          <div className="bg-card border border-border rounded-xl p-8 sm:p-12 text-center shadow-sm">
             <Users className="mx-auto mb-4 text-primary" size={36} />
             <h2 className="text-lg font-semibold text-foreground mb-1">No groups yet</h2>
             <p className="text-muted-foreground text-sm">
@@ -201,7 +203,7 @@ export default function DashboardPage() {
                       isCreator
                       view="active"
                       onMarkCompleted={markCompleted}
-                      onDeleteTrip={deleteTrip}
+                      onDeleteTrip={(e, id, name) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget({ id, name }); }}
                     />
                   ))}
                 </div>
@@ -242,7 +244,7 @@ export default function DashboardPage() {
                       key={g._id}
                       group={g}
                       isCreator={g.status === "active"}
-                      onDeleteTrip={deleteTrip}
+                      onDeleteTrip={(e, id, name) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget({ id, name }); }}
                       view="completed"
                     />
                   ))}
@@ -262,6 +264,14 @@ export default function DashboardPage() {
           onClose={() => setInviteGroupId(null)}
         />
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteTrip}
+        title={`Delete "${deleteTarget?.name}"?`}
+        description="You're about to permanently delete this trip. All expenses, notes, group messages, and member data will be removed forever."
+      />
     </div>
   );
 }
@@ -362,7 +372,7 @@ function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted,
               </button>
               <button
                 type="button"
-                onClick={(e) => onDeleteTrip(e, group._id)}
+                onClick={(e) => onDeleteTrip(e, group._id, group.name)}
                 className="flex items-center gap-1.5 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors"
               >
                 <Trash2 size={15} />
@@ -377,7 +387,7 @@ function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted,
               </div>
               <button
                 type="button"
-                onClick={(e) => onDeleteTrip(e, group._id)}
+                onClick={(e) => onDeleteTrip(e, group._id, group.name)}
                 className="flex items-center gap-1.5 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors"
               >
                 <Trash2 size={15} />

@@ -385,8 +385,8 @@ export default function AiPage() {
         }}
         className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200 cursor-pointer border ${
           isActive
-            ? "bg-slate-200/80 dark:bg-white/[0.06] text-foreground border-border/80 shadow-sm"
-            : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-white/[0.02] hover:text-foreground border-transparent"
+            ? "bg-muted text-foreground border-border/80 shadow-sm"
+            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground border-transparent"
         }`}
       >
         <MessageSquare size={13.5} className="shrink-0 text-primary opacity-70" />
@@ -411,7 +411,7 @@ export default function AiPage() {
         )}
 
         {/* Action buttons (Visible on hover or if active) */}
-        <div className="absolute right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-slate-100 dark:from-zinc-950 pl-3">
+        <div className="absolute right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-card pl-3">
           {isEditing ? (
             <button
               onClick={(e) => handleRename(chat.id, e)}
@@ -423,7 +423,7 @@ export default function AiPage() {
             <>
               <button
                 onClick={(e) => startEditing(chat.id, chat.title, e)}
-                className="p-1 rounded hover:bg-slate-300 dark:hover:bg-zinc-800 text-muted-foreground hover:text-foreground transition"
+                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition"
               >
                 <PenSquare size={11} />
               </button>
@@ -443,7 +443,7 @@ export default function AiPage() {
   return (
     <div
       className="relative flex bg-background text-foreground overflow-hidden select-none transition-colors duration-300 pt-6 lg:pt-8"
-      style={{ height: "calc(100vh - 70px)" }}
+      style={{ height: "calc(100dvh - 70px)" }}
     >
       {/* Ambient Glows */}
       <div
@@ -501,7 +501,7 @@ export default function AiPage() {
           <button
             type="button"
             onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all border border-border bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-slate-100 hover:scale-[1.01]"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all border border-border bg-foreground text-background hover:opacity-90 hover:scale-[1.01]"
           >
             <Plus size={14} />
             New Chat
@@ -670,7 +670,7 @@ export default function AiPage() {
         {/* Message Threads */}
         <div
           ref={scrollAreaRef}
-          className="flex-1 overflow-y-auto custom-scrollbar px-4 pt-16 pb-6 md:px-8 xl:px-12"
+          className="flex-1 overflow-y-auto custom-scrollbar px-3 sm:px-4 pt-16 pb-6 md:px-8 xl:px-12"
         >
           <AnimatePresence mode="popLayout" initial={false}>
             {messages.length === 0 && !loading ? (
@@ -737,7 +737,7 @@ function ChatBubble({ message }) {
                 ? "bg-gradient-to-br from-cyan-600 to-teal-600 text-white rounded-br-sm shadow-md border border-cyan-400/20"
                 : isError
                 ? "bg-red-500/5 border border-red-500/20 text-red-700 dark:text-red-200 rounded-bl-sm"
-                : "bg-slate-50 border border-slate-200/70 text-slate-800 dark:bg-white/[0.02] dark:border-white/[0.04] dark:text-zinc-100 rounded-bl-sm"
+                : "bg-muted/50 border border-border/60 text-foreground rounded-bl-sm"
             }`}
         >
           {isError && (
@@ -762,7 +762,7 @@ function ChatBubble({ message }) {
 
       {/* User Avatar */}
       {isUser && (
-        <div className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white dark:bg-white dark:text-black border border-border shadow-sm text-[11px] font-black mt-1">
+        <div className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl bg-foreground text-background border border-border shadow-sm text-[11px] font-black mt-1">
           U
         </div>
       )}
@@ -865,7 +865,7 @@ function parseInlineMarkdown(text, isUser) {
           className={`px-1.5 py-0.5 rounded text-[11.5px] font-mono font-medium ${
             isUser
               ? "bg-white/20 text-white"
-              : "bg-[#f4f4f5] dark:bg-[#111] text-teal-600 dark:text-sky-400 border border-border/50"
+              : "bg-muted text-teal-600 dark:text-sky-400 border border-border/50"
           }`}
         >
           {part.slice(1, -1)}
@@ -929,7 +929,7 @@ function TableBlock({ rows }) {
   return (
     <div className="my-4 overflow-x-auto rounded-xl border border-border/60 shadow-sm max-w-full custom-scrollbar">
       <table className="min-w-full divide-y divide-border border-collapse text-[13px]">
-        <thead className="bg-slate-100/50 dark:bg-white/[0.03]">
+        <thead className="bg-muted/60">
           <tr>
             {headers.map((cell, idx) => (
               <th
@@ -945,7 +945,7 @@ function TableBlock({ rows }) {
           {bodyRows.map((row, rowIdx) => (
             <tr
               key={rowIdx}
-              className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] even:bg-slate-50/20 dark:even:bg-white/[0.005]"
+              className="hover:bg-muted/40 even:bg-muted/20"
             >
               {row.map((cell, cellIdx) => (
                 <td
@@ -1034,7 +1034,7 @@ function FormattedText({ text, isUser }) {
                 return (
                   <div key={i} className="flex items-start gap-2.5 pl-2 my-0.5">
                     <span className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary animate-pulse" />
-                    <span className="whitespace-pre-wrap break-words leading-relaxed text-[13.5px] font-medium text-slate-700 dark:text-zinc-300">
+                    <span className="whitespace-pre-wrap break-words leading-relaxed text-[13.5px] font-medium text-foreground">
                       {parseInlineMarkdown(trimmed.slice(2), false)}
                     </span>
                   </div>
@@ -1051,7 +1051,7 @@ function FormattedText({ text, isUser }) {
                     <span className="font-mono text-[12px] font-bold text-primary mr-2 select-none w-4 text-right">
                       {num}.
                     </span>
-                    <span className="whitespace-pre-wrap break-words leading-relaxed text-[13.5px] font-medium text-slate-700 dark:text-zinc-300">
+                    <span className="whitespace-pre-wrap break-words leading-relaxed text-[13.5px] font-medium text-foreground">
                       {parseInlineMarkdown(listContent, false)}
                     </span>
                   </div>
@@ -1061,7 +1061,7 @@ function FormattedText({ text, isUser }) {
               return (
                 <p
                   key={i}
-                  className="whitespace-pre-wrap break-words leading-relaxed text-[13.5px] font-medium text-slate-700 dark:text-zinc-300"
+                  className="whitespace-pre-wrap break-words leading-relaxed text-[13.5px] font-medium text-foreground"
                 >
                   {parseInlineMarkdown(line, false)}
                 </p>
@@ -1122,7 +1122,7 @@ function ThinkingBubble({ onStop }) {
         <span className="text-[10px] font-bold text-muted-foreground px-1 tracking-wider uppercase font-mono">
           CORE INTELLIGENCE
         </span>
-        <div className="bg-slate-50 border border-slate-200/70 dark:bg-white/[0.02] dark:border-white/[0.04] rounded-2xl rounded-bl-sm px-5 py-4 shadow-sm backdrop-blur-md">
+        <div className="bg-muted/50 border border-border/60 rounded-2xl rounded-bl-sm px-5 py-4 shadow-sm backdrop-blur-md">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">
               {[0, 0.15, 0.3].map((delay, i) => (
@@ -1189,7 +1189,7 @@ function EmptyState({ onSuggestionClick }) {
               key={title}
               type="button"
               onClick={() => onSuggestionClick(prompt)}
-              className={`group relative flex items-center gap-3.5 rounded-2xl border border-border bg-card p-4 text-left transition-all duration-300 hover:bg-slate-50 dark:hover:bg-white/[0.02] hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0`}
+              className={`group relative flex items-center gap-3.5 rounded-2xl border border-border bg-card p-4 text-left transition-all duration-300 hover:bg-muted/40 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0`}
             >
               {/* Background Hover Glow */}
               <div
@@ -1245,7 +1245,7 @@ function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop }) {
   const barColor = pct > 90 ? "bg-red-500" : pct > 70 ? "bg-amber-500" : "bg-primary";
 
   return (
-    <div className="shrink-0 border-t border-border/60 bg-background/60 backdrop-blur-md px-4 py-4 md:px-8 xl:px-12">
+    <div className="shrink-0 border-t border-border/60 bg-background/60 backdrop-blur-md px-3 py-3 sm:px-4 sm:py-4 md:px-8 xl:px-12">
       <div className="mx-auto max-w-3xl">
         {/* Commander panel */}
         <div
