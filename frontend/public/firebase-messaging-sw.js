@@ -55,21 +55,24 @@ const messaging = firebase.messaging();
 
 // Handle background messages — fires when the app tab is closed or not focused.
 messaging.onBackgroundMessage((payload) => {
-  const notificationTitle = payload.notification?.title || "SplitEase";
-  const notificationBody = payload.notification?.body || "You have a new update!";
+  // Read from data field first (backend duplicates title/body there for reliability),
+  // then fall back to the notification field.
+  const notificationTitle =
+    payload.data?.title || payload.notification?.title || "SplitEase";
+  const notificationBody =
+    payload.data?.body  || payload.notification?.body  || "You have a new update!";
   const link = payload.data?.link || "/dashboard";
   const type = payload.data?.type || "splitease";
 
-  self.registration.showNotification(notificationTitle, {
+  return self.registration.showNotification(notificationTitle, {
     body: notificationBody,
     icon: "/logo-icon.png",
     badge: "/logo-icon.png",
     tag: type,
     renotify: true,
-    // Keep the notification visible until the user explicitly dismisses it.
     requireInteraction: true,
     vibrate: [200, 100, 200],
-    data: { link, type, ...(payload.data || {}) },
+    data: { link, type },
   });
 });
 

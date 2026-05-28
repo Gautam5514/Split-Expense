@@ -270,7 +270,7 @@ export default function UserDashboardPage() {
 
 
         {/* ── CHARTS ── */}
-        {analytics && (analytics.trends?.some((t) => t.amount > 0) || totalCategorySpend > 0) && (
+        {mounted && analytics && (analytics.trends?.some((t) => t.amount > 0) || totalCategorySpend > 0) && (
           <motion.div
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
             className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4"

@@ -14,42 +14,8 @@ export const authMiddleware = async (req, res, next) => {
 
     let user = null;
 
-    // ✅ Try verifying as Firebase token first
-    try {
-      const decoded = await admin.auth().verifyIdToken(token);
-      const { uid, email, name, picture } = decoded;
-      console.log("✅ Firebase token verified:", email);
-
-      user = await User.findOne({ email });
-
-      // If new user → create
-      if (!user) {
-        user = await User.create({
-          firebaseUid: uid,
-          email,
-          name: name || email.split("@")[0],
-          photoURL: picture || "",
-        });
-        console.log("🆕 New Firebase user added:", user.email);
-      } else {
-        // Update photo if changed
-        if (picture && user.photoURL !== picture) {
-          user.photoURL = picture;
-          await user.save();
-        }
-      }
-
-      req.user = {
-        id: user._id.toString(),
-        email: user.email,
-        name: user.name,
-      };
-      return next();
-    } catch (firebaseErr) {
-      console.warn("⚠️ Not a Firebase token, checking JWT...");
-    }
-
-    // 🟡 If not Firebase, try legacy JWT
+    // Try backend JWT first — this is the primary token the app issues.
+    // Fast path: no network call required, just HMAC verification.
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const userId = decoded.id || decoded._id;
@@ -63,7 +29,38 @@ export const authMiddleware = async (req, res, next) => {
         email: user.email,
         name: user.name,
       };
-      next();
+      return next();
+    } catch {
+      // Not a valid backend JWT — fall through to Firebase token check.
+    }
+
+    // Fallback: verify as a Firebase ID token.
+    // Only reaches here during the initial Google/email sign-in flow before
+    // the backend JWT has been issued.
+    try {
+      const decoded = await admin.auth().verifyIdToken(token);
+      const { uid, email, name, picture } = decoded;
+
+      user = await User.findOne({ email });
+
+      if (!user) {
+        user = await User.create({
+          firebaseUid: uid,
+          email,
+          name: name || email.split("@")[0],
+          photoURL: picture || "",
+        });
+      } else if (picture && user.photoURL !== picture) {
+        user.photoURL = picture;
+        await user.save();
+      }
+
+      req.user = {
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+      };
+      return next();
     } catch {
       throw new Error("Invalid or expired token");
     }

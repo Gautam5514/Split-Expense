@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npm install *)",
       "Bash(xargs ls)",
-      "Bash(node -e \"const p = require\\('/Users/kunalkumar/Desktop/Gautam/Split/backend/package.json'\\); console.log\\('start:', p.scripts?.start, '\\\\ndev:', p.scripts?.dev\\)\")"
+      "Bash(node -e \"const p = require\\('/Users/kunalkumar/Desktop/Gautam/Split/backend/package.json'\\); console.log\\('start:', p.scripts?.start, '\\\\ndev:', p.scripts?.dev\\)\")",
+      "Bash(lsof -i :8080 -sTCP:LISTEN)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/)",
+      "Bash(lsof -i :8080 -sTCP:LISTEN -t)"
     ]
   }
 }

@@ -17,9 +17,8 @@ router.post("/push-token", authMiddleware, registerPushToken);
 router.delete("/push-token", authMiddleware, unregisterPushToken);
 router.post("/web-push-token", authMiddleware, registerWebPushToken);
 router.delete("/web-push-token", authMiddleware, unregisterWebPushToken);
-
-
-
+router.post("/fcm-token", authMiddleware, registerWebPushToken);
+router.delete("/fcm-token", authMiddleware, unregisterWebPushToken);
 
 router.put("/mark-read", authMiddleware, markAllAsRead);
 router.put("/:id/read", authMiddleware, markNotificationAsRead);

@@ -220,6 +220,13 @@ export const unregisterWebPushToken = async (req, res) => {
   }
 };
 
+// Pick the first HTTPS origin from FRONTEND_URL for FCM absolute links.
+// FCM silently drops push delivery when fcmOptions.link is a relative path.
+const HTTPS_ORIGIN = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((u) => u.trim())
+  .find((u) => u.startsWith("https://")) || "";
+
 const sendFCMWebPushNotifications = async (userIds, payload) => {
   const users = await User.find(
     { _id: { $in: userIds }, webPushTokens: { $exists: true, $not: { $size: 0 } } },
@@ -227,10 +234,19 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
   ).lean();
 
   const tokens = users.flatMap((u) => u.webPushTokens || []);
-  if (!tokens.length) return;
+  if (!tokens.length) {
+    console.log("📭 FCM web push: no registered tokens for these users");
+    return;
+  }
 
-  const link = String(payload.data?.link || "/dashboard");
-  const type = String(payload.data?.type || "group");
+  const relLink = String(payload.data?.link || "/dashboard");
+  const type    = String(payload.data?.type  || "group");
+
+  // FCM requires fcmOptions.link to be an absolute HTTPS URL.
+  // Relative paths cause silent delivery failure (0 received despite successful send).
+  const absLink = HTTPS_ORIGIN
+    ? `${HTTPS_ORIGIN}${relLink.startsWith("/") ? relLink : `/${relLink}`}`
+    : relLink;
 
   const message = {
     notification: {
@@ -238,7 +254,14 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
       body: payload.body,
     },
     // FCM requires every data value to be a string.
-    data: { link, type },
+    // Also store title/body in data so the service worker can read them
+    // even if the notification field is not forwarded to onBackgroundMessage.
+    data: {
+      title: payload.title,
+      body:  payload.body,
+      link:  relLink,
+      type,
+    },
     webpush: {
       notification: {
         icon: "/logo-icon.png",
@@ -246,7 +269,7 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
         requireInteraction: true,
         vibrate: [200, 100, 200],
       },
-      fcmOptions: { link },
+      ...(absLink && { fcmOptions: { link: absLink } }),
     },
     tokens,
   };
