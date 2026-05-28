@@ -1,4 +1,4 @@
-// 🌍 1. PWA Offline Caching logic (merged from sw.js to prevent conflicts)
+// 🌍 PWA Offline Caching logic
 const CACHE_NAME = 'splitwise-v1';
 const STATIC_ASSETS = ['/', '/manifest.json'];
 
@@ -21,7 +21,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  // Only cache same-origin requests, skip API calls
   if (url.origin !== location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
@@ -39,11 +38,10 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Firebase Messaging compat SDK (must match the major version of the firebase npm package)
+// Firebase Messaging compat SDK
 importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js");
 
-// Initialize Firebase in the service worker with public configuration values
 firebase.initializeApp({
   apiKey: "AIzaSyADcvVdYlkOb223lixSKnRUOnerBtSNLzg",
   authDomain: "agent-assist-vw57a.firebaseapp.com",
@@ -55,22 +53,27 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background messages (app closed / minimized / not focused)
+// Handle background messages — fires when the app tab is closed or not focused.
 messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || "SplitEase";
+  const notificationBody = payload.notification?.body || "You have a new update!";
   const link = payload.data?.link || "/dashboard";
+  const type = payload.data?.type || "splitease";
 
   self.registration.showNotification(notificationTitle, {
-    body: payload.notification?.body || "You have a new update!",
+    body: notificationBody,
     icon: "/logo-icon.png",
     badge: "/logo-icon.png",
-    tag: payload.data?.type || "splitease",   // collapse same-type duplicates
+    tag: type,
     renotify: true,
-    data: { link, ...(payload.data || {}) },
+    // Keep the notification visible until the user explicitly dismisses it.
+    requireInteraction: true,
+    vibrate: [200, 100, 200],
+    data: { link, type, ...(payload.data || {}) },
   });
 });
 
-// Open / focus the app when the user clicks the notification
+// Open / focus the app when the user clicks the notification.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
@@ -81,14 +84,12 @@ self.addEventListener("notificationclick", (event) => {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((windowClients) => {
-        // Focus an already-open tab on the same origin
         for (const client of windowClients) {
           if (client.url.startsWith(self.location.origin) && "focus" in client) {
             client.navigate(targetUrl);
             return client.focus();
           }
         }
-        // No open tab — open a new one
         if (clients.openWindow) return clients.openWindow(targetUrl);
       })
   );

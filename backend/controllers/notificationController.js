@@ -229,25 +229,24 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
   const tokens = users.flatMap((u) => u.webPushTokens || []);
   if (!tokens.length) return;
 
+  const link = String(payload.data?.link || "/dashboard");
+  const type = String(payload.data?.type || "group");
+
   const message = {
     notification: {
       title: payload.title,
       body: payload.body,
     },
     // FCM requires every data value to be a string.
-    data: {
-      link: String(payload.data?.link || "/dashboard"),
-      type: String(payload.data?.type || "group"),
-    },
+    data: { link, type },
     webpush: {
       notification: {
         icon: "/logo-icon.png",
         badge: "/logo-icon.png",
-        requireInteraction: false,
+        requireInteraction: true,
+        vibrate: [200, 100, 200],
       },
-      fcmOptions: {
-        link: payload.data?.link || "/dashboard",
-      },
+      fcmOptions: { link },
     },
     tokens,
   };
@@ -255,11 +254,16 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
   try {
     const response = await admin.messaging().sendEachForMulticast(message);
 
+    console.log(
+      `📱 FCM web push: ${response.successCount} sent, ${response.failureCount} failed (${tokens.length} tokens)`
+    );
+
     if (response.failureCount > 0) {
       const staleTokens = [];
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
           const code = resp.error?.code;
+          console.error(`❌ FCM token[${idx}] failed: ${code} — ${resp.error?.message}`);
           if (
             code === "messaging/invalid-registration-token" ||
             code === "messaging/registration-token-not-registered"
@@ -274,6 +278,7 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
           { webPushTokens: { $in: staleTokens } },
           { $pull: { webPushTokens: { $in: staleTokens } } }
         );
+        console.log(`🧹 Removed ${staleTokens.length} stale FCM token(s)`);
       }
     }
   } catch (err) {

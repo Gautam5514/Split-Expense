@@ -124,37 +124,53 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [hasUnread, setHasUnread] = useState(false);
   const seenNotifsRef = useRef(new Set());
-  // Ref ensures the unsubscribe function is reachable even when cleanup runs
-  // before the async setupPush() resolves.
   const foregroundUnsubRef = useRef(null);
 
-  // Register FCM web-push token with the backend once per login session.
+  // Register (or refresh) the FCM web-push token with the backend.
   useEffect(() => {
     if (!token) {
-      // Clear stored token on logout so the next login always re-registers fresh.
       localStorage.removeItem("fcmToken");
       return;
     }
 
     let cancelled = false;
+    let retryTimer = null;
+
+    const registerToken = async (fcmToken, attempt = 0) => {
+      if (cancelled) return;
+      const storedToken = localStorage.getItem("fcmToken");
+      if (fcmToken === storedToken) return; // already registered
+
+      try {
+        // Remove the stale token from the backend before adding the new one.
+        if (storedToken) {
+          await api.delete("/notifications/web-push-token", {
+            data: { fcmToken: storedToken },
+          }).catch(() => {});
+        }
+        await api.post("/notifications/web-push-token", { fcmToken });
+        localStorage.setItem("fcmToken", fcmToken);
+        console.log("✅ FCM token registered with backend");
+      } catch (err) {
+        console.error(`❌ FCM token registration failed (attempt ${attempt + 1}):`, err.message);
+        // Retry with exponential backoff (max 3 retries: 3s, 6s, 12s).
+        if (attempt < 3 && !cancelled) {
+          const delay = 3000 * Math.pow(2, attempt);
+          console.log(`🔄 Retrying FCM token registration in ${delay / 1000}s…`);
+          retryTimer = setTimeout(() => registerToken(fcmToken, attempt + 1), delay);
+        }
+      }
+    };
 
     const setupPush = async () => {
       const fcmToken = await getNotificationPermission();
       if (cancelled || !fcmToken) return;
 
-      // Only POST to backend when the token has changed (avoids redundant writes).
-      if (fcmToken !== localStorage.getItem("fcmToken")) {
-        try {
-          await api.post("/notifications/web-push-token", { fcmToken });
-          localStorage.setItem("fcmToken", fcmToken);
-        } catch (err) {
-          console.error("Failed to register FCM token:", err.message);
-        }
-      }
+      await registerToken(fcmToken);
 
-      // Register foreground listener so FCM doesn't show a duplicate system
-      // notification while the app is open. Socket.IO already shows the in-app
-      // toast, so this handler is intentionally a no-op.
+      // Intercept FCM foreground messages so the SDK doesn't show a duplicate
+      // system notification while the app tab is active.
+      // Socket.IO already handles the in-app toast in this case.
       if (!cancelled) {
         foregroundUnsubRef.current = await onForegroundMessage(() => {});
       }
@@ -162,13 +178,37 @@ export function NotificationProvider({ children }) {
 
     setupPush();
 
+    // Re-run when the network comes back online (handles dev-tunnel or
+    // backend restart scenarios where the initial registration failed).
+    const handleOnline = () => {
+      if (cancelled) return;
+      getNotificationPermission().then((fcmToken) => {
+        if (fcmToken && !cancelled) registerToken(fcmToken);
+      });
+    };
+    window.addEventListener("online", handleOnline);
+
     return () => {
       cancelled = true;
+      clearTimeout(retryTimer);
+      window.removeEventListener("online", handleOnline);
       if (typeof foregroundUnsubRef.current === "function") {
         foregroundUnsubRef.current();
         foregroundUnsubRef.current = null;
       }
     };
+  }, [token]);
+
+  // Unregister FCM token from backend on logout so stale tokens don't linger.
+  useEffect(() => {
+    if (token) return;
+    const storedToken = localStorage.getItem("fcmToken");
+    if (storedToken) {
+      api.delete("/notifications/web-push-token", {
+        data: { fcmToken: storedToken },
+      }).catch(() => {});
+      localStorage.removeItem("fcmToken");
+    }
   }, [token]);
 
   // Load existing unread notifications from the database.
@@ -184,6 +224,25 @@ export function NotificationProvider({ children }) {
       }
     };
     fetchNotifications();
+  }, [token]);
+
+  // Re-fetch notifications when the user returns to the tab after being away.
+  useEffect(() => {
+    if (!token) return;
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const res = await api.get("/notifications");
+        if (res.data?.length) {
+          setNotifications(res.data);
+          setHasUnread(res.data.some((n) => !n.isRead));
+        }
+      } catch {
+        // non-critical
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [token]);
 
   // Real-time socket notifications.
