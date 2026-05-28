@@ -39,9 +39,9 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// 🔥 2. Firebase Cloud Messaging (FCM) Compat imports
-importScripts("https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js");
+// Firebase Messaging compat SDK (must match the major version of the firebase npm package)
+importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js");
 
 // Initialize Firebase in the service worker with public configuration values
 firebase.initializeApp({
@@ -55,17 +55,41 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle notification behavior when the application is minimized, closed, or in the background
+// Handle background messages (app closed / minimized / not focused)
 messaging.onBackgroundMessage((payload) => {
-  console.log("📨 Received background message:", payload);
+  const notificationTitle = payload.notification?.title || "SplitEase";
+  const link = payload.data?.link || "/dashboard";
 
-  const notificationTitle = payload.notification?.title || "SplitEase Notification";
-  const notificationOptions = {
-    body: payload.notification?.body || "You have an expense update!",
+  self.registration.showNotification(notificationTitle, {
+    body: payload.notification?.body || "You have a new update!",
     icon: "/logo-icon.png",
     badge: "/logo-icon.png",
-    data: payload.data || {}
-  };
+    tag: payload.data?.type || "splitease",   // collapse same-type duplicates
+    renotify: true,
+    data: { link, ...(payload.data || {}) },
+  });
+});
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+// Open / focus the app when the user clicks the notification
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const link = event.notification.data?.link || "/dashboard";
+  const targetUrl = new URL(link, self.location.origin).href;
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windowClients) => {
+        // Focus an already-open tab on the same origin
+        for (const client of windowClients) {
+          if (client.url.startsWith(self.location.origin) && "focus" in client) {
+            client.navigate(targetUrl);
+            return client.focus();
+          }
+        }
+        // No open tab — open a new one
+        if (clients.openWindow) return clients.openWindow(targetUrl);
+      })
+  );
 });

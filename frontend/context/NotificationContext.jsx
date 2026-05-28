@@ -3,15 +3,12 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import toast from "@/lib/toast";
 import { useAuth } from "@/context/AuthContext";
-import { usePathname } from "next/navigation";
 import { api } from "@/lib/api";
 import { API_URL } from "@/lib/config";
-import { BellRing, Clock3, ReceiptText, UsersRound, AlertTriangle, AlertCircle, Info, Copy, ShieldCheck, Send } from "lucide-react";
-
+import { BellRing, Clock3, ReceiptText, UsersRound } from "lucide-react";
+import { getNotificationPermission, onForegroundMessage } from "@/lib/firebaseMessaging";
 
 const NotificationContext = createContext();
-
-
 
 const getNotificationMeta = (type) => {
   if (type === "expense") {
@@ -22,7 +19,6 @@ const getNotificationMeta = (type) => {
       accentClass: "from-emerald-500/20 via-transparent to-teal-500/10",
     };
   }
-
   return {
     label: "Group update",
     Icon: UsersRound,
@@ -33,10 +29,7 @@ const getNotificationMeta = (type) => {
 
 const formatToastTime = (value) => {
   if (!value) return "Just now";
-  return new Date(value).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
 const isMongoObjectId = (value) =>
@@ -47,31 +40,29 @@ const playNotificationTune = () => {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
 
-    const context = new AudioContext();
-    const gain = context.createGain();
-    gain.connect(context.destination);
-    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    const ctx = new AudioContext();
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
 
-    const notes = [
+    [
       { frequency: 880, start: 0, duration: 0.08 },
       { frequency: 1175, start: 0.09, duration: 0.1 },
       { frequency: 988, start: 0.2, duration: 0.12 },
-    ];
-
-    notes.forEach(({ frequency, start, duration }) => {
-      const oscillator = context.createOscillator();
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(frequency, context.currentTime + start);
-      oscillator.connect(gain);
-      oscillator.start(context.currentTime + start);
-      oscillator.stop(context.currentTime + start + duration);
+    ].forEach(({ frequency, start, duration }) => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(frequency, ctx.currentTime + start);
+      osc.connect(gain);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + duration);
     });
 
-    gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.38);
-    setTimeout(() => context.close(), 700);
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.38);
+    setTimeout(() => ctx.close(), 700);
   } catch {
-    // Browsers can block autoplay until the user interacts with the page.
+    // Autoplay may be blocked until the user has interacted with the page.
   }
 };
 
@@ -84,15 +75,12 @@ function NotificationToast({ notif, visible }) {
         visible ? "translate-y-0 opacity-100 scale-100" : "-translate-y-4 opacity-0 scale-95"
       }`}
     >
-      {/* Dynamic top gradient line */}
       <div className={`h-[3px] bg-gradient-to-r ${accentClass}`} />
-      
+
       <div className="relative p-5">
-        {/* Soft backlighting ambient glow */}
         <div className={`absolute inset-0 bg-gradient-to-br ${accentClass} opacity-10 dark:opacity-20 blur-xl pointer-events-none`} />
-        
+
         <div className="relative flex gap-4">
-          {/* Animated pulsing icon container */}
           <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ring-1 shadow-inner transition-transform duration-300 hover:scale-110 ${iconClass}`}>
             <Icon size={20} className="animate-pulse" />
           </div>
@@ -117,7 +105,7 @@ function NotificationToast({ notif, visible }) {
                 <BellRing size={12} className="animate-bounce" />
                 <span>SplitEase Live</span>
               </div>
-              <button 
+              <button
                 onClick={() => toast.dismiss()}
                 className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors uppercase tracking-wider cursor-pointer"
               >
@@ -133,28 +121,64 @@ function NotificationToast({ notif, visible }) {
 
 export function NotificationProvider({ children }) {
   const { token } = useAuth();
-  const pathname = usePathname();
-  const cleanPath = pathname?.replace(/\/$/, "") || "";
-  const isAuthPage = cleanPath.startsWith("/login") || 
-                     cleanPath.startsWith("/register") || 
-                     cleanPath.startsWith("/reset-password");
   const [notifications, setNotifications] = useState([]);
   const [hasUnread, setHasUnread] = useState(false);
   const seenNotifsRef = useRef(new Set());
+  // Ref ensures the unsubscribe function is reachable even when cleanup runs
+  // before the async setupPush() resolves.
+  const foregroundUnsubRef = useRef(null);
 
+  // Register FCM web-push token with the backend once per login session.
+  useEffect(() => {
+    if (!token) {
+      // Clear stored token on logout so the next login always re-registers fresh.
+      localStorage.removeItem("fcmToken");
+      return;
+    }
 
+    let cancelled = false;
 
-  // ✅ Load existing notifications from DB
+    const setupPush = async () => {
+      const fcmToken = await getNotificationPermission();
+      if (cancelled || !fcmToken) return;
+
+      // Only POST to backend when the token has changed (avoids redundant writes).
+      if (fcmToken !== localStorage.getItem("fcmToken")) {
+        try {
+          await api.post("/notifications/web-push-token", { fcmToken });
+          localStorage.setItem("fcmToken", fcmToken);
+        } catch (err) {
+          console.error("Failed to register FCM token:", err.message);
+        }
+      }
+
+      // Register foreground listener so FCM doesn't show a duplicate system
+      // notification while the app is open. Socket.IO already shows the in-app
+      // toast, so this handler is intentionally a no-op.
+      if (!cancelled) {
+        foregroundUnsubRef.current = await onForegroundMessage(() => {});
+      }
+    };
+
+    setupPush();
+
+    return () => {
+      cancelled = true;
+      if (typeof foregroundUnsubRef.current === "function") {
+        foregroundUnsubRef.current();
+        foregroundUnsubRef.current = null;
+      }
+    };
+  }, [token]);
+
+  // Load existing unread notifications from the database.
   useEffect(() => {
     if (!token) return;
     const fetchNotifications = async () => {
       try {
-        const res = await api.get("/notifications", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get("/notifications");
         setNotifications(res.data || []);
-        const unread = res.data.some((n) => !n.isRead);
-        setHasUnread(unread);
+        setHasUnread(res.data.some((n) => !n.isRead));
       } catch (err) {
         console.error("Failed to load notifications:", err.message);
       }
@@ -162,86 +186,54 @@ export function NotificationProvider({ children }) {
     fetchNotifications();
   }, [token]);
 
-  // ✅ Handle Socket.IO live updates
+  // Real-time socket notifications.
   useEffect(() => {
     if (!token) return;
 
-    const socketInstance = io(API_URL, {
+    const socket = io(API_URL, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
     });
 
-    // 🧠 Instead of sending userId, send the *token*
-    socketInstance.emit("register", token);
+    socket.emit("register", token);
 
-    socketInstance.on("connect", () => {
-      console.log("🟢 Socket connected for notifications");
-    });
+    socket.on("notification", (notif) => {
+      const key = notif._id || notif.message;
+      if (seenNotifsRef.current.has(key)) return;
 
-    socketInstance.on("notification", (notif) => {
-      console.log("🔔 Received notification:", notif);
-
-      // Smart Socket Notification Deduplication:
-      // Prevents duplicate notifications of the exact same ID or message within 3.5 seconds
-      const notifKey = notif._id || notif.message;
-      if (seenNotifsRef.current.has(notifKey)) {
-        console.log("⚠️ Bypassed duplicate socket notification:", notifKey);
-        return;
-      }
-      seenNotifsRef.current.add(notifKey);
-      setTimeout(() => {
-        seenNotifsRef.current.delete(notifKey);
-      }, 3500);
+      seenNotifsRef.current.add(key);
+      setTimeout(() => seenNotifsRef.current.delete(key), 3500);
 
       setNotifications((prev) => [notif, ...prev]);
       setHasUnread(true);
       playNotificationTune();
-
       toast.custom(
         (t) => <NotificationToast notif={notif} visible={t.visible} />,
-        {
-          position: "top-right",
-          duration: 5200,
-        }
+        { position: "top-right", duration: 5200 }
       );
     });
 
-    return () => socketInstance.disconnect();
+    return () => socket.disconnect();
   }, [token]);
 
-  // ✅ Mark all notifications as read (API call)
   const markAllAsRead = async () => {
     try {
-      await api.put(
-        "/notifications/mark-read",
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setNotifications([]); // Clear list from dropdown
+      await api.put("/notifications/mark-read", {});
+      setNotifications([]);
       setHasUnread(false);
     } catch (err) {
       console.error("Failed to mark notifications as read:", err.message);
     }
   };
 
-  // ✅ Mark a single notification as read
   const markOneAsRead = async (id) => {
     if (!isMongoObjectId(id)) {
       setNotifications((prev) => prev.filter((n) => n._id !== id));
       return;
     }
-
     try {
-      await api.put(
-        `/notifications/${id}/read`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await api.put(`/notifications/${id}/read`, {});
       setNotifications((prev) => prev.filter((n) => n._id !== id));
     } catch (err) {
       console.error("Failed to mark notification as read:", err.message);
@@ -250,14 +242,7 @@ export function NotificationProvider({ children }) {
 
   return (
     <NotificationContext.Provider
-      value={{
-        notifications,
-        setNotifications,
-        hasUnread,
-        setHasUnread,
-        markAllAsRead,
-        markOneAsRead,
-      }}
+      value={{ notifications, setNotifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead }}
     >
       {children}
     </NotificationContext.Provider>

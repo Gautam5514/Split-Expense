@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Notification from "../models/notification.model.js";
 import User from "../models/userModel.js";
 import { io, onlineUsers } from "../index.js";
+import admin from "../config/firebaseAdmin.js";
 
 
 /**
@@ -28,13 +29,17 @@ export const createNotification = async (userIds, message, link, type = "group")
       }
     });
 
-    // 📱 Dispatch Expo push alerts (mobile apps)
-    await sendExpoPushNotifications(recipientIds, {
+    const pushPayload = {
       title: notificationTitleForType(type),
       body: message,
       data: { link, type },
-    });
+    };
 
+    // 📱 Dispatch Expo push alerts (mobile apps)
+    await sendExpoPushNotifications(recipientIds, pushPayload);
+
+    // 🌐 Dispatch FCM web push (browser / PWA)
+    await sendFCMWebPushNotifications(recipientIds, pushPayload);
 
   } catch (err) {
     console.error("❌ Error sending notification:", err.message);
@@ -166,6 +171,116 @@ export const unregisterPushToken = async (req, res) => {
   }
 };
 
+// ─── FCM Web Push ────────────────────────────────────────────────────────────
+
+export const registerWebPushToken = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const { fcmToken } = req.body;
+
+    if (!fcmToken || typeof fcmToken !== "string") {
+      return res.status(400).json({ message: "Invalid FCM token" });
+    }
+
+    // Remove this token from any other user (device token reassignment)
+    await User.updateMany(
+      { webPushTokens: fcmToken },
+      { $pull: { webPushTokens: fcmToken } }
+    );
+
+    // Add to this user if not already present
+    await User.findByIdAndUpdate(uid, {
+      $addToSet: { webPushTokens: fcmToken },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ registerWebPushToken:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const unregisterWebPushToken = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const { fcmToken } = req.body;
+
+    if (!fcmToken || typeof fcmToken !== "string") {
+      return res.status(400).json({ message: "Invalid FCM token" });
+    }
+
+    await User.findByIdAndUpdate(uid, {
+      $pull: { webPushTokens: fcmToken },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ unregisterWebPushToken:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const sendFCMWebPushNotifications = async (userIds, payload) => {
+  const users = await User.find(
+    { _id: { $in: userIds }, webPushTokens: { $exists: true, $not: { $size: 0 } } },
+    "webPushTokens"
+  ).lean();
+
+  const tokens = users.flatMap((u) => u.webPushTokens || []);
+  if (!tokens.length) return;
+
+  const message = {
+    notification: {
+      title: payload.title,
+      body: payload.body,
+    },
+    // FCM requires every data value to be a string.
+    data: {
+      link: String(payload.data?.link || "/dashboard"),
+      type: String(payload.data?.type || "group"),
+    },
+    webpush: {
+      notification: {
+        icon: "/logo-icon.png",
+        badge: "/logo-icon.png",
+        requireInteraction: false,
+      },
+      fcmOptions: {
+        link: payload.data?.link || "/dashboard",
+      },
+    },
+    tokens,
+  };
+
+  try {
+    const response = await admin.messaging().sendEachForMulticast(message);
+
+    if (response.failureCount > 0) {
+      const staleTokens = [];
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          const code = resp.error?.code;
+          if (
+            code === "messaging/invalid-registration-token" ||
+            code === "messaging/registration-token-not-registered"
+          ) {
+            staleTokens.push(tokens[idx]);
+          }
+        }
+      });
+
+      if (staleTokens.length) {
+        await User.updateMany(
+          { webPushTokens: { $in: staleTokens } },
+          { $pull: { webPushTokens: { $in: staleTokens } } }
+        );
+      }
+    }
+  } catch (err) {
+    console.error("❌ FCM web push error:", err.message);
+  }
+};
+
 
 
 /**
@@ -216,20 +331,14 @@ export const markNotificationAsRead = async (req, res) => {
     const uid = req.user?.id;
     const { id } = req.params;
 
-    console.log("📩 markNotificationAsRead called with:", { uid, id });
-
-    // 🧩 Validate IDs
     if (!uid || !mongoose.Types.ObjectId.isValid(uid)) {
-      console.log("❌ Invalid user ID:", uid);
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      console.log("❌ Invalid notification ID:", id);
       return res.status(400).json({ message: "Invalid notification ID" });
     }
 
-    // 🧩 Try to mark it as read
     const notif = await Notification.findOneAndUpdate(
       { _id: id, userId: uid },
       { isRead: true },
@@ -237,13 +346,10 @@ export const markNotificationAsRead = async (req, res) => {
     );
 
     if (!notif) {
-      console.log("⚠️ Notification not found or not owned by user:", { id, uid });
-      return res.status(404).json({ message: "Notification not found or not owned by user" });
+      return res.status(404).json({ message: "Notification not found" });
     }
 
-    console.log("✅ Notification marked as read:", notif._id);
     res.json({ success: true, notification: notif });
-
   } catch (err) {
     console.error("❌ markNotificationAsRead error:", err);
     res.status(500).json({ message: err.message || "Server error" });

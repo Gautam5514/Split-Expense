@@ -1,78 +1,91 @@
 import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 import app from "./firebaseClient";
 
+const SW_PATH = "/firebase-messaging-sw.js";
+
 /**
- * Helper to request push notification permission and return the FCM registration token.
+ * Register (or reuse) the FCM service worker and wait until it is fully active.
+ * Using the specific registration — not navigator.serviceWorker.ready — avoids
+ * accidentally passing a different SW to getToken().
  */
-export const getNotificationPermission = async (customVapidKey = null) => {
+async function getActiveSWRegistration() {
+  if (!("serviceWorker" in navigator)) return undefined;
   try {
-    // 🧠 1. SSR check (ensure browser context)
-    if (typeof window === "undefined" || !("Notification" in window)) {
-      console.warn("⚠️ Push notifications are not supported in this environment (non-browser).");
-      return null;
-    }
+    const reg = await navigator.serviceWorker.register(SW_PATH, { scope: "/" });
 
-    // 🧠 2. Check if FCM is supported in this browser
+    // Already active — return immediately
+    if (reg.active) return reg;
+
+    // Waiting for install → activate lifecycle
+    return new Promise((resolve) => {
+      const sw = reg.installing ?? reg.waiting;
+      if (!sw) {
+        resolve(reg);
+        return;
+      }
+      sw.addEventListener("statechange", function onStateChange() {
+        if (this.state === "activated") {
+          sw.removeEventListener("statechange", onStateChange);
+          resolve(reg);
+        }
+      });
+    });
+  } catch (err) {
+    console.error("❌ Service worker registration failed:", err);
+    return undefined;
+  }
+}
+
+/**
+ * Request push permission and return the FCM registration token.
+ * Returns null when unsupported, denied, or misconfigured.
+ */
+export const getNotificationPermission = async () => {
+  try {
+    if (typeof window === "undefined" || !("Notification" in window)) return null;
+
     const supported = await isSupported();
-    if (!supported) {
-      console.warn("⚠️ Firebase Messaging is not supported in this browser (e.g. Safari incognito, older browsers).");
-      return null;
-    }
+    if (!supported) return null;
 
-    // 🧠 3. Request user permission
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      console.warn("⚠️ Notification permission was denied by the user.");
+    if (permission !== "granted") return null;
+
+    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY?.trim();
+    if (!vapidKey || vapidKey.length !== 87) {
+      console.error(
+        `❌ VAPID key malformed — expected 87 chars, got ${vapidKey?.length ?? 0}`
+      );
       return null;
     }
 
-    // 🧠 4. Get FCM instance and retrieve token
+    const swRegistration = await getActiveSWRegistration();
     const messaging = getMessaging(app);
-    const vapidKey = customVapidKey || process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swRegistration });
 
-    if (!vapidKey || vapidKey === "YOUR_VAPID_PUBLIC_KEY_HERE") {
-      console.warn("⚠️ NEXT_PUBLIC_FIREBASE_VAPID_KEY is not configured or still set to placeholder in .env.");
-      return null;
-    }
-
-    // 🔒 Robust Validation: VAPID keys must be exactly 87 characters (uncompressed EC public key in base64url)
-    const cleanVapidKey = vapidKey.trim();
-    if (cleanVapidKey.length !== 87) {
-      const errorMsg = `VAPID Public Key is malformed (expected 87 characters, got ${cleanVapidKey.length}). Please verify that you copied the complete key from the Firebase Console without truncation.`;
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
-    }
-
-    // 🧠 5. Retrieve registration token from Firebase
-    const currentToken = await getToken(messaging, { vapidKey: cleanVapidKey });
-    if (currentToken) {
-      return currentToken;
-    } else {
-      console.warn("⚠️ No FCM registration token available. Request permission to generate one.");
-      return null;
-    }
-  } catch (error) {
-    console.error("❌ An error occurred while retrieving FCM token:", error);
+    return token || null;
+  } catch (err) {
+    console.error("❌ Error retrieving FCM token:", err);
     return null;
   }
 };
 
 /**
- * Listen to foreground messages (when the application is active and focused).
+ * Subscribe to foreground messages (app is open and focused).
+ * FCM does NOT show a system notification in this state — the returned
+ * unsubscribe function must be called on cleanup to avoid leaks.
  */
 export const onForegroundMessage = async (callback) => {
   try {
-    if (typeof window === "undefined") return null;
+    if (typeof window === "undefined") return () => {};
     const supported = await isSupported();
-    if (!supported) return null;
+    if (!supported) return () => {};
 
     const messaging = getMessaging(app);
     return onMessage(messaging, (payload) => {
-      console.log("🔔 Foreground notification payload received:", payload);
       if (callback) callback(payload);
     });
-  } catch (error) {
-    console.error("❌ Error setting up foreground message listener:", error);
-    return null;
+  } catch (err) {
+    console.error("❌ Error setting up foreground message listener:", err);
+    return () => {};
   }
 };

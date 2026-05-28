@@ -6,6 +6,8 @@ import {
   markNotificationAsRead,
   registerPushToken,
   unregisterPushToken,
+  registerWebPushToken,
+  unregisterWebPushToken,
 } from "../controllers/notificationController.js";
 
 const router = express.Router();
@@ -13,6 +15,8 @@ const router = express.Router();
 router.get("/", authMiddleware, getUserNotifications);
 router.post("/push-token", authMiddleware, registerPushToken);
 router.delete("/push-token", authMiddleware, unregisterPushToken);
+router.post("/web-push-token", authMiddleware, registerWebPushToken);
+router.delete("/web-push-token", authMiddleware, unregisterWebPushToken);
 
 
 
