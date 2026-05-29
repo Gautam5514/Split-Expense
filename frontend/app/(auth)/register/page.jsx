@@ -94,9 +94,11 @@ export default function RegisterPage() {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(result.user, { displayName: name });
-      const firebaseToken = await result.user.getIdToken();
-      const res = await api.post("/auth/google", { token: firebaseToken });
-      setToken(res.data.token);
+      // Force-refresh so the new displayName is embedded in the token before
+      // we sync with the backend — otherwise MongoDB would get an empty name.
+      const idToken = await result.user.getIdToken(true);
+      // Sync user with MongoDB — no JWT is returned; onIdTokenChanged sets the token.
+      await api.post("/auth/google", { token: idToken }).catch(() => {});
       toast.success("Account created successfully!");
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {
@@ -118,9 +120,8 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const firebaseToken = await result.user.getIdToken();
-      const res = await api.post("/auth/google", { token: firebaseToken });
-      setToken(res.data.token);
+      const idToken = await result.user.getIdToken();
+      await api.post("/auth/google", { token: idToken }).catch(() => {});
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {

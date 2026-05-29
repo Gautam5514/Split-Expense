@@ -84,24 +84,18 @@ io.on("connection", (socket) => {
 
       let userId = null;
 
-      // Try Firebase token
+      // Verify Firebase ID token — the only accepted credential.
       try {
         const decoded = await admin.auth().verifyIdToken(token);
-        const email = decoded.email;
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: decoded.email });
         if (user) userId = user._id.toString();
-      } catch {}
-
-      // Try JWT fallback
-      if (!userId) {
-        try {
-          const decoded = jwt.verify(token, process.env.JWT_SECRET);
-          userId = decoded.id || decoded._id || null;
-        } catch {}
+      } catch {
+        console.log("❌ Invalid Firebase token on socket register");
+        return;
       }
 
       if (!userId) {
-        console.log("❌ Invalid token on socket register");
+        console.log("❌ User not found for socket register");
         return;
       }
 

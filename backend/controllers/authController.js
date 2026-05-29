@@ -1,5 +1,4 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/userModel.js";
 import admin from "../config/firebaseAdmin.js";
@@ -40,10 +39,8 @@ export const register = async (req, res) => {
       firebaseUid: fbUser.uid,
     });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-    res.status(201).json({ token, user });
+    // No JWT — client authenticates via Firebase ID token.
+    res.status(201).json({ user });
   } catch (err) {
     console.error("Register Error:", err);
     res.status(500).json({ message: err.message });
@@ -68,10 +65,8 @@ export const login = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-    res.status(200).json({ token, user });
+    // No JWT — client authenticates via Firebase ID token.
+    res.status(200).json({ user });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -101,10 +96,8 @@ export const googleLogin = async (req, res) => {
       }
     }
 
-    const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-    res.status(200).json({ token: jwtToken, user });
+    // No JWT — client authenticates via Firebase ID token.
+    res.status(200).json({ user });
   } catch (err) {
     console.error("Google Login Error:", err);
     res.status(500).json({ message: err.message });

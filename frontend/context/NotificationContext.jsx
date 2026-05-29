@@ -152,8 +152,15 @@ export function NotificationProvider({ children }) {
         localStorage.setItem("fcmToken", fcmToken);
         console.log("✅ FCM token registered with backend");
       } catch (err) {
+        const status = err.response?.status;
+        // 404 = route missing on server (old deployment), 401/403 = auth issue.
+        // None of these will be fixed by retrying — bail immediately.
+        if (status === 404 || status === 401 || status === 403) {
+          console.error(`❌ FCM token registration blocked (${status}) — skipping retries`);
+          return;
+        }
         console.error(`❌ FCM token registration failed (attempt ${attempt + 1}):`, err.message);
-        // Retry with exponential backoff (max 3 retries: 3s, 6s, 12s).
+        // Retry with exponential backoff for transient errors (network, 5xx).
         if (attempt < 3 && !cancelled) {
           const delay = 3000 * Math.pow(2, attempt);
           console.log(`🔄 Retrying FCM token registration in ${delay / 1000}s…`);

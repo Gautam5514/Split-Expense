@@ -106,9 +106,10 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseToken = await result.user.getIdToken();
-      const res = await api.post("/auth/google", { token: firebaseToken });
-      setToken(res.data.token);
+      // Sync user with MongoDB — backend auto-creates the record if missing.
+      // No JWT is returned; onIdTokenChanged in AuthContext sets the token.
+      const idToken = await result.user.getIdToken();
+      await api.post("/auth/google", { token: idToken }).catch(() => {});
       toast.success("Login successful!");
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {
@@ -130,9 +131,8 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const firebaseToken = await result.user.getIdToken();
-      const res = await api.post("/auth/google", { token: firebaseToken });
-      setToken(res.data.token);
+      const idToken = await result.user.getIdToken();
+      await api.post("/auth/google", { token: idToken }).catch(() => {});
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {

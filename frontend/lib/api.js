@@ -1,59 +1,44 @@
 import axios from "axios";
-import { getAuth } from "firebase/auth";
 import { API_BASE_URL } from "@/lib/config";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+// Lazily import auth to avoid a module-initialization cycle and to guarantee
+// we always use the same Firebase Auth instance as AuthContext.
+let _auth = null;
+const getFirebaseAuth = async () => {
+  if (!_auth) {
+    const { auth } = await import("@/lib/firebaseClient");
+    _auth = auth;
+  }
+  return _auth;
+};
+
+// Attach a fresh Firebase ID token to every request.
+// getIdToken() returns the cached token when still valid and silently
+// refreshes it when it is close to its 1-hour expiry.
 api.interceptors.request.use(async (config) => {
-  // Skip if this request already has an Authorization header.
+  // Skip if the caller already set an Authorization header explicitly.
   if (config.headers.Authorization) return config;
 
-  // Priority 1 — backend JWT stored in localStorage.
-  // This is the authoritative token set by the login/register page after the
-  // backend exchanges the Firebase ID token for its own signed JWT.
-  const stored =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  if (stored) {
-    config.headers.Authorization = `Bearer ${stored}`;
-    return config;
-  }
-
-  // Priority 2 — Firebase ID token as a last resort (e.g. first load before
-  // the backend JWT has been stored, or during Google sign-in flow).
   try {
-    const firebaseAuth = getAuth();
-    const user = firebaseAuth.currentUser;
+    const auth = await getFirebaseAuth();
+    const user = auth.currentUser;
     if (user) {
       const idToken = await user.getIdToken();
       config.headers.Authorization = `Bearer ${idToken}`;
     }
   } catch {
-    // Firebase not ready — proceed without auth header
+    // Firebase not ready — send request without auth (will 401 if endpoint requires it)
   }
 
   return config;
 });
 
-// Add a response interceptor to handle expired JWTs gracefully.
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (
-      error.response?.status === 401 &&
-      typeof window !== "undefined" &&
-      !window.location.pathname.startsWith("/login") &&
-      !window.location.pathname.startsWith("/register")
-    ) {
-      // Backend JWT expired or invalid — clear it so the user gets redirected
-      // to login on the next protected route visit.
-      localStorage.removeItem("token");
-    }
-    return Promise.reject(error);
-  }
-);
-
+// Kept for backward compatibility with components that call setAuthToken().
+// The interceptor above is the authoritative auth source.
 export const setAuthToken = (token) => {
   if (token)
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
