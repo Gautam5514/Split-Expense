@@ -45,6 +45,7 @@ export default function UserDashboardPage() {
   const [analytics, setAnalytics]           = useState(null);
   const [groups, setGroups]                 = useState([]);
   const [profile, setProfile]               = useState(null);
+  const [meId, setMeId]                     = useState(null);
   const [oweSummary, setOweSummary]         = useState({ totalOwed: 0, totalOwe: 0 });
   const [loading, setLoading]               = useState(true);
   const [groupName, setGroupName]           = useState("");
@@ -73,6 +74,7 @@ export default function UserDashboardPage() {
 
       // Use the MongoDB _id returned by /users/me — token decoding cannot give this
       const uid = meRes.data?._id || meRes.data?.id || null;
+      setMeId(uid);
 
       const activeOnes = allGroups.filter((g) => !g.isCompleted);
       const balanceResults = await Promise.all(
@@ -383,8 +385,7 @@ export default function UserDashboardPage() {
           {activeGroups.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeGroups.slice(0, 6).map((group, index) => {
-                const uid = getCurrentUserId();
-                const isCreator = group.createdBy === uid || group.createdBy?._id === uid;
+                const isCreator = meId && (String(group.createdBy) === String(meId) || String(group.createdBy?._id) === String(meId));
                 const memberNames = group.members?.map((m) => m.name || m.email) || [];
 
                 // Cycle through gradient palettes per card
