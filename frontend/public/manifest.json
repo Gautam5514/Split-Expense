@@ -1,24 +1,40 @@
 {
   "name": "SplitEase - Group Expense Splitter",
   "short_name": "SplitEase",
-  "description": "Stunning AI-powered group expense splitter & travel tracker",
+  "description": "AI-powered group expense splitter. Split bills, track shared costs, and settle up in one tap.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#6366f1",
+  "background_color": "#04111F",
+  "theme_color": "#0891B2",
+  "categories": ["finance", "utilities", "travel"],
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "lang": "en"
 }

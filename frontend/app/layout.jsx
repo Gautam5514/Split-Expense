@@ -17,51 +17,63 @@ const inter = Inter({
 
 export const metadata = {
   title: "SplitEase - Group Expense Splitter",
-  description: "Stunning AI-powered group expense splitter & travel tracker",
+  description:
+    "AI-powered group expense splitter. Split bills with friends, track shared costs, scan receipts with OCR, and settle up in one tap.",
+  keywords: [
+    "expense splitter", "split bills", "group expenses", "travel expense tracker",
+    "bill splitting app", "splitwise alternative", "settle up", "shared expenses",
+  ],
   manifest: "/manifest.json",
+  applicationName: "SplitEase",
+  appleWebApp: {
+    capable: true,
+    title: "SplitEase",
+    statusBarStyle: "black-translucent",
+  },
+  openGraph: {
+    type: "website",
+    title: "SplitEase - Group Expense Splitter",
+    description:
+      "Split bills, track shared costs, and settle up instantly. Powered by AI.",
+    siteName: "SplitEase",
+    images: [{ url: "/logo-icon.png", width: 512, height: 512, alt: "SplitEase" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "SplitEase - Group Expense Splitter",
+    description: "Split bills, track shared costs, and settle up instantly.",
+    images: ["/logo-icon.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/logo-icon.png", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
-        <meta name="application-name" content="Split" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Split" />
-        <meta name="mobile-web-app-capable" content="yes" />
+        {/* theme-color matches manifest.json theme_color exactly */}
         <meta name="theme-color" content="#0891B2" />
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
-
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var storedTheme = localStorage.getItem('theme');
-                  var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  if (storedTheme === 'dark' || (!storedTheme && supportDarkMode)) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen bg-background text-foreground transition-colors duration-300">
+        {/* Inline script to apply dark/light class before first paint — prevents flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&d)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`,
+          }}
+        />
         <ThemeProvider>
           <AuthProvider>
             <NotificationProvider>
               <Navbar />
-              <Toaster 
+              <Toaster
                 position="top-right"
-                toastOptions={{
-                  className: "glass-toast-premium",
-                }}
+                toastOptions={{ className: "glass-toast-premium" }}
               />
               <MainWrapper>
                 {children}
