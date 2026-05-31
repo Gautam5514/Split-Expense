@@ -172,22 +172,19 @@ export default function Footer() {
           <p className="text-xs text-muted-foreground font-medium">
             © {new Date().getFullYear()} SplitEase Financial. All rights reserved.
           </p>
-          <p className="text-xs text-muted-foreground/50 font-medium">
-            Built with ♥ for travelers everywhere
-          </p>
+          
         </div>
       </div>
 
       {/* Giant watermark */}
-      <div
-        className="relative w-full overflow-hidden select-none pointer-events-none"
-        style={{ height: "clamp(60px, 10vw, 140px)" }}
+      <div className="relative w-full select-none pointer-events-none flex items-end justify-center"
+        style={{ height: "clamp(80px, 12vw, 160px)" }}
       >
         <p
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 font-black leading-none whitespace-nowrap tracking-tighter"
+          className="font-black leading-none whitespace-nowrap tracking-tighter"
           style={{
-            fontSize: "clamp(70px, 14vw, 180px)",
-            background: "linear-gradient(to bottom, rgba(8,145,178,0.09) 0%, transparent 100%)",
+            fontSize: "clamp(80px, 12vw, 160px)",
+            background: "linear-gradient(to bottom, rgba(8,145,178,0.12) 0%, rgba(8,145,178,0.03) 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
