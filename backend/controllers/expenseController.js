@@ -134,6 +134,11 @@ export const addExpense = async (req, res) => {
     selected = [...new Set(selected.filter((p) => activeMemberIds.includes(p)))];
     const part = selected.map((id) => new mongoose.Types.ObjectId(id));
 
+    // 🔹 Validate paidBy — must be declared before buildSplits (used for drift correction)
+    const payerId = req.body.paidBy || uid;
+    if (!activeMemberIds.includes(String(payerId)))
+      return res.status(400).json({ field: "paidBy", message: "The payer must be a member of this group." });
+
     const splits = buildSplits({
       splitType,
       amount: amt,
@@ -142,11 +147,6 @@ export const addExpense = async (req, res) => {
       percentSplits,
       payerId,
     });
-
-    // 🔹 Validate paidBy — must be a group member (defaults to requester)
-    const payerId = req.body.paidBy || uid;
-    if (!activeMemberIds.includes(String(payerId)))
-      return res.status(400).json({ field: "paidBy", message: "The payer must be a member of this group." });
 
     const expense = await Expense.create({
       groupId: new mongoose.Types.ObjectId(groupId),
