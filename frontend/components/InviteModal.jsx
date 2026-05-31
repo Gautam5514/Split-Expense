@@ -20,9 +20,12 @@ export default function InviteModal({ groupId, onClose }) {
       try {
         const res = await api.post(`/groups/${groupId}/invite`);
         const data = res.data;
-        setInviteCode(data.inviteCode || "");
         const origin = typeof window !== "undefined" ? window.location.origin : "";
-        setJoinLink(data.joinLink || `${origin}/join/${data.inviteCode}`);
+        const link = data.joinLink || `${origin}/join/${data.inviteCode}`;
+        // Extract code from the link as fallback if inviteCode is missing from response
+        const code = data.inviteCode || link.split("/join/").pop().split("?")[0] || "";
+        setInviteCode(code);
+        setJoinLink(link);
       } catch (err) {
         const msg = err?.response?.data?.message || "";
         setErrorMsg(
