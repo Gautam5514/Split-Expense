@@ -27,10 +27,10 @@ export default function JoinGroupPage() {
 
       setStatus("joining");
       try {
-        await api.post(`/groups/join/${inviteCode}`);
+        const res = await api.post(`/groups/join/${inviteCode}`);
+        const groupId = res.data?.group?._id;
         setStatus("success");
-        // Give user a moment to see success, then navigate
-        setTimeout(() => router.replace("/dashboard"), 1800);
+        setTimeout(() => router.replace(groupId ? `/groups/${groupId}` : "/dashboard"), 1800);
       } catch (err) {
         const msg = err?.response?.data?.message || "Invalid or expired invite link.";
         toast.error(msg);
@@ -42,8 +42,14 @@ export default function JoinGroupPage() {
     attemptJoin();
   }, [inviteCode, router]);
 
-  const goToLogin = () => router.push("/login");
-  const goToRegister = () => router.push("/register");
+  const goToLogin = () => {
+    localStorage.setItem("pendingInvite", inviteCode);
+    router.push("/login");
+  };
+  const goToRegister = () => {
+    localStorage.setItem("pendingInvite", inviteCode);
+    router.push("/register");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">

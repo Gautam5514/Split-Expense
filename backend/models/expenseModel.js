@@ -23,8 +23,9 @@ const expenseSchema = new mongoose.Schema(
     splits: { type: [splitSchema], default: [] }, // computed or provided
     date: { type: Date, default: Date.now },
 
-    imageUrl: { type: String, default: null }, // optional receipt image
-    ocrText: { type: String, default: null }, // optional OCR extracted text
+    imageUrl: { type: String, default: null },
+    ocrText: { type: String, default: null },
+    isSettlement: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

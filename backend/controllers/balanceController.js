@@ -34,7 +34,16 @@ export const getBalances = async (req, res) => {
     const group = await Group.findById(groupId).populate("members", "name email");
     if (!group) return res.status(404).json({ message: "Group not found" });
 
-    const activeMembers = group.members.map((m) => m._id.toString());
+    // Deduplicate members (guards against corrupt DB state)
+    const seenIds = new Set();
+    const uniqueMembers = group.members.filter((m) => {
+      const id = m._id.toString();
+      if (seenIds.has(id)) return false;
+      seenIds.add(id);
+      return true;
+    });
+
+    const activeMembers = uniqueMembers.map((m) => m._id.toString());
     const activeSet = new Set(activeMembers);
 
     // Init balances ONLY for active members
@@ -61,8 +70,8 @@ export const getBalances = async (req, res) => {
       }
     }
 
-    // readable
-    const readable = group.members.map((m) => ({
+    // readable — use uniqueMembers so no user appears twice
+    const readable = uniqueMembers.map((m) => ({
       userId: m._id.toString(),
       name: m.name,
       email: m.email,
@@ -70,8 +79,8 @@ export const getBalances = async (req, res) => {
     }));
 
     const suggestions = buildSettlement(balances).map((t) => {
-      const from = group.members.find((m) => m._id.toString() === t.from);
-      const to = group.members.find((m) => m._id.toString() === t.to);
+      const from = uniqueMembers.find((m) => m._id.toString() === t.from);
+      const to = uniqueMembers.find((m) => m._id.toString() === t.to);
       return {
         from: { userId: t.from, name: from?.name, email: from?.email },
         to: { userId: t.to, name: to?.name, email: to?.email },

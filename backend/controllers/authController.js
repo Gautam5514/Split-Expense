@@ -89,17 +89,169 @@ export const googleLogin = async (req, res) => {
       });
       console.log("🆕 Google user added to DB:", user.email);
     } else {
-      // ✅ Update profile image if changed
-      if (picture && user.photoURL !== picture) {
-        user.photoURL = picture;
-        await user.save();
-      }
+      let changed = false;
+      if (picture && user.photoURL !== picture) { user.photoURL = picture; changed = true; }
+      if (name && user.name !== name) { user.name = name; changed = true; }
+      if (changed) await user.save();
     }
 
     // No JWT — client authenticates via Firebase ID token.
     res.status(200).json({ user });
   } catch (err) {
     console.error("Google Login Error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// -------------------- SEND LOGIN OTP --------------------
+export const sendLoginOtp = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!isValidEmail(email))
+      return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
+    if (!password)
+      return res.status(400).json({ field: "password", message: "Password is required." });
+
+    const user = await User.findOne({ email });
+    if (!user || !user.password)
+      return res.status(400).json({ message: "Invalid email or password." });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid email or password." });
+
+    // Throttle: block re-send if an OTP was issued < 60 s ago
+    if (user.loginOtpExpires && user.loginOtpExpires - Date.now() > 9 * 60 * 1000)
+      return res.status(429).json({ message: "An OTP was just sent. Please wait a moment before requesting another." });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+
+    user.loginOtp = hashedOtp;
+    user.loginOtpExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0];
+    const logoUrl = `${frontendUrl}/logo-icon.png`;
+
+    await sendEmail({
+      to: email,
+      subject: "Your SplitEase Login Verification Code",
+      html: `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#06101C;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#06101C;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0B1A2B;border-radius:20px;overflow:hidden;border:1px solid rgba(8,145,178,0.15);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#0A2540 0%,#0D2E50 100%);padding:32px 40px;text-align:center;border-bottom:1px solid rgba(8,145,178,0.2);">
+            <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+              <tr>
+                <td style="vertical-align:middle;padding-right:12px;">
+                  <img src="${logoUrl}" alt="SplitEase" width="44" height="44" style="border-radius:12px;border:1px solid rgba(8,145,178,0.3);display:block;" />
+                </td>
+                <td style="vertical-align:middle;">
+                  <span style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">SplitEase</span>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:12px 0 0;font-size:13px;color:rgba(8,145,178,0.8);letter-spacing:0.5px;text-transform:uppercase;font-weight:600;">Login Verification</p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:40px 40px 32px;">
+            <p style="margin:0 0 8px;font-size:15px;color:#94a3b8;">Hi <strong style="color:#e2e8f0;">${user.name}</strong>,</p>
+            <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.7;">
+              Use the verification code below to complete your login to SplitEase. This code expires in <strong style="color:#e2e8f0;">10 minutes</strong>.
+            </p>
+
+            <!-- OTP Box -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center" style="padding:0 0 28px;">
+                  <div style="display:inline-block;background:linear-gradient(135deg,rgba(8,145,178,0.12),rgba(14,116,144,0.08));border:1.5px solid rgba(8,145,178,0.35);border-radius:16px;padding:24px 48px;">
+                    <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:rgba(8,145,178,0.7);letter-spacing:2px;text-transform:uppercase;">Verification Code</p>
+                    <p style="margin:0;font-size:42px;font-weight:800;color:#ffffff;letter-spacing:10px;font-variant-numeric:tabular-nums;">${otp}</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Tips -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px 20px;">
+                  <p style="margin:0 0 6px;font-size:12px;color:#475569;">• This code is valid for <strong style="color:#94a3b8;">10 minutes</strong> only.</p>
+                  <p style="margin:0 0 6px;font-size:12px;color:#475569;">• Never share this code with anyone.</p>
+                  <p style="margin:0;font-size:12px;color:#475569;">• If you didn't try to log in, <strong style="color:#f87171;">ignore this email</strong> and secure your account.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:0 40px 32px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#1e3a4f;">© ${new Date().getFullYear()} SplitEase · Secure Login</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+      `,
+    });
+
+    res.status(200).json({ message: "OTP sent to your registered email." });
+  } catch (err) {
+    console.error("Send Login OTP Error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// -------------------- VERIFY LOGIN OTP --------------------
+export const verifyLoginOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp)
+      return res.status(400).json({ message: "Email and OTP are required." });
+
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(400).json({ message: "User not found." });
+
+    if (!user.loginOtp || !user.loginOtpExpires)
+      return res.status(400).json({ message: "No OTP found. Please start the login process again." });
+
+    if (Date.now() > user.loginOtpExpires) {
+      user.loginOtp = null;
+      user.loginOtpExpires = null;
+      await user.save();
+      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+    }
+
+    const hashedOtp = crypto.createHash("sha256").update(otp.trim()).digest("hex");
+    if (hashedOtp !== user.loginOtp)
+      return res.status(400).json({ message: "Incorrect OTP. Please try again." });
+
+    user.loginOtp = null;
+    user.loginOtpExpires = null;
+    await user.save();
+
+    res.status(200).json({ message: "OTP verified. Proceed with login." });
+  } catch (err) {
+    console.error("Verify Login OTP Error:", err);
     res.status(500).json({ message: err.message });
   }
 };

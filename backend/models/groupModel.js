@@ -12,6 +12,20 @@ const groupSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Deduplicate members array on every save
+groupSchema.pre("save", function (next) {
+  if (this.isModified("members")) {
+    const seen = new Set();
+    this.members = this.members.filter((id) => {
+      const key = id.toString();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+  next();
+});
+
 // optional: avoid dup groups per creator
 groupSchema.index({ name: 1, createdBy: 1 }, { unique: true });
 

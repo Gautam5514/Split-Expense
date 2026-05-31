@@ -18,6 +18,8 @@ const userSchema = new mongoose.Schema({
   hiddenGroupChats: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
   resetPasswordToken: { type: String, default: null },
   resetPasswordExpires: { type: Date, default: null },
+  loginOtp: { type: String, default: null },
+  loginOtpExpires: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 

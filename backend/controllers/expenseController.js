@@ -123,10 +123,10 @@ export const addExpense = async (req, res) => {
       ocrText = data.text.trim() || null;
     }
 
-    // 🔹 Participants
-    const activeMemberIds = group.members.map((m) => String(m));
+    // 🔹 Participants — deduplicate member list first to prevent split inflation
+    const activeMemberIds = [...new Set(group.members.map((m) => String(m)))];
     let selected = participants?.length ? participants.map(String) : activeMemberIds;
-    selected = selected.filter((p) => activeMemberIds.includes(p));
+    selected = [...new Set(selected.filter((p) => activeMemberIds.includes(p)))];
     const part = selected.map((id) => new mongoose.Types.ObjectId(id));
 
     const splits = buildSplits({
@@ -191,6 +191,57 @@ export const getExpenses = async (req, res) => {
       .lean();
     res.json(expenses);
   } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/expenses/settle
+// Records a settlement payment: `from` pays `to` the given amount.
+// Math: paidBy=from (+amount to from's balance), splits=[{to, amount}] (-amount from to's balance)
+// Net effect: both balances move toward 0. Future expenses accumulate from the new 0 baseline.
+export const recordSettlement = async (req, res) => {
+  try {
+    const { groupId, fromUserId, toUserId, amount } = req.body;
+
+    if (!groupId || !fromUserId || !toUserId || !amount)
+      return res.status(400).json({ message: "groupId, fromUserId, toUserId and amount are required." });
+
+    const amt = Number(amount);
+    if (isNaN(amt) || amt <= 0)
+      return res.status(400).json({ message: "Amount must be a positive number." });
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found." });
+
+    const allMemberIds = group.members.map(String);
+    if (!allMemberIds.includes(String(fromUserId)) || !allMemberIds.includes(String(toUserId)))
+      return res.status(403).json({ message: "Both users must be members of this group." });
+
+    const expense = await Expense.create({
+      groupId:      new mongoose.Types.ObjectId(groupId),
+      description:  `Settlement`,
+      amount:       amt,
+      paidBy:       new mongoose.Types.ObjectId(fromUserId),
+      splitType:    "exact",
+      category:     "general",
+      participants: [new mongoose.Types.ObjectId(toUserId)],
+      splits:       [{ userId: new mongoose.Types.ObjectId(toUserId), share: amt }],
+      isSettlement: true,
+      date:         new Date(),
+    });
+
+    // Notify both parties
+    await createNotification(
+      [toUserId],
+      `Settlement of ₹${amt.toFixed(0)} has been recorded in "${group.name}"`,
+      `/groups/${groupId}`,
+      "group"
+    );
+
+    const populated = await Expense.findById(expense._id).populate("paidBy", "name email").lean();
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error("❌ recordSettlement:", err.message);
     res.status(500).json({ message: err.message });
   }
 };

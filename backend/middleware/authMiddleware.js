@@ -25,11 +25,11 @@ export const authMiddleware = async (req, res, next) => {
         photoURL: picture || "",
       });
     } else {
-      // Keep profile photo in sync with Firebase.
-      if (picture && user.photoURL !== picture) {
-        user.photoURL = picture;
-        await user.save();
-      }
+      // Keep name and photo in sync with Firebase (Google users may update either).
+      let changed = false;
+      if (picture && user.photoURL !== picture) { user.photoURL = picture; changed = true; }
+      if (name && user.name !== name) { user.name = name; changed = true; }
+      if (changed) await user.save();
     }
 
     req.user = {

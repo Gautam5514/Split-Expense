@@ -6,7 +6,8 @@
       "Bash(node -e \"const p = require\\('/Users/kunalkumar/Desktop/Gautam/Split/backend/package.json'\\); console.log\\('start:', p.scripts?.start, '\\\\ndev:', p.scripts?.dev\\)\")",
       "Bash(lsof -i :8080 -sTCP:LISTEN)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/)",
-      "Bash(lsof -i :8080 -sTCP:LISTEN -t)"
+      "Bash(lsof -i :8080 -sTCP:LISTEN -t)",
+      "Bash(grep -n \"^import.*Plus\\\\|{ Plus\\\\|, Plus\" /Users/kunalkumar/Desktop/Gautam/Split/frontend/app/groups/\\\\[id\\\\]/page.jsx)"
     ]
   }
 }

@@ -11,9 +11,8 @@ import InviteModal from "@/components/InviteModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 import Image from "next/image";
 import {
-  ArrowLeftCircle,
+  ArrowLeft,
   Loader2,
-  Wallet2,
   PlusCircle,
   StarIcon,
   X,
@@ -39,6 +38,7 @@ import {
   CheckCircle,
   UserPlus,
   Zap,
+  Wallet2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import NotepadSection from "@/components/Notepad/NotepadSection";
@@ -88,7 +88,11 @@ export default function GroupDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedOcr, setSelectedOcr] = useState(null);
   const [expandedPayerId, setExpandedPayerId] = useState(null);
-  const [activeTab, setActiveTab] = useState("feed");
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => { setIsMobile(window.innerWidth < 1024); }, []);
+  const [activeTab, setActiveTab] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth < 1024 ? "balances" : "feed"
+  );
   const [showAllExpenses, setShowAllExpenses] = useState(false);
 
   const fetchGroup = async () => {
@@ -177,17 +181,13 @@ export default function GroupDetailPage() {
   const handleRecordSettlement = async (fromUser, toUser, amount) => {
     try {
       setLoading(true);
-      await api.post("/expenses", {
+      await api.post("/expenses/settle", {
         groupId,
-        description: `Settlement: ${fromUser.name} paid ${toUser.name}`,
+        fromUserId: fromUser.userId,
+        toUserId: toUser.userId,
         amount: Number(amount),
-        splitType: "exact",
-        category: "bills",
-        participants: [toUser.userId],
-        exactSplits: [{ userId: toUser.userId, share: Number(amount) }],
-        paidBy: fromUser.userId,
       });
-      toast.success("Settlement recorded!");
+      toast.success(`Settlement of ₹${Number(amount).toFixed(0)} recorded. Balances updated.`);
       fetchExpenses();
       fetchBalances();
     } catch (e) {
@@ -201,7 +201,12 @@ export default function GroupDetailPage() {
     group && meId && String(group.createdBy?._id || group.createdBy) === String(meId);
 
   const expenseSummary = useMemo(() => {
-    const byPayer = expenses.reduce((acc, expense) => {
+    // Settlements affect balances but are NOT real spending — exclude from totals
+    // Double-guard: flag OR description prefix (catches any legacy records)
+    const realExpenses = expenses.filter(
+      (e) => !e.isSettlement && !e.description?.toLowerCase().startsWith("settlement")
+    );
+    const byPayer = realExpenses.reduce((acc, expense) => {
       const payerId = String(expense.paidBy?._id || "unknown");
       if (!acc[payerId]) {
         acc[payerId] = { id: payerId, name: expense.paidBy?.name || "Unknown", email: expense.paidBy?.email || "", total: 0, items: [] };
@@ -212,7 +217,8 @@ export default function GroupDetailPage() {
     }, {});
     return {
       payers: Object.values(byPayer).sort((a, b) => b.total - a.total),
-      total: expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
+      total: realExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
+      count: realExpenses.length,
     };
   }, [expenses]);
 
@@ -262,47 +268,58 @@ export default function GroupDetailPage() {
       <div className="max-w-6xl mx-auto space-y-5">
 
         {/* ── HEADER ── */}
-        <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div>
-              <span className={`inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+        <div className="bg-card border border-border rounded-2xl px-4 py-3 sm:px-6 sm:py-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            {/* Left: badge + name + creator */}
+            <div className="min-w-0">
+              <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                 group.isCompleted
                   ? "bg-muted text-muted-foreground"
                   : "bg-cyan-100 dark:bg-cyan-950/70 text-cyan-700 dark:text-cyan-300"
               }`}>
                 {group.isCompleted ? "Completed" : "Active Group"}
               </span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground mt-2 leading-tight">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-foreground mt-1 leading-tight truncate">
                 {group.name}
               </h1>
-              <p className="text-muted-foreground text-sm flex items-center gap-1.5 mt-1">
-                <StarIcon size={13} className="text-amber-500 fill-amber-500 shrink-0" />
+              <p className="text-muted-foreground text-xs flex items-center gap-1 mt-0.5">
+                <StarIcon size={11} className="text-amber-500 fill-amber-500 shrink-0" />
                 Created by{" "}
                 <span className="font-semibold text-foreground">{group.createdBy?.name || "You"}</span>
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Right: action buttons */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Back — icon only on mobile */}
               <button
                 onClick={() => router.push("/dashboard")}
-                className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg border border-border hover:bg-muted/50 transition cursor-pointer"
+                title="Back"
+                className="flex items-center justify-center w-8 h-8 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 transition cursor-pointer"
               >
-                <ArrowLeftCircle size={14} /> <span className="hidden sm:inline">Back</span>
+                <ArrowLeft size={15} />
               </button>
+
+              {/* Delete — icon only on mobile, creator only */}
               {isCreator && (
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-destructive border border-destructive/25 hover:bg-destructive/5 px-3 py-2 rounded-lg transition cursor-pointer"
+                  title="Delete group"
+                  className="flex items-center justify-center w-8 h-8 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/8 transition cursor-pointer"
                 >
-                  <Trash2 size={14} /> <span className="hidden sm:inline">Delete</span>
+                  <Trash2 size={14} />
                 </button>
               )}
+
+              {/* Chat */}
               <button
                 onClick={() => router.push(`/groupchat?groupId=${groupId}`)}
-                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg shadow transition cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-bold text-white px-3 h-8 rounded-xl transition cursor-pointer"
+                style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 2px 10px rgba(8,145,178,0.3)" }}
               >
-                <MessageCircleMore size={14} /> <span className="sm:inline">Chat</span>
+                <MessageCircleMore size={13} />
+                <span>Chat</span>
               </button>
             </div>
           </div>
@@ -315,7 +332,7 @@ export default function GroupDetailPage() {
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Group Spend</p>
             <p className="text-2xl font-black text-foreground mt-2">{INR.format(expenseSummary.total)}</p>
             <p className="text-[11px] text-muted-foreground mt-1.5">
-              Across {expenses.length} logged expense{expenses.length !== 1 ? "s" : ""}
+              Across {expenseSummary.count} logged expense{expenseSummary.count !== 1 ? "s" : ""}
             </p>
           </div>
 
@@ -374,15 +391,13 @@ export default function GroupDetailPage() {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold">
-                <button onClick={() => setShowAddMember(true)} className="text-primary hover:underline cursor-pointer">Add Member</button>
-                {isCreator && (
-                  <>
-                    <span className="text-muted-foreground">|</span>
-                    <button onClick={() => setShowInviteModal(true)} className="text-primary hover:underline cursor-pointer">Invite Friends</button>
-                  </>
-                )}
-              </div>
+              {isCreator && (
+                <div className="flex items-center gap-2 text-[11px] font-semibold">
+                  <button onClick={() => setShowAddMember(true)} className="text-primary hover:underline cursor-pointer">Add Member</button>
+                  <span className="text-muted-foreground">|</span>
+                  <button onClick={() => setShowInviteModal(true)} className="text-primary hover:underline cursor-pointer">Invite Friends</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -392,10 +407,24 @@ export default function GroupDetailPage() {
 
           {/* LEFT: TABS + CONTENT */}
           <div className="space-y-4">
-            {/* Tab bar — horizontally scrollable on mobile */}
+
+            {/* Tab bar */}
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1 shadow-sm w-max min-w-full sm:w-fit">
-                {tabs.map(({ key, label, icon: Icon }) => (
+
+                {/* Group Balance — mobile only, FIRST position */}
+                <button onClick={() => setActiveTab("balances")}
+                  className={`lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    activeTab === "balances"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}>
+                  <Wallet2 size={13} />
+                  <span>Group Balance</span>
+                </button>
+
+                {/* Expenses Log + Spend Owners — always shown */}
+                {tabs.filter(t => t.key !== "notes").map(({ key, label, icon: Icon }) => (
                   <button key={key} onClick={() => setActiveTab(key)}
                     className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === key
@@ -406,15 +435,18 @@ export default function GroupDetailPage() {
                     <span>{label}</span>
                   </button>
                 ))}
-                <button onClick={() => setActiveTab("balances")}
-                  className={`lg:hidden flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                    activeTab === "balances"
+
+                {/* Shared Notes — desktop only */}
+                <button onClick={() => setActiveTab("notes")}
+                  className={`hidden lg:flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    activeTab === "notes"
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}>
-                  <Wallet2 size={13} />
-                  <span>Balances</span>
+                  <BookOpen size={13} />
+                  <span>Shared Notes</span>
                 </button>
+
               </div>
             </div>
 
@@ -445,6 +477,36 @@ export default function GroupDetailPage() {
                   ) : (
                     <>
                       {displayedExpenses.map((exp, idx) => {
+                        const isSettlementRow = exp.isSettlement || exp.description?.toLowerCase().startsWith("settlement");
+                        if (isSettlementRow) {
+                          return (
+                            <div key={exp._id}
+                              className={`flex items-center gap-3 px-5 sm:px-6 py-3 transition ${
+                                idx < displayedExpenses.length - 1 ? "border-b border-border" : ""
+                              }`}
+                              style={{ background: "rgba(16,185,129,0.04)" }}>
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                                style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                                <CheckCircle size={15} className="text-emerald-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-emerald-600 dark:text-emerald-400 text-sm">
+                                  {exp.paidBy?.name} settled up
+                                </p>
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  {fmtDate.format(new Date(exp.date))}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded"
+                                  style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
+                                  Settlement
+                                </span>
+                                <span className="font-bold text-sm text-emerald-500">{INR.format(exp.amount)}</span>
+                              </div>
+                            </div>
+                          );
+                        }
                         const catKey = exp.category?.toLowerCase() || "misc";
                         const Icon = categoryIcons[catKey] || FileText;
                         return (
@@ -567,16 +629,12 @@ export default function GroupDetailPage() {
                 </motion.div>
               )}
 
-              {/* Balances — mobile only */}
+              {/* Group Balance tab — mobile only */}
               {activeTab === "balances" && (
                 <motion.div key="balances" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
-                  className="space-y-4 lg:hidden">
-                  <BalancesCard balances={balances} onSettle={handleRecordSettlement} />
-                  <MembersCard group={group} isCreator={isCreator}
-                    onAdd={() => setShowAddMember(true)}
-                    onInvite={() => setShowInviteModal(true)}
-                    onRemove={handleRemove} />
+                  className="lg:hidden space-y-3">
+                  <BalancesCard balances={balances} onSettle={handleRecordSettlement} onAddExpense={() => setShowExpenseModal(true)} />
                 </motion.div>
               )}
 
@@ -632,15 +690,26 @@ export default function GroupDetailPage() {
 }
 
 /* ── Group Balances sidebar card ── */
-function BalancesCard({ balances, onSettle }) {
+function BalancesCard({ balances, onSettle, onAddExpense }) {
   return (
     <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <h3 className="font-bold text-base text-foreground">Group Balances</h3>
-        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/40">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          LIVE
-        </span>
+        {onAddExpense ? (
+          <button
+            onClick={onAddExpense}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white cursor-pointer transition-all"
+            style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 2px 12px rgba(8,145,178,0.35)" }}
+          >
+            <PlusCircle size={13} />
+            Add Expense
+          </button>
+        ) : (
+          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            LIVE
+          </span>
+        )}
       </div>
 
       {!balances?.balances?.length ? (

@@ -563,14 +563,14 @@ export const joinGroupByInvite = async (req, res) => {
     const { inviteCode } = req.params;
     const uid = req.user.id;
 
-    const group = await Group.findOne({ inviteCode });
+    let group = await Group.findOne({ inviteCode });
     if (!group) return res.status(404).json({ message: "Invalid invite link" });
 
-    // Add user to group if not already member
+    // Add user to group if not already member — use $addToSet for atomicity
     const wasAlreadyMember = group.members.map(String).includes(String(uid));
     if (!wasAlreadyMember) {
-      group.members.push(uid);
-      await group.save();
+      await Group.findByIdAndUpdate(group._id, { $addToSet: { members: uid } });
+      group = await Group.findById(group._id);
 
       // Notify other members
       const otherMembers = group.members.map(String).filter((id) => id !== String(uid));
