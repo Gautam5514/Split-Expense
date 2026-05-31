@@ -17,6 +17,16 @@ const sameId = (a, b) => String(a) === String(b);
 const isMember = (group, userId) =>
   (group.members || []).some((m) => String(m) === String(userId));
 
+// Checks if reqUser is the creator of a group.
+// Handles legacy data where createdBy may store a Firebase UID (old code)
+// or a MongoDB ObjectId (new code).
+const isCreator = (group, reqUser) => {
+  const stored = String(group.createdBy?._id || group.createdBy);
+  const mongoId = String(reqUser?.id || "");
+  const fbUid   = String(reqUser?.firebaseUid || "");
+  return stored === mongoId || (fbUid && stored === fbUid);
+};
+
 export const createGroup = async (req, res) => {
   try {
     const { name, groupType } = req.body;
@@ -198,8 +208,7 @@ export const addMembersByEmail = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found." });
 
-    const uid = asId(req.user);
-    if (!sameId(group.createdBy, uid))
+    if (!isCreator(group, req.user))
       return res.status(403).json({ message: "Only the group creator can add members." });
 
     const normalizedEmails = emails.map((e) => e.toLowerCase().trim());
@@ -391,16 +400,11 @@ export const removeMember = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found." });
 
-    const uid = asId(req.user);
-    if (!sameId(group.createdBy, uid))
-      return res
-        .status(403)
-        .json({ message: "Only the group creator can remove members." });
+    if (!isCreator(group, req.user))
+      return res.status(403).json({ message: "Only the group creator can remove members." });
 
-    if (sameId(group.createdBy, userId))
-      return res
-        .status(400)
-        .json({ message: "Creator cannot be removed from the group." });
+    if (isCreator({ createdBy: userId }, req.user))
+      return res.status(400).json({ message: "Creator cannot be removed from the group." });
 
     await Group.updateOne({ _id: groupId }, { $pull: { members: userId } });
 
@@ -470,10 +474,8 @@ export const markGroupCompleted = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
 
-    if (String(group.createdBy) !== String(uid)) {
-      return res
-        .status(403)
-        .json({ message: "Only the creator can mark as completed" });
+    if (!isCreator(group, req.user)) {
+      return res.status(403).json({ message: "Only the creator can mark as completed" });
     }
 
     group.isCompleted = true;
@@ -507,10 +509,8 @@ export const deleteGroup = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
 
-    if (!sameId(group.createdBy, uid)) {
-      return res
-        .status(403)
-        .json({ message: "Only the trip creator can delete this trip" });
+    if (!isCreator(group, req.user)) {
+      return res.status(403).json({ message: "Only the trip creator can delete this trip" });
     }
 
     await Promise.all([
@@ -536,8 +536,7 @@ export const generateInviteLink = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
 
-    // Only creator can generate the link
-    if (String(group.createdBy) !== String(uid))
+    if (!isCreator(group, req.user))
       return res.status(403).json({ message: "Only creator can generate invite" });
 
     // If inviteCode doesn’t exist, generate one
