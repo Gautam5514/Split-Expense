@@ -18,6 +18,7 @@ const buildSplits = ({
   participants,
   exactSplits = [],
   percentSplits = [],
+  payerId = null,   // used to direct rounding drift to the payer
 }) => {
   if (!participants?.length) throw new Error("No participants provided.");
 
@@ -26,9 +27,13 @@ const buildSplits = ({
     const splits = participants.map((uid) => ({ userId: uid, share }));
     const sum = splits.reduce((a, s) => a + s.share, 0);
     const drift = Number((amount - sum).toFixed(2));
-    splits[splits.length - 1].share = Number(
-      (splits[splits.length - 1].share + drift).toFixed(2)
-    );
+    // Apply drift to payer's entry (they already paid the full amount so absorb rounding).
+    // Fall back to last entry if payer is not a participant.
+    const driftIdx = payerId
+      ? splits.findIndex((s) => String(s.userId) === String(payerId))
+      : -1;
+    const target = driftIdx >= 0 ? driftIdx : splits.length - 1;
+    splits[target].share = Number((splits[target].share + drift).toFixed(2));
     return splits;
   }
 
@@ -135,10 +140,14 @@ export const addExpense = async (req, res) => {
       participants: part,
       exactSplits,
       percentSplits,
+      payerId,
     });
 
-    // 🔹 Save to DB
+    // 🔹 Validate paidBy — must be a group member (defaults to requester)
     const payerId = req.body.paidBy || uid;
+    if (!activeMemberIds.includes(String(payerId)))
+      return res.status(400).json({ field: "paidBy", message: "The payer must be a member of this group." });
+
     const expense = await Expense.create({
       groupId: new mongoose.Types.ObjectId(groupId),
       description: description.trim(),

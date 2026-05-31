@@ -11,12 +11,11 @@ import {
   PieChart, Pie, Cell
 } from "recharts";
 import {
-  Loader2, Plus, ArrowRight, Users, Sparkles, TrendingUp, Calendar,
+  Loader2, Plus, ArrowRight, Users, Calendar,
   CheckCircle, Trash2, ShieldCheck, PieChart as PieIcon, Coins, Landmark,
   ArrowUpRight
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useAuth } from "@/context/AuthContext";
 import Loader3D from "@/components/Loader3D";
 
 const COLORS = ["#0891B2", "#0E7490", "#22D3EE", "#14b8a6", "#f59e0b", "#0284C7"];
@@ -42,12 +41,11 @@ const getCategoryColor = (cat, index) => {
 
 export default function UserDashboardPage() {
   const router = useRouter();
-  const { token } = useAuth();
 
   const [analytics, setAnalytics]           = useState(null);
   const [groups, setGroups]                 = useState([]);
   const [profile, setProfile]               = useState(null);
-  const [oweSummary, setOweSummary]         = useState({ totalOwed: null, totalOwe: null });
+  const [oweSummary, setOweSummary]         = useState({ totalOwed: 0, totalOwe: 0 });
   const [loading, setLoading]               = useState(true);
   const [groupName, setGroupName]           = useState("");
   const [creating, setCreating]             = useState(false);
@@ -56,16 +54,16 @@ export default function UserDashboardPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [analyticsRes, groupsRes, profileRes] = await Promise.all([
+      const [analyticsRes, groupsRes, profileRes, meRes] = await Promise.all([
         api.get("/users/analytics").catch(() => ({ data: null })),
         api.get("/groups").catch(() => ({ data: [] })),
         api.get("/profile").catch(() => ({ data: null })),
+        api.get("/users/me").catch(() => ({ data: null })),   // real MongoDB _id
       ]);
       setAnalytics(analyticsRes.data);
       setProfile(profileRes.data || null);
@@ -73,9 +71,8 @@ export default function UserDashboardPage() {
       const allGroups = groupsRes.data || [];
       setGroups(allGroups);
 
-      // Compute real "You Are Owed" / "You Owe" by fetching every active group's balances
-      let uid = null;
-      try { uid = token ? JSON.parse(atob(token.split(".")[1]))?.id : null; } catch { /* */ }
+      // Use the MongoDB _id returned by /users/me — token decoding cannot give this
+      const uid = meRes.data?._id || meRes.data?.id || null;
 
       const activeOnes = allGroups.filter((g) => !g.isCompleted);
       const balanceResults = await Promise.all(
@@ -88,8 +85,8 @@ export default function UserDashboardPage() {
         const userBal = res.data?.balances?.find((b) => String(b.userId) === String(uid));
         if (!userBal) return;
         const bal = Number(userBal.balance);
-        if (bal > 0.01)  totalOwed += bal;
-        else if (bal < -0.01) totalOwe += Math.abs(bal);
+        if (bal > 0.01)       totalOwed += bal;
+        else if (bal < -0.01) totalOwe  += Math.abs(bal);
       });
       setOweSummary({ totalOwed, totalOwe });
 
@@ -105,11 +102,7 @@ export default function UserDashboardPage() {
     if (!groupName.trim()) return toast.error("Enter a group name");
     try {
       setCreating(true);
-      const res = await api.post(
-        "/groups",
-        { name: groupName.trim() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await api.post("/groups", { name: groupName.trim() });
       toast.success("Group created! 🗺️");
       setGroupName("");
       fetchData();
@@ -125,7 +118,7 @@ export default function UserDashboardPage() {
     e.preventDefault();
     e.stopPropagation();
     try {
-      await api.put(`/groups/${groupId}/complete`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await api.put(`/groups/${groupId}/complete`, {});
       toast.success("Trip marked as completed! 🎉");
       fetchData();
     } catch {
@@ -138,7 +131,7 @@ export default function UserDashboardPage() {
     e.stopPropagation();
     if (!window.confirm("Delete this trip? All expenses, notes, and messages will be permanently lost.")) return;
     try {
-      await api.delete(`/groups/${groupId}`, { headers: { Authorization: `Bearer ${token}` } });
+      await api.delete(`/groups/${groupId}`);
       toast.success("Trip deleted");
       fetchData();
     } catch (err) {
@@ -151,7 +144,7 @@ export default function UserDashboardPage() {
   }
 
   const activeGroups = groups.filter((g) => !g.isCompleted);
-  const { totalOwe } = oweSummary;
+  const { totalOwe, totalOwed } = oweSummary;
 
   const pieData = (analytics?.categoryBreakdown || []).map((item, idx) => ({
     name:  getCategoryLabel(item.category),
@@ -159,11 +152,6 @@ export default function UserDashboardPage() {
     color: getCategoryColor(item.category, idx),
   }));
   const totalCategorySpend = pieData.reduce((s, i) => s + i.value, 0);
-
-  const getCurrentUserId = () => {
-    try { return token ? JSON.parse(atob(token.split(".")[1]))?.id : null; }
-    catch { return null; }
-  };
 
   return (
     <div className="min-h-screen bg-background pb-28 sm:pb-12 pt-4 sm:pt-6 px-3 sm:px-4 lg:px-8">
@@ -251,20 +239,12 @@ export default function UserDashboardPage() {
   />
 
   <StatCard
-    label="Smart Insight"
-    value={
-      !analytics
-        ? "Loading…"
-        : analytics.insight?.type === "tight_month"
-        ? "Tight Budget"
-        : analytics.insight?.type === "saving_month"
-        ? "Smart Saving"
-        : "Steady Spend"
-    }
-    subtext={analytics?.insight?.message || "Your spending looks healthy"}
-    icon={<Sparkles className="w-4 h-4" />}
-    iconBg="bg-sky-500/10 text-sky-600 dark:text-sky-300"
-    insightType={analytics?.insight?.type}
+    label="You're Owed"
+    value={totalOwed > 0 ? `₹${Number(totalOwed).toLocaleString("en-IN")}` : "₹0"}
+    subtext={totalOwed > 0 ? "Pending from others" : "Nothing owed to you"}
+    icon={<Landmark className="w-4 h-4" />}
+    iconBg="bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+    valueColor={totalOwed > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"}
   />
 </motion.div>
 
@@ -384,7 +364,7 @@ export default function UserDashboardPage() {
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {activeGroups.length > 0
-                  ? `${activeGroups.length} active room${activeGroups.length !== 1 ? "s" : ""} — tap any to manage expenses`
+                  ? `${activeGroups.length} active room${activeGroups.length !== 1 ? "s" : ""},  tap any to manage expenses`
                   : "Create a group to start splitting expenses"}
               </p>
             </div>

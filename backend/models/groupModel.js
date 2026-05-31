@@ -12,12 +12,14 @@ const groupSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Deduplicate members array on every save
+// Deduplicate members and strip null/invalid ObjectIds on every save
 groupSchema.pre("save", function (next) {
   if (this.isModified("members")) {
     const seen = new Set();
     this.members = this.members.filter((id) => {
+      if (id == null) return false;
       const key = id.toString();
+      if (!mongoose.Types.ObjectId.isValid(key) || key === "null" || key === "undefined") return false;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

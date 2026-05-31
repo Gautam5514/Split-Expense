@@ -55,17 +55,16 @@ export const getBalances = async (req, res) => {
     for (const exp of expenses) {
       const payerId = exp.paidBy?.toString?.();
       if (payerId && activeSet.has(payerId)) {
-        balances[payerId] = (balances[payerId] || 0) + Number(exp.amount || 0);
+        balances[payerId] = to2((balances[payerId] || 0) + Number(exp.amount || 0));
       }
 
-      // ✅ Safely iterate splits
       if (!Array.isArray(exp.splits)) continue;
 
       for (const s of exp.splits) {
         if (!s?.userId) continue;
         const uid = s.userId.toString();
         if (activeSet.has(uid)) {
-          balances[uid] = (balances[uid] || 0) - Number(s.share || 0);
+          balances[uid] = to2((balances[uid] || 0) - Number(s.share || 0));
         }
       }
     }

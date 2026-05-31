@@ -49,9 +49,7 @@ export default function DashboardPage() {
     e.preventDefault();
     e.stopPropagation();
     try {
-      await api.put(`/groups/${groupId}/complete`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.put(`/groups/${groupId}/complete`, {});
       toast.success("Marked as completed!");
       fetchGroups();
     } catch {
@@ -62,9 +60,7 @@ export default function DashboardPage() {
   const confirmDeleteTrip = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/groups/${deleteTarget.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/groups/${deleteTarget.id}`);
       toast.success("Trip deleted");
       fetchGroups();
     } catch (err) {

@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import HeroSection from "@/components/home/HeroSection";
 import LogoSlider from "@/components/LogoSlider";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
+import InteractiveMockupSection from "@/components/home/InteractiveMockupSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import CTASection from "@/components/home/CTASection";
@@ -28,6 +29,7 @@ export default function HomePage() {
       <HeroSection />
       <LogoSlider />
       <HowItWorksSection />
+      <InteractiveMockupSection />
       <FeaturesSection />
       <TestimonialsSection />
       <CTASection />

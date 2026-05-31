@@ -11,9 +11,12 @@ export const getUserAnalytics = async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user.id);
 
-    // 1️⃣ Find all expenses where user either paid or participated
+    // 1️⃣ Find all real expenses (exclude settlements) where user paid or participated
     const expenses = await Expense.find({
       $or: [{ paidBy: userId }, { participants: userId }],
+      isSettlement: { $ne: true },
+      // Legacy guard: skip expenses whose description starts with "Settlement"
+      description: { $not: /^Settlement/i },
     }).lean();
 
     // 🧩 If no expenses, still send empty summary + groups

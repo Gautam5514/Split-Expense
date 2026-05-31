@@ -230,7 +230,7 @@ export default function GroupDetailPage() {
 
   const handleDeleteTrip = async () => {
     try {
-      await api.delete(`/groups/${groupId}`, { headers: { Authorization: `Bearer ${token}` } });
+      await api.delete(`/groups/${groupId}`);
       toast.success("Trip deleted");
       router.push("/dashboard");
     } catch (e) {
@@ -258,7 +258,7 @@ export default function GroupDetailPage() {
   const tabs = [
     { key: "feed", label: "Expenses Log", icon: Receipt },
     { key: "breakdown", label: "Spend Owners", icon: TrendingUp },
-    { key: "notes", label: "Shared Notes", icon: BookOpen },
+    // { key: "notes", label: "Shared Notes", icon: BookOpen },
   ];
 
   const displayedExpenses = expenses.length > 10 && !showAllExpenses ? expenses.slice(0, 9) : expenses;
@@ -437,7 +437,7 @@ export default function GroupDetailPage() {
                 ))}
 
                 {/* Shared Notes — desktop only */}
-                <button onClick={() => setActiveTab("notes")}
+                {/* <button onClick={() => setActiveTab("notes")}
                   className={`hidden lg:flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === "notes"
                       ? "bg-primary text-primary-foreground shadow-sm"
@@ -445,7 +445,7 @@ export default function GroupDetailPage() {
                   }`}>
                   <BookOpen size={13} />
                   <span>Shared Notes</span>
-                </button>
+                </button> */}
 
               </div>
             </div>

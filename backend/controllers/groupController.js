@@ -152,11 +152,17 @@ export const getGroupById = async (req, res) => {
       return res.status(403).json({ message: "Not a member of this group." });
     }
 
-    // Auto-heal: ensure creator is in members
-    if (!memberIds.includes(creatorId)) {
+    // Auto-heal: ensure creator is in members (guard: only run if creatorId is a valid ObjectId)
+    if (
+      creatorId &&
+      creatorId !== "null" &&
+      creatorId !== "undefined" &&
+      mongoose.Types.ObjectId.isValid(creatorId) &&
+      !memberIds.includes(creatorId)
+    ) {
       await Group.updateOne(
         { _id: group._id },
-        { $addToSet: { members: creatorId } }
+        { $addToSet: { members: new mongoose.Types.ObjectId(creatorId) } }
       );
     }
 
