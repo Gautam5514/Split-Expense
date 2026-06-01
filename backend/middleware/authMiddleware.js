@@ -10,12 +10,10 @@ export const authMiddleware = async (req, res, next) => {
     if (!token)
       return res.status(401).json({ message: "No token provided" });
 
-    // Verify Firebase ID token — only accepted credential.
     let decoded;
     try {
       decoded = await admin.auth().verifyIdToken(token);
-    } catch (firebaseErr) {
-      // Token is not a valid Firebase ID token
+    } catch {
       return res.status(401).json({ message: "Invalid or expired token. Please sign in again." });
     }
 
@@ -25,29 +23,41 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: "Token missing email claim." });
     }
 
-    // Find existing MongoDB user or create one on first contact.
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = await User.create({
-        firebaseUid: uid,
-        email,
-        name: name || email.split("@")[0],
-        photoURL: picture || "",
-      });
-    } else {
-      // Keep name and photo in sync with Firebase (Google users may update either).
-      let changed = false;
-      if (!user.firebaseUid && uid) { user.firebaseUid = uid; changed = true; }
-      if (picture && user.photoURL !== picture) { user.photoURL = picture; changed = true; }
-      if (name && user.name !== name) { user.name = name; changed = true; }
-      if (changed) await user.save();
+    // Normalize email — Firebase always lowercases but guard against edge cases
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Atomic upsert — findOne + create is NOT atomic and causes duplicate users
+    // under concurrent requests (e.g. authMiddleware + googleLogin firing together).
+    // findOneAndUpdate with upsert:true is a single atomic MongoDB operation.
+    let user = await User.findOneAndUpdate(
+      { email: normalizedEmail },
+      {
+        $setOnInsert: {
+          firebaseUid: uid,
+          email: normalizedEmail,
+          name: name || normalizedEmail.split("@")[0],
+          photoURL: picture || "",
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Sync mutable fields that can change after account creation
+    const updates = {};
+    if (!user.firebaseUid && uid)                    updates.firebaseUid = uid;
+    if (picture && user.photoURL !== picture)         updates.photoURL = picture;
+    if (name && user.name !== name)                   updates.name = name;
+
+    if (Object.keys(updates).length) {
+      await User.updateOne({ _id: user._id }, { $set: updates });
+      Object.assign(user, updates);
     }
 
     req.user = {
-      id: user._id.toString(),
+      id:          user._id.toString(),
       firebaseUid: uid,
-      email: user.email,
-      name: user.name,
+      email:       user.email,
+      name:        user.name,
     };
     next();
   } catch (err) {

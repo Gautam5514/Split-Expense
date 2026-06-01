@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
-  firebaseUid: { type: String, unique: false }, // For Google/Firebase users
+  firebaseUid: { type: String, sparse: true, index: true }, // sparse: null values excluded from index
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: false }, // optional for Firebase users

@@ -75,27 +75,37 @@ export const login = async (req, res) => {
 // -------------------- GOOGLE LOGIN --------------------
 export const googleLogin = async (req, res) => {
   try {
-    const { token } = req.body; // frontend sends Firebase ID token
+    const { token } = req.body;
     const decoded = await admin.auth().verifyIdToken(token);
     const { uid, email, name, picture } = decoded;
 
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = await User.create({
-        firebaseUid: uid,
-        name: name || email.split("@")[0],
-        email,
-        photoURL: picture,
-      });
-      console.log("🆕 Google user added to DB:", user.email);
-    } else {
-      let changed = false;
-      if (picture && user.photoURL !== picture) { user.photoURL = picture; changed = true; }
-      if (name && user.name !== name) { user.name = name; changed = true; }
-      if (changed) await user.save();
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Atomic upsert — prevents duplicate user creation under concurrent requests
+    let user = await User.findOneAndUpdate(
+      { email: normalizedEmail },
+      {
+        $setOnInsert: {
+          firebaseUid: uid,
+          email: normalizedEmail,
+          name: name || normalizedEmail.split("@")[0],
+          photoURL: picture || "",
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Sync mutable fields
+    const updates = {};
+    if (!user.firebaseUid && uid)             updates.firebaseUid = uid;
+    if (picture && user.photoURL !== picture) updates.photoURL = picture;
+    if (name && user.name !== name)           updates.name = name;
+
+    if (Object.keys(updates).length) {
+      await User.updateOne({ _id: user._id }, { $set: updates });
+      Object.assign(user, updates);
     }
 
-    // No JWT — client authenticates via Firebase ID token.
     res.status(200).json({ user });
   } catch (err) {
     console.error("Google Login Error:", err);
