@@ -193,6 +193,7 @@ export const addMembersByEmail = async (req, res) => {
   try {
     const { emails } = req.body;
     const { groupId } = req.params;
+    const uid = req.user?.id || req.user?._id?.toString();
 
     if (!Array.isArray(emails) || emails.length === 0)
       return res.status(400).json({ field: "emails", message: "Please provide at least one email address." });

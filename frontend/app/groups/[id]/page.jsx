@@ -634,7 +634,7 @@ export default function GroupDetailPage() {
                 <motion.div key="balances" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
                   className="lg:hidden space-y-3">
-                  <BalancesCard balances={balances} onSettle={handleRecordSettlement} onAddExpense={() => setShowExpenseModal(true)} />
+                  <BalancesCard balances={balances} meId={meId} onSettle={handleRecordSettlement} onAddExpense={() => setShowExpenseModal(true)} />
                 </motion.div>
               )}
 
@@ -643,7 +643,7 @@ export default function GroupDetailPage() {
 
           {/* RIGHT SIDEBAR */}
           <div className="hidden lg:flex flex-col gap-5">
-            <BalancesCard balances={balances} onSettle={handleRecordSettlement} />
+            <BalancesCard balances={balances} meId={meId} onSettle={handleRecordSettlement} />
             <MembersCard group={group} isCreator={isCreator}
               onAdd={() => setShowAddMember(true)}
               onInvite={() => setShowInviteModal(true)}

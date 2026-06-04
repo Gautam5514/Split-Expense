@@ -54,9 +54,9 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Handle background messages — fires when the app tab is closed or not focused.
+// Backend sends data-only messages (no `notification` field) so FCM does NOT
+// auto-display anything. This handler is the single place that shows the toast.
 messaging.onBackgroundMessage((payload) => {
-  // Read from data field first (backend duplicates title/body there for reliability),
-  // then fall back to the notification field.
   const notificationTitle =
     payload.data?.title || payload.notification?.title || "SplitEase";
   const notificationBody =
@@ -64,12 +64,14 @@ messaging.onBackgroundMessage((payload) => {
   const link = payload.data?.link || "/dashboard";
   const type = payload.data?.type || "splitease";
 
+  // Use a unique tag per message so rapid notifications don't collapse each other.
+  const tag = `${type}-${Date.now()}`;
+
   return self.registration.showNotification(notificationTitle, {
     body: notificationBody,
     icon: "/logo-icon.png",
     badge: "/logo-icon.png",
-    tag: type,
-    renotify: true,
+    tag,
     requireInteraction: true,
     vibrate: [200, 100, 200],
     data: { link, type },

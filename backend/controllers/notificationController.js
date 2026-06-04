@@ -248,14 +248,11 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
     ? `${HTTPS_ORIGIN}${relLink.startsWith("/") ? relLink : `/${relLink}`}`
     : relLink;
 
+  // Data-only message: omitting the `notification` field prevents FCM from
+  // auto-displaying a system notification. The service worker's onBackgroundMessage
+  // handler shows exactly one notification with full icon/vibrate/click control.
+  // Sending both `notification` + `data` causes two notifications to appear.
   const message = {
-    notification: {
-      title: payload.title,
-      body: payload.body,
-    },
-    // FCM requires every data value to be a string.
-    // Also store title/body in data so the service worker can read them
-    // even if the notification field is not forwarded to onBackgroundMessage.
     data: {
       title: payload.title,
       body:  payload.body,
@@ -263,12 +260,6 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
       type,
     },
     webpush: {
-      notification: {
-        icon: "/logo-icon.png",
-        badge: "/logo-icon.png",
-        requireInteraction: true,
-        vibrate: [200, 100, 200],
-      },
       ...(absLink && { fcmOptions: { link: absLink } }),
     },
     tokens,
