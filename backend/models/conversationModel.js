@@ -9,4 +9,7 @@ const conversationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Find all conversations a user is part of, sorted by most recent activity
+conversationSchema.index({ members: 1, lastMessageAt: -1 });
+
 export default mongoose.model("Conversation", conversationSchema);

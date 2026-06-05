@@ -10,7 +10,11 @@
       "Bash(grep -n \"^import.*Plus\\\\|{ Plus\\\\|, Plus\" /Users/kunalkumar/Desktop/Gautam/Split/frontend/app/groups/\\\\[id\\\\]/page.jsx)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(sed -i '' \\\\ *)"
+    ],
+    "additionalDirectories": [
+      "/Users/kunalkumar/Desktop/Gautam/Split/frontend/app/groups/[id]"
     ]
   }
 }

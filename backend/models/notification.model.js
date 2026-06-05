@@ -9,5 +9,8 @@ const notificationSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Fetch unread notifications for a user, sorted by newest first
+notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
+
 const Notification = mongoose.model("Notification", notificationSchema);
 export default Notification;

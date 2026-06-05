@@ -7,6 +7,8 @@ import connectDB from "./config/db.js";
 import admin from "./config/firebaseAdmin.js";
 import jwt from "jsonwebtoken";
 import User from "./models/userModel.js";
+import Conversation from "./models/conversationModel.js";
+import Group from "./models/groupModel.js";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -99,6 +101,9 @@ io.on("connection", (socket) => {
         return;
       }
 
+      // Attach userId to socket so room-join handlers can verify membership
+      socket.userId = String(userId);
+
       // Mark online
       onlineUsers.set(String(userId), socket.id);
 
@@ -121,10 +126,19 @@ io.on("connection", (socket) => {
   });
 
   // -----------------------------------------
-  // Join conversation
+  // Join conversation — verify membership before allowing
   // -----------------------------------------
-  socket.on("joinConversation", (conversationId) => {
-    socket.join(conversationId);
+  socket.on("joinConversation", async (conversationId) => {
+    if (!socket.userId) return;
+    try {
+      const convo = await Conversation.findOne({
+        _id: conversationId,
+        members: socket.userId,
+      }).select("_id").lean();
+      if (convo) socket.join(conversationId);
+    } catch {
+      // Invalid ID format or DB error — silently ignore
+    }
   });
 
   // Typing
@@ -140,7 +154,20 @@ io.on("connection", (socket) => {
   // -----------------------------------------
   // Groups
   // -----------------------------------------
-  socket.on("joinGroup", (groupId) => socket.join(`group:${groupId}`));
+  // joinGroup — verify membership before allowing
+  socket.on("joinGroup", async (groupId) => {
+    if (!socket.userId) return;
+    try {
+      const group = await Group.findOne({
+        _id: groupId,
+        members: socket.userId,
+      }).select("_id").lean();
+      if (group) socket.join(`group:${groupId}`);
+    } catch {
+      // Invalid ID format or DB error — silently ignore
+    }
+  });
+
   socket.on("leaveGroup", (groupId) => socket.leave(`group:${groupId}`));
 
   socket.on("groupTyping", ({ groupId, userId }) => {
@@ -191,6 +218,20 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/notepads", notepadeRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/ai", aiRoutes);
+
+// -----------------------------------------
+//  GLOBAL ERROR HANDLER
+//  Must be defined after all routes.
+//  4-argument signature is required by Express to recognise it as an error handler.
+// -----------------------------------------
+app.use((err, req, res, next) => {
+  console.error("❌ Unhandled error:", err.stack || err.message);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({
+    // Never leak stack traces or internal details to the client on 500s
+    message: status < 500 ? err.message : "Something went wrong. Please try again.",
+  });
+});
 
 // -----------------------------------------
 //  START SERVER

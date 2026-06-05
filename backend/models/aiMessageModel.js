@@ -10,4 +10,7 @@ const aiMessageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Fetch AI chat history for a user sorted by newest first
+aiMessageSchema.index({ userId: 1, createdAt: -1 });
+
 export default mongoose.model("AiMessage", aiMessageSchema);

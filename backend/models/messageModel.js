@@ -16,4 +16,7 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Fetch messages for a conversation sorted by newest first
+messageSchema.index({ conversationId: 1, createdAt: -1 });
+
 export default mongoose.model("Message", messageSchema);

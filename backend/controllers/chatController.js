@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Conversation from "../models/conversationModel.js";
 import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
@@ -92,34 +93,42 @@ export const getConversations = async (req, res) => {
 };
 
 // ---------------------------------------------
-// GET MESSAGES FOR A CONVERSATION
+// GET MESSAGES FOR A CONVERSATION (cursor-paginated)
+// GET /api/chat/:id/messages?before=<messageId>&limit=40
 // ---------------------------------------------
 export const getMessages = async (req, res) => {
   try {
     const { id } = req.params;
+    const { before, limit = 40 } = req.query;
 
-    const msgs = await Message.find({ conversationId: id })
+    const query = { conversationId: id };
+    // Cursor: fetch messages older than the given message ID
+    if (before) query._id = { $lt: new mongoose.Types.ObjectId(before) };
+
+    // Fetch newest N messages first, then reverse so UI gets chronological order
+    const msgs = await Message.find(query)
+      .sort({ _id: -1 })
+      .limit(Math.min(Number(limit), 100))
       .populate("sender", "name email photoURL")
-      .sort({ createdAt: 1 })
       .lean();
 
-    const senderIds = msgs.map((m) => m.sender?._id?.toString());
+    msgs.reverse();
 
-    const profiles = await UserProfile.find({
-      userId: { $in: senderIds },
-    }).select("userId profileImage.url");
+    if (msgs.length === 0) return res.json([]);
 
-    const profileMap = {};
-    profiles.forEach(
-      (p) => (profileMap[p.userId.toString()] = p.profileImage?.url || null)
-    );
+    // Batch profile lookup using a Map for O(1) merge
+    const senderIds = [...new Set(msgs.map((m) => m.sender?._id?.toString()).filter(Boolean))];
+    const profiles = await UserProfile.find({ userId: { $in: senderIds } })
+      .select("userId profileImage.url")
+      .lean();
+
+    const profileMap = new Map(profiles.map((p) => [p.userId.toString(), p.profileImage?.url || null]));
 
     const finalMsgs = msgs.map((m) => ({
       ...m,
       sender: {
         ...m.sender,
-        imageUrl:
-          m.sender?.photoURL || profileMap[m.sender._id.toString()] || null,
+        imageUrl: m.sender?.photoURL || profileMap.get(m.sender._id.toString()) || null,
       },
     }));
 
@@ -197,8 +206,13 @@ export const getMyContacts = async (req, res) => {
   try {
     const me = req.user.id;
 
-    const groups = await Group.find({ members: me }).select("members");
-    const currentUser = await User.findById(me).select("hiddenDirectChats").lean();
+    // All 3 are independent — run in parallel
+    const [groups, currentUser, convos] = await Promise.all([
+      Group.find({ members: me }).select("members").lean(),
+      User.findById(me).select("hiddenDirectChats").lean(),
+      Conversation.find({ members: me }).select("members lastMessage lastMessageAt unread").lean(),
+    ]);
+
     const hiddenDirect = new Set(
       (currentUser?.hiddenDirectChats || []).map((id) => id.toString())
     );
@@ -212,10 +226,6 @@ export const getMyContacts = async (req, res) => {
       });
     });
 
-    const convos = await Conversation.find({ members: me })
-      .select("members lastMessage lastMessageAt unread")
-      .lean();
-
     convos.forEach((c) => {
       c.members.forEach((m) => {
         const memberId = m.toString();
@@ -227,20 +237,13 @@ export const getMyContacts = async (req, res) => {
 
     if (ids.length === 0) return res.json({ items: [] });
 
-    const users = await User.find(
-      { _id: { $in: ids } },
-      "_id name email photoURL isOnline lastActive"
-    ).lean();
+    // Batch both user lookups in parallel — Map for O(1) merge
+    const [users, profiles] = await Promise.all([
+      User.find({ _id: { $in: ids } }, "_id name email photoURL isOnline lastActive").lean(),
+      UserProfile.find({ userId: { $in: ids } }).select("userId profileImage.url").lean(),
+    ]);
 
-    const profiles = await UserProfile.find({
-      userId: { $in: ids },
-    }).select("userId profileImage.url");
-
-    const profileMap = {};
-    profiles.forEach(
-      (p) =>
-        (profileMap[p.userId.toString()] = p.profileImage?.url || null)
-    );
+    const profileMap = new Map(profiles.map((p) => [p.userId.toString(), p.profileImage?.url || null]));
 
     // attach lastMessage info
     const convoMap = {};
@@ -258,7 +261,7 @@ export const getMyContacts = async (req, res) => {
         _id: u._id,
         name: u.name,
         email: u.email,
-        imageUrl: u.photoURL || profileMap[u._id.toString()] || null,
+        imageUrl: u.photoURL || profileMap.get(u._id.toString()) || null,
         isOnline: u.isOnline,
         lastActive: u.lastActive,
         lastMessage: convoMap[u._id.toString()]?.lastMessage || "",

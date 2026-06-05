@@ -4,6 +4,12 @@ import Group from "../models/groupModel.js";
 
 const to2 = (n) => Number(Number(n).toFixed(2));
 
+// Map<groupId, { data, expiresAt }> — invalidated on any expense write
+const balanceCache = new Map();
+const CACHE_TTL_MS = 30_000;
+
+export const invalidateBalanceCache = (groupId) => balanceCache.delete(String(groupId));
+
 const buildSettlement = (balancesObj) => {
   const entries = Object.entries(balancesObj).map(([userId, bal]) => ({ userId, bal: to2(bal) }));
   const creditors = entries.filter((e) => e.bal > 0).sort((a, b) => b.bal - a.bal);
@@ -29,6 +35,11 @@ const buildSettlement = (balancesObj) => {
 export const getBalances = async (req, res) => {
   try {
     const { groupId } = req.params;
+
+    const cached = balanceCache.get(groupId);
+    if (cached && Date.now() < cached.expiresAt) {
+      return res.json(cached.data);
+    }
 
     // Get the CURRENT active members
     const group = await Group.findById(groupId).populate("members", "name email");
@@ -87,7 +98,9 @@ export const getBalances = async (req, res) => {
       };
     });
 
-    res.json({ balances: readable, suggestions });
+    const result = { balances: readable, suggestions };
+    balanceCache.set(groupId, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
+    res.json(result);
   } catch (err) {
     console.error("❌ getBalances:", err.message);
     res.status(500).json({ message: err.message });

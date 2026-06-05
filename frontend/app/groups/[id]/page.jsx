@@ -14,7 +14,6 @@ import {
   ArrowLeft,
   Loader2,
   PlusCircle,
-  StarIcon,
   X,
   Receipt,
   CreditCard,
@@ -268,55 +267,54 @@ export default function GroupDetailPage() {
       <div className="max-w-6xl mx-auto space-y-5">
 
         {/* ── HEADER ── */}
-        <div className="bg-card border border-border rounded-2xl px-4 py-3 sm:px-6 sm:py-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            {/* Left: badge + name + creator */}
-            <div className="min-w-0">
-              <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                group.isCompleted
-                  ? "bg-muted text-muted-foreground"
-                  : "bg-cyan-100 dark:bg-cyan-950/70 text-cyan-700 dark:text-cyan-300"
-              }`}>
-                {group.isCompleted ? "Completed" : "Active Group"}
-              </span>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-foreground mt-1 leading-tight truncate">
-                {group.name}
-              </h1>
-              <p className="text-muted-foreground text-xs flex items-center gap-1 mt-0.5">
-                <StarIcon size={11} className="text-amber-500 fill-amber-500 shrink-0" />
-                Created by{" "}
-                <span className="font-semibold text-foreground">{group.createdBy?.name || "You"}</span>
-              </p>
+        <div className={`bg-card border border-border rounded-xl px-4 py-3 sm:px-6 sm:py-4 shadow-sm ${group.isCompleted ? "opacity-80" : ""}`}>
+          <div className="flex items-center justify-between gap-4">
+
+            {/* Left: name + meta */}
+            <div className="min-w-0 flex items-center gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-foreground leading-tight truncate">
+                    {group.name}
+                  </h1>
+                  {group.isCompleted && (
+                    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border shrink-0">
+                      Completed
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  by <span className="font-medium text-foreground/70">{group.createdBy?.name || "You"}</span>
+                </p>
+              </div>
             </div>
 
             {/* Right: action buttons */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Back — icon only on mobile */}
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => router.push("/dashboard")}
-                title="Back"
-                className="flex items-center justify-center w-8 h-8 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 transition cursor-pointer"
+                title="Back to dashboard"
+                className="flex items-center gap-1.5 h-8 px-2.5 rounded  border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition cursor-pointer"
               >
-                <ArrowLeft size={15} />
+                <ArrowLeft size={13} />
+                <span className="hidden sm:inline">Back</span>
               </button>
 
-              {/* Delete — icon only on mobile, creator only */}
               {isCreator && (
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
                   title="Delete group"
-                  className="flex items-center justify-center w-8 h-8 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/8 transition cursor-pointer"
+                  className="flex items-center justify-center w-8 h-8 rounded border border-destructive/20 text-destructive/60 hover:text-destructive hover:border-destructive/40 hover:bg-destructive/5 transition cursor-pointer"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={13} />
                 </button>
               )}
 
-              {/* Chat */}
               <button
                 onClick={() => router.push(`/groupchat?groupId=${groupId}`)}
-                className="flex items-center gap-1.5 text-xs font-bold text-white px-3 h-8 rounded-xl transition cursor-pointer"
-                style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 2px 10px rgba(8,145,178,0.3)" }}
+                className="flex items-center gap-1.5 text-xs font-bold text-white px-3 h-8 rounded transition cursor-pointer"
+                style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 2px 8px rgba(8,145,178,0.25)" }}
               >
                 <MessageCircleMore size={13} />
                 <span>Chat</span>
@@ -690,7 +688,10 @@ export default function GroupDetailPage() {
 }
 
 /* ── Group Balances sidebar card ── */
-function BalancesCard({ balances, onSettle, onAddExpense }) {
+function BalancesCard({ balances, meId, onSettle, onAddExpense }) {
+  // pendingConfirm holds the suggestion index awaiting creditor confirmation
+  const [pendingConfirm, setPendingConfirm] = useState(null);
+
   return (
     <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -750,21 +751,78 @@ function BalancesCard({ balances, onSettle, onAddExpense }) {
           <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
             <Zap size={12} className="text-amber-500" /> Smart Settlements
           </h4>
-          {balances.suggestions.map((s, i) => (
-            <div key={i} className="bg-muted/40 border border-border rounded-xl p-3.5 space-y-2.5">
-              <p className="text-xs leading-relaxed">
-                <span className="font-bold text-rose-600 dark:text-rose-400">{s.from.name}</span>
-                <span className="text-muted-foreground"> owes </span>
-                <span className="font-bold text-foreground">₹{s.amount.toFixed(0)}</span>
-                <span className="text-muted-foreground"> to </span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{s.to.name}</span>
-              </p>
-              <button onClick={() => onSettle(s.from, s.to, s.amount)}
-                className="w-full flex items-center justify-center gap-1.5 border border-primary/25 text-primary hover:bg-primary/8 font-semibold py-2 rounded-lg text-xs transition cursor-pointer">
-                <CheckCircle size={13} /> Record Settlement
-              </button>
-            </div>
-          ))}
+          {balances.suggestions.map((s, i) => {
+            const isDebtor   = String(s.from.userId) === String(meId); // I owe money
+            const isCreditor = String(s.to.userId)   === String(meId); // I am owed money
+            const isAwaiting = pendingConfirm === i;
+
+            return (
+              <div key={i} className="bg-muted/40 border border-border rounded-xl p-3.5 space-y-2.5">
+                <p className="text-xs leading-relaxed">
+                  <span className={`font-bold ${isDebtor ? "text-rose-600 dark:text-rose-400 underline decoration-dotted" : "text-rose-600 dark:text-rose-400"}`}>
+                    {isDebtor ? "You" : s.from.name}
+                  </span>
+                  <span className="text-muted-foreground"> owe </span>
+                  <span className="font-bold text-foreground">₹{s.amount.toFixed(0)}</span>
+                  <span className="text-muted-foreground"> to </span>
+                  <span className={`font-bold ${isCreditor ? "text-emerald-600 dark:text-emerald-400 underline decoration-dotted" : "text-emerald-600 dark:text-emerald-400"}`}>
+                    {isCreditor ? "You" : s.to.name}
+                  </span>
+                </p>
+
+                {/* Debtor: direct "I've Paid" button */}
+                {isDebtor && (
+                  <button
+                    onClick={() => onSettle(s.from, s.to, s.amount)}
+                    className="w-full flex items-center justify-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
+                  >
+                    <CheckCircle size={13} /> I&apos;ve Paid ₹{s.amount.toFixed(0)}
+                  </button>
+                )}
+
+                {/* Creditor: confirm-received flow */}
+                {isCreditor && !isAwaiting && (
+                  <button
+                    onClick={() => setPendingConfirm(i)}
+                    className="w-full flex items-center justify-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
+                  >
+                    <CheckCircle size={13} /> Confirm Payment Received
+                  </button>
+                )}
+
+                {/* Inline confirmation for creditor */}
+                {isCreditor && isAwaiting && (
+                  <div className="rounded-lg border border-amber-400/40 bg-amber-50/60 dark:bg-amber-950/30 p-3 space-y-2">
+                    <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium leading-snug">
+                      Has <span className="font-bold">{s.from.name}</span> actually paid you{" "}
+                      <span className="font-bold">₹{s.amount.toFixed(0)}</span>?
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setPendingConfirm(null); onSettle(s.from, s.to, s.amount); }}
+                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 rounded-lg text-xs transition cursor-pointer"
+                      >
+                        Yes, Confirm
+                      </button>
+                      <button
+                        onClick={() => setPendingConfirm(null)}
+                        className="flex-1 border border-border text-muted-foreground hover:bg-muted/50 font-semibold py-1.5 rounded-lg text-xs transition cursor-pointer"
+                      >
+                        No, Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Third party: no action, just info */}
+                {!isDebtor && !isCreditor && (
+                  <p className="text-[10px] text-muted-foreground text-center py-0.5">
+                    Only the people involved can record this settlement
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

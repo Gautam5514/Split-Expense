@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 import Expense from "../models/expenseModel.js";
 import Group from "../models/groupModel.js";
 import { createNotification } from "../controllers/notificationController.js";
-import Tesseract from "tesseract.js";
+import { invalidateBalanceCache } from "../controllers/balanceController.js";
+import { runOcr } from "../utils/ocrService.js";
 import { isValidObjectId } from "../middleware/validate.js";
 
 const VALID_CATEGORIES = ["general", "food", "travel", "stay", "shopping", "bills"];
@@ -121,11 +122,10 @@ export const addExpense = async (req, res) => {
     if (!ensureMember(group, uid))
       return res.status(403).json({ message: "You are not a member of this group." });
 
-    // 🔹 OCR
+    // 🔹 OCR — uses persistent worker, no per-request init overhead
     let ocrText = null;
     if (fileUrl) {
-      const { data } = await Tesseract.recognize(fileUrl, "eng");
-      ocrText = data.text.trim() || null;
+      ocrText = await runOcr(fileUrl);
     }
 
     // 🔹 Participants — deduplicate member list first to prevent split inflation
@@ -165,6 +165,8 @@ export const addExpense = async (req, res) => {
     const populated = await Expense.findById(expense._id)
       .populate("paidBy", "name email")
       .lean();
+
+    invalidateBalanceCache(groupId);
 
     // 🔹 Notify other members
     const allMembers = group.members.map((m) => String(m));
@@ -248,6 +250,7 @@ export const recordSettlement = async (req, res) => {
     );
 
     const populated = await Expense.findById(expense._id).populate("paidBy", "name email").lean();
+    invalidateBalanceCache(groupId);
     res.status(201).json(populated);
   } catch (err) {
     console.error("❌ recordSettlement:", err.message);

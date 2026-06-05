@@ -58,36 +58,26 @@ export const createGroup = async (req, res) => {
 };
 
 /**
- * 🧩 Utility: Enrich members with photoURL from Google or manual profile upload
+ * Build photoURL Maps for a set of member IDs using 2 batched queries.
+ * Returns a Map<userId_string, photoURL|null> for O(1) lookup.
  */
-const enrichMembersWithImages = async (members) => {
-  const memberIds = members.map((m) => m._id);
+const buildPhotoMap = async (memberIds) => {
+  const ids = [...new Set(memberIds.map(String))];
+  if (ids.length === 0) return new Map();
 
-  // Fetch corresponding UserProfile entries
-  const profiles = await UserProfile.find({
-    userId: { $in: memberIds },
-  }).select("userId profileImage.url");
+  const [profiles, users] = await Promise.all([
+    UserProfile.find({ userId: { $in: ids } }).select("userId profileImage.url").lean(),
+    User.find({ _id: { $in: ids } }).select("photoURL").lean(),
+  ]);
 
-  const profileMap = profiles.reduce((acc, p) => {
-    acc[String(p.userId)] = p.profileImage?.url || null;
-    return acc;
-  }, {});
+  const profileMap = new Map(profiles.map((p) => [String(p.userId), p.profileImage?.url || null]));
+  const photoMap   = new Map(users.map((u) => [String(u._id), u.photoURL || null]));
 
-  // Merge Google photoURL or manual profile URL
-  const users = await User.find({ _id: { $in: memberIds } }).select(
-    "photoURL email name"
-  );
-
-  const userMap = users.reduce((acc, u) => {
-    acc[String(u._id)] = u.photoURL || profileMap[String(u._id)] || null;
-    return acc;
-  }, {});
-
-  // Attach to members
-  return members.map((m) => ({
-    ...m,
-    photoURL: userMap[String(m._id)] || null,
-  }));
+  // Merge: Google photoURL takes priority over manual upload
+  for (const [id, url] of profileMap) {
+    if (!photoMap.get(id)) photoMap.set(id, url);
+  }
+  return photoMap;
 };
 
 /**
@@ -116,21 +106,18 @@ export const getGroups = async (req, res) => {
       .populate("createdBy", "name email")
       .lean();
 
-    // Enrich members with images
-    const enrichedGroups = await Promise.all(
-      groups.map(async (g) => {
-        const isCreator =
-          String(g.createdBy?._id || g.createdBy) === String(uid);
+    // Collect ALL unique member IDs across all groups — then 2 queries total
+    const allMemberIds = groups.flatMap((g) => (g.members || []).map((m) => m._id));
+    const photoMap = await buildPhotoMap(allMemberIds);
 
-        const enrichedMembers = await enrichMembersWithImages(g.members || []);
-
-        return {
-          ...g,
-          members: enrichedMembers,
-          status: isCreator ? "active" : "inactive",
-        };
-      })
-    );
+    const enrichedGroups = groups.map((g) => ({
+      ...g,
+      members: (g.members || []).map((m) => ({
+        ...m,
+        photoURL: photoMap.get(String(m._id)) || null,
+      })),
+      status: String(g.createdBy?._id || g.createdBy) === String(uid) ? "active" : "inactive",
+    }));
 
     res.json(enrichedGroups);
   } catch (err) {
@@ -176,8 +163,11 @@ export const getGroupById = async (req, res) => {
       );
     }
 
-    // Enrich members with profile images
-    const enrichedMembers = await enrichMembersWithImages(group.members || []);
+    const photoMap = await buildPhotoMap((group.members || []).map((m) => m._id));
+    const enrichedMembers = (group.members || []).map((m) => ({
+      ...m,
+      photoURL: photoMap.get(String(m._id)) || null,
+    }));
 
     res.json({
       ...group,
