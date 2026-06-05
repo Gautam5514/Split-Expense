@@ -58,7 +58,7 @@ function lighten(hex, amt) {
 /* ── Derive a full, balanced palette from a single bg hex + primary ── */
 function derivePalette(bg, primary, isDark) {
   if (isDark) {
-    // bg is a very dark color — lift derived surfaces progressively
+    // bg is a very dark color - lift derived surfaces progressively
     return {
       "--background":         bg,
       "--foreground":         "#E4EAF2",
@@ -79,7 +79,7 @@ function derivePalette(bg, primary, isDark) {
       "--ring":               primary,
     };
   } else {
-    // bg is a light tinted color — cards are white, muted is slightly darker
+    // bg is a light tinted color - cards are white, muted is slightly darker
     return {
       "--background":         bg,
       "--foreground":         "#1A2332",
@@ -175,7 +175,7 @@ export function ThemeProvider({ children }) {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
-  // Called by theme page preset handler — only needs bg + primary
+  // Called by theme page preset handler - only needs bg + primary
   const applyColors = ({ bg, primary }) => {
     const bgVal      = bg      || "";
     const primaryVal = primary || "";

@@ -51,7 +51,7 @@ export default function TestimonialsSection() {
             </span>
           </h2>
           <p className="mt-3 text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
-            From weekend getaways to month-long backpacking — SplitEase keeps every trip stress-free.
+            From weekend getaways to month-long backpacking - SplitEase keeps every trip stress-free.
           </p>
         </motion.div>
 

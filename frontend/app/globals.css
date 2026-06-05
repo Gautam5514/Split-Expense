@@ -31,7 +31,7 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-/* ── Light Mode — Soft Paper ── */
+/* ── Light Mode - Soft Paper ── */
 :root {
   --background: #F5F7FA;
   --foreground: #1A2332;
@@ -63,7 +63,7 @@
   --radius: 0.625rem;
 }
 
-/* ── Dark Mode — Deep Slate ── */
+/* ── Dark Mode - Deep Slate ── */
 .dark {
   --background: #0F1623;
   --foreground: #E4EAF2;

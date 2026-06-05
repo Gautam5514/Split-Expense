@@ -206,7 +206,7 @@ export const getMyContacts = async (req, res) => {
   try {
     const me = req.user.id;
 
-    // All 3 are independent — run in parallel
+    // All 3 are independent - run in parallel
     const [groups, currentUser, convos] = await Promise.all([
       Group.find({ members: me }).select("members").lean(),
       User.findById(me).select("hiddenDirectChats").lean(),
@@ -237,7 +237,7 @@ export const getMyContacts = async (req, res) => {
 
     if (ids.length === 0) return res.json({ items: [] });
 
-    // Batch both user lookups in parallel — Map for O(1) merge
+    // Batch both user lookups in parallel - Map for O(1) merge
     const [users, profiles] = await Promise.all([
       User.find({ _id: { $in: ids } }, "_id name email photoURL isOnline lastActive").lean(),
       UserProfile.find({ userId: { $in: ids } }).select("userId profileImage.url").lean(),

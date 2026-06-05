@@ -14,7 +14,7 @@ const steps = [
     color: "bg-cyan-600",
     step: "01",
     title: "Create & Invite",
-    desc: "Start a group in seconds. Invite friends instantly via QR code, link, or email — no app download needed.",
+    desc: "Start a group in seconds. Invite friends instantly via QR code, link, or email - no app download needed.",
   },
   {
     icon: <ScanLine className="w-7 h-7 sm:w-8 sm:h-8 text-white" />,
@@ -39,7 +39,7 @@ export default function HowItWorksSection() {
         <div className="text-center mb-10 sm:mb-14 md:mb-20">
           <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary mb-3">Simple by design</p>
           <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-foreground mb-3 sm:mb-4">
-            From trip to settled — in 3 steps
+            From trip to settled - in 3 steps
           </h2>
           <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-xl mx-auto">
             No spreadsheets, no awkward reminders, no mental math.

@@ -122,19 +122,19 @@ export const addExpense = async (req, res) => {
     if (!ensureMember(group, uid))
       return res.status(403).json({ message: "You are not a member of this group." });
 
-    // 🔹 OCR — uses persistent worker, no per-request init overhead
+    // 🔹 OCR - uses persistent worker, no per-request init overhead
     let ocrText = null;
     if (fileUrl) {
       ocrText = await runOcr(fileUrl);
     }
 
-    // 🔹 Participants — deduplicate member list first to prevent split inflation
+    // 🔹 Participants - deduplicate member list first to prevent split inflation
     const activeMemberIds = [...new Set(group.members.map((m) => String(m)))];
     let selected = participants?.length ? participants.map(String) : activeMemberIds;
     selected = [...new Set(selected.filter((p) => activeMemberIds.includes(p)))];
     const part = selected.map((id) => new mongoose.Types.ObjectId(id));
 
-    // 🔹 Validate paidBy — must be declared before buildSplits (used for drift correction)
+    // 🔹 Validate paidBy - must be declared before buildSplits (used for drift correction)
     const payerId = req.body.paidBy || uid;
     if (!activeMemberIds.includes(String(payerId)))
       return res.status(400).json({ field: "paidBy", message: "The payer must be a member of this group." });

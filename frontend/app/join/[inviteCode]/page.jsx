@@ -17,7 +17,7 @@ export default function JoinGroupPage() {
 
     const auth = getAuth();
 
-    // auth.currentUser is null synchronously on page load — Firebase needs time
+    // auth.currentUser is null synchronously on page load - Firebase needs time
     // to restore the session from device storage. onAuthStateChanged waits for
     // that resolution so we never make a premature "not logged in" decision.
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -40,7 +40,7 @@ export default function JoinGroupPage() {
         const msg = err?.response?.data?.message || "";
 
         if (httpStatus === 401) {
-          // Token not ready yet — store invite and ask user to sign in again
+          // Token not ready yet - store invite and ask user to sign in again
           localStorage.setItem("pendingInvite", inviteCode);
           setStatus("unauthenticated");
           return;
@@ -51,7 +51,7 @@ export default function JoinGroupPage() {
           msg.toLowerCase().includes("already") ||
           msg.toLowerCase().includes("member")
         ) {
-          // Already a member — just redirect to the group
+          // Already a member - just redirect to the group
           const groupId = err?.response?.data?.group?._id;
           setStatus("success");
           setTimeout(() => router.replace(groupId ? `/groups/${groupId}` : "/dashboard"), 1200);
@@ -82,7 +82,7 @@ export default function JoinGroupPage() {
     setStatus("loading");
     setErrorMsg("");
     // Re-run by unmounting + remounting via state trick is complex;
-    // simplest is to reload the page — the onAuthStateChanged will re-run cleanly.
+    // simplest is to reload the page - the onAuthStateChanged will re-run cleanly.
     window.location.reload();
   };
 

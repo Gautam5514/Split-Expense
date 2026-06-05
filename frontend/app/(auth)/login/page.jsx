@@ -23,7 +23,7 @@ const expenseCards = [
   {
     initial: "M",
     gradient: "from-cyan-400 to-teal-500",
-    title: "Airbnb — Miami",
+    title: "Airbnb - Miami",
     meta: "Maya paid · 5 people",
     amount: "$620.00",
     amountColor: "text-cyan-400",
@@ -215,7 +215,7 @@ export default function LoginPage() {
     try {
       await api.post("/auth/verify-login-otp", { email: email.trim(), otp });
 
-      // OTP passed — now complete Firebase auth
+      // OTP passed - now complete Firebase auth
       const result = await signInWithEmailAndPassword(auth, email.trim(), password);
       const idToken = await result.user.getIdToken();
       await api.post("/auth/google", { token: idToken }).catch(() => {});
@@ -320,7 +320,7 @@ export default function LoginPage() {
             </span>
           </h1>
           <p className="text-slate-400 text-sm leading-relaxed mb-7">
-            Track group expenses effortlessly and settle up with ease — no awkward conversations needed.
+            Track group expenses effortlessly and settle up with ease - no awkward conversations needed.
           </p>
 
           <div className="space-y-2.5">

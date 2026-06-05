@@ -31,7 +31,7 @@ api.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${idToken}`;
     }
   } catch {
-    // Firebase not ready — send request without auth (will 401 if endpoint requires it)
+    // Firebase not ready - send request without auth (will 401 if endpoint requires it)
   }
 
   return config;

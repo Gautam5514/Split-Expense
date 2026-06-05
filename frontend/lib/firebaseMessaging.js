@@ -76,7 +76,7 @@ export const getNotificationPermission = async () => {
     });
 
     if (!token) {
-      console.error("❌ FCM returned an empty token — check VAPID key and SW registration");
+      console.error("❌ FCM returned an empty token - check VAPID key and SW registration");
     }
 
     return token || null;

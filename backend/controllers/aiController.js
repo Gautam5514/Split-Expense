@@ -72,7 +72,7 @@ export const queryAI = async (req, res) => {
       User Question: "${prompt}"
     `;
 
-    // Use generateWithRetry — auto retries + falls back to gemini-1.5-flash if 503
+    // Use generateWithRetry - auto retries + falls back to gemini-1.5-flash if 503
     const intent = (await generateWithRetry(classificationPrompt, { maxRetries: 3 })).trim();
 
     let finalPrompt;

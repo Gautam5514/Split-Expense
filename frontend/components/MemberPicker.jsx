@@ -280,7 +280,7 @@ export default function MemberPicker({ groupId, onSubmit, onClose, exclude = [] 
                     <span>How Invite by Email works</span>
                   </div>
                   <ul className="text-xs text-muted-foreground space-y-2 list-disc list-inside leading-relaxed">
-                    <li>Enter any email — registered or not — and tap <strong>Add Email</strong>.</li>
+                    <li>Enter any email - registered or not - and tap <strong>Add Email</strong>.</li>
                     <li><strong>Already on SplitEase?</strong> They&apos;ll be added to the group instantly.</li>
                     <li><strong>Not registered?</strong> We&apos;ll automatically send them a personalised invitation email with a direct join link.</li>
                   </ul>

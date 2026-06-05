@@ -86,7 +86,7 @@ io.on("connection", (socket) => {
 
       let userId = null;
 
-      // Verify Firebase ID token — the only accepted credential.
+      // Verify Firebase ID token - the only accepted credential.
       try {
         const decoded = await admin.auth().verifyIdToken(token);
         const user = await User.findOne({ email: decoded.email });
@@ -126,7 +126,7 @@ io.on("connection", (socket) => {
   });
 
   // -----------------------------------------
-  // Join conversation — verify membership before allowing
+  // Join conversation - verify membership before allowing
   // -----------------------------------------
   socket.on("joinConversation", async (conversationId) => {
     if (!socket.userId) return;
@@ -137,7 +137,7 @@ io.on("connection", (socket) => {
       }).select("_id").lean();
       if (convo) socket.join(conversationId);
     } catch {
-      // Invalid ID format or DB error — silently ignore
+      // Invalid ID format or DB error - silently ignore
     }
   });
 
@@ -154,7 +154,7 @@ io.on("connection", (socket) => {
   // -----------------------------------------
   // Groups
   // -----------------------------------------
-  // joinGroup — verify membership before allowing
+  // joinGroup - verify membership before allowing
   socket.on("joinGroup", async (groupId) => {
     if (!socket.userId) return;
     try {
@@ -164,7 +164,7 @@ io.on("connection", (socket) => {
       }).select("_id").lean();
       if (group) socket.join(`group:${groupId}`);
     } catch {
-      // Invalid ID format or DB error — silently ignore
+      // Invalid ID format or DB error - silently ignore
     }
   });
 

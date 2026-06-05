@@ -25,7 +25,7 @@ const FAQ_SECTIONS = [
       },
       {
         q: "How do I join a group via invite link?",
-        a: "Click the invite link you received. If you're already signed in, you'll be added to the group instantly. If not, you'll be prompted to sign in or register — your invite is remembered and applied after you authenticate.",
+        a: "Click the invite link you received. If you're already signed in, you'll be added to the group instantly. If not, you'll be prompted to sign in or register - your invite is remembered and applied after you authenticate.",
       },
     ],
   },

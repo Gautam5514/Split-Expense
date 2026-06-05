@@ -98,7 +98,7 @@ export default function HeroSection() {
           transition={{ duration: 0.8, delay: 0.18 }}
           className="text-sm sm:text-base md:text-lg text-white/50 max-w-sm sm:max-w-lg text-center leading-relaxed mb-7 sm:mb-9 font-medium px-2"
         >
-          Track shared costs, settle up in one tap, and let AI handle the math —
+          Track shared costs, settle up in one tap, and let AI handle the math -
           so you focus on the memories, not the bills.
         </motion.p>
 

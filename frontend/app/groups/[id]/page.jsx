@@ -126,7 +126,7 @@ export default function GroupDetailPage() {
 
   useEffect(() => {
     if (groupId) {
-      // Fetch current user's MongoDB _id — Firebase token payload doesn't carry it
+      // Fetch current user's MongoDB _id - Firebase token payload doesn't carry it
       api.get("/users/me").then((r) => setMeId(r.data?._id || r.data?.id || null)).catch(() => {});
       fetchGroup();
       fetchExpenses();
@@ -200,7 +200,7 @@ export default function GroupDetailPage() {
     group && meId && String(group.createdBy?._id || group.createdBy) === String(meId);
 
   const expenseSummary = useMemo(() => {
-    // Settlements affect balances but are NOT real spending — exclude from totals
+    // Settlements affect balances but are NOT real spending - exclude from totals
     // Double-guard: flag OR description prefix (catches any legacy records)
     const realExpenses = expenses.filter(
       (e) => !e.isSettlement && !e.description?.toLowerCase().startsWith("settlement")
@@ -410,7 +410,7 @@ export default function GroupDetailPage() {
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1 shadow-sm w-max min-w-full sm:w-fit">
 
-                {/* Group Balance — mobile only, FIRST position */}
+                {/* Group Balance - mobile only, FIRST position */}
                 <button onClick={() => setActiveTab("balances")}
                   className={`lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === "balances"
@@ -421,7 +421,7 @@ export default function GroupDetailPage() {
                   <span>Group Balance</span>
                 </button>
 
-                {/* Expenses Log + Spend Owners — always shown */}
+                {/* Expenses Log + Spend Owners - always shown */}
                 {tabs.filter(t => t.key !== "notes").map(({ key, label, icon: Icon }) => (
                   <button key={key} onClick={() => setActiveTab(key)}
                     className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
@@ -434,7 +434,7 @@ export default function GroupDetailPage() {
                   </button>
                 ))}
 
-                {/* Shared Notes — desktop only */}
+                {/* Shared Notes - desktop only */}
                 {/* <button onClick={() => setActiveTab("notes")}
                   className={`hidden lg:flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === "notes"
@@ -559,7 +559,7 @@ export default function GroupDetailPage() {
                   className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
                   <div className="px-5 sm:px-6 py-4 border-b border-border">
                     <h3 className="font-bold text-base text-foreground">Spend Owners</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Breakdown by payer — tap to expand</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Breakdown by payer - tap to expand</p>
                   </div>
                   {expenses.length === 0 ? (
                     <div className="text-center py-14 text-muted-foreground text-sm">No records to break down.</div>
@@ -627,7 +627,7 @@ export default function GroupDetailPage() {
                 </motion.div>
               )}
 
-              {/* Group Balance tab — mobile only */}
+              {/* Group Balance tab - mobile only */}
               {activeTab === "balances" && (
                 <motion.div key="balances" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}

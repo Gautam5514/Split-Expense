@@ -12,12 +12,12 @@ const features = [
   {
     icon: <Zap />,
     title: "Live Balance Tracking",
-    desc: "Every expense updates balances instantly for all group members. No refresh needed — it's always live.",
+    desc: "Every expense updates balances instantly for all group members. No refresh needed - it's always live.",
   },
   {
     icon: <ScanLine />,
     title: "OCR Receipt Scanning",
-    desc: "Point your camera at any bill. AI reads the amount, date and items automatically — no manual typing.",
+    desc: "Point your camera at any bill. AI reads the amount, date and items automatically - no manual typing.",
   },
   {
     icon: <Bot />,
@@ -27,12 +27,12 @@ const features = [
   {
     icon: <MessageSquare />,
     title: "Group & Direct Chat",
-    desc: "Chat inside every group or privately with any member. Expense context, decisions and receipts — all in one thread.",
+    desc: "Chat inside every group or privately with any member. Expense context, decisions and receipts - all in one thread.",
   },
   {
     icon: <QrCode />,
     title: "QR & Link Invites",
-    desc: "Generate a QR code or shareable link. Guests join with one tap — if new, they sign up and land directly in the group.",
+    desc: "Generate a QR code or shareable link. Guests join with one tap - if new, they sign up and land directly in the group.",
   },
   {
     icon: <ShieldCheck />,
@@ -53,7 +53,7 @@ export default function FeaturesSection() {
                 Every feature your group needs
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
-                Built from real travel pain points — from scanning receipts to settling cross-group debts with AI.
+                Built from real travel pain points - from scanning receipts to settling cross-group debts with AI.
               </p>
             </div>
           </div>

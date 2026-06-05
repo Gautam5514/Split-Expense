@@ -53,7 +53,7 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background messages — fires when the app tab is closed or not focused.
+// Handle background messages - fires when the app tab is closed or not focused.
 // Backend sends data-only messages (no `notification` field) so FCM does NOT
 // auto-display anything. This handler is the single place that shows the toast.
 messaging.onBackgroundMessage((payload) => {

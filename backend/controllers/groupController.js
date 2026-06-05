@@ -106,7 +106,7 @@ export const getGroups = async (req, res) => {
       .populate("createdBy", "name email")
       .lean();
 
-    // Collect ALL unique member IDs across all groups — then 2 queries total
+    // Collect ALL unique member IDs across all groups - then 2 queries total
     const allMemberIds = groups.flatMap((g) => (g.members || []).map((m) => m._id));
     const photoMap = await buildPhotoMap(allMemberIds);
 
@@ -323,7 +323,7 @@ function buildInviteEmailHtml({ inviterName, groupName, joinLink, email }) {
               </h2>
               <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.6;">
                 <strong style="color:#0B1929;">${inviterName}</strong> invited you to join the group
-                <strong style="color:#0891B2;">"${groupName}"</strong> on SplitEase — the easiest way to track and split shared expenses with friends.
+                <strong style="color:#0891B2;">"${groupName}"</strong> on SplitEase - the easiest way to track and split shared expenses with friends.
               </p>
 
               <!-- Group card -->
@@ -352,7 +352,7 @@ function buildInviteEmailHtml({ inviterName, groupName, joinLink, email }) {
                     <td style="padding:4px 0;font-size:13px;color:#475569;">✅ &nbsp;Track group expenses in real-time</td>
                   </tr>
                   <tr>
-                    <td style="padding:4px 0;font-size:13px;color:#475569;">💡 &nbsp;Smart settlements — pay the fewest people</td>
+                    <td style="padding:4px 0;font-size:13px;color:#475569;">💡 &nbsp;Smart settlements - pay the fewest people</td>
                   </tr>
                   <tr>
                     <td style="padding:4px 0;font-size:13px;color:#475569;">📊 &nbsp;See exactly who owes what</td>
@@ -562,7 +562,7 @@ export const joinGroupByInvite = async (req, res) => {
     let group = await Group.findOne({ inviteCode });
     if (!group) return res.status(404).json({ message: "Invalid invite link" });
 
-    // Add user to group if not already member — use $addToSet for atomicity
+    // Add user to group if not already member - use $addToSet for atomicity
     const wasAlreadyMember = group.members.map(String).includes(String(uid));
     if (!wasAlreadyMember) {
       await Group.findByIdAndUpdate(group._id, { $addToSet: { members: uid } });

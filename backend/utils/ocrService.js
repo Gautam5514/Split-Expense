@@ -1,7 +1,7 @@
 import Tesseract from "tesseract.js";
 
 /**
- * Persistent Tesseract worker — created once, reused for every OCR request.
+ * Persistent Tesseract worker - created once, reused for every OCR request.
  *
  * Why: Tesseract.recognize() creates + destroys a new worker on every call
  * (~2-3 s of init overhead per expense upload). A persistent worker pays that
@@ -39,7 +39,7 @@ export const runOcr = async (fileUrl) => {
     const { data } = await worker.recognize(fileUrl);
     return data.text?.trim() || null;
   } catch (err) {
-    // Worker may have crashed — reset so the next call re-initializes it
+    // Worker may have crashed - reset so the next call re-initializes it
     if (workerPromise) {
       workerPromise.then((w) => w.terminate()).catch(() => {});
       workerPromise = null;

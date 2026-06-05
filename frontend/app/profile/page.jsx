@@ -137,8 +137,8 @@ export default function ProfilePage() {
           </div>
 
           <div className="text-center mt-1">
-            <p className="text-lg font-bold text-foreground">{profile.name || "—"}</p>
-            <p className="text-sm text-muted-foreground">{profile.email || "—"}</p>
+            <p className="text-lg font-bold text-foreground">{profile.name || "-"}</p>
+            <p className="text-sm text-muted-foreground">{profile.email || "-"}</p>
           </div>
         </div>
 
@@ -190,7 +190,7 @@ export default function ProfilePage() {
                 onChange={() => {}}
                 editing={false}
                 locked
-                placeholder="—"
+                placeholder="-"
               />
 
               <Field
@@ -236,7 +236,7 @@ export default function ProfilePage() {
                   </select>
                 ) : (
                   <div className="px-3 py-2.5 text-sm text-foreground bg-muted/60/50 border border-border rounded-lg min-h-[42px]">
-                    {displayData.timezone || <span className="text-muted-foreground">—</span>}
+                    {displayData.timezone || <span className="text-muted-foreground">-</span>}
                   </div>
                 )}
               </div>
@@ -251,7 +251,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Profession — full width */}
+            {/* Profession - full width */}
             <Field
               label="Profession"
               name="profession"
@@ -261,7 +261,7 @@ export default function ProfilePage() {
               placeholder="Software Engineer"
             />
 
-            {/* Bio — full width */}
+            {/* Bio - full width */}
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-foreground">Bio</label>
               {isEditing ? (
@@ -275,12 +275,12 @@ export default function ProfilePage() {
                 />
               ) : (
                 <div className="px-3 py-2.5 text-sm text-foreground bg-muted/60/50 border border-border rounded-lg min-h-[72px] whitespace-pre-wrap">
-                  {displayData.bio || <span className="text-muted-foreground">—</span>}
+                  {displayData.bio || <span className="text-muted-foreground">-</span>}
                 </div>
               )}
             </div>
 
-            {/* Footer row — success message + save button */}
+            {/* Footer row - success message + save button */}
             {(saved || isEditing) && (
               <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
                 {saved && !isEditing && (
@@ -332,7 +332,7 @@ function Field({ label, name, value, onChange, editing, placeholder, locked = fa
         />
       ) : (
         <div className={`px-3 py-2.5 text-sm border rounded-lg min-h-[42px] ${locked ? "bg-muted/30 text-muted-foreground border-border/50 cursor-not-allowed" : "bg-muted/40 text-foreground border-border"}`}>
-          {value || <span className="text-muted-foreground">—</span>}
+          {value || <span className="text-muted-foreground">-</span>}
         </div>
       )}
     </div>

@@ -277,7 +277,7 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
           const code = resp.error?.code;
-          console.error(`❌ FCM token[${idx}] failed: ${code} — ${resp.error?.message}`);
+          console.error(`❌ FCM token[${idx}] failed: ${code} - ${resp.error?.message}`);
           if (
             code === "messaging/invalid-registration-token" ||
             code === "messaging/registration-token-not-registered"

@@ -95,9 +95,9 @@ export default function RegisterPage() {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(result.user, { displayName: name });
       // Force-refresh so the new displayName is embedded in the token before
-      // we sync with the backend — otherwise MongoDB would get an empty name.
+      // we sync with the backend - otherwise MongoDB would get an empty name.
       const idToken = await result.user.getIdToken(true);
-      // Sync user with MongoDB — no JWT is returned; onIdTokenChanged sets the token.
+      // Sync user with MongoDB - no JWT is returned; onIdTokenChanged sets the token.
       await api.post("/auth/google", { token: idToken }).catch(() => {});
       toast.success("Account created successfully!");
       const pendingInvite = localStorage.getItem("pendingInvite");

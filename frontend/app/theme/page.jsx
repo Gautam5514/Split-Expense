@@ -9,7 +9,7 @@ const FONTS = [
   {
     id: "inter",
     name: "Inter",
-    desc: "Clean & modern — the default",
+    desc: "Clean & modern - the default",
     preview: "The quick brown fox",
     style: { fontFamily: "Inter, sans-serif" },
   },

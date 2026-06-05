@@ -4,7 +4,7 @@ import Group from "../models/groupModel.js";
 
 const to2 = (n) => Number(Number(n).toFixed(2));
 
-// Map<groupId, { data, expiresAt }> — invalidated on any expense write
+// Map<groupId, { data, expiresAt }> - invalidated on any expense write
 const balanceCache = new Map();
 const CACHE_TTL_MS = 30_000;
 
@@ -80,7 +80,7 @@ export const getBalances = async (req, res) => {
       }
     }
 
-    // readable — use uniqueMembers so no user appears twice
+    // readable - use uniqueMembers so no user appears twice
     const readable = uniqueMembers.map((m) => ({
       userId: m._id.toString(),
       name: m.name,

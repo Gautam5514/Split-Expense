@@ -1,8 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { ArrowRight, Zap, Shield, Smartphone, Star, Sparkles } from "lucide-react";
+import { Zap, Shield, Smartphone, Star } from "lucide-react";
 
 const PERKS = [
   { icon: Zap,        text: "Free forever" },
@@ -12,8 +11,6 @@ const PERKS = [
 ];
 
 export default function CTASection() {
-  const router = useRouter();
-
   return (
     <section className="relative overflow-hidden bg-background px-4 py-12 sm:py-20 md:py-28">
       <div className="pointer-events-none absolute inset-0">
@@ -66,42 +63,15 @@ export default function CTASection() {
               transition={{ delay: 0.26 }}
               className="mx-auto mt-3 sm:mt-4 max-w-md text-sm sm:text-base font-medium text-gray-500 dark:text-white/45"
             >
-              Group expenses, smart settlements, AI insights — all in one place.
+              Group expenses, smart settlements, AI insights - all in one place.
             </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.34 }}
-              className="mt-7 sm:mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
-            >
-              <button
-                onClick={() => router.push("/register")}
-                className="group relative w-full sm:w-auto overflow-hidden rounded-xl px-7 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-black text-[#021820] shadow-[0_12px_36px_rgba(8,145,178,0.28)] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_18px_48px_rgba(8,145,178,0.42)] active:scale-95"
-              >
-                <span className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-sky-400 to-emerald-400 dark:from-cyan-300 dark:via-sky-300 dark:to-emerald-300" />
-                <span className="absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-white/25 transition-all duration-700 group-hover:left-[130%]" />
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  Get Started Free
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </span>
-              </button>
-              <button
-                onClick={() => router.push("/login")}
-                className="w-full sm:w-auto rounded-xl border border-gray-200 bg-gray-100 px-7 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-semibold text-gray-600 transition-all duration-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 active:scale-95 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/60 dark:hover:bg-white/[0.09] dark:hover:text-white"
-              >
-                Sign in
-              </button>
-            </motion.div>
 
             <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.44 }}
-              className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-gray-200/80 pt-5 sm:pt-6 dark:border-white/8"
+              transition={{ delay: 0.34 }}
+              className="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-gray-200/80 pt-5 sm:pt-6 dark:border-white/8"
             >
               {PERKS.map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-white/35">

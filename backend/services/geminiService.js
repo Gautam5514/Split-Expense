@@ -24,7 +24,7 @@ export const generateWithRetry = async (prompt) => {
     } catch (err) {
       lastError = err;
       if (FALLBACK_STATUSES.has(err?.status)) {
-        console.warn(`⚠️ Gemini model ${modelName} failed (${err?.status}) — trying next...`);
+        console.warn(`⚠️ Gemini model ${modelName} failed (${err?.status}) - trying next...`);
         continue;
       }
       throw err;

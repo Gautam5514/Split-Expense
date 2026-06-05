@@ -110,7 +110,7 @@ export default function InviteModal({ groupId, onClose }) {
           className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl border border-border/50 bg-card shadow-2xl text-foreground overflow-hidden"
           style={{ maxHeight: "90dvh" }}
         >
-          {/* Close — absolute so it doesn't push layout */}
+          {/* Close - absolute so it doesn't push layout */}
           <button
             onClick={onClose}
             className="absolute top-3.5 right-3.5 z-20 rounded-xl p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer"
@@ -167,7 +167,7 @@ export default function InviteModal({ groupId, onClose }) {
               {/* Main content */}
               {!loading && !errorMsg && joinLink && (
                 <>
-                  {/* QR — fixed wrapper so the SVG can never stretch beyond this box */}
+                  {/* QR - fixed wrapper so the SVG can never stretch beyond this box */}
                   <div className="flex justify-center">
                     <div
                       ref={qrWrapperRef}

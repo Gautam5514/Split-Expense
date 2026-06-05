@@ -4,7 +4,7 @@ import { register, login, googleLogin, forgotPassword, resetPassword, sendLoginO
 
 const router = express.Router();
 
-// 20 attempts per 15 min — covers login, register, google sign-in
+// 20 attempts per 15 min - covers login, register, google sign-in
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -13,7 +13,7 @@ const authLimiter = rateLimit({
   message: { message: "Too many attempts. Please try again in 15 minutes." },
 });
 
-// 5 attempts per 15 min — password reset and OTP must be tighter
+// 5 attempts per 15 min - password reset and OTP must be tighter
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,

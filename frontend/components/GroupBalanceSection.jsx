@@ -30,7 +30,7 @@ export default function GroupBalanceSection({ balances }) {
             <Coins size={22} className="text-primary" />
           </div>
           <p className="text-muted-foreground text-sm">
-            No balances yet — add some expenses to see who owes whom.
+            No balances yet - add some expenses to see who owes whom.
           </p>
         </div>
       ) : (

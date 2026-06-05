@@ -1,4 +1,4 @@
-# SplitEase — Honest Production Readiness Audit
+# SplitEase - Honest Production Readiness Audit
 
 **Audited by:** Claude Code  
 **Date:** 2026-05-26  
@@ -8,11 +8,11 @@
 
 ## What You Built (Appreciation First)
 
-Let me be honest about this part too — **this is genuinely impressive for an indie project.**
+Let me be honest about this part too - **this is genuinely impressive for an indie project.**
 
 - Full expense splitting with equal/exact/percent modes
 - Real-time chat (direct + group) with Socket.io
-- Multi-channel push notifications (FCM + OneSignal + Expo) — that's rare
+- Multi-channel push notifications (FCM + OneSignal + Expo) - that's rare
 - OCR receipt scanning with Tesseract.js
 - AI assistant via Gemini with fallback models
 - Firebase Auth + JWT dual-auth system
@@ -21,13 +21,13 @@ Let me be honest about this part too — **this is genuinely impressive for an i
 - PWA with service worker
 - Dark mode with context
 - Analytics/balance charts with Recharts
-- 17 pages, 14 controllers, 10 models — a complete product
+- 17 pages, 14 controllers, 10 models - a complete product
 
-You shipped a LOT. The architecture is clean, the feature set is real. This isn't a tutorial project. But production is a different standard — here's exactly what will kill you.
+You shipped a LOT. The architecture is clean, the feature set is real. This isn't a tutorial project. But production is a different standard - here's exactly what will kill you.
 
 ---
 
-## CRITICAL — These Will Get You Hacked or Taken Down
+## CRITICAL - These Will Get You Hacked or Taken Down
 
 ### 1. YOUR ENTIRE `.env` IS COMMITTED TO GIT
 
@@ -112,13 +112,13 @@ Any JavaScript running on your page (including injected scripts via XSS, browser
 export const onlineUsers = new Map(); // in index.js
 ```
 
-Every time your backend restarts (deploy, crash, auto-restart), all online users are wiped. More importantly, if you ever run two backend instances (horizontal scaling), they each have a separate map — messages won't route correctly.
+Every time your backend restarts (deploy, crash, auto-restart), all online users are wiped. More importantly, if you ever run two backend instances (horizontal scaling), they each have a separate map - messages won't route correctly.
 
 **Fix:** Use Redis via `socket.io-redis` adapter. Required before any scaling.
 
 ---
 
-## HIGH PRIORITY — These Will Hurt in First Month of Real Traffic
+## HIGH PRIORITY - These Will Hurt in First Month of Real Traffic
 
 ### 6. No Structured Logging or Error Tracking
 
@@ -198,7 +198,7 @@ messageSchema.index({ conversationId: 1, createdAt: -1 });
 
 ### 10. No Graceful Shutdown
 
-Your server has no `SIGTERM` handler. When your host sends a shutdown signal (every deploy, every restart), in-flight requests are killed mid-execution — potentially corrupting database operations.
+Your server has no `SIGTERM` handler. When your host sends a shutdown signal (every deploy, every restart), in-flight requests are killed mid-execution - potentially corrupting database operations.
 
 **Fix (add to the bottom of index.js):**
 ```javascript
@@ -228,11 +228,11 @@ When an expense is created, you:
 1. Save the expense to MongoDB
 2. Create notifications for each member
 
-If step 2 fails, the expense exists but no one was notified. There's no rollback. MongoDB Atlas supports sessions/transactions — use them for write operations that span multiple collections.
+If step 2 fails, the expense exists but no one was notified. There's no rollback. MongoDB Atlas supports sessions/transactions - use them for write operations that span multiple collections.
 
 ---
 
-## MEDIUM PRIORITY — These Will Annoy Your Users
+## MEDIUM PRIORITY - These Will Annoy Your Users
 
 ### 13. No Currency Support
 
@@ -278,7 +278,7 @@ Anyone with a socket connection can join any conversation room by guessing a val
 
 ---
 
-## LOW PRIORITY — Code Quality & Future-Proofing
+## LOW PRIORITY - Code Quality & Future-Proofing
 
 ### 18. Zero Tests
 
@@ -288,7 +288,7 @@ No unit tests, no integration tests, no E2E tests. This isn't blocking productio
 
 ### 19. Backend Has No TypeScript
 
-Frontend has TypeScript (partially). Backend is plain JavaScript. You'll hit runtime errors that TypeScript would have caught at compile time — especially in the expense splitting math and balance calculations where a wrong type ruins a financial calculation.
+Frontend has TypeScript (partially). Backend is plain JavaScript. You'll hit runtime errors that TypeScript would have caught at compile time - especially in the expense splitting math and balance calculations where a wrong type ruins a financial calculation.
 
 ---
 
@@ -373,6 +373,6 @@ Gmail app passwords are for personal use. At scale, Gmail will throttle or block
 **Ship it to a small group of trusted beta users? Yes.**  
 **Open it to the public and scale? No, not yet.**
 
-Fix the credential exposure and rate limiting first — those are emergencies, not improvements. Everything else can be done incrementally without blocking a soft launch. The product itself is solid. The infrastructure around it needs work.
+Fix the credential exposure and rate limiting first - those are emergencies, not improvements. Everything else can be done incrementally without blocking a soft launch. The product itself is solid. The infrastructure around it needs work.
 
 The good news: none of these are fundamental design flaws. Your architecture is sound. These are operational gaps, and they're all fixable in 2-3 focused weeks.

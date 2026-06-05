@@ -71,7 +71,7 @@ export default function LogoSlider() {
             </span>
           </h2>
           <p className="mt-3 text-sm text-foreground/45 font-medium max-w-md text-center">
-            From weekend road trips to month-long backpacking adventures — SplitEase keeps every group on the same page.
+            From weekend road trips to month-long backpacking adventures - SplitEase keeps every group on the same page.
           </p>
         </motion.div>
 

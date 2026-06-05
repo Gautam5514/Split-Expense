@@ -9,7 +9,6 @@ import HowItWorksSection from "@/components/home/HowItWorksSection";
 import InteractiveMockupSection from "@/components/home/InteractiveMockupSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
-import CTASection from "@/components/home/CTASection";
 import Footer from "@/components/Footer";
 
 export default function HomePage() {
@@ -32,8 +31,7 @@ export default function HomePage() {
       <InteractiveMockupSection />
       <FeaturesSection />
       <TestimonialsSection />
-      <CTASection />
-      <Footer />
+<Footer />
     </div>
   );
 }

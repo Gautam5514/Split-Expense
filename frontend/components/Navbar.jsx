@@ -25,7 +25,7 @@ const NAV_LINKS = [
   { href: "/ai",         icon: Bot,              label: "AI" },
 ];
 
-// Shown in mobile bottom bar (5 items — Groups is the raised FAB)
+// Shown in mobile bottom bar (5 items - Groups is the raised FAB)
 const BOTTOM_LINKS = [
   { href: "/users",     icon: Home,             label: "Home" },
   { href: "/chat",      icon: MessageCircle,    label: "Messages" },
@@ -151,7 +151,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Nav — md+ */}
+          {/* Desktop Nav - md+ */}
           {isLoggedIn ? (
             <div className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-foreground/[0.04] backdrop-blur-sm border border-foreground/[0.06]">
               {NAV_LINKS.map(({ href, icon: Icon, label, highlight }) => {
@@ -411,7 +411,7 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* Groups FAB — center raised button */}
+          {/* Groups FAB - center raised button */}
           <div className="relative -top-4 flex flex-col items-center">
             <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-cyan-500 to-teal-600 opacity-20 blur-sm animate-ping pointer-events-none" />
             <div className="absolute inset-0 rounded-full bg-cyan-500/20 blur-md animate-pulse pointer-events-none" />

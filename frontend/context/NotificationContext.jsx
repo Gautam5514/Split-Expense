@@ -154,9 +154,9 @@ export function NotificationProvider({ children }) {
       } catch (err) {
         const status = err.response?.status;
         // 404 = route missing on server (old deployment), 401/403 = auth issue.
-        // None of these will be fixed by retrying — bail immediately.
+        // None of these will be fixed by retrying - bail immediately.
         if (status === 404 || status === 401 || status === 403) {
-          console.error(`❌ FCM token registration blocked (${status}) — skipping retries`);
+          console.error(`❌ FCM token registration blocked (${status}) - skipping retries`);
           return;
         }
         console.error(`❌ FCM token registration failed (attempt ${attempt + 1}):`, err.message);

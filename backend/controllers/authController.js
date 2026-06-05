@@ -39,7 +39,7 @@ export const register = async (req, res) => {
       firebaseUid: fbUser.uid,
     });
 
-    // No JWT — client authenticates via Firebase ID token.
+    // No JWT - client authenticates via Firebase ID token.
     res.status(201).json({ user });
   } catch (err) {
     console.error("Register Error:", err);
@@ -65,7 +65,7 @@ export const login = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
 
-    // No JWT — client authenticates via Firebase ID token.
+    // No JWT - client authenticates via Firebase ID token.
     res.status(200).json({ user });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -81,7 +81,7 @@ export const googleLogin = async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Atomic upsert — prevents duplicate user creation under concurrent requests
+    // Atomic upsert - prevents duplicate user creation under concurrent requests
     let user = await User.findOneAndUpdate(
       { email: normalizedEmail },
       {
@@ -304,7 +304,7 @@ export const forgotPassword = async (req, res) => {
           <div style="padding:32px;">
             <p style="margin:0 0 16px;font-size:15px;color:#cbd5e1;">Hi ${user.name},</p>
             <p style="margin:0 0 24px;font-size:14px;color:#94a3b8;line-height:1.6;">
-              We received a request to reset your SplitEase password. Click the button below — this link expires in <strong style="color:#e2e8f0;">15 minutes</strong>.
+              We received a request to reset your SplitEase password. Click the button below - this link expires in <strong style="color:#e2e8f0;">15 minutes</strong>.
             </p>
             <div style="text-align:center;margin-bottom:24px;">
               <a href="${resetUrl}" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;border-radius:12px;font-weight:700;font-size:14px;letter-spacing:0.3px;">

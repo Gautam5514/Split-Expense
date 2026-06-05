@@ -5,7 +5,7 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// 10 AI queries per minute per IP — prevents Gemini API abuse
+// 10 AI queries per minute per IP - prevents Gemini API abuse
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,

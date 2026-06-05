@@ -69,7 +69,7 @@ export default function DownloadAppPage() {
           <div className="space-y-2">
             <h1 className="text-2xl font-extrabold text-foreground">Take SplitEase Everywhere</h1>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-              Manage your groups and expenses on the go — available on iOS and Android.
+              Manage your groups and expenses on the go - available on iOS and Android.
             </p>
           </div>
 

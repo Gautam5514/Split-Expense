@@ -23,10 +23,10 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: "Token missing email claim." });
     }
 
-    // Normalize email — Firebase always lowercases but guard against edge cases
+    // Normalize email - Firebase always lowercases but guard against edge cases
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Atomic upsert — findOne + create is NOT atomic and causes duplicate users
+    // Atomic upsert - findOne + create is NOT atomic and causes duplicate users
     // under concurrent requests (e.g. authMiddleware + googleLogin firing together).
     // findOneAndUpdate with upsert:true is a single atomic MongoDB operation.
     let user = await User.findOneAndUpdate(

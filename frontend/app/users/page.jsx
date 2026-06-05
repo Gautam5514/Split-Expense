@@ -72,7 +72,7 @@ export default function UserDashboardPage() {
       const allGroups = groupsRes.data || [];
       setGroups(allGroups);
 
-      // Use the MongoDB _id returned by /users/me — token decoding cannot give this
+      // Use the MongoDB _id returned by /users/me - token decoding cannot give this
       const uid = meRes.data?._id || meRes.data?.id || null;
       setMeId(uid);
 
@@ -462,7 +462,7 @@ export default function UserDashboardPage() {
                           )}
                         </div>
 
-                        {/* Stacked member avatars — photo if available, letter fallback */}
+                        {/* Stacked member avatars - photo if available, letter fallback */}
                         {group.members?.length > 0 && (
                           <div className="flex items-center gap-2">
                             <div className="flex -space-x-2">
@@ -503,7 +503,7 @@ export default function UserDashboardPage() {
 
                       </Link>
 
-                      {/* Absolutely centered right arrow — takes zero extra height */}
+                      {/* Absolutely centered right arrow - takes zero extra height */}
                       <Link
                         href={`/groups/${group._id}`}
                         className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-auto"
