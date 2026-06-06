@@ -3,6 +3,7 @@
 import AiMessage from "../models/aiMessageModel.js";
 import { generateWithRetry } from "../services/geminiService.js";
 import { buildUserContext } from "../services/contextBuilder.js";
+import { detectIntent, handleSmartQuery } from "../services/smartQueryHandler.js";
 
 /**
  * Cleans response text while preserving professional markdown formatting.
@@ -62,7 +63,17 @@ export const queryAI = async (req, res) => {
     // 1️⃣ Save the user's original question immediately.
     await AiMessage.create({ userId, role: "user", content: prompt });
 
-    // 2️⃣ STEP 1: CLASSIFY USER INTENT
+    // 2️⃣ SMART BACKEND HANDLER — intercept common data queries, no AI needed.
+    const intent = detectIntent(prompt);
+    if (intent) {
+      const smartReply = await handleSmartQuery(intent, userId, prompt);
+      if (smartReply) {
+        await AiMessage.create({ userId, role: "ai", content: smartReply });
+        return res.json({ text: smartReply });
+      }
+    }
+
+    // 3️⃣ STEP 1: CLASSIFY USER INTENT via AI (only if smart handler didn't match)
     // Quick preliminary call to understand the *type* of question.
     const classificationPrompt = `
       Analyze the following user question. Classify it as either 'PERSONAL_DATA' if it asks about the user's personal information (like expenses, groups, trips, plans, category spending, balances, planning notes), or 'GENERAL_KNOWLEDGE' if it's a general question (like general math, history, coding, or definitions).
@@ -73,12 +84,12 @@ export const queryAI = async (req, res) => {
     `;
 
     // Use generateWithRetry - auto retries + falls back to gemini-1.5-flash if 503
-    const intent = (await generateWithRetry(classificationPrompt, { maxRetries: 3 })).trim();
+    const aiIntent = (await generateWithRetry(classificationPrompt, { maxRetries: 3 })).trim();
 
     let finalPrompt;
 
-    // 3️⃣ STEP 2: CHOOSE THE CORRECT SYSTEM PROMPT BASED ON INTENT
-    if (intent === "PERSONAL_DATA") {
+    // 4️⃣ STEP 2: CHOOSE THE CORRECT SYSTEM PROMPT BASED ON INTENT
+    if (aiIntent === "PERSONAL_DATA") {
       // --- Fetch user-specific structured database state ---
       const context = await buildUserContext(userId);
 
@@ -116,17 +127,17 @@ export const queryAI = async (req, res) => {
       `;
     }
 
-    // 4️⃣ GENERATE: Send the chosen prompt with retry + fallback protection.
+    // 5️⃣ GENERATE: Send the chosen prompt with retry + fallback protection.
     const rawText = await generateWithRetry(finalPrompt, { maxRetries: 3 });
     let aiText = rawText || "Hmm... I had trouble generating an answer.";
 
-    // 5️⃣ Clean the response for better UI presentation.
+    // 6️⃣ Clean the response for better UI presentation.
     aiText = cleanText(aiText);
 
-    // 6️⃣ Save the AI's final response to the database.
+    // 7️⃣ Save the AI's final response to the database.
     await AiMessage.create({ userId, role: "ai", content: aiText });
 
-    // 7️⃣ Send the clean response to the frontend.
+    // 8️⃣ Send the clean response to the frontend.
     res.json({ text: aiText });
 
   } catch (err) {
