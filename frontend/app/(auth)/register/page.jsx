@@ -4,9 +4,40 @@ import { useRouter } from "next/navigation";
 import toast from "@/lib/toast";
 import { Eye, EyeOff, User, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from "firebase/auth";
+import Link from "next/link";
+import { motion } from "framer-motion";
 import { auth, googleProvider } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+
+function MarqueeColumn({ images, reverse }) {
+  return (
+    <div className="w-full flex flex-col gap-6 overflow-hidden h-[180%]">
+      <motion.div
+        className="flex flex-col gap-6"
+        initial={{ y: reverse ? "-50%" : "0%" }}
+        animate={{ y: reverse ? "0%" : "-50%" }}
+        transition={{
+          repeat: Infinity,
+          ease: "linear",
+          duration: 35,
+        }}
+      >
+        {[...images, ...images].map((src, i) => (
+          <div
+            key={i}
+            className="rounded-[24px] overflow-hidden border border-white/[0.08] shadow-2xl bg-[#090D14] aspect-[9/19] w-full"
+            style={{
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+            }}
+          >
+            <img src={src} className="w-full h-full object-cover animate-pulse-slow" alt="App Screen" />
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
 
 const steps = [
   {
@@ -146,227 +177,172 @@ export default function RegisterPage() {
   };
 
   return (
-    /* h-[100dvh] + overflow-hidden = zero scroll */
-    <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex" style={{ background: "#08080f" }}>
+    <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex bg-[#0B0B0B] text-white">
 
-      {/* ── Left visual panel ── */}
-      <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden flex-col justify-center px-12 py-8">
-        {/* bg */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#032040 0%,#052235 55%,#03101F 100%)" }} />
-        {/* grid */}
-        <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "linear-gradient(rgba(8,145,178,1) 1px,transparent 1px),linear-gradient(90deg,rgba(8,145,178,1) 1px,transparent 1px)", backgroundSize: "56px 56px" }} />
-        {/* orbs */}
-        <div className="absolute w-[440px] h-[440px] rounded-full pointer-events-none" style={{ bottom: "-10%", left: "-5%", background: "radial-gradient(circle,rgba(8,145,178,0.15) 0%,transparent 70%)" }} />
-        <div className="absolute w-[320px] h-[320px] rounded-full pointer-events-none" style={{ top: "5%", right: "-5%", background: "radial-gradient(circle,rgba(14,116,144,0.12) 0%,transparent 70%)" }} />
-
-        <div className="relative z-10 max-w-[400px]">
-          {/* logo */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(8,145,178,0.4)" }}>
+      {/* LEFT PANEL: Form and Branding */}
+      <div className="w-full lg:w-[48%] h-full flex flex-col justify-between px-6 sm:px-12 md:px-16 py-8 relative overflow-y-auto bg-[#0A0A0A] border-r border-white/5 custom-scrollbar">
+        
+        {/* Logo Header */}
+        <div className="flex items-center gap-2.5 mt-2 mb-6 justify-center lg:justify-start">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center border border-white/10 group-hover:scale-105 transition-transform duration-200 bg-zinc-950 shrink-0">
               <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
-            <span className="text-2xl font-black text-white tracking-tight">SplitEase</span>
-          </div>
-
-          {/* headline */}
-          <h1 className="text-[2.2rem] font-extrabold text-white leading-[1.15] mb-3">
-            Built for groups,<br />
-            <span style={{ background: "linear-gradient(90deg,#22D3EE,#0EA5E9,#38BDF8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              loved by friends.
+            <span className="font-extrabold text-xl tracking-tight text-white font-serif-premium lowercase text-2xl">
+              SplitEase
             </span>
-          </h1>
-          <p className="text-slate-400 text-sm leading-relaxed mb-7">
-            Join thousands of groups already using Split to manage shared finances with zero drama.
-          </p>
-
-          {/* steps */}
-          <div className="space-y-4">
-            {steps.map((step, i) => (
-              <div key={i} className="flex items-start gap-4">
-                <div className="relative flex-shrink-0">
-                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${step.gradient} flex items-center justify-center`} style={{ boxShadow: `0 4px 14px ${step.glow}` }}>
-                    <span className="text-white text-xs font-black">{step.number}</span>
-                  </div>
-                  {i < steps.length - 1 && (
-                    <div className="absolute left-1/2 top-full -translate-x-1/2 w-px mt-0.5" style={{ height: "16px", background: "linear-gradient(to bottom,rgba(8,145,178,0.4),transparent)" }} />
-                  )}
-                </div>
-                <div className="pb-3">
-                  <p className="text-white text-sm font-semibold mb-0.5">{step.title}</p>
-                  <p className="text-slate-500 text-xs leading-relaxed">{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* social proof */}
-          <div className="mt-6 flex items-center gap-4 rounded-2xl px-4 py-3 border border-white/[0.07]" style={{ background: "rgba(255,255,255,0.03)" }}>
-            <div className="flex -space-x-2">
-              {avatars.map((a) => (
-                <div key={a.label} className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ring-2 ring-[#032040]" style={{ background: a.color }}>
-                  {a.label}
-                </div>
-              ))}
-            </div>
-            <div>
-              <p className="text-white text-sm font-semibold">Join 50,000+ users</p>
-              <p className="text-slate-500 text-xs">who already split smarter</p>
-            </div>
-          </div>
+          </Link>
         </div>
-      </div>
 
-      {/* ── Right form panel ── */}
-      <div className="flex-1 h-[100dvh] flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#04111F" }}>
-        <div className="w-full max-w-[380px] py-4">
-          {/* mobile logo */}
-          <div className="flex items-center gap-2.5 mb-5 lg:hidden justify-center">
-            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center border border-white/10">
-              <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
-            </div>
-            <span className="text-xl font-extrabold text-white">SplitEase</span>
+        {/* Center Content Wrapper */}
+        <div className="w-full max-w-[360px] mx-auto my-auto py-6">
+          <div className="mb-6">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">Create your account</h2>
+            <p className="text-slate-400 text-sm">Free forever · No credit card required</p>
           </div>
 
-          {/* heading */}
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold text-white mb-0.5">Create your account</h2>
-            <p className="text-slate-400 text-xs">Free forever · No credit card required</p>
-          </div>
-
-          {/* Google */}
+          {/* Google Sign Up */}
           <button
             onClick={handleGoogleSignup}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl font-semibold text-xs text-white/80 hover:text-white border border-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer"
-            style={{ background: "rgba(255,255,255,0.05)" }}
+            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-bold text-sm text-white/95 border border-white/10 hover:border-white/25 hover:bg-white/5 transition-all duration-200 cursor-pointer"
           >
             <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" className="w-4.5 h-4.5" />
-            Sign up with Google
+            Continue with Google
           </button>
 
-          {/* divider */}
-          <div className="relative my-3.5">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/[0.08]" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="px-4 text-[10px] font-medium text-slate-600 uppercase tracking-[0.2em]" style={{ background: "#04111F" }}>
-                or sign up with email
-              </span>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.08]" /></div>
+            <div className="relative flex justify-center text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+              <span className="px-3 bg-[#0A0A0A]">or</span>
             </div>
           </div>
 
-          {/* form */}
-          <form onSubmit={handleRegister} className="space-y-2.5">
-            {/* name */}
+          {/* Form */}
+          <form onSubmit={handleRegister} className="space-y-4">
+            {/* Full Name */}
             <div>
-              <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Full name</label>
-              <div className="relative flex items-center rounded-xl border transition-all duration-200"
-                style={{
-                  background: focused === "name" ? "rgba(8,145,178,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: errors.name ? "#f87171" : (focused === "name" ? "rgba(8,145,178,0.6)" : "rgba(255,255,255,0.08)"),
-                  boxShadow: errors.name ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "name" ? "0 0 0 3px rgba(8,145,178,0.1)" : "none"),
-                }}>
-                <User className="absolute left-4 w-4 h-4 text-slate-600" />
-                <input
-                  type="text" placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); clearError("name"); }}
-                  onFocus={() => setFocused("name")} onBlur={() => setFocused("")}
-                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-2.5 rounded-xl outline-none text-sm"
-                />
-              </div>
-              {errors.name && <p className="text-red-400 text-xs mt-1 ml-1">{errors.name}</p>}
+              <input
+                type="text"
+                placeholder="Enter full name"
+                value={name}
+                onChange={(e) => { setName(e.target.value); clearError("name"); }}
+                className="w-full bg-[#121212] text-white placeholder-slate-500 px-4 py-3.5 rounded-xl border border-white/10 focus:border-white focus:ring-1 focus:ring-white outline-none text-sm transition-all"
+              />
+              {errors.name && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.name}</p>}
             </div>
 
-            {/* email */}
+            {/* Email Address */}
             <div>
-              <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Email address</label>
-              <div className="relative flex items-center rounded-xl border transition-all duration-200"
-                style={{
-                  background: focused === "email" ? "rgba(8,145,178,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: errors.email ? "#f87171" : (focused === "email" ? "rgba(8,145,178,0.6)" : "rgba(255,255,255,0.08)"),
-                  boxShadow: errors.email ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "email" ? "0 0 0 3px rgba(8,145,178,0.1)" : "none"),
-                }}>
-                <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
-                <input
-                  type="email" placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
-                  onFocus={() => setFocused("email")} onBlur={() => setFocused("")}
-                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-2.5 rounded-xl outline-none text-sm"
-                />
-              </div>
-              {errors.email && <p className="text-red-400 text-xs mt-1 ml-1">{errors.email}</p>}
+              <input
+                type="email"
+                placeholder="Enter email address"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
+                className="w-full bg-[#121212] text-white placeholder-slate-500 px-4 py-3.5 rounded-xl border border-white/10 focus:border-white focus:ring-1 focus:ring-white outline-none text-sm transition-all"
+              />
+              {errors.email && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.email}</p>}
             </div>
 
-            {/* password */}
+            {/* Password */}
             <div>
-              <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Password</label>
-              <div className="relative flex items-center rounded-xl border transition-all duration-200"
-                style={{
-                  background: focused === "password" ? "rgba(8,145,178,0.06)" : "rgba(255,255,255,0.04)",
-                  borderColor: errors.password ? "#f87171" : (focused === "password" ? "rgba(8,145,178,0.6)" : "rgba(255,255,255,0.08)"),
-                  boxShadow: errors.password ? "0 0 0 3px rgba(248,113,113,0.1)" : (focused === "password" ? "0 0 0 3px rgba(8,145,178,0.1)" : "none"),
-                }}>
-                <Lock className="absolute left-4 w-4 h-4 text-slate-600" />
+              <div className="relative flex items-center">
                 <input
-                  type={showPassword ? "text" : "password"} placeholder="Min. 8 characters"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
-                  onFocus={() => setFocused("password")} onBlur={() => setFocused("")}
-                  className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-12 py-2.5 rounded-xl outline-none text-sm"
+                  className="w-full bg-[#121212] text-white placeholder-slate-500 pl-4 pr-12 py-3.5 rounded-xl border border-white/10 focus:border-white focus:ring-1 focus:ring-white outline-none text-sm transition-all"
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-slate-600 hover:text-slate-400 transition-colors">
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                 </button>
               </div>
-              {errors.password && <p className="text-red-400 text-xs mt-1 ml-1">{errors.password}</p>}
+              {errors.password && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.password}</p>}
 
-              {/* strength meter */}
+              {/* Password strength meter */}
               {password.length > 0 && (
-                <div className="mt-1.5">
-                  <div className="flex gap-1">
+                <div className="mt-2.5 px-1">
+                  <div className="flex gap-1.5">
                     {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
-                        style={{ background: i <= passwordStrength ? strengthColor : "rgba(255,255,255,0.08)" }}
+                      <div
+                        key={i}
+                        className="h-1 flex-1 rounded-full transition-all duration-300"
+                        style={{
+                          background: i <= passwordStrength ? strengthColor : "rgba(255,255,255,0.08)",
+                        }}
                       />
                     ))}
                   </div>
-                  <p className="text-[10px] mt-0.5 font-medium transition-colors duration-200" style={{ color: strengthColor }}>
-                    {strengthLabel}
+                  <p
+                    className="text-[10px] mt-1.5 font-bold transition-colors duration-200"
+                    style={{ color: strengthColor }}
+                  >
+                    Strength: {strengthLabel}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* submit */}
+            {/* Submit button */}
             <button
-              type="submit" disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
-              style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 4px 20px rgba(8,145,178,0.35)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(8,145,178,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(8,145,178,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-black bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer text-sm"
             >
-              {isLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Creating account…</> : <>Create account <ArrowRight className="w-4 h-4" /></>}
+              {isLoading ? <Loader2 className="animate-spin w-4.5 h-4.5 text-black" /> : "Create account"}
             </button>
           </form>
 
-          <p className="mt-3 text-center text-[10px] text-slate-600 leading-relaxed">
-            By signing up, you agree to our{" "}
-            <a href="#" className="text-slate-400 hover:text-slate-300 transition-colors">Terms</a>
-            {" "}and{" "}
-            <a href="#" className="text-slate-400 hover:text-slate-300 transition-colors">Privacy Policy</a>.
-          </p>
+          <div className="mt-5 text-center text-xs">
+            <p className="text-slate-500">
+              Already have an account?{" "}
+              <Link href="/login" className="text-white font-bold hover:underline">Sign in</Link>
+            </p>
+          </div>
 
-          <p className="mt-2.5 text-center text-xs text-slate-500">
-            Already have an account?{" "}
-            <a href="/login" className="text-sky-400 hover:text-sky-300 font-semibold transition-colors">
-              Sign in →
-            </a>
-          </p>
+          <div className="mt-6 border-t border-white/[0.05] pt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold text-slate-500">
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+          </div>
+        </div>
+
+        {/* Grayscale partner logos */}
+        <div className="mt-8 text-center pb-2">
+          <p className="text-[9px] font-semibold text-slate-600 uppercase tracking-widest mb-3">Trusted by users at</p>
+          <div className="flex justify-center items-center gap-6 opacity-30 grayscale filter">
+            <img src="/airbnb.png" className="h-3.5 object-contain" alt="Airbnb" />
+            <img src="/expedia.png" className="h-3.5 object-contain" alt="Expedia" />
+            <img src="/tripadvisor.png" className="h-3.5 object-contain" alt="Tripadvisor" />
+            <img src="/skyscanner.png" className="h-3.5 object-contain" alt="Skyscanner" />
+          </div>
+        </div>
+
+      </div>
+
+      {/* RIGHT PANEL: Isometric Scrolling Collage */}
+      <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden bg-[#070707]">
+        {/* Dark overlay gradients */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/85 via-transparent to-black/90 z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,#070707_100%)] z-10 pointer-events-none" />
+
+        {/* Skewed screen columns marquee */}
+        <div 
+          className="absolute w-[140%] h-[140%] -top-[20%] -left-[20%] grid grid-cols-3 gap-6 opacity-60 pointer-events-none select-none"
+          style={{
+            transform: "rotate(-25deg) skewX(-2deg) translateY(-80px)",
+          }}
+        >
+          <MarqueeColumn images={["/mobile.png", "/mobile.png", "/mobile.png"]} reverse={false} />
+          <MarqueeColumn images={["/mobile.png", "/mobile.png", "/mobile.png"]} reverse={true} />
+          <MarqueeColumn images={["/mobile.png", "/mobile.png", "/mobile.png"]} reverse={false} />
         </div>
       </div>
+
     </div>
   );
 }

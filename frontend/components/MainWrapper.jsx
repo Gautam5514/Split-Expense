@@ -7,7 +7,7 @@ export default function MainWrapper({ children }) {
   const isLoggedIn = !!token;
 
   return (
-    <main className="pt-[96px] md:pt-[108px] min-h-screen">
+    <main className={`min-h-screen ${isLoggedIn ? "pt-[96px] md:pt-[108px]" : ""}`}>
       {children}
     </main>
   );

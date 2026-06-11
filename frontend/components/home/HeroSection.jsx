@@ -42,141 +42,85 @@ const NAV = [
 
 export default function HeroSection() {
   const router = useRouter();
-  const [bgIndex, setBgIndex] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setBgIndex((p) => (p + 1) % BG_IMAGES.length), 5000);
-    return () => clearInterval(t);
-  }, []);
 
   return (
-    <section className="relative w-full min-h-screen overflow-hidden flex flex-col">
+    <section className="relative w-full min-h-screen overflow-hidden flex flex-col bg-black text-white pt-28 pb-12 sm:pb-20">
 
-      {/* Sliding background */}
-      <div className="absolute inset-0 z-0">
-        <AnimatePresence mode="popLayout">
-          <motion.img
-            key={bgIndex}
-            src={BG_IMAGES[bgIndex]}
-            alt=""
-            initial={{ opacity: 0, scale: 1.06 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.8, ease: "easeInOut" }}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        </AnimatePresence>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/85 dark:from-black/75 dark:via-black/60 dark:to-black" />
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-950/25 via-transparent to-teal-950/25 dark:from-cyan-950/50 dark:to-teal-950/50" />
-        <div className="absolute bottom-0 inset-x-0 h-48 sm:h-64 bg-gradient-to-t from-background to-transparent" />
-      </div>
+      {/* Background Gradients matching obsidianos.com */}
+      <div className="absolute inset-x-0 top-0 -bottom-[164px] z-0" style={{ background: "linear-gradient(180deg, #000 0%, #2F2C2A 67%)" }} />
+      <div className="pointer-events-none absolute top-[656px] -bottom-[42px] -left-[218px] -right-[218px] z-[4]" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, #000 83.35%)" }} />
+      <div className="absolute inset-0 bg-radial-gradient(circle_at_center,rgba(8,145,178,0.03)_0%,transparent_70%) z-[1]" />
 
-      {/* Above-fold content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-20 sm:pt-28 flex flex-col items-center">
+      {/* Main Content Area */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col items-center">
 
         {/* Headline */}
         <motion.h1
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.85, delay: 0.08 }}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-black text-center text-white leading-[1.04] tracking-tight mb-4 sm:mb-5"
+          transition={{ duration: 0.95, ease: "easeOut" }}
+          className="font-serif-premium font-normal text-white text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] tracking-tight leading-[1.05] text-center mb-6 max-w-4xl"
         >
-          Split expenses,
-          <br />
-          <span
-            className="bg-clip-text text-transparent"
-            style={{ backgroundImage: "linear-gradient(135deg, #22D3EE 0%, #38BDF8 40%, #34D399 100%)" }}
-          >
-            not friendships.
-          </span>
+          The all-in-one platform for splitting expenses
         </motion.h1>
 
         {/* Subtext */}
         <motion.p
-          initial={{ opacity: 0, y: 18 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.18 }}
-          className="text-sm sm:text-base md:text-lg text-white/50 max-w-sm sm:max-w-lg text-center leading-relaxed mb-7 sm:mb-9 font-medium px-2"
+          transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
+          className="text-white/60 text-sm sm:text-base md:text-lg max-w-2xl text-center leading-relaxed mb-8 sm:mb-10 font-medium px-4"
         >
-          Track shared costs, settle up in one tap, and let AI handle the math -
-          so you focus on the memories, not the bills.
+          AI-powered expense management available now - with intelligent receipt scanning and smart settling launching soon.
         </motion.p>
 
-        {/* CTAs */}
+        {/* CTA Button */}
         <motion.div
-          initial={{ opacity: 0, y: 18 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.28 }}
-          className="flex flex-col sm:flex-row items-center gap-3 mb-5 w-full sm:w-auto px-4 sm:px-0"
+          transition={{ duration: 0.85, delay: 0.25, ease: "easeOut" }}
+          className="mb-16 sm:mb-24"
         >
           <button
             onClick={() => router.push("/register")}
-            className="group flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:scale-105 active:scale-95"
-            style={{
-              background: "linear-gradient(135deg, #0891B2, #0E7490)",
-              boxShadow: "0 0 40px rgba(8,145,178,0.45), 0 4px 20px rgba(0,0,0,0.3)",
-            }}
+            className="px-8 py-3.5 rounded-full font-bold text-black bg-white hover:bg-white/95 transition-all hover:scale-105 active:scale-95 text-sm sm:text-base shadow-[0_4px_25px_rgba(255,255,255,0.18)] cursor-pointer"
           >
-            <Zap className="w-4 h-4" />
-            Start for free
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </button>
-          <button
-            onClick={() => router.push("/login")}
-            className="flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 rounded-2xl font-semibold text-white/75 text-sm transition-all hover:scale-105 active:scale-95 hover:text-white"
-            style={{
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.14)",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            Sign in
+            Get Started For Free
           </button>
         </motion.div>
 
-        {/* Social proof */}
+        {/* Floating Glassmorphic App Preview Simulator */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.42 }}
-          className="flex items-center gap-3 mb-8 sm:mb-12 text-xs sm:text-sm text-white/35 font-medium"
-        >
-          <div className="flex -space-x-2">
-            {["Felix", "Lily", "Alex", "Sam", "Priya"].map((n) => (
-              <img
-                key={n}
-                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${n}&backgroundColor=c4b5fd`}
-                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-black/60 bg-teal-900 object-cover"
-                alt={n}
-              />
-            ))}
-          </div>
-          <span>
-            Trusted by <strong className="text-white/60">2,000+</strong> groups worldwide
-          </span>
-        </motion.div>
-
-        {/* Image indicator dots */}
-        <div className="flex gap-1.5 mb-5 sm:mb-6">
-          {BG_IMAGES.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setBgIndex(i)}
-              className={`h-1 rounded-full transition-all duration-500 ${i === bgIndex ? "w-6 bg-white" : "w-1.5 bg-white/30"}`}
-            />
-          ))}
-        </div>
-
-        {/* App Preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 70 }}
+          initial={{ opacity: 0, y: 80 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.1, delay: 0.5, type: "spring", stiffness: 55, damping: 18 }}
-          className="w-full max-w-6xl mx-auto"
+          transition={{ duration: 1.2, delay: 0.45, type: "spring", stiffness: 45, damping: 16 }}
+          className="w-full max-w-6xl mx-auto z-10 relative px-2 sm:px-0"
         >
+          <div className="absolute -inset-1 rounded-2xl bg-cyan-500/5 blur-xl pointer-events-none" />
           <InteractiveDashboardSimulator />
         </motion.div>
       </div>
+
+      {/* Flanking Rock Textures (In Background z-[5] to sit below the mockup card) */}
+      <picture>
+        <source srcSet="/stone-left.webp" type="image/webp" />
+        <img
+          src="/stone-left.webp"
+          alt=""
+          decoding="async"
+          className="pointer-events-none absolute max-w-none bottom-[-100px] left-[-140px] size-[844px] max-md:bottom-[0px] max-md:left-[-5%] max-md:size-[356px] max-xl:bottom-[-100px] max-xl:left-[-200px] z-[5]"
+        />
+      </picture>
+
+      <picture>
+        <source srcSet="/stone-right.webp" type="image/webp" />
+        <img
+          src="/stone-right.webp"
+          alt=""
+          decoding="async"
+          className="pointer-events-none absolute max-w-none right-[-820px] bottom-[-100px] h-[940px] w-[1500px] max-md:right-[-240px] max-md:bottom-[0px] max-md:size-[500px] max-xl:right-[-920px] max-xl:bottom-[-100px] z-[5]"
+        />
+      </picture>
     </section>
   );
 }

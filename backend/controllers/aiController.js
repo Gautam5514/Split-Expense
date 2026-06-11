@@ -73,71 +73,42 @@ export const queryAI = async (req, res) => {
       }
     }
 
-    // 3️⃣ STEP 1: CLASSIFY USER INTENT via AI (only if smart handler didn't match)
-    // Quick preliminary call to understand the *type* of question.
-    const classificationPrompt = `
-      Analyze the following user question. Classify it as either 'PERSONAL_DATA' if it asks about the user's personal information (like expenses, groups, trips, plans, category spending, balances, planning notes), or 'GENERAL_KNOWLEDGE' if it's a general question (like general math, history, coding, or definitions).
+    // 3️⃣ SINGLE-CALL PROMPT: fetch DB context (no AI cost) and let one Gemini
+    // call decide for itself whether the question is personal or general.
+    const context = await buildUserContext(userId);
 
-      Respond with only a single word: PERSONAL_DATA or GENERAL_KNOWLEDGE.
+    const finalPrompt = `
+      You are **SplitEase AI**, a friendly assistant inside an expense-splitting app.
+      You can answer two kinds of questions:
 
-      User Question: "${prompt}"
+      1. **Personal questions** about the user's own expenses, groups, balances, settlements, categories, or notes — use the DATABASE STATE below to answer these accurately.
+      2. **General questions** (math, definitions, coding, advice, etc.) — answer these directly using your own knowledge, ignoring the DATABASE STATE.
+
+      --- START DATABASE STATE ---
+      ${context}
+      --- END DATABASE STATE ---
+
+      ### Guidelines:
+      - For balances/settlements, look across ALL groups and net out cross-group debts where possible.
+      - Keep money calculations to exactly 2 decimal places.
+      - Use clean Markdown: bold headers, bullet lists, blockquotes for warnings.
+      - If a personal question asks for data that isn't in the DATABASE STATE, say: "I searched your SplitEase records but couldn't find any information about that." Do not invent data.
+      - Keep answers concise and to the point — no unnecessary padding.
+
+      **User Question**: "${prompt}"
     `;
 
-    // Use generateWithRetry - auto retries + falls back to gemini-1.5-flash if 503
-    const aiIntent = (await generateWithRetry(classificationPrompt, { maxRetries: 3 })).trim();
-
-    let finalPrompt;
-
-    // 4️⃣ STEP 2: CHOOSE THE CORRECT SYSTEM PROMPT BASED ON INTENT
-    if (aiIntent === "PERSONAL_DATA") {
-      // --- Fetch user-specific structured database state ---
-      const context = await buildUserContext(userId);
-
-      finalPrompt = `
-        You are **SplitEase Pro Financial Director & Intelligence Analyst**, the premium AI brain of SplitEase.
-        Your goal is to parse the user's comprehensive database and provide professional-grade financial advice, exact split calculations, and smart, proactive cost optimization.
-
-        --- START DATABASE STATE ---
-        ${context}
-        --- END DATABASE STATE ---
-
-        ### CRITICAL ANALYTICAL INSTRUCTIONS:
-        1. **Cross-Group Debt Simplification**: When asked about balances or settlements, look across ALL groups. If the user owes Person A in Group X but is owed by Person A in Group Y, calculate the *net cross-group settlement*! Proactively suggest this to simplify their real-world transfers.
-        2. **Category & Trend Analytics**: If the user asks about spending, summarize their total expenses by category (e.g., Food, Travel, Stay, General) as percentages of their total out-of-pocket costs.
-        3. **Anomaly & Spikes Warning**: Proactively flag:
-           - Double entries (e.g., identical descriptions, amounts, and dates recorded in a group).
-           - Outliers (extremely high individual transactions compared to average group costs).
-           - Missing receipts (flag items without attachments if they seem high, e.g., > ₹1,000).
-        4. **Group Trip Cost Predictions**: If the user asks about future trips or budgeting, check past group ledgers to predict daily average category splits, giving them a data-backed target budget.
-        5. **Precision Math**: Keep all calculations to exactly 2 decimal places. Always verify split calculations to ensure they equal the total amount.
-        6. **Professional Formatting**: Use beautiful, clean Markdown. Bold headers, neat lists, blockquotes for important warnings, and tidy bullet lists.
-        7. **Confined Intelligence**: If a question is about personal records but the requested data is completely missing from the DATABASE STATE, explain clearly: "I searched your SplitEase records but couldn't find any information about that." Do not invent facts.
-
-        Please respond to the following user question:
-        **Question**: "${prompt}"
-      `;
-    } else {
-      // --- Path for general knowledge questions ---
-      finalPrompt = `
-        You are an advanced general knowledge assistant.
-        Provide a highly helpful, accurate, and structured answer.
-        Use beautiful markdown bolding, clear formatting, and lists where appropriate.
-
-        Question: "${prompt}"
-      `;
-    }
-
-    // 5️⃣ GENERATE: Send the chosen prompt with retry + fallback protection.
-    const rawText = await generateWithRetry(finalPrompt, { maxRetries: 3 });
+    // 4️⃣ GENERATE: single call with retry + model fallback protection.
+    const rawText = await generateWithRetry(finalPrompt);
     let aiText = rawText || "Hmm... I had trouble generating an answer.";
 
-    // 6️⃣ Clean the response for better UI presentation.
+    // 5️⃣ Clean the response for better UI presentation.
     aiText = cleanText(aiText);
 
-    // 7️⃣ Save the AI's final response to the database.
+    // 6️⃣ Save the AI's final response to the database.
     await AiMessage.create({ userId, role: "ai", content: aiText });
 
-    // 8️⃣ Send the clean response to the frontend.
+    // 7️⃣ Send the clean response to the frontend.
     res.json({ text: aiText });
 
   } catch (err) {

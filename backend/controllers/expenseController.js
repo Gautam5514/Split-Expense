@@ -164,6 +164,7 @@ export const addExpense = async (req, res) => {
 
     const populated = await Expense.findById(expense._id)
       .populate("paidBy", "name email")
+      .populate("splits.userId", "name email")
       .lean();
 
     invalidateBalanceCache(groupId);
@@ -199,6 +200,7 @@ export const getExpenses = async (req, res) => {
     const expenses = await Expense.find({ groupId })
       .sort({ date: -1 })
       .populate("paidBy", "name email")
+      .populate("splits.userId", "name email")
       .lean();
     res.json(expenses);
   } catch (err) {
@@ -249,7 +251,10 @@ export const recordSettlement = async (req, res) => {
       "group"
     );
 
-    const populated = await Expense.findById(expense._id).populate("paidBy", "name email").lean();
+    const populated = await Expense.findById(expense._id)
+      .populate("paidBy", "name email")
+      .populate("splits.userId", "name email")
+      .lean();
     invalidateBalanceCache(groupId);
     res.status(201).json(populated);
   } catch (err) {

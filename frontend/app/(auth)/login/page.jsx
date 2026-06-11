@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import toast from "@/lib/toast";
 import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight, ShieldCheck, RotateCcw } from "lucide-react";
@@ -119,6 +120,35 @@ function OtpInput({ value, onChange, disabled }) {
           }}
         />
       ))}
+    </div>
+  );
+}
+
+function MarqueeColumn({ images, reverse }) {
+  return (
+    <div className="w-full flex flex-col gap-6 overflow-hidden h-[180%]">
+      <motion.div
+        className="flex flex-col gap-6"
+        initial={{ y: reverse ? "-50%" : "0%" }}
+        animate={{ y: reverse ? "0%" : "-50%" }}
+        transition={{
+          repeat: Infinity,
+          ease: "linear",
+          duration: 35,
+        }}
+      >
+        {[...images, ...images].map((src, i) => (
+          <div
+            key={i}
+            className="rounded-[24px] overflow-hidden border border-white/[0.08] shadow-2xl bg-[#090D14] aspect-[9/19] w-full"
+            style={{
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+            }}
+          >
+            <img src={src} className="w-full h-full object-cover animate-pulse-slow" alt="App Screen" />
+          </div>
+        ))}
+      </motion.div>
     </div>
   );
 }
@@ -296,272 +326,205 @@ export default function LoginPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex" style={{ background: "#030B16" }}>
+    <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex bg-[#0B0B0B] text-white">
 
-      {/* Left visual panel */}
-      <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden flex-col justify-center px-12 py-8">
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#03101F 0%,#062035 50%,#031A30 100%)" }} />
-        <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "linear-gradient(rgba(8,145,178,1) 1px,transparent 1px),linear-gradient(90deg,rgba(8,145,178,1) 1px,transparent 1px)", backgroundSize: "56px 56px" }} />
-        <div className="absolute w-[460px] h-[460px] rounded-full pointer-events-none" style={{ top: "5%", left: "-10%", background: "radial-gradient(circle,rgba(8,145,178,0.18) 0%,transparent 70%)" }} />
-        <div className="absolute w-[360px] h-[360px] rounded-full pointer-events-none" style={{ bottom: "0%", right: "-5%", background: "radial-gradient(circle,rgba(14,116,144,0.15) 0%,transparent 70%)" }} />
-
-        <div className="relative z-10 max-w-[400px]">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(8,145,178,0.4)" }}>
+      {/* LEFT PANEL: Form and Branding */}
+      <div className="w-full lg:w-[48%] h-full flex flex-col justify-between px-6 sm:px-12 md:px-16 py-8 relative overflow-y-auto bg-[#0A0A0A] border-r border-white/5 custom-scrollbar">
+        
+        {/* Logo Header */}
+        <div className="flex items-center gap-2.5 mt-2 mb-6 justify-center lg:justify-start">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center border border-white/10 group-hover:scale-105 transition-transform duration-200 bg-zinc-950 shrink-0">
               <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
-            <span className="text-2xl font-black text-white tracking-tight">SplitEase</span>
-          </div>
-
-          <h1 className="text-[2.2rem] font-extrabold text-white leading-[1.15] mb-3">
-            Share expenses,<br />
-            <span style={{ background: "linear-gradient(90deg,#22D3EE,#38BDF8,#0EA5E9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              not the hassle.
+            <span className="font-extrabold text-xl tracking-tight text-white font-serif-premium lowercase text-2xl">
+              SplitEase
             </span>
-          </h1>
-          <p className="text-slate-400 text-sm leading-relaxed mb-7">
-            Track group expenses effortlessly and settle up with ease - no awkward conversations needed.
-          </p>
-
-          <div className="space-y-2.5">
-            {expenseCards.map((card) => (
-              <div key={card.title} className={`${card.offset} flex items-center gap-3 rounded-2xl px-4 py-3 border border-white/[0.07] transition-transform hover:-translate-y-0.5`} style={{ background: "rgba(255,255,255,0.04)", backdropFilter: "blur(12px)" }}>
-                <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                  {card.initial}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-semibold truncate">{card.title}</p>
-                  <p className="text-slate-500 text-xs">{card.meta}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className={`text-sm font-bold ${card.amountColor}`}>{card.amount}</p>
-                  <p className="text-slate-500 text-xs">{card.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-7 flex gap-8">
-            {[{ value: "50K+", label: "Users" }, { value: "$2M+", label: "Settled" }, { value: "4.9 ★", label: "Rating" }].map((s) => (
-              <div key={s.label}>
-                <p className="text-xl font-black text-white">{s.value}</p>
-                <p className="text-slate-500 text-xs mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
+          </Link>
         </div>
-      </div>
 
-      {/* Right form panel */}
-      <div className="flex-1 h-[100dvh] flex flex-col justify-center items-center px-6 lg:px-10 overflow-hidden relative" style={{ background: "#04111F" }}>
-        <div className="w-full max-w-[380px] py-4">
-
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-5 lg:hidden justify-center">
-            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center border border-white/10">
-              <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
-            </div>
-            <span className="text-xl font-extrabold text-white">SplitEase</span>
-          </div>
+        {/* Center Content Wrapper */}
+        <div className="w-full max-w-[360px] mx-auto my-auto py-6">
 
           {/* ── STEP: login ─────────────────────────────────────────────── */}
           {step === "login" && (
             <>
-              <div className="mb-5">
-                <h2 className="text-2xl font-bold text-white mb-1">Welcome back</h2>
-                <p className="text-slate-400 text-sm">Sign in to continue splitting expenses</p>
+              <div className="mb-6">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">Welcome back</h2>
+                <p className="text-slate-400 text-sm">Sign in to continue splitting expenses with zero drama.</p>
               </div>
 
               <button
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-sm text-white/80 hover:text-white border border-white/10 hover:border-white/20 transition-all duration-200"
-                style={{ background: "rgba(255,255,255,0.05)" }}
+                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-bold text-sm text-white/95 border border-white/10 hover:border-white/25 hover:bg-white/5 transition-all duration-200 cursor-pointer"
               >
-                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" className="w-5 h-5" />
+                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" className="w-4.5 h-4.5" />
                 Continue with Google
               </button>
 
-              <div className="relative my-4">
+              <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.08]" /></div>
-                <div className="relative flex justify-center">
-                  <span className="px-4 text-[11px] font-medium text-slate-600 uppercase tracking-[0.2em]" style={{ background: "#04111F" }}>
-                    or continue with email
-                  </span>
+                <div className="relative flex justify-center text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+                  <span className="px-3 bg-[#0A0A0A]">or</span>
                 </div>
               </div>
 
-              <form onSubmit={handleEmailLogin} className="space-y-3.5">
-                {/* email */}
+              <form onSubmit={handleEmailLogin} className="space-y-4">
+                {/* Email address */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email address</label>
-                  <div className="relative flex items-center rounded-xl border transition-all duration-200" style={fieldStyle("email")}>
-                    <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
-                    <input
-                      type="email" placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
-                      onFocus={() => setFocused("email")} onBlur={() => setFocused("")}
-                      className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-3 rounded-xl outline-none text-sm"
-                    />
-                  </div>
+                  <input
+                    type="email"
+                    placeholder="Enter email address"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
+                    className="w-full bg-[#121212] text-white placeholder-slate-500 px-4 py-3.5 rounded-xl border border-white/10 focus:border-white focus:ring-1 focus:ring-white outline-none text-sm transition-all"
+                  />
                   {errors.email && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.email}</p>}
                 </div>
 
-                {/* password */}
+                {/* Password */}
                 <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Password</label>
-                    <button
-                      type="button"
-                      onClick={() => { setStep("forgot"); setForgotEmail(""); setErrors({}); }}
-                      className="text-[11px] text-sky-400 hover:text-sky-300 transition-colors cursor-pointer outline-none"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                  <div className="relative flex items-center rounded-xl border transition-all duration-200" style={fieldStyle("password")}>
-                    <Lock className="absolute left-4 w-4 h-4 text-slate-600" />
+                  <div className="relative flex items-center">
                     <input
-                      type={showPassword ? "text" : "password"} placeholder="••••••••"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter password"
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
-                      onFocus={() => setFocused("password")} onBlur={() => setFocused("")}
-                      className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-12 py-3 rounded-xl outline-none text-sm"
+                      className="w-full bg-[#121212] text-white placeholder-slate-500 pl-4 pr-12 py-3.5 rounded-xl border border-white/10 focus:border-white focus:ring-1 focus:ring-white outline-none text-sm transition-all"
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-slate-600 hover:text-slate-400 transition-colors">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                     </button>
                   </div>
                   {errors.password && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.password}</p>}
                 </div>
 
+                {/* Continue button */}
                 <button
-                  type="submit" disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 4px 20px rgba(8,145,178,0.35)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(8,145,178,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(8,145,178,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-black bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer text-sm"
                 >
-                  {isLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Sending code…</> : <>Continue <ArrowRight className="w-4 h-4" /></>}
+                  {isLoading ? <Loader2 className="animate-spin w-4.5 h-4.5 text-black" /> : "Continue"}
                 </button>
               </form>
 
-              <p className="mt-5 text-center text-sm text-slate-500">
-                Don&apos;t have an account?{" "}
-                <a href="/register" className="text-sky-400 hover:text-sky-300 font-semibold transition-colors">Create one free →</a>
-              </p>
+              <div className="mt-5 flex justify-between items-center text-xs">
+                <p className="text-slate-500">
+                  New to SplitEase?{" "}
+                  <Link href="/register" className="text-white font-bold hover:underline">Sign up</Link>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setStep("forgot"); setForgotEmail(""); setErrors({}); }}
+                  className="text-slate-400 hover:text-white transition-colors cursor-pointer outline-none font-bold"
+                >
+                  Forgot password?
+                </button>
+              </div>
 
-              <nav className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-semibold text-slate-500">
-                <Link href="/privacy" className="hover:text-sky-300 transition-colors">Privacy Policy</Link>
-                <Link href="/terms" className="hover:text-sky-300 transition-colors">Terms</Link>
-                <Link href="/help-center" className="hover:text-sky-300 transition-colors">Help Center</Link>
-                <Link href="/contact" className="hover:text-sky-300 transition-colors">Contact Us</Link>
-              </nav>
+              <div className="mt-6 border-t border-white/[0.05] pt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold text-slate-500">
+                <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+              </div>
             </>
           )}
 
           {/* ── STEP: otp ───────────────────────────────────────────────── */}
           {step === "otp" && (
             <>
-              {/* Shield icon */}
-              <div className="flex justify-center mb-5">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "rgba(8,145,178,0.1)", border: "1.5px solid rgba(8,145,178,0.25)" }}>
-                  <ShieldCheck className="w-8 h-8 text-sky-400" />
-                </div>
-              </div>
-
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-white mb-1">Verify it&apos;s you</h2>
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(8,145,178,0.08)", border: "1px solid rgba(8,145,178,0.2)" }}>
+                  <ShieldCheck className="w-8 h-8 text-sky-400 animate-pulse" />
+                </div>
+                <h2 className="text-2xl font-extrabold text-white tracking-tight mb-2">Verify it's you</h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  We sent a 6-digit code to<br />
-                  <span className="text-sky-400 font-semibold">{email}</span>
+                  We sent a 6-digit verification code to<br />
+                  <span className="text-white font-semibold">{email}</span>
                 </p>
               </div>
 
-              <form onSubmit={handleVerifyOtp} className="space-y-5">
+              <form onSubmit={handleVerifyOtp} className="space-y-6">
                 <div>
                   <OtpInput value={otp} onChange={setOtp} disabled={otpLoading} />
                   {errors.otp && <p className="text-red-400 text-xs mt-3 text-center">{errors.otp}</p>}
                 </div>
 
                 <button
-                  type="submit" disabled={otpLoading || otp.length < OTP_LENGTH}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 4px 20px rgba(8,145,178,0.35)" }}
-                  onMouseEnter={(e) => { if (!otpLoading && otp.length === OTP_LENGTH) { e.currentTarget.style.boxShadow = "0 6px 28px rgba(8,145,178,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
-                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(8,145,178,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                  type="submit"
+                  disabled={otpLoading || otp.length < OTP_LENGTH}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-black bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer text-sm"
                 >
-                  {otpLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Verifying…</> : <>Verify & Sign in <ArrowRight className="w-4 h-4" /></>}
+                  {otpLoading ? <Loader2 className="animate-spin w-4.5 h-4.5 text-black" /> : "Verify & Sign in"}
                 </button>
               </form>
 
-              {/* Resend */}
-              <div className="mt-5 text-center">
-                <p className="text-slate-500 text-xs mb-2">Didn&apos;t receive the code?</p>
+              <div className="mt-6 text-center space-y-4">
+                <div>
+                  <p className="text-slate-500 text-xs mb-1">Didn't receive the code?</p>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={resendCooldown > 0}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer outline-none"
+                    style={{ color: resendCooldown > 0 ? "#64748B" : "#FFF" }}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={handleResendOtp}
-                  disabled={resendCooldown > 0}
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer outline-none"
-                  style={{ color: resendCooldown > 0 ? "#475569" : "#38BDF8" }}
+                  onClick={() => { setStep("login"); setOtp(""); setErrors({}); }}
+                  className="text-xs text-slate-400 hover:text-white transition-colors font-bold cursor-pointer outline-none"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                  ← Back to Sign in
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => { setStep("login"); setOtp(""); setErrors({}); }}
-                className="mt-4 w-full text-center text-sm text-sky-400 hover:text-sky-300 transition-colors font-semibold cursor-pointer outline-none block"
-              >
-                ← Back to Sign in
-              </button>
             </>
           )}
 
           {/* ── STEP: forgot ────────────────────────────────────────────── */}
           {step === "forgot" && (
             <>
-              <div className="mb-5">
-                <h2 className="text-2xl font-bold text-white mb-1">Forgot password</h2>
-                <p className="text-slate-400 text-sm">Enter your email and we&apos;ll send you a secure reset link</p>
+              <div className="mb-6">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">Forgot password</h2>
+                <p className="text-slate-400 text-sm">Enter your email and we'll send you a secure reset link.</p>
               </div>
 
               <form onSubmit={handleForgotSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email address</label>
-                  <div className="relative flex items-center rounded-xl border transition-all duration-200" style={fieldStyle("forgotEmail")}>
-                    <Mail className="absolute left-4 w-4 h-4 text-slate-600" />
-                    <input
-                      type="email" placeholder="you@example.com"
-                      value={forgotEmail}
-                      onChange={(e) => { setForgotEmail(e.target.value); clearError("forgotEmail"); }}
-                      onFocus={() => setFocused("forgotEmail")} onBlur={() => setFocused("")}
-                      className="w-full bg-transparent text-white placeholder-slate-700 pl-11 pr-4 py-3 rounded-xl outline-none text-sm"
-                    />
-                  </div>
+                  <input
+                    type="email"
+                    placeholder="Enter email address"
+                    value={forgotEmail}
+                    onChange={(e) => { setForgotEmail(e.target.value); clearError("forgotEmail"); }}
+                    className="w-full bg-[#121212] text-white placeholder-slate-500 px-4 py-3.5 rounded-xl border border-white/10 focus:border-white focus:ring-1 focus:ring-white outline-none text-sm transition-all"
+                  />
                   {errors.forgotEmail && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.forgotEmail}</p>}
                 </div>
 
                 <button
-                  type="submit" disabled={forgotLoading}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 4px 20px rgba(8,145,178,0.35)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(8,145,178,0.5)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(8,145,178,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-black bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer text-sm"
                 >
-                  {forgotLoading ? <><Loader2 className="animate-spin w-4 h-4" /> Sending…</> : <>Send Reset Link <ArrowRight className="w-4 h-4" /></>}
+                  {forgotLoading ? <Loader2 className="animate-spin w-4.5 h-4.5 text-black" /> : "Send Reset Link"}
                 </button>
               </form>
 
               <button
                 type="button"
                 onClick={() => { setStep("login"); setErrors({}); }}
-                className="mt-6 w-full text-center text-sm text-sky-400 hover:text-sky-300 transition-colors font-semibold cursor-pointer outline-none"
+                className="mt-6 w-full text-center text-xs text-slate-400 hover:text-white font-bold transition-colors cursor-pointer outline-none"
               >
-                ← Back to Sign in
+                ← Return to Sign in
               </button>
             </>
           )}
@@ -573,31 +536,31 @@ export default function LoginPage() {
                 <div className="w-16 h-16 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mx-auto mb-4 text-sky-400">
                   <Mail className="w-7 h-7" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">Check your inbox</h2>
+                <h2 className="text-2xl font-extrabold text-white tracking-tight mb-2">Check your inbox</h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   We sent a password reset link to<br />
                   <span className="text-sky-400 font-semibold">{forgotEmail}</span>
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 text-sm text-slate-400 leading-relaxed mb-6 space-y-2">
-                <p>• Check your spam folder if you don&apos;t see it.</p>
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 text-xs text-slate-400 leading-relaxed mb-6 space-y-2">
+                <p>• Check your spam folder if you don't see it.</p>
                 <p>• The link expires in <span className="text-white font-semibold">15 minutes</span>.</p>
-                <p>• You can safely close this tab after clicking the link.</p>
+                <p>• You can safely close this tab after resetting.</p>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4 text-center">
                 <button
                   type="button"
-                  onClick={() => setStep("forgot")}
-                  className="w-full text-center text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer outline-none block"
+                  onClick={handleForgotSubmit}
+                  className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer outline-none font-bold block mx-auto"
                 >
-                  Didn&apos;t receive it? <span className="text-sky-400 font-semibold hover:underline">Resend reset link</span>
+                  Didn't receive it? <span className="text-white hover:underline">Resend reset link</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => { setStep("login"); setErrors({}); }}
-                  className="w-full text-center text-sm text-sky-400 hover:text-sky-300 transition-colors font-semibold cursor-pointer outline-none block"
+                  className="text-sm text-sky-400 hover:text-sky-300 transition-colors font-bold cursor-pointer outline-none block mx-auto"
                 >
                   ← Return to Sign in
                 </button>
@@ -606,7 +569,39 @@ export default function LoginPage() {
           )}
 
         </div>
+
+        {/* Grayscale partner logos */}
+        <div className="mt-8 text-center pb-2">
+          <p className="text-[9px] font-semibold text-slate-600 uppercase tracking-widest mb-3">Trusted by users at</p>
+          <div className="flex justify-center items-center gap-6 opacity-30 grayscale filter">
+            <img src="/airbnb.png" className="h-3.5 object-contain" alt="Airbnb" />
+            <img src="/expedia.png" className="h-3.5 object-contain" alt="Expedia" />
+            <img src="/tripadvisor.png" className="h-3.5 object-contain" alt="Tripadvisor" />
+            <img src="/skyscanner.png" className="h-3.5 object-contain" alt="Skyscanner" />
+          </div>
+        </div>
+
       </div>
+
+      {/* RIGHT PANEL: Isometric Scrolling Collage */}
+      <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden bg-[#070707]">
+        {/* Dark overlay gradients */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/85 via-transparent to-black/90 z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,#070707_100%)] z-10 pointer-events-none" />
+
+        {/* Skewed screen columns marquee */}
+        <div 
+          className="absolute w-[140%] h-[140%] -top-[20%] -left-[20%] grid grid-cols-3 gap-6 opacity-60 pointer-events-none select-none"
+          style={{
+            transform: "rotate(-25deg) skewX(-2deg) translateY(-80px)",
+          }}
+        >
+          <MarqueeColumn images={["/mobile.png", "/mobile.png", "/mobile.png"]} reverse={false} />
+          <MarqueeColumn images={["/mobile.png", "/mobile.png", "/mobile.png"]} reverse={true} />
+          <MarqueeColumn images={["/mobile.png", "/mobile.png", "/mobile.png"]} reverse={false} />
+        </div>
+      </div>
+
     </div>
   );
 }

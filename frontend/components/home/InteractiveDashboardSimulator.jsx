@@ -5,9 +5,32 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Home, MessageCircle, Bot,
   Bell, Search, Plus, Receipt, Settings, ChevronRight,
-  CheckCircle2, PlusCircle, X, Send
+  CheckCircle2, PlusCircle, X, Send,
+  Palmtree, Pizza, Clapperboard, Plane, Beer, Mountain, Car,
+  UtensilsCrossed, BedDouble, ShoppingBag, Handshake, Sparkles, Sun
 } from "lucide-react";
 import toast from "@/lib/toast";
+
+// Maps semantic keys to icon components (used for groups & expenses)
+const ICON_MAP = {
+  trip: Palmtree,
+  rent: Home,
+  food: Pizza,
+  movie: Clapperboard,
+  plane: Plane,
+  beer: Beer,
+  ski: Mountain,
+  car: Car,
+  hotel: BedDouble,
+  dining: UtensilsCrossed,
+  shopping: ShoppingBag,
+  settlement: Handshake,
+};
+
+const renderIcon = (key, className = "w-4 h-4") => {
+  const Icon = ICON_MAP[key] || Sparkles;
+  return <Icon className={className} />;
+};
 
 // Helper for currency formatting
 const INR = new Intl.NumberFormat("en-IN", {
@@ -18,17 +41,17 @@ const INR = new Intl.NumberFormat("en-IN", {
 
 // Initial Mock Data
 const INITIAL_GROUPS = [
-  { id: "goa", name: "Goa Trip", emoji: "🏖️", members: ["Felix", "Priya", "Alex", "Lily"], total: 12400, color: "#0891B2", pct: 65, status: "active" },
-  { id: "rent", name: "Monthly Rent", emoji: "🏠", members: ["Felix", "Lily", "Alex"], total: 45000, color: "#0E7490", pct: 90, status: "active" },
-  { id: "lunch", name: "Office Lunch", emoji: "🍕", members: ["Felix", "Priya", "Alex", "Lily", "Sam"], total: 3200, color: "#ec4899", pct: 40, status: "active" },
-  { id: "movie", name: "Movie Night", emoji: "🎬", members: ["Felix", "Lily", "Alex", "Priya"], total: 1800, color: "#f59e0b", pct: 100, status: "active" },
+  { id: "goa", name: "Goa Trip", icon: "trip", members: ["Felix", "Priya", "Alex", "Lily"], total: 12400, color: "#0891B2", pct: 65, status: "active" },
+  { id: "rent", name: "Monthly Rent", icon: "rent", members: ["Felix", "Lily", "Alex"], total: 45000, color: "#0E7490", pct: 90, status: "active" },
+  { id: "lunch", name: "Office Lunch", icon: "food", members: ["Felix", "Priya", "Alex", "Lily", "Sam"], total: 3200, color: "#ec4899", pct: 40, status: "active" },
+  { id: "movie", name: "Movie Night", icon: "movie", members: ["Felix", "Lily", "Alex", "Priya"], total: 1800, color: "#f59e0b", pct: 100, status: "active" },
 ];
 
 const INITIAL_EXPENSES = [
-  { id: "e1", groupId: "goa", name: "Hotel Booking", person: "Felix", amount: 8000, time: "2h ago", emoji: "🏨", settled: false, category: "stay", date: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-  { id: "e2", groupId: "goa", name: "Beach Dinner", person: "Priya", amount: 2400, time: "5h ago", emoji: "🍽️", settled: false, category: "food", date: new Date(Date.now() - 5 * 60 * 60 * 1000) },
-  { id: "e3", groupId: "rent", name: "Rent Payment", person: "Alex", amount: 45000, time: "1d ago", emoji: "🏠", settled: false, category: "rent", date: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-  { id: "e4", groupId: "goa", name: "Taxi Airport", person: "Priya", amount: 1200, time: "1d ago", emoji: "🚕", settled: true, category: "travel", date: new Date(Date.now() - 26 * 60 * 60 * 1000) },
+  { id: "e1", groupId: "goa", name: "Hotel Booking", person: "Felix", amount: 8000, time: "2h ago", icon: "hotel", settled: false, category: "stay", date: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+  { id: "e2", groupId: "goa", name: "Beach Dinner", person: "Priya", amount: 2400, time: "5h ago", icon: "dining", settled: false, category: "food", date: new Date(Date.now() - 5 * 60 * 60 * 1000) },
+  { id: "e3", groupId: "rent", name: "Rent Payment", person: "Alex", amount: 45000, time: "1d ago", icon: "rent", settled: false, category: "rent", date: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+  { id: "e4", groupId: "goa", name: "Taxi Airport", person: "Priya", amount: 1200, time: "1d ago", icon: "car", settled: true, category: "travel", date: new Date(Date.now() - 26 * 60 * 60 * 1000) },
 ];
 
 const INITIAL_CHATS = {
@@ -85,7 +108,7 @@ export default function InteractiveDashboardSimulator() {
 
   // New Group modal form
   const [newGroupName, setNewGroupName] = useState("");
-  const [newGroupEmoji, setNewGroupEmoji] = useState("✈️");
+  const [newGroupIcon, setNewGroupIcon] = useState("plane");
 
   // New Expense modal form
   const [expName, setExpName] = useState("");
@@ -176,7 +199,7 @@ export default function InteractiveDashboardSimulator() {
 
   // Quick Action triggers
   const triggerReminder = (name) => {
-    toast.success(`Payment reminder sent to ${name}! 🔔`);
+    toast.success(`Payment reminder sent to ${name}!`);
   };
 
   const handleCreateGroup = (e) => {
@@ -189,7 +212,7 @@ export default function InteractiveDashboardSimulator() {
     const newG = {
       id: newId,
       name: newGroupName.trim(),
-      emoji: newGroupEmoji,
+      icon: newGroupIcon,
       members: ["Felix", "Priya", "Alex"],
       total: 0,
       color: ["#0891B2", "#0E7490", "#ec4899", "#f59e0b", "#10B981"][groups.length % 5],
@@ -201,7 +224,7 @@ export default function InteractiveDashboardSimulator() {
     setChats({ ...chats, [newId]: [] });
     setNewGroupName("");
     setShowAddGroupModal(false);
-    toast.success(`Trip "${newG.name}" created! 🏝️`);
+    toast.success(`Trip "${newG.name}" created!`);
   };
 
   const handleAddExpense = (e) => {
@@ -219,7 +242,7 @@ export default function InteractiveDashboardSimulator() {
       person: expPayer,
       amount: amt,
       time: "Just now",
-      emoji: expCategory === "food" ? "🍽️" : expCategory === "travel" ? "🚕" : expCategory === "stay" ? "🏨" : "🛒",
+      icon: expCategory === "food" ? "dining" : expCategory === "travel" ? "car" : expCategory === "stay" ? "hotel" : "shopping",
       settled: false,
       category: expCategory,
       date: new Date()
@@ -229,7 +252,7 @@ export default function InteractiveDashboardSimulator() {
     setExpName("");
     setExpAmount("");
     setShowAddExpenseModal(false);
-    toast.success(`Expense "${newE.name}" added to group! 🧾`);
+    toast.success(`Expense "${newE.name}" added to group!`);
   };
 
   const handleRecordSettlement = (e) => {
@@ -245,7 +268,7 @@ export default function InteractiveDashboardSimulator() {
       person: from,
       amount: amt,
       time: "Just now",
-      emoji: "🤝",
+      icon: "settlement",
       settled: true,
       category: "general",
       date: new Date()
@@ -253,7 +276,7 @@ export default function InteractiveDashboardSimulator() {
 
     setExpenses([newE, ...expenses]);
     setShowSettleModal(false);
-    toast.success(`Settlement of ${INR.format(amt)} recorded! 🤝`);
+    toast.success(`Settlement of ${INR.format(amt)} recorded!`);
   };
 
   // Chat message send
@@ -281,7 +304,7 @@ export default function InteractiveDashboardSimulator() {
       
       const responses = [
         "Awesome! Added to my checklist.",
-        "Got it, thanks Felix! 👍",
+        "Got it, thanks Felix!",
         "Sounds good. Let me check my balances page.",
         "Nice, I'll pay my share tonight!",
         "Perfect. Splitting makes it so easy!"
@@ -342,17 +365,17 @@ export default function InteractiveDashboardSimulator() {
     <div className="w-full relative">
       
       {/* 🖥️ DESKTOP VIEWPORT CHASSIS */}
-      <div className="hidden sm:block w-full rounded-2xl overflow-hidden border border-slate-200/50 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-slate-950 relative select-none">
+      <div className="hidden sm:block w-full rounded-2xl overflow-hidden border border-white/10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] bg-white/[0.02] backdrop-blur-xl relative select-none">
         
         {/* Browser top header */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-white/5">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-white/5 backdrop-blur-md border-b border-white/10">
           <div className="flex gap-1.5 flex-shrink-0">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
             <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/80" />
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
           </div>
-          <div className="flex-1 max-w-[260px] mx-auto py-0.5 rounded-lg text-[10px] text-white/30 font-bold bg-slate-950 border border-white/5 text-center truncate flex items-center justify-center gap-1">
-            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+          <div className="flex-1 max-w-[260px] mx-auto py-0.5 rounded-lg text-[10px] text-white/40 font-bold bg-black/40 border border-white/5 text-center truncate flex items-center justify-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-cyan-400" />
             <span>splitease.app/dashboard</span>
           </div>
           <div className="flex gap-1.5">
@@ -365,12 +388,12 @@ export default function InteractiveDashboardSimulator() {
         </div>
 
         {/* Dashboard inner layout */}
-        <div className="flex bg-[#0A0A10]/95 text-foreground h-[480px]">
+        <div className="flex bg-black/35 text-foreground h-[480px]">
           
           {/* Left Sidebar */}
-          <aside className="w-48 xl:w-52 flex-shrink-0 flex flex-col py-5 px-3 border-r border-white/5 bg-slate-950/40">
+          <aside className="w-48 xl:w-52 flex-shrink-0 flex flex-col py-5 px-3 border-r border-white/10 bg-white/[0.03] backdrop-blur-md">
             <div className="flex items-center gap-2 px-2 mb-6">
-              <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center border border-white/10 flex-shrink-0 bg-cyan-900">
+              <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center border border-white/10 flex-shrink-0 bg-cyan-950">
                 <img src="/logo-icon.png" className="w-full h-full object-cover" alt="Logo" />
               </div>
               <span className="font-extrabold text-sm text-white tracking-tight">SplitEase</span>
@@ -388,7 +411,7 @@ export default function InteractiveDashboardSimulator() {
                     }}
                     className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer select-none text-left transition-all ${
                       isActive
-                        ? "bg-cyan-500/10 border border-cyan-500/20 text-white font-bold"
+                        ? "bg-cyan-500/10 border border-cyan-500/25 text-white font-bold"
                         : "text-white/45 hover:text-white/80 hover:bg-white/5"
                     }`}
                   >
@@ -405,7 +428,7 @@ export default function InteractiveDashboardSimulator() {
             </nav>
 
             {/* Profile widget */}
-            <div className="mt-auto flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/5 border border-white/5">
+            <div className="mt-auto flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/[0.04] border border-white/10">
               <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=c4b5fd" className="w-7.5 h-7.5 rounded-lg object-cover bg-teal-900" alt="Felix" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-white truncate leading-tight">Felix Kumar</p>
@@ -418,13 +441,18 @@ export default function InteractiveDashboardSimulator() {
           </aside>
 
           {/* Main Content Area */}
-          <main className="flex-1 flex flex-col min-w-0 bg-[#0A0A10]/95 relative overflow-hidden">
+          <main className="flex-1 flex flex-col min-w-0 bg-transparent relative overflow-hidden">
             
             {/* View Header */}
-            <header className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 flex-shrink-0">
+            <header className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 bg-white/[0.01] flex-shrink-0">
               <div>
-                <h2 className="text-sm font-bold text-white leading-tight">
-                  {activeTab === "dashboard" && "Good morning, Felix 👋"}
+                <h2 className="text-sm font-bold text-white leading-tight flex items-center gap-1.5">
+                  {activeTab === "dashboard" && (
+                    <>
+                      Good morning, Felix
+                      <Sun className="w-3.5 h-3.5 text-amber-400" />
+                    </>
+                  )}
                   {activeTab === "groups" && "Active Spends"}
                   {activeTab === "group-detail" && "Trip Expenses Room"}
                   {activeTab === "expenses" && "All Cost Items"}
@@ -443,13 +471,13 @@ export default function InteractiveDashboardSimulator() {
               
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-white/25" />
+                  <Search className="absolute left-2.5 top-2.5 w-3 h-3 text-white/25" />
                   <input
                     type="text"
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 pr-3 py-1 text-xs text-white/80 bg-white/5 border border-white/5 rounded-lg outline-none focus:border-cyan-500/30 w-36 lg:w-44 transition"
+                    className="pl-8 pr-3 py-1.5 text-xs text-white/80 bg-white/5 border border-white/10 rounded-lg outline-none focus:border-cyan-500/30 w-36 lg:w-44 transition"
                   />
                 </div>
                 {activeTab !== "messages" && activeTab !== "ai" && (
@@ -486,15 +514,15 @@ export default function InteractiveDashboardSimulator() {
       </div>
 
       {/* 📱 SMARTPHONE CHASSIS FOR MOBILE */}
-      <div className="block sm:hidden w-full max-w-[310px] mx-auto rounded-[36px] border-[10px] border-slate-900 bg-slate-950 shadow-[0_25px_50px_rgba(0,0,0,0.22)] overflow-hidden select-none aspect-[9/19] flex flex-col relative">
+      <div className="block sm:hidden w-full max-w-[310px] mx-auto rounded-[36px] border-[10px] border-white/10 bg-black/40 backdrop-blur-xl shadow-[0_30px_60px_-10px_rgba(0,0,0,0.8)] overflow-hidden select-none aspect-[9/19] flex flex-col relative">
         
         {/* Notch */}
-        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-20 h-4 bg-slate-900 rounded-full z-30 flex items-center justify-center">
-          <div className="w-2.5 h-2.5 rounded-full bg-slate-800 absolute right-4" />
+        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-20 h-4 bg-white/10 rounded-full z-30 flex items-center justify-center border border-white/5">
+          <div className="w-2.5 h-2.5 rounded-full bg-black/80 absolute right-4" />
         </div>
         
         {/* Mobile status bar */}
-        <div className="h-9 pt-2.5 px-6 flex justify-between items-center text-[10px] font-bold text-white/60 bg-[#0A0A10]/95 z-20">
+        <div className="h-9 pt-2.5 px-6 flex justify-between items-center text-[10px] font-bold text-white/60 bg-white/5 border-b border-white/5 z-20">
           <span>9:41</span>
           <div className="flex gap-1">
             <span>5G</span>
@@ -503,11 +531,13 @@ export default function InteractiveDashboardSimulator() {
         </div>
 
         {/* Content body */}
-        <div className="flex-1 bg-[#0A0A10]/95 text-foreground overflow-y-auto custom-scrollbar flex flex-col pb-12">
+        <div className="flex-1 bg-transparent text-foreground overflow-y-auto custom-scrollbar flex flex-col pb-12">
           {/* Mobile headers */}
           <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className="text-base">{activeTab === "group-detail" ? "🏖️" : "🔮"}</span>
+              <span className="text-cyan-400 flex items-center">
+                {activeTab === "group-detail" ? renderIcon("trip", "w-4 h-4") : <Sparkles className="w-4 h-4" />}
+              </span>
               <span className="text-xs font-black text-white truncate">
                 {activeTab === "dashboard" && "Dashboard"}
                 {activeTab === "groups" && "Groups"}
@@ -543,7 +573,7 @@ export default function InteractiveDashboardSimulator() {
         </div>
 
         {/* Mobile Bottom Navigation Bar */}
-        <div className="absolute bottom-0 inset-x-0 h-13 border-t border-white/5 bg-slate-900/90 backdrop-blur-md flex justify-around items-center px-2 z-20">
+        <div className="absolute bottom-0 inset-x-0 h-13 border-t border-white/10 bg-white/5 backdrop-blur-md flex justify-around items-center px-2 z-20">
           {NAV_ITEMS.map(({ id, icon: Icon, label }) => {
             const isActive = activeTab === id || (id === "groups" && activeTab === "group-detail");
             return (
@@ -614,8 +644,8 @@ export default function InteractiveDashboardSimulator() {
                 className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-cyan-500/20 transition cursor-pointer flex flex-col justify-between"
               >
                 <div className="flex justify-between items-start">
-                  <div className="w-7 h-7 rounded-lg mb-1.5 flex items-center justify-center text-sm" style={{ background: `${g.color}22`, border: `1px solid ${g.color}40` }}>
-                    {g.emoji}
+                  <div className="w-7 h-7 rounded-lg mb-1.5 flex items-center justify-center" style={{ background: `${g.color}22`, border: `1px solid ${g.color}40`, color: g.color }}>
+                    {renderIcon(g.icon, "w-3.5 h-3.5")}
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-white/20" />
                 </div>
@@ -639,9 +669,11 @@ export default function InteractiveDashboardSimulator() {
             
             <div className="space-y-1.5 max-h-[140px] overflow-y-auto custom-scrollbar">
               {expenses.slice(0, 3).map((e) => (
-                <div key={isMobileFlow ? `mobile-dash-exp-${e.id}` : `desktop-dash-exp-${e.id}`} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-white/5 bg-slate-900/50 hover:bg-slate-900/80 transition">
+                <div key={isMobileFlow ? `mobile-dash-exp-${e.id}` : `desktop-dash-exp-${e.id}`} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-white/5 bg-white/[0.03] hover:bg-white/[0.08] transition">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm shrink-0">{e.emoji}</span>
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-white/60">
+                      {renderIcon(e.icon, "w-3 h-3")}
+                    </div>
                     <div className="min-w-0">
                       <p className="text-[9.5px] font-bold text-white truncate">{e.name}</p>
                       <p className="text-[8px] text-white/30 truncate">by {e.person} · {e.time}</p>
@@ -719,8 +751,8 @@ export default function InteractiveDashboardSimulator() {
               className="p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 bg-white/5 hover:bg-white/10 transition cursor-pointer flex items-center justify-between gap-4"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ background: `${g.color}22`, border: `1px solid ${g.color}40` }}>
-                  {g.emoji}
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${g.color}22`, border: `1px solid ${g.color}40`, color: g.color }}>
+                  {renderIcon(g.icon, "w-5 h-5")}
                 </div>
                 <div className="min-w-0">
                   <h4 className="text-xs font-black text-white truncate leading-snug">{g.name}</h4>
@@ -789,8 +821,8 @@ export default function InteractiveDashboardSimulator() {
         </button>
 
         {/* Group Stats Card */}
-        <div className="p-3.5 rounded-xl border border-white/5 bg-gradient-to-r from-cyan-900/10 to-teal-900/10 relative overflow-hidden">
-          <div className="absolute top-2 right-2 text-3xl opacity-20">{group.emoji}</div>
+        <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.03] bg-gradient-to-r from-cyan-500/[0.02] to-teal-500/[0.02] relative overflow-hidden backdrop-blur-md">
+          <div className="absolute top-2 right-2 opacity-20" style={{ color: group.color }}>{renderIcon(group.icon, "w-10 h-10")}</div>
           <h3 className="text-sm font-black text-white leading-tight">{group.name}</h3>
           <p className="text-[9px] text-white/40 mt-0.5">Overall group room expense log</p>
           
@@ -817,7 +849,7 @@ export default function InteractiveDashboardSimulator() {
               }}
               className="text-[9px] text-cyan-400 hover:text-cyan-300 font-bold hover:underline flex items-center gap-1"
             >
-              🤝 Record Settlement
+              <Handshake className="w-3 h-3" /> Record Settlement
             </button>
           </div>
           <div className="space-y-1.5 max-h-[140px] overflow-y-auto custom-scrollbar">
@@ -825,7 +857,7 @@ export default function InteractiveDashboardSimulator() {
               const owes = b.balance < 0;
               const isMe = b.name === "Felix";
               return (
-                <div key={isMobileFlow ? `mobile-detail-bal-${b.name}` : `desktop-detail-bal-${b.name}`} className="flex items-center justify-between p-2 rounded-lg border border-white/5 bg-slate-900/40">
+                <div key={isMobileFlow ? `mobile-detail-bal-${b.name}` : `desktop-detail-bal-${b.name}`} className="flex items-center justify-between p-2 rounded-lg border border-white/5 bg-white/[0.02]">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/60">
                       {b.name.charAt(0)}
@@ -895,10 +927,10 @@ export default function InteractiveDashboardSimulator() {
           {filtered.map((e) => {
             const groupName = groups.find((g) => g.id === e.groupId)?.name || "Group";
             return (
-              <div key={isMobileFlow ? `mobile-exp-list-${e.id}` : `desktop-exp-list-${e.id}`} className="flex items-center justify-between p-2.5 rounded-xl border border-white/5 bg-[#0C0C12] hover:bg-white/5 transition duration-150">
+              <div key={isMobileFlow ? `mobile-exp-list-${e.id}` : `desktop-exp-list-${e.id}`} className="flex items-center justify-between p-2.5 rounded-xl border border-white/5 bg-white/[0.03] hover:bg-white/[0.08] transition duration-150">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-sm shrink-0 border border-white/5">
-                    {e.emoji}
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 border border-white/5 text-white/60">
+                    {renderIcon(e.icon, "w-4 h-4")}
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold text-white truncate leading-snug">{e.name}</p>
@@ -952,7 +984,9 @@ export default function InteractiveDashboardSimulator() {
                     active ? "bg-white/5 border-white/10 text-white" : "border-transparent text-white/40 hover:text-white/80 hover:bg-white/5"
                   }`}
                 >
-                  <span className="text-sm shrink-0">{g.emoji}</span>
+                  <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center shrink-0" style={{ color: g.color }}>
+                    {renderIcon(g.icon, "w-3 h-3")}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-bold truncate leading-tight">{g.name}</p>
                     <p className="text-[7.5px] text-white/30 truncate mt-0.5">Active thread</p>
@@ -964,7 +998,7 @@ export default function InteractiveDashboardSimulator() {
         )}
 
         {/* Right Side: Chat Windows */}
-        <div className={`${isMobileFlow ? "col-span-12" : "col-span-8"} flex flex-col justify-between h-full bg-[#0C0C14] border border-white/5 rounded-xl overflow-hidden relative`}>
+        <div className={`${isMobileFlow ? "col-span-12" : "col-span-8"} flex flex-col justify-between h-full bg-black/20 border border-white/10 rounded-xl overflow-hidden relative backdrop-blur-md`}>
           
           {/* Active channel header (Mobile only) */}
           {isMobileFlow && (
@@ -1033,7 +1067,7 @@ export default function InteractiveDashboardSimulator() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="flex flex-col justify-between h-[380px] bg-[#0A0A10]/95 border border-white/5 rounded-xl overflow-hidden relative text-left"
+        className="flex flex-col justify-between h-[380px] bg-black/20 border border-white/10 rounded-xl overflow-hidden relative text-left backdrop-blur-md"
       >
         {/* Messages Feed */}
         <div className="flex-1 overflow-y-auto p-3.5 space-y-3 custom-scrollbar min-h-0">
@@ -1110,13 +1144,13 @@ export default function InteractiveDashboardSimulator() {
 
   // 7. CREATE GROUP MODAL DESIGN
   function renderAddGroupModal() {
-    const emojis = ["✈️", "🏖️", "🏠", "🍕", "🎬", "🍻", "⛷️", "🚗"];
+    const groupIconOptions = ["plane", "trip", "rent", "food", "movie", "beer", "ski", "car"];
     return (
       <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-slate-900 border border-white/10 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-left"
+          className="bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-left"
         >
           <button onClick={() => setShowAddGroupModal(false)} className="absolute top-3.5 right-3.5 p-1 text-white/30 hover:text-white hover:bg-white/5 rounded-lg">
             <X className="w-4 h-4" />
@@ -1140,18 +1174,18 @@ export default function InteractiveDashboardSimulator() {
             <div>
               <label className="text-[8.5px] font-bold text-white/30 uppercase tracking-widest block mb-1">Choose Icon</label>
               <div className="flex gap-1.5 overflow-x-auto py-1.5 scrollbar-hide">
-                {emojis.map((em) => (
+                {groupIconOptions.map((key) => (
                   <button
-                    key={em}
+                    key={key}
                     type="button"
-                    onClick={() => setNewGroupEmoji(em)}
-                    className={`w-7.5 h-7.5 rounded-lg text-base flex items-center justify-center border transition ${
-                      newGroupEmoji === em
+                    onClick={() => setNewGroupIcon(key)}
+                    className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center border transition ${
+                      newGroupIcon === key
                         ? "bg-cyan-500 border-cyan-400 text-slate-950"
                         : "bg-white/5 border-white/5 text-white/50 hover:text-white"
                     }`}
                   >
-                    {em}
+                    {renderIcon(key, "w-4 h-4")}
                   </button>
                 ))}
               </div>
@@ -1173,7 +1207,7 @@ export default function InteractiveDashboardSimulator() {
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-slate-900 border border-white/10 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-left"
+          className="bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-left"
         >
           <button onClick={() => setShowAddExpenseModal(false)} className="absolute top-3.5 right-3.5 p-1 text-white/30 hover:text-white hover:bg-white/5 rounded-lg">
             <X className="w-4 h-4" />
@@ -1264,7 +1298,7 @@ export default function InteractiveDashboardSimulator() {
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-slate-900 border border-white/10 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-left"
+          className="bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-left"
         >
           <button onClick={() => setShowSettleModal(false)} className="absolute top-3.5 right-3.5 p-1 text-white/30 hover:text-white hover:bg-white/5 rounded-lg">
             <X className="w-4 h-4" />

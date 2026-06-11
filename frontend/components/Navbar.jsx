@@ -16,6 +16,7 @@ import { useNotifications } from "@/context/NotificationContext";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebaseClient";
 import { api } from "@/lib/api";
+import HideOnScrollNav from "@/components/HideOnScrollNav";
 
 const NAV_LINKS = [
   { href: "/users",      icon: Home,             label: "Home" },
@@ -132,21 +133,38 @@ export default function Navbar() {
   return (
     <>
       {/* ── Top Navbar ── */}
+      <HideOnScrollNav>
       <nav
-        className={`fixed top-3 inset-x-3 sm:top-4 sm:inset-x-4 mx-auto z-50 max-w-7xl transition-all duration-300 rounded-2xl border ${
-          scrolled
-            ? "bg-background/65 backdrop-blur-2xl border-foreground/10 shadow-[0_8px_32px_rgba(8,145,178,0.08)]"
-            : "bg-background/30 backdrop-blur-xl border-foreground/5 shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
+        className={`fixed z-50 transition-all duration-300 ${
+          !isLoggedIn
+            ? `top-3 inset-x-3 sm:top-5 sm:inset-x-5 mx-auto max-w-7xl rounded-full border ${
+                scrolled
+                  ? "bg-black/60 backdrop-blur-2xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+                  : "bg-black/20 backdrop-blur-xl border-white/5 shadow-md"
+              }`
+            : `top-3 inset-x-3 sm:top-4 sm:inset-x-4 mx-auto max-w-7xl rounded-2xl border ${
+                scrolled
+                  ? "bg-background/65 backdrop-blur-2xl border-foreground/10 shadow-[0_8px_32px_rgba(8,145,178,0.08)]"
+                  : "bg-background/30 backdrop-blur-xl border-foreground/5 shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
+              }`
         }`}
       >
-        <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3.5">
+        <div className={`flex items-center justify-between w-full ${
+          !isLoggedIn
+            ? "px-6 py-2.5 sm:py-3"
+            : "px-3 sm:px-5 py-2.5 sm:py-3.5"
+        }`}>
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl overflow-hidden flex items-center justify-center shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-200">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl overflow-hidden flex items-center justify-center shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-200 bg-zinc-950 shrink-0">
               <img src="/logo-icon.png" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
-            <span className="font-extrabold text-base sm:text-xl bg-gradient-to-r from-cyan-600 via-teal-500 to-sky-500 dark:from-cyan-400 dark:via-teal-300 dark:to-sky-400 bg-clip-text text-transparent tracking-tight">
+            <span className={`font-extrabold text-base sm:text-xl tracking-tight transition-all duration-300 ${
+              !isLoggedIn 
+                ? "text-white font-serif-premium lowercase text-lg sm:text-2xl" 
+                : "bg-gradient-to-r from-cyan-600 via-teal-500 to-sky-500 dark:from-cyan-400 dark:via-teal-300 dark:to-sky-400 bg-clip-text text-transparent"
+            }`}>
               SplitEase
             </span>
           </Link>
@@ -181,19 +199,15 @@ export default function Navbar() {
             <div className="flex items-center gap-1.5 sm:gap-3">
               <Link
                 href="/login"
-                className="px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold text-foreground/70 hover:text-foreground transition-all hover:bg-foreground/5"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="relative flex items-center gap-1 px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold text-white shadow-lg overflow-hidden group transition-all hover:scale-105 active:scale-95"
-                style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}
+                className="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold text-white bg-white/5 hover:bg-white/10 border border-white/20 transition-all hover:scale-105 active:scale-95"
               >
-                <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ background: "linear-gradient(135deg, #0E7490, #0891B2)" }} />
-                <Sparkles className="relative w-3 h-3 hidden sm:inline" />
-                <span className="relative">Sign Up</span>
+                Get started
               </Link>
             </div>
           )}
@@ -300,12 +314,14 @@ export default function Navbar() {
             )}
 
             {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-foreground/55 hover:text-foreground hover:bg-foreground/5 transition-all"
-            >
-              {theme === "dark" ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} />}
-            </button>
+            {isLoggedIn && (
+              <button
+                onClick={toggleTheme}
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-foreground/55 hover:text-foreground hover:bg-foreground/5 transition-all"
+              >
+                {theme === "dark" ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} />}
+              </button>
+            )}
 
             {/* Profile Menu */}
             {isLoggedIn && (
@@ -391,6 +407,7 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+      </HideOnScrollNav>
 
       {/* ── Mobile + Tablet Bottom Bar (hidden on md+) ── */}
       {isLoggedIn && (

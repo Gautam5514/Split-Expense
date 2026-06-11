@@ -7,6 +7,7 @@ import MainWrapper from "@/components/MainWrapper";
 import AppFooter from "@/components/AppFooter";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import CustomCursor from "@/components/CustomCursor";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -79,6 +80,7 @@ export default function RootLayout({ children }) {
                 {children}
               </MainWrapper>
               <AppFooter />
+              <CustomCursor />
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
