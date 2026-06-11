@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { auth, googleProvider } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { captureReferralFromLocation, getStoredReferralCode, clearStoredReferralCode } from "@/lib/referral";
 
 function MarqueeColumn({ images, reverse }) {
   return (
@@ -80,6 +81,11 @@ export default function RegisterPage() {
     if (token) router.replace("/users");
   }, [token, router]);
 
+  // Capture ?ref=CODE for attribution at first-ever signup.
+  useEffect(() => {
+    captureReferralFromLocation();
+  }, []);
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -129,7 +135,8 @@ export default function RegisterPage() {
       // we sync with the backend - otherwise MongoDB would get an empty name.
       const idToken = await result.user.getIdToken(true);
       // Sync user with MongoDB - no JWT is returned; onIdTokenChanged sets the token.
-      await api.post("/auth/google", { token: idToken }).catch(() => {});
+      await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
+      clearStoredReferralCode();
       toast.success("Account created successfully!");
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {
@@ -152,7 +159,8 @@ export default function RegisterPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
-      await api.post("/auth/google", { token: idToken }).catch(() => {});
+      await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
+      clearStoredReferralCode();
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {

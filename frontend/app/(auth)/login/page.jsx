@@ -9,6 +9,7 @@ import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { captureReferralFromLocation, getStoredReferralCode, clearStoredReferralCode } from "@/lib/referral";
 
 const expenseCards = [
   {
@@ -180,6 +181,11 @@ export default function LoginPage() {
 
   useEffect(() => { if (token) router.replace("/users"); }, [token, router]);
 
+  // Capture ?ref=CODE for attribution at first-ever signup.
+  useEffect(() => {
+    captureReferralFromLocation();
+  }, []);
+
   // countdown timer for resend
   const startCooldown = () => {
     setResendCooldown(60);
@@ -248,7 +254,8 @@ export default function LoginPage() {
       // OTP passed - now complete Firebase auth
       const result = await signInWithEmailAndPassword(auth, email.trim(), password);
       const idToken = await result.user.getIdToken();
-      await api.post("/auth/google", { token: idToken }).catch(() => {});
+      await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
+      clearStoredReferralCode();
       toast.success("Login successful!");
 
       const pendingInvite = localStorage.getItem("pendingInvite");
@@ -272,7 +279,8 @@ export default function LoginPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
-      await api.post("/auth/google", { token: idToken }).catch(() => {});
+      await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
+      clearStoredReferralCode();
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {

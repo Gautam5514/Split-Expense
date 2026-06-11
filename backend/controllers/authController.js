@@ -4,6 +4,7 @@ import User from "../models/userModel.js";
 import admin from "../config/firebaseAdmin.js";
 import { isValidEmail, validatePassword } from "../middleware/validate.js";
 import { sendEmail } from "../utils/emailService.js";
+import { findOrCreateUser, attributeReferral, recordActiveDay } from "../utils/referralService.js";
 
 
 export const register = async (req, res) => {
@@ -75,36 +76,19 @@ export const login = async (req, res) => {
 // -------------------- GOOGLE LOGIN --------------------
 export const googleLogin = async (req, res) => {
   try {
-    const { token } = req.body;
+    const { token, referralCode } = req.body;
     const decoded = await admin.auth().verifyIdToken(token);
     const { uid, email, name, picture } = decoded;
 
-    const normalizedEmail = email.toLowerCase().trim();
-
     // Atomic upsert - prevents duplicate user creation under concurrent requests
-    let user = await User.findOneAndUpdate(
-      { email: normalizedEmail },
-      {
-        $setOnInsert: {
-          firebaseUid: uid,
-          email: normalizedEmail,
-          name: name || normalizedEmail.split("@")[0],
-          photoURL: picture || "",
-        },
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const { user, isNew } = await findOrCreateUser({ uid, email, name, picture });
 
-    // Sync mutable fields
-    const updates = {};
-    if (!user.firebaseUid && uid)             updates.firebaseUid = uid;
-    if (picture && user.photoURL !== picture) updates.photoURL = picture;
-    if (name && user.name !== name)           updates.name = name;
-
-    if (Object.keys(updates).length) {
-      await User.updateOne({ _id: user._id }, { $set: updates });
-      Object.assign(user, updates);
+    // Attribution only ever applies at first-ever account creation.
+    if (isNew && referralCode) {
+      await attributeReferral(user, referralCode);
     }
+
+    await recordActiveDay(user);
 
     res.status(200).json({ user });
   } catch (err) {

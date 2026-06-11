@@ -12,6 +12,7 @@ import DeviceSlideShowcase from "@/components/home/DeviceSlideShowcase";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import Footer from "@/components/Footer";
 import ScrollProgressAndTop from "@/components/ScrollProgressAndTop";
+import { captureReferralFromLocation } from "@/lib/referral";
 
 export default function HomePage() {
   const { token } = useAuth();
@@ -22,6 +23,11 @@ export default function HomePage() {
       router.replace("/users");
     }
   }, [token, router]);
+
+  // Capture ?ref=CODE for attribution at first-ever signup.
+  useEffect(() => {
+    captureReferralFromLocation();
+  }, []);
 
   if (token) return null;
 

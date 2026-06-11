@@ -5,6 +5,7 @@ import { createNotification } from "../controllers/notificationController.js";
 import { invalidateBalanceCache } from "../controllers/balanceController.js";
 import { runOcr } from "../utils/ocrService.js";
 import { isValidObjectId } from "../middleware/validate.js";
+import { incrementExpenseCount } from "../utils/referralService.js";
 
 const VALID_CATEGORIES = ["general", "food", "travel", "stay", "shopping", "bills"];
 
@@ -168,6 +169,9 @@ export const addExpense = async (req, res) => {
       .lean();
 
     invalidateBalanceCache(groupId);
+
+    // Referral milestone: count this towards the creator's "meaningful actions".
+    incrementExpenseCount(uid).catch((err) => console.error("incrementExpenseCount error:", err.message));
 
     // 🔹 Notify other members
     const allMembers = group.members.map((m) => String(m));

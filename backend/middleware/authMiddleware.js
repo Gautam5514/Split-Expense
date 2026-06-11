@@ -1,5 +1,5 @@
 import admin from "../config/firebaseAdmin.js";
-import User from "../models/userModel.js";
+import { findOrCreateUser, recordActiveDay } from "../utils/referralService.js";
 
 export const authMiddleware = async (req, res, next) => {
   try {
@@ -23,35 +23,12 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: "Token missing email claim." });
     }
 
-    // Normalize email - Firebase always lowercases but guard against edge cases
-    const normalizedEmail = email.toLowerCase().trim();
-
     // Atomic upsert - findOne + create is NOT atomic and causes duplicate users
     // under concurrent requests (e.g. authMiddleware + googleLogin firing together).
-    // findOneAndUpdate with upsert:true is a single atomic MongoDB operation.
-    let user = await User.findOneAndUpdate(
-      { email: normalizedEmail },
-      {
-        $setOnInsert: {
-          firebaseUid: uid,
-          email: normalizedEmail,
-          name: name || normalizedEmail.split("@")[0],
-          photoURL: picture || "",
-        },
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const { user } = await findOrCreateUser({ uid, email, name, picture });
 
-    // Sync mutable fields that can change after account creation
-    const updates = {};
-    if (!user.firebaseUid && uid)                    updates.firebaseUid = uid;
-    if (picture && user.photoURL !== picture)         updates.photoURL = picture;
-    if (name && user.name !== name)                   updates.name = name;
-
-    if (Object.keys(updates).length) {
-      await User.updateOne({ _id: user._id }, { $set: updates });
-      Object.assign(user, updates);
-    }
+    // Fire-and-forget: don't let active-day bookkeeping block the request.
+    recordActiveDay(user).catch((err) => console.error("recordActiveDay error:", err.message));
 
     req.user = {
       id:          user._id.toString(),

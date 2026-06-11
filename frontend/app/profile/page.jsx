@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Loader3D from "@/components/Loader3D";
 import Link from "next/link";
+import ReferralSection from "@/components/profile/ReferralSection";
 
 const TIMEZONES = [
   "Pacific Time (PT)", "Mountain Time (MT)", "Central Time (CT)",
@@ -141,6 +142,9 @@ export default function ProfilePage() {
             <p className="text-sm text-muted-foreground">{profile.email || "-"}</p>
           </div>
         </div>
+
+        {/* Referrals & coin rewards */}
+        <ReferralSection />
 
         {/* Personal info card */}
         <form onSubmit={handleSave}>

@@ -3,6 +3,7 @@ import UserProfile from "../models/userProfileModel.js";
 import User from "../models/userModel.js";
 import Group from "../models/groupModel.js";
 import admin from "../config/firebaseAdmin.js";
+import { checkAndQualifyMilestones, cancelPendingReferralFor } from "../utils/referralService.js";
 
 // ✅ GET /api/profile
 export const getProfile = async (req, res) => {
@@ -42,6 +43,12 @@ export const updateProfile = async (req, res) => {
     );
 
     const baseUser = await User.findById(req.user.id).select("name email");
+
+    // Profile completion is one of the referral milestones - re-check after every save.
+    checkAndQualifyMilestones(req.user.id).catch((err) =>
+      console.error("checkAndQualifyMilestones error:", err.message)
+    );
+
     res.json({
       ...profile.toObject(),
       name: baseUser?.name,
@@ -101,6 +108,11 @@ export const deleteAccount = async (req, res) => {
   try {
     const uid = req.user.id;
     const firebaseUid = req.user.firebaseUid;
+
+    // Cancel any not-yet-qualified referral where this user was the invitee.
+    // (If they were the referrer on a pending payout, payoutReferral() already
+    // handles a missing referrer gracefully by skipping that side's reward.)
+    await cancelPendingReferralFor(uid);
 
     // Remove user from all groups (as member)
     await Group.updateMany({ members: uid }, { $pull: { members: uid } });

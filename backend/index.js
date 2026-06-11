@@ -22,6 +22,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import notepadeRoutes from "./routes/notepadRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import referralRoutes from "./routes/referralRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -218,6 +219,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/notepads", notepadeRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/referrals", referralRoutes);
 
 // -----------------------------------------
 //  GLOBAL ERROR HANDLER
