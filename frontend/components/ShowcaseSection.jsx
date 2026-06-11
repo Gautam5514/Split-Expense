@@ -147,7 +147,7 @@ export default function ShowcaseSection() {
       className="relative bg-black"
       style={{ height: `${(total + 2) * 100}vh` }} // +1 globe-only intro, +1 outro
     >
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
+      <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
         {/* GLOBE — behind everything */}
         <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-60 max-md:opacity-40">
           <Globe scrollProgress={scrollYProgress} />

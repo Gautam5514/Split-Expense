@@ -118,8 +118,12 @@ export function ThemeProvider({ children }) {
   const [mounted, setMounted] = useState(false);
   const [font, setFontState]  = useState("inter");
 
-  // Store bg + primary for the active custom preset
-  const [customBg,      setCustomBg]      = useState("");
+  // Store one bg per mode + the primary for the active custom preset.
+  // Per-mode bgs keep the palette readable when the user toggles light/dark
+  // from the navbar after applying a preset (a dark bg must never be fed
+  // into the light-mode palette derivation).
+  const [customBgLight, setCustomBgLight] = useState("");
+  const [customBgDark,  setCustomBgDark]  = useState("");
   const [customPrimary, setCustomPrimary] = useState("");
 
   useEffect(() => {
@@ -130,7 +134,26 @@ export function ThemeProvider({ children }) {
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       setTheme("dark");
     }
-    setCustomBg(localStorage.getItem("customBg") || "");
+
+    const bgLight = localStorage.getItem("customBgLight") || "";
+    const bgDark  = localStorage.getItem("customBgDark")  || "";
+    const legacy  = localStorage.getItem("customBg");
+    if (legacy && !bgLight && !bgDark) {
+      // Migrate the old single-bg key to the mode it was applied in.
+      const wasDark = (storedTheme || "light") === "dark";
+      if (wasDark) {
+        setCustomBgDark(legacy);
+        localStorage.setItem("customBgDark", legacy);
+      } else {
+        setCustomBgLight(legacy);
+        localStorage.setItem("customBgLight", legacy);
+      }
+      localStorage.removeItem("customBg");
+    } else {
+      setCustomBgLight(bgLight);
+      setCustomBgDark(bgDark);
+    }
+
     setCustomPrimary(localStorage.getItem("customPrimary") || "");
     setFontState(localStorage.getItem("appFont") || "inter");
   }, []);
@@ -146,15 +169,21 @@ export function ThemeProvider({ children }) {
     localStorage.setItem("theme", theme);
 
     // Apply palette or reset to CSS defaults
-    if (customBg && customPrimary) {
-      const isDark = theme === "dark";
-      const palette = derivePalette(customBg, customPrimary, isDark);
+    const isDark = theme === "dark";
+    const bgForMode = isDark ? customBgDark : customBgLight;
+    if (bgForMode && customPrimary) {
+      const palette = derivePalette(bgForMode, customPrimary, isDark);
       Object.entries(palette).forEach(([k, v]) =>
         root.style.setProperty(k, v)
       );
     } else {
-      // Remove all custom overrides → CSS :root / .dark take over
+      // Remove all custom overrides → CSS :root / .dark take over,
+      // but keep the accent if one was chosen.
       PALETTE_VARS.forEach((v) => root.style.removeProperty(v));
+      if (customPrimary) {
+        root.style.setProperty("--primary", customPrimary);
+        root.style.setProperty("--ring", customPrimary);
+      }
     }
 
     // Font
@@ -169,39 +198,41 @@ export function ThemeProvider({ children }) {
     root.style.setProperty("--font-sans", fontMap[font] || fontMap.inter);
     localStorage.setItem("appFont", font);
 
-  }, [theme, mounted, customBg, customPrimary, font]);
+  }, [theme, mounted, customBgLight, customBgDark, customPrimary, font]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
-  // Called by theme page preset handler - only needs bg + primary
-  const applyColors = ({ bg, primary }) => {
-    const bgVal      = bg      || "";
+  // Called by the theme page - presets carry a bg for each mode.
+  const applyColors = ({ bgLight, bgDark, primary }) => {
+    const lightVal   = bgLight || "";
+    const darkVal    = bgDark  || "";
     const primaryVal = primary || "";
-    setCustomBg(bgVal);
+    setCustomBgLight(lightVal);
+    setCustomBgDark(darkVal);
     setCustomPrimary(primaryVal);
-    if (bgVal)      localStorage.setItem("customBg",      bgVal);
-    else            localStorage.removeItem("customBg");
-    if (primaryVal) localStorage.setItem("customPrimary", primaryVal);
-    else            localStorage.removeItem("customPrimary");
+    const persist = (key, val) =>
+      val ? localStorage.setItem(key, val) : localStorage.removeItem(key);
+    persist("customBgLight", lightVal);
+    persist("customBgDark",  darkVal);
+    persist("customPrimary", primaryVal);
   };
 
   const setFont = (f) => setFontState(f);
 
   const resetColors = () => {
-    setCustomBg("");
+    setCustomBgLight("");
+    setCustomBgDark("");
     setCustomPrimary("");
-    localStorage.removeItem("customBg");
-    localStorage.removeItem("customPrimary");
-    // Legacy cleanup
-    ["customText", "customBorder"].forEach((k) => localStorage.removeItem(k));
+    ["customBgLight", "customBgDark", "customPrimary",
+     "customBg", "customText", "customBorder"].forEach((k) => localStorage.removeItem(k));
   };
 
   return (
     <ThemeContext.Provider value={{
       theme, toggleTheme,
-      customBg, customPrimary,
+      customBgLight, customBgDark, customPrimary,
       applyColors, resetColors,
       font, setFont,
     }}>

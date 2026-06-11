@@ -44,7 +44,7 @@ export default function HeroSection() {
   const router = useRouter();
 
   return (
-    <section className="relative w-full min-h-screen overflow-hidden flex flex-col bg-black text-white pt-28 pb-12 sm:pb-20">
+    <section className="relative w-full min-h-[100svh] overflow-hidden flex flex-col bg-black text-white pt-24 sm:pt-28 pb-12 sm:pb-20">
 
       {/* Background Gradients matching obsidianos.com */}
       <div className="absolute inset-x-0 top-0 -bottom-[164px] z-0" style={{ background: "linear-gradient(180deg, #000 0%, #2F2C2A 67%)" }} />

@@ -17,6 +17,8 @@ import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebaseClient";
 import { api } from "@/lib/api";
 import HideOnScrollNav from "@/components/HideOnScrollNav";
+import CoinBadge from "@/components/CoinBadge";
+import useCoins from "@/hooks/useCoins";
 
 const NAV_LINKS = [
   { href: "/users",      icon: Home,             label: "Home" },
@@ -48,6 +50,7 @@ export default function Navbar() {
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
+  const coins = useCoins();
 
   const cleanPath = pathname?.replace(/\/$/, "") || "";
   const isAuthPage =
@@ -198,14 +201,26 @@ export default function Navbar() {
           ) : (
             <div className="flex items-center gap-1.5 sm:gap-3">
               <Link
+                href="/what-we-offer"
+                className="hidden sm:block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
+              >
+                What we offer
+              </Link>
+              <Link
+                href="/pricing"
+                className="px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
+              >
+                Pricing
+              </Link>
+              <Link
                 href="/login"
-                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
+                className="px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold text-white bg-white/5 hover:bg-white/10 border border-white/20 transition-all hover:scale-105 active:scale-95"
+                className="px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold text-white bg-white/5 hover:bg-white/10 border border-white/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
               >
                 Get started
               </Link>
@@ -332,18 +347,21 @@ export default function Navbar() {
                     dropdownOpen ? "bg-cyan-500/10 ring-2 ring-cyan-500 dark:ring-cyan-400/80" : "hover:bg-foreground/5"
                   }`}
                 >
-                  {profile?.avatar || user?.photoURL ? (
-                    <img
-                      src={profile?.avatar || user?.photoURL}
-                      className="w-7 h-7 rounded-xl border border-white/10 object-cover shadow-sm"
-                      alt="avatar"
-                    />
-                  ) : (
-                    <div className="w-7 h-7 rounded-xl flex items-center justify-center shadow-sm"
-                      style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}>
-                      <User size={13} className="text-white" />
-                    </div>
-                  )}
+                  <span className="relative shrink-0">
+                    {profile?.avatar || user?.photoURL ? (
+                      <img
+                        src={profile?.avatar || user?.photoURL}
+                        className="w-7 h-7 rounded-xl border border-white/10 object-cover shadow-sm"
+                        alt="avatar"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-xl flex items-center justify-center shadow-sm"
+                        style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}>
+                        <User size={13} className="text-white" />
+                      </div>
+                    )}
+                    <CoinBadge coins={coins} className="-top-1.5 -right-1.5" />
+                  </span>
                   <ChevronDown size={11} className={`text-foreground/40 transition-transform duration-300 ${dropdownOpen ? "rotate-180" : ""}`} />
                 </button>
 

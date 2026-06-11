@@ -128,12 +128,12 @@ export default function DeviceSlideShowcase() {
       </div>
 
       {/* Sticky screen container */}
-      <div className="sticky top-0 h-screen w-full flex items-center overflow-hidden z-10 px-6 sm:px-12 md:px-16 lg:px-24">
+      <div className="sticky top-0 h-[100svh] w-full flex items-center overflow-hidden z-10 px-6 sm:px-12 md:px-16 lg:px-24">
         
-        <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 items-center gap-12 lg:gap-16 relative z-10">
+        <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 items-center gap-6 sm:gap-12 lg:gap-16 relative z-10">
           
           {/* LEFT COLUMN: Features details (Width: 5 cols) */}
-          <div className="col-span-1 lg:col-span-5 flex flex-col justify-center text-left relative min-h-[360px] sm:min-h-[400px]">
+          <div className="col-span-1 lg:col-span-5 flex flex-col justify-center text-left relative min-h-[300px] sm:min-h-[400px]">
             
             <AnimatePresence mode="wait">
               <motion.div
@@ -185,7 +185,7 @@ export default function DeviceSlideShowcase() {
             </AnimatePresence>
 
             {/* Scrolling Navigation Tracker */}
-            <div className="mt-10 lg:mt-12 flex flex-col gap-3 max-w-xs">
+            <div className="mt-6 sm:mt-10 lg:mt-12 flex flex-col gap-3 max-w-xs">
               <div className="flex justify-between items-center text-[10px] font-mono tracking-widest text-white/30">
                 <span>SCROLL PROGRESS</span>
                 <span className="text-white/70 font-bold">{`0${activeIndex + 1} / 03`}</span>
@@ -217,7 +217,7 @@ export default function DeviceSlideShowcase() {
           </div>
 
           {/* RIGHT COLUMN: Slide-out device container (Width: 7 cols) */}
-          <div className="col-span-1 lg:col-span-7 flex justify-center items-center h-[300px] sm:h-[400px] lg:h-full relative">
+          <div className="col-span-1 lg:col-span-7 flex justify-center items-center h-[220px] sm:h-[400px] lg:h-full relative">
             
             {/* Visual glow frame element underneath mockups */}
             <div 

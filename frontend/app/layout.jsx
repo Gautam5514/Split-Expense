@@ -8,6 +8,7 @@ import AppFooter from "@/components/AppFooter";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import CustomCursor from "@/components/CustomCursor";
+import InstallPrompt from "@/components/InstallPrompt";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -81,6 +82,7 @@ export default function RootLayout({ children }) {
               </MainWrapper>
               <AppFooter />
               <CustomCursor />
+              <InstallPrompt />
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
