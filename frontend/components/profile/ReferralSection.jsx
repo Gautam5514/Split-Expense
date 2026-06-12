@@ -46,6 +46,7 @@ export default function ReferralSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorStatus, setErrorStatus] = useState(null);
   const [referralLink, setReferralLink] = useState("");
 
   useEffect(() => {
@@ -61,8 +62,9 @@ export default function ReferralSection() {
       if (typeof window !== "undefined" && res.data?.referralCode) {
         setReferralLink(`${window.location.origin}/invite/${res.data.referralCode}`);
       }
-    } catch {
+    } catch (err) {
       setError(true);
+      setErrorStatus(err?.response?.status ?? null);
     } finally {
       setLoading(false);
     }
@@ -109,7 +111,14 @@ export default function ReferralSection() {
     return (
       <div className="bg-card border border-border rounded-xl shadow-sm p-6 flex flex-col items-center text-center gap-2">
         <AlertCircle size={24} className="text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Couldn't load your referral details.</p>
+        <p className="text-sm text-muted-foreground">
+          Couldn't load your referral details{errorStatus ? ` (error ${errorStatus})` : ""}.
+        </p>
+        {errorStatus === 404 && (
+          <p className="text-xs text-muted-foreground/80">
+            The server doesn't have the referrals feature yet - redeploy the backend.
+          </p>
+        )}
         <button
           onClick={fetchData}
           className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
