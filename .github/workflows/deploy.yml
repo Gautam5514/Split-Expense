@@ -19,16 +19,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
 
           script: |
-            # Stop on the first failing command instead of silently
-            # continuing with stale code.
-            set -e
-
             cd ~/Split-Expense
-
-            # Force the server to match exactly what was pushed - a plain
-            # `git pull` silently fails if the server copy has local edits.
-            git fetch origin main
-            git reset --hard origin/main
+            git pull origin main
 
             cd backend
 
