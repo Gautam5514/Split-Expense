@@ -126,6 +126,12 @@ export function ThemeProvider({ children }) {
   const [customBgDark,  setCustomBgDark]  = useState("");
   const [customPrimary, setCustomPrimary] = useState("");
 
+  // Aurora Glass premium theme. This is a CSS-class theme (.theme-glass in
+  // globals.css), not a derived palette - while enabled, custom palette vars
+  // are kept off the root so the class styling wins. The class itself is
+  // applied by GlassThemeGate only when the user is logged in.
+  const [glassEnabled, setGlassEnabled] = useState(false);
+
   useEffect(() => {
     setMounted(true);
     const storedTheme = localStorage.getItem("theme");
@@ -156,6 +162,7 @@ export function ThemeProvider({ children }) {
 
     setCustomPrimary(localStorage.getItem("customPrimary") || "");
     setFontState(localStorage.getItem("appFont") || "inter");
+    setGlassEnabled(localStorage.getItem("glassTheme") === "1");
   }, []);
 
   useEffect(() => {
@@ -168,19 +175,22 @@ export function ThemeProvider({ children }) {
     root.classList.add(theme);
     localStorage.setItem("theme", theme);
 
-    // Apply palette or reset to CSS defaults
+    // Apply palette or reset to CSS defaults. While the glass theme is on,
+    // inline palette vars must stay off the root - inline styles would beat
+    // the .theme-glass class rules.
     const isDark = theme === "dark";
     const bgForMode = isDark ? customBgDark : customBgLight;
-    if (bgForMode && customPrimary) {
+    if (!glassEnabled && bgForMode && customPrimary) {
       const palette = derivePalette(bgForMode, customPrimary, isDark);
       Object.entries(palette).forEach(([k, v]) =>
         root.style.setProperty(k, v)
       );
     } else {
       // Remove all custom overrides → CSS :root / .dark take over,
-      // but keep the accent if one was chosen.
+      // but keep the accent if one was chosen (unless glass is active -
+      // glass brings its own accent).
       PALETTE_VARS.forEach((v) => root.style.removeProperty(v));
-      if (customPrimary) {
+      if (customPrimary && !glassEnabled) {
         root.style.setProperty("--primary", customPrimary);
         root.style.setProperty("--ring", customPrimary);
       }
@@ -198,14 +208,29 @@ export function ThemeProvider({ children }) {
     root.style.setProperty("--font-sans", fontMap[font] || fontMap.inter);
     localStorage.setItem("appFont", font);
 
-  }, [theme, mounted, customBgLight, customBgDark, customPrimary, font]);
+  }, [theme, mounted, customBgLight, customBgDark, customPrimary, font, glassEnabled]);
+
+  // Glass is a dark-mode theme: enabling it forces dark, and toggling to
+  // light from the navbar switches it off rather than looking broken.
+  const setGlassTheme = (on) => {
+    setGlassEnabled(on);
+    if (on) {
+      setTheme("dark");
+      localStorage.setItem("glassTheme", "1");
+    } else {
+      localStorage.removeItem("glassTheme");
+    }
+  };
 
   const toggleTheme = () => {
+    if (glassEnabled) setGlassTheme(false);
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
   // Called by the theme page - presets carry a bg for each mode.
+  // Applying any color preset replaces the glass theme.
   const applyColors = ({ bgLight, bgDark, primary }) => {
+    if (glassEnabled) setGlassTheme(false);
     const lightVal   = bgLight || "";
     const darkVal    = bgDark  || "";
     const primaryVal = primary || "";
@@ -222,6 +247,7 @@ export function ThemeProvider({ children }) {
   const setFont = (f) => setFontState(f);
 
   const resetColors = () => {
+    setGlassTheme(false);
     setCustomBgLight("");
     setCustomBgDark("");
     setCustomPrimary("");
@@ -235,6 +261,7 @@ export function ThemeProvider({ children }) {
       customBgLight, customBgDark, customPrimary,
       applyColors, resetColors,
       font, setFont,
+      glassEnabled, setGlassTheme,
     }}>
       {children}
     </ThemeContext.Provider>

@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import HeroSection from "@/components/home/HeroSection";
 import LogoSlider from "@/components/LogoSlider";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
+import FeatureMindMap from "@/components/home/FeatureMindMap";
 import IntelligenceSection from "@/components/home/IntelligenceSection";
 import ShowcaseSection from "@/components/ShowcaseSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
@@ -42,6 +43,7 @@ export default function HomePage() {
       <ShowcaseSection />
       <IntelligenceSection />
       <HowItWorksSection />
+      <FeatureMindMap />
       <FeaturesSection />
       <DeviceSlideShowcase />
       <TestimonialsSection />

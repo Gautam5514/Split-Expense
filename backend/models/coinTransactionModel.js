@@ -6,7 +6,7 @@ const coinTransactionSchema = new mongoose.Schema({
   balanceAfter: { type: Number, required: true },
   reason: {
     type: String,
-    enum: ["referral_referrer_reward", "referral_referred_reward"],
+    enum: ["referral_referrer_reward", "referral_referred_reward", "store_purchase"],
     required: true,
   },
   // Referral document this transaction originated from.

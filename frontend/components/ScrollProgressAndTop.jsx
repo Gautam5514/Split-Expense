@@ -22,12 +22,6 @@ export default function ScrollProgressAndTop() {
 
   return (
     <>
-      {/* Horizontal Scroll Progress Bar at the top of the viewport */}
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-cyan-500 origin-left z-[9999]"
-        style={{ scaleX: scrollYProgress }}
-      />
-
       {/* Back to Top Button with Circular Progress Ring */}
       <AnimatePresence>
         {isVisible && (

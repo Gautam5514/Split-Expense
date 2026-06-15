@@ -13,7 +13,8 @@
       "Bash(git push *)",
       "Bash(sed -i '' \\\\ *)",
       "Bash(npm uninstall *)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(node -e \"console.log\\(require\\('@xyflow/react/package.json'\\).version\\)\")"
     ],
     "additionalDirectories": [
       "/Users/kunalkumar/Desktop/Gautam/Split/frontend/app/groups/[id]"

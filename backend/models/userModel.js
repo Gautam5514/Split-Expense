@@ -31,6 +31,11 @@ const userSchema = new mongoose.Schema({
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   // Coin balance. Only ever mutated server-side via transactional payouts.
   coins: { type: Number, default: 0, min: 0 },
+  // Running total of all coins ever credited. Never decreases (purchases only
+  // touch `coins`), so Elite tier badges computed from this are permanent.
+  lifetimeCoinsEarned: { type: Number, default: 0 },
+  // Store items (premium themes, fonts) bought with coins. Owned forever.
+  unlockedItems: [{ type: String }],
   // Milestone-tracking counters used to qualify referrals.
   activeDaysCount: { type: Number, default: 0 },
   lastActiveDate: { type: String, default: null }, // "YYYY-MM-DD" (UTC)

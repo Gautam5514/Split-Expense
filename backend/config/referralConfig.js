@@ -14,6 +14,10 @@ export const REFERRAL_CODE_INPUT_REGEX = /^[A-Z0-9]{4,12}$/;
 export const REWARDS = {
   REFERRER_COINS: 50,
   REFERRED_COINS: 25,
+  // When true, both sides are paid the moment the referred friend signs up -
+  // the MILESTONES gates below are skipped entirely. Set to false to go back
+  // to milestone-gated payouts.
+  INSTANT: true,
 };
 
 export const MILESTONES = {
@@ -23,6 +27,12 @@ export const MILESTONES = {
   // UserProfile fields that must all be non-empty for "profile completed".
   PROFILE_COMPLETE_FIELDS: ["mobile", "city", "bio"],
 };
+
+// How long after account creation a referral code can still be attributed.
+// Covers signups where the attribution call was lost (backend down, race with
+// authMiddleware creating the user first, network blip) - the friend just has
+// to sign in through the invite link again within this window.
+export const ATTRIBUTION_WINDOW_HOURS = 48;
 
 export const ANTI_FRAUD = {
   // Max referrals a single referrer can be paid out for per rolling 24h window.

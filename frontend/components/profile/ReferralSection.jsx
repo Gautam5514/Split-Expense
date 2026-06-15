@@ -1,12 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import toast from "@/lib/toast";
+import { playCoinEarn } from "@/lib/coinSound";
 import {
   Coins, Copy, Share2, Gift, Users, Trophy, CheckCircle2,
-  Clock, Loader2, Sparkles, AlertCircle,
+  Clock, Check, Loader2, Sparkles, AlertCircle, MessageCircle,
 } from "lucide-react";
+
+/* Eased count-up for the wallet balance - rolls from the previous value to
+   the new one like a real wallet app instead of snapping. */
+function useCountUp(target, duration = 900) {
+  const [value, setValue] = useState(0);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    const from = fromRef.current;
+    if (from === target) return; // value already settled there
+    fromRef.current = target;
+    const t0 = performance.now();
+    let raf;
+    const step = (now) => {
+      const p = Math.min((now - t0) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(from + (target - from) * eased));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
 
 const STATUS_STYLES = {
   pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
@@ -48,6 +72,9 @@ export default function ReferralSection() {
   const [error, setError] = useState(false);
   const [errorStatus, setErrorStatus] = useState(null);
   const [referralLink, setReferralLink] = useState("");
+  const [copied, setCopied] = useState(null); // "code" | "link" | null
+  // Hook must run unconditionally (before the loading/error returns).
+  const animatedCoins = useCountUp(data?.coins ?? 0);
 
   useEffect(() => {
     fetchData();
@@ -62,6 +89,15 @@ export default function ReferralSection() {
       if (typeof window !== "undefined" && res.data?.referralCode) {
         setReferralLink(`${window.location.origin}/invite/${res.data.referralCode}`);
       }
+
+      // Coin chime when the balance grew since the user last saw it.
+      const newBalance = res.data?.coins ?? 0;
+      const lastSeen = Number(localStorage.getItem("se_last_coins"));
+      if (!Number.isNaN(lastSeen) && newBalance > lastSeen) {
+        playCoinEarn();
+        toast.success(`+${newBalance - lastSeen} coins earned!`);
+      }
+      localStorage.setItem("se_last_coins", String(newBalance));
     } catch (err) {
       setError(true);
       setErrorStatus(err?.response?.status ?? null);
@@ -70,13 +106,29 @@ export default function ReferralSection() {
     }
   };
 
-  const copyToClipboard = async (text, label) => {
+  const copyToClipboard = async (text, label, key) => {
     try {
       await navigator.clipboard.writeText(text);
+      if (key) {
+        setCopied(key);
+        setTimeout(() => setCopied(null), 1800);
+      }
       toast.success(`${label} copied!`);
     } catch {
       toast.error("Couldn't copy. Please copy it manually.");
     }
+  };
+
+  const shareMessage =
+    "Split expenses with friends, hassle-free. Join me on SplitEase and we both earn coins instantly!";
+
+  const shareWhatsApp = () => {
+    if (!referralLink) return;
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(`${shareMessage} ${referralLink}`)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   const shareLink = async () => {
@@ -112,11 +164,11 @@ export default function ReferralSection() {
       <div className="bg-card border border-border rounded-xl shadow-sm p-6 flex flex-col items-center text-center gap-2">
         <AlertCircle size={24} className="text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
-          Couldn't load your referral details{errorStatus ? ` (error ${errorStatus})` : ""}.
+          Couldn&apos;t load your referral details{errorStatus ? ` (error ${errorStatus})` : ""}.
         </p>
         {errorStatus === 404 && (
           <p className="text-xs text-muted-foreground/80">
-            The server doesn't have the referrals feature yet - redeploy the backend.
+            The server doesn&apos;t have the referrals feature yet - redeploy the backend.
           </p>
         )}
         <button
@@ -130,76 +182,118 @@ export default function ReferralSection() {
   }
 
   const { referralCode, coins, totalEarned, successfulReferrals, invited, eliteClub } = data;
+  // Tier progress runs on lifetime-earned coins (basisCoins), not the spendable
+  // balance - store purchases can never pull a badge or this bar backwards.
+  const tierBasis = eliteClub.basisCoins ?? coins;
   const tierProgressPct = eliteClub.nextTier
-    ? Math.min(100, Math.round((coins / eliteClub.nextTier.minCoins) * 100))
+    ? Math.min(100, Math.round((tierBasis / eliteClub.nextTier.minCoins) * 100))
     : 100;
 
   return (
     <div className="space-y-4">
 
-      {/* Coin balance + referral code/link */}
+      {/* Coin wallet + referral code/share */}
       <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
         <div className="flex items-center gap-2">
           <Gift size={16} className="text-cyan-600 dark:text-cyan-400" />
           <h2 className="text-base font-bold text-foreground">Referrals &amp; Rewards</h2>
         </div>
 
-        {/* Coin balance */}
-        <div className="flex items-center justify-between rounded-2xl p-4 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-amber-500/15 flex items-center justify-center">
-              <Coins size={22} className="text-amber-500" />
+        {/* Premium coin wallet */}
+        <div className="coin-shine relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-[#1d1709] via-[#231a08] to-[#2e2006] border border-amber-500/30 shadow-[0_18px_40px_-18px_rgba(245,158,11,0.4)]">
+          {/* Glow accents */}
+          <div className="pointer-events-none absolute -top-14 -right-14 w-44 h-44 rounded-full bg-amber-400/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-12 w-40 h-40 rounded-full bg-yellow-500/10 blur-3xl" />
+
+          <div className="relative flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-amber-200/70">
+                Coin balance
+              </p>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="text-4xl sm:text-[2.6rem] font-extrabold text-amber-50 tabular-nums leading-none">
+                  {animatedCoins}
+                </span>
+                <span className="text-xs font-bold text-amber-200/60 uppercase tracking-wider">coins</span>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-amber-100/55 font-medium">
+                <span>
+                  <b className="text-amber-100/90 font-bold">{totalEarned}</b> lifetime earned
+                </span>
+                <span>
+                  <b className="text-amber-100/90 font-bold">{successfulReferrals}</b> successful referral{successfulReferrals === 1 ? "" : "s"}
+                </span>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">Coin Balance</p>
-              <p className="text-2xl font-extrabold text-foreground leading-tight">{coins}</p>
+
+            {/* Gold medallion */}
+            <div className="relative shrink-0">
+              <div className="w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-yellow-600 ring-4 ring-amber-300/20 shadow-[0_0_28px_rgba(245,158,11,0.45)] flex items-center justify-center">
+                <Coins size={30} className="text-amber-900 drop-shadow" />
+              </div>
+              <Sparkles size={14} className="absolute -top-1 -right-1 text-amber-200" />
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground font-medium">Total earned</p>
-            <p className="text-sm font-bold text-foreground">{totalEarned} coins</p>
-            <p className="text-[11px] text-muted-foreground">{successfulReferrals} successful referral{successfulReferrals === 1 ? "" : "s"}</p>
+
+          <div className="relative mt-4 flex items-center gap-1.5 text-[11px] font-semibold text-amber-200/70">
+            <Trophy size={11} />
+            {eliteClub.tier.name} member
           </div>
         </div>
 
-        {/* Referral code */}
-        <div>
-          <label className="text-sm font-medium text-foreground mb-1 block">Your referral code</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 px-3 py-2.5 text-sm font-mono font-bold tracking-widest text-foreground bg-muted/60 border border-border rounded-lg">
+        {/* Referral code ticket */}
+        <div className="rounded-2xl border-2 border-dashed border-cyan-500/30 bg-cyan-500/[0.04] px-4 py-4 text-center">
+          <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-muted-foreground">
+            Your referral code
+          </p>
+          <button
+            type="button"
+            onClick={() => copyToClipboard(referralCode, "Referral code", "code")}
+            className="group mt-1.5 inline-flex items-center gap-2.5 cursor-pointer"
+            title="Tap to copy"
+          >
+            <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-[0.28em] text-foreground">
               {referralCode}
-            </div>
-            <button
-              onClick={() => copyToClipboard(referralCode, "Referral code")}
-              className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition cursor-pointer"
-            >
-              <Copy size={13} /> Copy
-            </button>
-          </div>
+            </span>
+            {copied === "code" ? (
+              <Check size={16} className="text-emerald-500" strokeWidth={3} />
+            ) : (
+              <Copy size={15} className="text-muted-foreground group-hover:text-cyan-500 transition" />
+            )}
+          </button>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {copied === "code" ? "Copied to clipboard!" : "Tap the code to copy"}
+          </p>
         </div>
 
-        {/* Referral link */}
+        {/* Share actions */}
         <div>
-          <label className="text-sm font-medium text-foreground mb-1 block">Your referral link</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 px-3 py-2.5 text-xs sm:text-sm text-foreground bg-muted/60 border border-border rounded-lg truncate">
-              {referralLink}
-            </div>
+          <div className="grid grid-cols-3 gap-2">
             <button
-              onClick={() => copyToClipboard(referralLink, "Referral link")}
-              className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition cursor-pointer"
+              onClick={shareWhatsApp}
+              className="flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-bold text-white bg-[#25D366] hover:bg-[#1fb957] rounded-xl shadow-sm transition cursor-pointer"
             >
-              <Copy size={13} />
+              <MessageCircle size={14} /> WhatsApp
+            </button>
+            <button
+              onClick={() => copyToClipboard(referralLink, "Referral link", "link")}
+              className="flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-bold text-foreground border border-border rounded-xl hover:bg-muted/60 transition cursor-pointer"
+            >
+              {copied === "link" ? (
+                <><Check size={14} className="text-emerald-500" strokeWidth={3} /> Copied</>
+              ) : (
+                <><Copy size={14} /> Copy link</>
+              )}
             </button>
             <button
               onClick={shareLink}
-              className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-white bg-cyan-700 hover:bg-cyan-800 rounded-lg transition cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-700 hover:to-teal-600 rounded-xl shadow-sm transition cursor-pointer"
             >
-              <Share2 size={13} /> Share
+              <Share2 size={14} /> Share
             </button>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1.5">
-            Share this link - when a friend joins and gets active, you both earn coins.
+          <p className="text-[11px] text-muted-foreground mt-2 text-center">
+            The moment a friend joins with your link, you both earn coins instantly.
           </p>
         </div>
       </div>
@@ -253,9 +347,9 @@ export default function ReferralSection() {
             <div className="w-14 h-14 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
               <Gift size={24} className="text-cyan-600 dark:text-cyan-400" />
             </div>
-            <p className="text-sm font-semibold text-foreground">You haven't invited anyone yet</p>
+            <p className="text-sm font-semibold text-foreground">You haven&apos;t invited anyone yet</p>
             <p className="text-xs text-muted-foreground max-w-xs">
-              Share your referral link with friends - you'll both earn coins once they get active on SplitEase.
+              Share your referral link with friends - you&apos;ll both earn coins instantly when they join SplitEase.
             </p>
             <button
               onClick={shareLink}

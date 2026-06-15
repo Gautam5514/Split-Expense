@@ -156,6 +156,12 @@ export const attributeReferral = async (newUser, rawCode) => {
       referrerRewardAmount: REWARDS.REFERRER_COINS,
       referredRewardAmount: REWARDS.REFERRED_COINS,
     });
+
+    // Instant mode: qualify & pay both sides right now, so the coins are
+    // already on the account by the time the signup response returns.
+    if (REWARDS.INSTANT) {
+      await checkAndQualifyMilestones(newUser._id);
+    }
   } catch (err) {
     // Duplicate key (referredUserId unique) or any other issue -> never break signup.
     console.error("attributeReferral error:", err.message);
@@ -172,7 +178,14 @@ const todayUTC = () => new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
  */
 export const recordActiveDay = async (user) => {
   const today = todayUTC();
-  if (user.lastActiveDate === today) return;
+  if (user.lastActiveDate === today) {
+    // Instant mode: keep sweeping so referrals created while milestone-gating
+    // was on (still sitting in "pending") pay out on the user's next request.
+    if (REWARDS.INSTANT) {
+      await checkAndQualifyMilestones(user._id);
+    }
+    return;
+  }
 
   await User.updateOne({ _id: user._id }, { $set: { lastActiveDate: today }, $inc: { activeDaysCount: 1 } });
   user.lastActiveDate = today;
@@ -206,9 +219,12 @@ export const checkAndQualifyMilestones = async (referredUserId) => {
   const user = await User.findById(referredUserId).lean();
   if (!user) return;
 
-  if (user.activeDaysCount < MILESTONES.MIN_ACTIVE_DAYS) return;
-  if (user.expenseCount < MILESTONES.MIN_EXPENSES) return;
-  if (!(await isProfileComplete(referredUserId))) return;
+  // Instant mode skips every milestone gate - signup alone qualifies.
+  if (!REWARDS.INSTANT) {
+    if (user.activeDaysCount < MILESTONES.MIN_ACTIVE_DAYS) return;
+    if (user.expenseCount < MILESTONES.MIN_EXPENSES) return;
+    if (!(await isProfileComplete(referredUserId))) return;
+  }
 
   referral.status = "qualified";
   referral.qualifiedAt = new Date();
@@ -233,7 +249,9 @@ export const cancelPendingReferralFor = async (referredUserId) => {
 const creditCoins = async (session, userId, amount, reason, refId) => {
   const user = await User.findOneAndUpdate(
     { _id: userId },
-    { $inc: { coins: amount } },
+    // lifetimeCoinsEarned only ever goes up - it backs the permanent tier
+    // badges, while `coins` is the spendable balance.
+    { $inc: { coins: amount, lifetimeCoinsEarned: amount } },
     { new: true, session }
   );
   if (!user) return null; // account deleted - skip this side of the payout

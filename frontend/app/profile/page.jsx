@@ -131,23 +131,28 @@ export default function ProfilePage() {
   ].filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-background pt-8 pb-28 sm:pb-20 px-3 sm:px-4">
-      <div className="max-w-2xl mx-auto space-y-4">
+    <div className="min-h-screen bg-background pt-8 pb-28 sm:pb-20 px-3 sm:px-4 lg:px-6">
+      <div className="max-w-2xl md:max-w-3xl lg:max-w-6xl mx-auto space-y-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground">My Profile</h1>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-foreground">My Profile</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Manage your personal information</p>
         </div>
 
+        {/* < lg: one column (identity, referrals, form) - same DOM order.
+            >= lg: identity + form stacked in the left column, referrals
+            as the right rail spanning both rows. */}
+        <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] lg:gap-5 lg:items-start">
+
         {/* Identity card: gradient cover, overlapping avatar, chips, completeness */}
-        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-          <div className="relative h-24 sm:h-28 bg-gradient-to-r from-cyan-600 via-teal-500 to-sky-500">
+        <div className="min-w-0 lg:col-start-1 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+          <div className="relative h-24 sm:h-28 lg:h-32 bg-gradient-to-r from-cyan-600 via-teal-500 to-sky-500">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.25),transparent_45%)]" />
           </div>
 
           <div className="px-4 sm:px-7 pb-5">
             <div className="flex items-end justify-between -mt-10 sm:-mt-12">
               <div className="relative">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg bg-muted flex items-center justify-center">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg bg-muted flex items-center justify-center">
                   {avatarUrl ? (
                     <img src={avatarUrl} className="w-full h-full object-cover" alt="Profile" referrerPolicy="no-referrer" />
                   ) : (
@@ -216,10 +221,12 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <ReferralSection />
+        <div className="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2">
+          <ReferralSection />
+        </div>
 
         {/* Personal info */}
-        <form onSubmit={handleSave}>
+        <form onSubmit={handleSave} className="min-w-0 lg:col-start-1">
           <div className="bg-card border border-border rounded-2xl shadow-sm p-5 sm:p-6 space-y-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -307,6 +314,7 @@ export default function ProfilePage() {
             )}
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

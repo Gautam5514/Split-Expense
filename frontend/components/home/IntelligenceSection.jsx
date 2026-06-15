@@ -97,12 +97,12 @@ export default function IntelligenceSection() {
     <section
       ref={sectionRef}
       onMouseMove={onMouseMove}
-      className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#030303] text-white"
+      className="relative flex sm:min-h-[100dvh] flex-col overflow-hidden bg-[#030303] text-white"
     >
       {/* Ambient glow, same language as the rest of the landing page */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[680px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-900/10 blur-[130px]" />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 py-10 sm:py-12">
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 py-7 sm:py-12">
         {/* Header block */}
         <div className="max-w-md font-mono text-[10px] font-bold uppercase leading-relaxed tracking-[0.12em] sm:text-[11px]">
           <p className="text-cyan-400">Splitease</p>
@@ -115,7 +115,7 @@ export default function IntelligenceSection() {
         </div>
 
         {/* Rotating word stack, vertically centered in the leftover space */}
-        <div className="my-auto py-6">
+        <div className="my-8 py-2 sm:my-auto sm:py-6">
           <p className="mb-4 hidden text-center font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 md:block">
             Hover on words
           </p>

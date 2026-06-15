@@ -5,6 +5,7 @@ import admin from "../config/firebaseAdmin.js";
 import { isValidEmail, validatePassword } from "../middleware/validate.js";
 import { sendEmail } from "../utils/emailService.js";
 import { findOrCreateUser, attributeReferral, recordActiveDay } from "../utils/referralService.js";
+import { ATTRIBUTION_WINDOW_HOURS } from "../config/referralConfig.js";
 
 
 export const register = async (req, res) => {
@@ -83,8 +84,14 @@ export const googleLogin = async (req, res) => {
     // Atomic upsert - prevents duplicate user creation under concurrent requests
     const { user, isNew } = await findOrCreateUser({ uid, email, name, picture });
 
-    // Attribution only ever applies at first-ever account creation.
-    if (isNew && referralCode) {
+    // Attribution applies at signup, but `isNew` alone is unreliable: a
+    // parallel authenticated request can hit authMiddleware first and create
+    // the user there, making isNew false on the actual signup call - and the
+    // attribution would be lost forever. So also accept still-unattributed
+    // accounts created within the attribution window.
+    const accountAgeMs = Date.now() - new Date(user.createdAt).getTime();
+    const withinWindow = accountAgeMs < ATTRIBUTION_WINDOW_HOURS * 60 * 60 * 1000;
+    if (referralCode && !user.referredBy && (isNew || withinWindow)) {
       await attributeReferral(user, referralCode);
     }
 

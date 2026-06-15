@@ -9,6 +9,7 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import CustomCursor from "@/components/CustomCursor";
 import InstallPrompt from "@/components/InstallPrompt";
+import GlassThemeGate from "@/components/GlassThemeGate";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -72,6 +73,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <AuthProvider>
             <NotificationProvider>
+              <GlassThemeGate />
               <Navbar />
               <Toaster
                 position="top-right"

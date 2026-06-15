@@ -4,14 +4,17 @@ import { useEffect, useState } from "react";
 import useTheme from "@/hooks/useTheme";
 import { api } from "@/lib/api";
 import toast from "@/lib/toast";
+import PurchaseModal from "@/components/PurchaseModal";
+import { playCoinSpend } from "@/lib/coinSound";
 import { Check, Coins, Crown, Lock, Monitor, Moon, Palette, RotateCcw, Sparkles, Sun, Type } from "lucide-react";
 
 /* Appearance page: everything is staged (mode, accent, font, text size)
    and lands together on Apply. The live preview mirrors the staged
    choices before anything touches the real app. */
 
-// cost = coin balance needed to unlock (matches the Elite tier philosophy:
-// perks unlock by balance, coins are never spent). Inter stays free.
+// cost = coins SPENT to purchase the item (one-time, owned forever after).
+// Must stay in sync with backend/config/storeConfig.js - the server is the
+// source of truth for prices. Inter stays free.
 const FONTS = [
   { id: "inter", name: "Inter", desc: "Clean & modern - the default", family: "Inter, sans-serif", cost: 0 },
   { id: "poppins", name: "Poppins", desc: "Rounded & friendly", family: "Poppins, sans-serif", cost: 100 },
@@ -27,16 +30,24 @@ const TEXT_SIZES = [
   { id: "large", label: "Large", px: "18px" },
 ];
 
-// Coin-gated premium themes. Anyone can stage one to see it in the live
-// preview; applying needs the coin balance (balance unlock, never spent).
+// Premium themes bought with coins. Anyone can stage one to see it in the
+// live preview; applying requires owning it (one-time purchase).
 // card/line are only for the preview mock - the real palette is derived
 // from dark+primary by ThemeContext.
+// While true, Aurora Glass can be applied without owning it (testing only).
+const GLASS_TEST_MODE = false;
+
+// Mini aurora backdrop used by the grid mock + live preview for Aurora Glass.
+const GLASS_PREVIEW_BG =
+  "radial-gradient(80% 70% at 15% 0%, rgba(56,189,248,0.22), transparent 70%), radial-gradient(70% 60% at 90% 15%, rgba(167,139,250,0.18), transparent 70%), radial-gradient(70% 65% at 30% 100%, rgba(14,116,144,0.25), transparent 72%), #060a14";
+
 const PREMIUM_THEMES = [
-  { name: "Midnight Black", desc: "The landing page look", cost: 200, primary: "#22d3ee", bg: "#F4F7FB", dark: "#030303", card: "#111111", line: "#27272a" },
-  { name: "Royal Amethyst", desc: "Deep violet, regal glow", cost: 450, primary: "#a855f7", bg: "#faf5ff", dark: "#0b0613", card: "#160d24", line: "#2c1b45" },
-  { name: "Emerald Noir", desc: "Dark forest, mint accents", cost: 550, primary: "#34d399", bg: "#f0fdf4", dark: "#04120c", card: "#0b2015", line: "#16382a" },
-  { name: "Crimson Velvet", desc: "Moody red, velvet depth", cost: 600, primary: "#fb7185", bg: "#fff1f2", dark: "#140408", card: "#220a10", line: "#3d1520" },
-  { name: "Aurum Gold", desc: "Black and gold, pure luxury", cost: 700, primary: "#f59e0b", bg: "#fffbeb", dark: "#100c02", card: "#1d1607", line: "#38290e" },
+  { id: "glass", glass: true, name: "Aurora Glass", desc: "Frosted glass over a live aurora", cost: 1000, primary: "#38bdf8", bg: "#F4F7FB", dark: "#060a14", card: "rgba(255,255,255,0.07)", line: "rgba(255,255,255,0.16)" },
+  { id: "midnight-black", name: "Midnight Black", desc: "The landing page look", cost: 200, primary: "#22d3ee", bg: "#F4F7FB", dark: "#030303", card: "#111111", line: "#27272a" },
+  { id: "royal-amethyst", name: "Royal Amethyst", desc: "Deep violet, regal glow", cost: 450, primary: "#a855f7", bg: "#faf5ff", dark: "#0b0613", card: "#160d24", line: "#2c1b45" },
+  { id: "emerald-noir", name: "Emerald Noir", desc: "Dark forest, mint accents", cost: 550, primary: "#34d399", bg: "#f0fdf4", dark: "#04120c", card: "#0b2015", line: "#16382a" },
+  { id: "crimson-velvet", name: "Crimson Velvet", desc: "Moody red, velvet depth", cost: 600, primary: "#fb7185", bg: "#fff1f2", dark: "#140408", card: "#220a10", line: "#3d1520" },
+  { id: "aurum-gold", name: "Aurum Gold", desc: "Black and gold, pure luxury", cost: 700, primary: "#f59e0b", bg: "#fffbeb", dark: "#100c02", card: "#1d1607", line: "#38290e" },
 ];
 
 const PRESETS = [
@@ -49,7 +60,7 @@ const PRESETS = [
 ];
 
 export default function ThemePage() {
-  const { theme, toggleTheme, font, setFont, applyColors, resetColors, customPrimary } = useTheme();
+  const { theme, toggleTheme, font, setFont, applyColors, resetColors, customPrimary, setGlassTheme, glassEnabled } = useTheme();
   const [pendingTheme, setPendingTheme] = useState(theme);
   const [pendingFont, setPendingFont] = useState(font || "inter");
   const [preset, setPreset] = useState(null);
@@ -65,16 +76,68 @@ export default function ThemePage() {
     setPendingFont(font || "inter");
   }
 
-  // Live coin balance decides whether Midnight Black is unlocked.
+  // Spendable balance + everything already purchased (owned forever).
   const [coins, setCoins] = useState(null);
+  const [unlockedItems, setUnlockedItems] = useState([]);
+  const [buying, setBuying] = useState(null); // itemId of in-flight purchase
   useEffect(() => {
     api.get("/referrals/me")
-      .then((res) => setCoins(res.data?.coins ?? 0))
+      .then((res) => {
+        setCoins(res.data?.coins ?? 0);
+        setUnlockedItems(res.data?.unlockedItems ?? []);
+      })
       .catch(() => setCoins(0));
   }, []);
 
+  // Revoke a glass theme that was switched on during testing (or by editing
+  // localStorage) but was never actually purchased.
+  useEffect(() => {
+    if (coins === null || GLASS_TEST_MODE) return;
+    if (glassEnabled && !unlockedItems.includes("theme:glass")) {
+      setGlassTheme(false);
+    }
+  }, [coins, unlockedItems, glassEnabled, setGlassTheme]);
+
   const premiumStaged = PREMIUM_THEMES.find((t) => t.name === preset?.name) || null;
-  const isUnlocked = (t) => (coins ?? 0) >= t.cost;
+  const ownsTheme = (t) =>
+    unlockedItems.includes(`theme:${t.id}`) || (t.glass && GLASS_TEST_MODE);
+  const ownsFont = (f) => f.cost === 0 || unlockedItems.includes(`font:${f.id}`);
+
+  // Purchase flow: a locked item opens the confirm modal; confirming spends
+  // the coins. pendingPurchase = { itemId, name, cost, swatch?, fontFamily?, onOwned? }.
+  const [pendingPurchase, setPendingPurchase] = useState(null);
+
+  const requestPurchase = (purchase) => {
+    if (buying) return;
+    const balance = coins ?? 0;
+    if (balance < purchase.cost) {
+      toast.error(`Not enough coins - you need ${purchase.cost - balance} more to unlock ${purchase.name}.`);
+      return;
+    }
+    setPendingPurchase(purchase);
+  };
+
+  const confirmPurchase = async () => {
+    if (!pendingPurchase || buying) return;
+    const { itemId, name, cost, onOwned } = pendingPurchase;
+    setBuying(itemId);
+    try {
+      const res = await api.post("/referrals/purchase", { itemId });
+      const newBalance = res.data?.coins ?? (coins ?? 0) - cost;
+      setCoins(newBalance);
+      setUnlockedItems(res.data?.unlockedItems ?? [...unlockedItems, itemId]);
+      // Keep the earn-chime baseline in sync so spending never re-chimes.
+      localStorage.setItem("se_last_coins", String(newBalance));
+      playCoinSpend();
+      toast.success(`${name} unlocked! It's yours forever.`);
+      setPendingPurchase(null);
+      onOwned?.();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Purchase failed. Please try again.");
+    } finally {
+      setBuying(null);
+    }
+  };
 
   // Staging is free for everyone - it only drives the live preview.
   const pickPremium = (t) => {
@@ -92,30 +155,43 @@ export default function ThemePage() {
   };
 
   const pickFont = (f) => {
-    const balance = coins ?? 0;
-    if (balance < f.cost) {
-      toast.error(`Earn ${f.cost - balance} more coins to unlock ${f.name}`);
+    if (!ownsFont(f)) {
+      requestPurchase({
+        itemId: `font:${f.id}`,
+        name: f.name,
+        cost: f.cost,
+        fontFamily: f.family,
+        onOwned: () => setPendingFont(f.id),
+      });
       return;
     }
     setPendingFont(f.id);
   };
 
   const applyAll = () => {
-    // Locked premium themes can be previewed but never applied.
+    // Premium themes can be previewed by anyone but applied only when owned.
     const stagedPremium = PREMIUM_THEMES.find((t) => t.name === preset?.name);
-    if (stagedPremium && (coins ?? 0) < stagedPremium.cost) {
-      toast.error(`Earn ${stagedPremium.cost - (coins ?? 0)} more coins to apply ${stagedPremium.name}`);
+    if (stagedPremium && !ownsTheme(stagedPremium)) {
+      toast.error(`Unlock ${stagedPremium.name} for ${stagedPremium.cost} coins to apply it.`);
       return;
     }
-    if (pendingTheme !== theme) toggleTheme();
-    setFont(pendingFont);
-    if (preset) {
-      // Both mode bgs are stored, so toggling light/dark later stays readable.
-      applyColors({
-        bgLight: preset.bg,
-        bgDark: preset.dark,
-        primary: preset.primary,
-      });
+    if (stagedPremium?.glass) {
+      // Aurora Glass is a CSS-class theme, not a derived color palette.
+      // setGlassTheme forces dark mode itself; don't also toggleTheme here -
+      // toggling would immediately switch glass back off.
+      setGlassTheme(true);
+      setFont(pendingFont);
+    } else {
+      if (pendingTheme !== theme) toggleTheme();
+      setFont(pendingFont);
+      if (preset) {
+        // Both mode bgs are stored, so toggling light/dark later stays readable.
+        applyColors({
+          bgLight: preset.bg,
+          bgDark: preset.dark,
+          primary: preset.primary,
+        });
+      }
     }
     const size = TEXT_SIZES.find((s) => s.id === textSize)?.px || "16px";
     document.documentElement.style.setProperty("--base-font-size", size);
@@ -139,8 +215,8 @@ export default function ThemePage() {
   const fontFamily = FONTS.find((f) => f.id === pendingFont)?.family;
 
   return (
-    <div className="min-h-screen bg-background pt-8 pb-28 sm:pb-20 px-3 sm:px-4">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-background pt-8 pb-28 sm:pb-20 px-3 sm:px-4 lg:px-6">
+      <div className="max-w-5xl xl:max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -156,7 +232,9 @@ export default function ThemePage() {
           </button>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 items-start">
+        {/* < md: single column, preview below controls.
+            md+: preview docks right and stays sticky while scrolling. */}
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_300px] lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_420px] gap-5 xl:gap-6 items-start">
           {/* Controls */}
           <div className="space-y-5">
             <Section icon={Palette} title="Mode">
@@ -225,9 +303,9 @@ export default function ThemePage() {
             </Section>
 
             <Section icon={Crown} title="Premium themes">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {PREMIUM_THEMES.map((t) => {
-                  const unlocked = isUnlocked(t);
+                  const owned = ownsTheme(t);
                   const staged = premiumStaged?.name === t.name;
                   return (
                     <button
@@ -239,7 +317,7 @@ export default function ThemePage() {
                       }`}
                     >
                       {/* Mini theme mock */}
-                      <div className="relative p-3.5" style={{ backgroundColor: t.dark }}>
+                      <div className="relative p-3.5" style={{ background: t.glass ? GLASS_PREVIEW_BG : t.dark }}>
                         <div className="flex items-center justify-between">
                           <span className="font-serif-premium text-white text-sm lowercase">splitease</span>
                           <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: t.primary, boxShadow: `0 0 10px ${t.primary}` }} />
@@ -249,7 +327,7 @@ export default function ThemePage() {
                           <div className="h-1.5 w-2/5 rounded bg-white/10" />
                         </div>
                         <div className="mt-2.5 h-5 w-16 rounded-md" style={{ backgroundColor: t.card, border: `1px solid ${t.line}` }} />
-                        {!unlocked && (
+                        {!owned && (
                           <span className="absolute top-2.5 right-9 flex items-center gap-1 rounded-full bg-black/60 border border-white/15 px-2 py-0.5 text-[9px] font-bold text-white">
                             <Lock size={9} /> {t.cost}
                           </span>
@@ -261,17 +339,38 @@ export default function ThemePage() {
                           <p className="text-[13px] font-bold text-foreground truncate">{t.name}</p>
                           <p className="text-[11px] text-muted-foreground truncate">{t.desc}</p>
                         </div>
-                        {staged ? (
-                          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-cyan-600 text-white px-2.5 py-1 text-[10px] font-bold">
-                            <Check size={10} strokeWidth={3} /> Staged
-                          </span>
-                        ) : unlocked ? (
-                          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 px-2.5 py-1 text-[10px] font-bold">
-                            <Check size={10} strokeWidth={3} /> Unlocked
-                          </span>
+                        {owned ? (
+                          staged ? (
+                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-cyan-600 text-white px-2.5 py-1 text-[10px] font-bold">
+                              <Check size={10} strokeWidth={3} /> Staged
+                            </span>
+                          ) : (
+                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-1 text-[10px] font-bold">
+                              <Check size={10} strokeWidth={3} /> Owned
+                            </span>
+                          )
                         ) : (
-                          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground px-2.5 py-1 text-[10px] font-bold">
-                            <Coins size={10} /> {coins === null ? "…" : coins}/{t.cost}
+                          <span
+                            role="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              requestPurchase({
+                                itemId: `theme:${t.id}`,
+                                name: t.name,
+                                cost: t.cost,
+                                swatch: { primary: t.primary, dark: t.dark, card: t.card, line: t.line },
+                              });
+                            }}
+                            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition ${
+                              buying === `theme:${t.id}`
+                                ? "bg-muted text-muted-foreground"
+                                : (coins ?? 0) >= t.cost
+                                ? "bg-amber-500 hover:bg-amber-600 text-white"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            <Coins size={10} />
+                            {buying === `theme:${t.id}` ? "Unlocking…" : `Unlock · ${t.cost}`}
                           </span>
                         )}
                       </div>
@@ -280,15 +379,15 @@ export default function ThemePage() {
                 })}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Stage any premium theme to preview it live. Applying needs that coin balance — coins are never spent. Earn coins via Referrals &amp; Rewards on your profile.
+                Stage any premium theme to preview it live for free. Unlocking spends your coins once — after that the theme is yours forever, even if your balance drops. Earn coins via Referrals &amp; Rewards on your profile.
               </p>
             </Section>
 
             <Section icon={Type} title="Font">
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
                 {FONTS.map((f) => {
                   const selected = pendingFont === f.id;
-                  const unlocked = f.cost === 0 || (coins ?? 0) >= f.cost;
+                  const unlocked = ownsFont(f);
                   return (
                     <button
                       key={f.id}
@@ -314,16 +413,25 @@ export default function ThemePage() {
                         </span>
                       </span>
                       <span className="flex items-center gap-3 shrink-0">
-                        <span className="hidden sm:block text-sm text-muted-foreground" style={{ fontFamily: f.family }}>
+                        {/* Hidden again at xl - the 2-column font grid leaves no room. */}
+                        <span className="hidden sm:block xl:hidden text-sm text-muted-foreground" style={{ fontFamily: f.family }}>
                           The quick brown fox
                         </span>
                         {f.cost > 0 && (
                           <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
                             unlocked
-                              ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30"
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                              : buying === `font:${f.id}`
+                              ? "bg-muted text-muted-foreground"
+                              : (coins ?? 0) >= f.cost
+                              ? "bg-amber-500 text-white"
                               : "bg-muted text-muted-foreground"
                           }`}>
-                            <Coins size={10} /> {f.cost}
+                            {unlocked ? (
+                              <><Check size={10} strokeWidth={3} /> Owned</>
+                            ) : (
+                              <><Coins size={10} /> {buying === `font:${f.id}` ? "Unlocking…" : `Unlock · ${f.cost}`}</>
+                            )}
                           </span>
                         )}
                       </span>
@@ -332,7 +440,7 @@ export default function ThemePage() {
                 })}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Fonts unlock automatically when your coin balance reaches their amount. Coins are never spent.
+                Tap a locked font to unlock it with coins — a one-time purchase, yours forever.
               </p>
             </Section>
 
@@ -354,8 +462,8 @@ export default function ThemePage() {
             </Section>
           </div>
 
-          {/* Live preview + apply (sticky on desktop) */}
-          <div className="lg:sticky lg:top-24 space-y-3">
+          {/* Live preview + apply (sticky from tablet up) */}
+          <div className="md:sticky md:top-24 space-y-3 min-w-0">
             <Preview dark={pendingTheme === "dark"} premium={premiumStaged} accent={accent} fontFamily={fontFamily} textSize={textSize} />
             <button
               type="button"
@@ -368,6 +476,14 @@ export default function ThemePage() {
           </div>
         </div>
       </div>
+
+      <PurchaseModal
+        item={pendingPurchase}
+        balance={coins ?? 0}
+        busy={!!buying}
+        onConfirm={confirmPurchase}
+        onCancel={() => setPendingPurchase(null)}
+      />
     </div>
   );
 }
@@ -414,7 +530,7 @@ function Preview({ dark, premium, accent, fontFamily, textSize }) {
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{dark ? "Dark" : "Light"}</span>
       </div>
 
-      <div className="p-4" style={{ backgroundColor: c.bg, fontFamily, fontSize: size }}>
+      <div className="p-4" style={{ background: premium?.glass ? GLASS_PREVIEW_BG : c.bg, fontFamily, fontSize: size }}>
         {/* Mini navbar */}
         <div className="flex items-center justify-between rounded-lg px-3 py-2" style={{ backgroundColor: c.card, border: `1px solid ${c.line}` }}>
           <span className="font-extrabold" style={{ color: c.text }}>SplitEase</span>

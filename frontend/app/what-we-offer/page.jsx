@@ -34,7 +34,7 @@ const OFFERINGS = [
 const REFER_STEPS = [
   { icon: Link2, title: "Share your link", desc: "Your profile has a unique referral code and QR. Share it anywhere." },
   { icon: UserPlus, title: "Friend joins", desc: "They sign up through your link and start splitting with their groups." },
-  { icon: Zap, title: "They get active", desc: "3 active days, 3 expenses, and a complete profile unlocks the reward." },
+  { icon: Zap, title: "Rewarded instantly", desc: "No waiting, no conditions - coins are credited the moment they join." },
   { icon: Coins, title: "You both earn", desc: "50 coins land in your wallet, 25 in theirs. Automatically.", reward: true },
 ];
 
@@ -75,14 +75,14 @@ export default function WhatWeOfferPage() {
       <header className="relative px-6 pb-24 pt-40 text-center sm:pt-52">
         <div className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-cyan-900/10 blur-[130px]" />
         <motion.img
-          src="/mobile.png"
+          src="/stone-left.webp"
           alt="Splitease on mobile"
           {...float(0)}
           className="pointer-events-none absolute -left-10 top-36 hidden w-44 -rotate-12 opacity-70 lg:block xl:left-16"
           style={{ maskImage: "linear-gradient(180deg, black 55%, transparent)", WebkitMaskImage: "linear-gradient(180deg, black 55%, transparent)" }}
         />
         <motion.img
-          src="/tablet.png"
+          src="/stone-right.webp"
           alt="Splitease on tablet"
           {...float(1.4)}
           className="pointer-events-none absolute -right-14 top-48 hidden w-64 rotate-12 opacity-70 lg:block xl:right-10"
@@ -198,12 +198,12 @@ export default function WhatWeOfferPage() {
           Built for the whole table
         </h2>
         <motion.img
-          src="/splitease-mockups.png"
+          src="/laptop.webp"
           alt="Splitease on phone, tablet, and laptop"
           {...fadeUp}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="mx-auto mt-12 w-full max-w-4xl"
-          style={{ maskImage: "linear-gradient(180deg, black 78%, transparent)", WebkitMaskImage: "linear-gradient(180deg, black 78%, transparent)" }}
+          style={{ maskImage: "radial-gradient(ellipse 78% 80% at center, black 50%, rgba(0,0,0,0.35) 80%, transparent 100%)", WebkitMaskImage: "radial-gradient(ellipse 78% 80% at center, black 50%, rgba(0,0,0,0.35) 80%, transparent 100%)" }}
         />
       </section>
 

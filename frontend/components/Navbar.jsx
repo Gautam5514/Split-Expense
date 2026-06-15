@@ -138,25 +138,17 @@ export default function Navbar() {
       {/* ── Top Navbar ── */}
       <HideOnScrollNav>
       <nav
-        className={`fixed z-50 transition-all duration-300 ${
+        className={`w-full border-b transition-colors duration-300 ${
           !isLoggedIn
-            ? `top-3 inset-x-3 sm:top-5 sm:inset-x-5 mx-auto max-w-7xl rounded-full border ${
-                scrolled
-                  ? "bg-black/60 backdrop-blur-2xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
-                  : "bg-black/20 backdrop-blur-xl border-white/5 shadow-md"
-              }`
-            : `top-3 inset-x-3 sm:top-4 sm:inset-x-4 mx-auto max-w-7xl rounded-2xl border ${
-                scrolled
-                  ? "bg-background/65 backdrop-blur-2xl border-foreground/10 shadow-[0_8px_32px_rgba(8,145,178,0.08)]"
-                  : "bg-background/30 backdrop-blur-xl border-foreground/5 shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
-              }`
+            ? scrolled
+              ? "bg-black/80 backdrop-blur-2xl border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+              : "bg-black/40 backdrop-blur-xl border-white/5"
+            : scrolled
+              ? "bg-background/90 backdrop-blur-2xl border-foreground/10 shadow-[0_4px_24px_rgba(8,145,178,0.06)]"
+              : "bg-background/70 backdrop-blur-xl border-foreground/[0.06]"
         }`}
       >
-        <div className={`flex items-center justify-between w-full ${
-          !isLoggedIn
-            ? "px-6 py-2.5 sm:py-3"
-            : "px-3 sm:px-5 py-2.5 sm:py-3.5"
-        }`}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between w-full px-4 sm:px-6 py-3 sm:py-3.5">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">

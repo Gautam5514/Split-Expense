@@ -247,6 +247,133 @@ main:has(.h-screen) {
 
 
 
+/* ════════════════════════════════════════════════════════════════════
+   Aurora Glass - 1000-coin premium theme (.theme-glass on <html>).
+   Applied by GlassThemeGate only after login; the landing and auth
+   pages are never glassed. Declared after .dark so it wins the cascade.
+   ════════════════════════════════════════════════════════════════════ */
+.theme-glass {
+  --background: #060a14;
+  --foreground: #EEF3FB;
+
+  --card: rgba(255, 255, 255, 0.055);
+  --card-foreground: #EEF3FB;
+
+  --popover: rgba(10, 16, 32, 0.88);
+  --popover-foreground: #EEF3FB;
+
+  --primary: #38BDF8;
+  --primary-foreground: #051120;
+
+  --secondary: rgba(255, 255, 255, 0.08);
+  --secondary-foreground: #C5D5EA;
+
+  --muted: rgba(255, 255, 255, 0.07);
+  --muted-foreground: #94A7C2;
+
+  --accent: rgba(255, 255, 255, 0.09);
+  --accent-foreground: #EEF3FB;
+
+  --destructive: #F87171;
+  --destructive-foreground: #FFFFFF;
+
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.14);
+  --ring: #38BDF8;
+}
+
+/* Fixed aurora backdrop - lives behind everything, never scrolls. */
+.theme-glass body {
+  background: #060a14;
+}
+
+.theme-glass body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 52% at 12% 6%,  rgba(56, 189, 248, 0.17), transparent 70%),
+    radial-gradient(40% 46% at 90% 10%, rgba(167, 139, 250, 0.15), transparent 70%),
+    radial-gradient(36% 42% at 78% 72%, rgba(45, 212, 191, 0.10), transparent 70%),
+    radial-gradient(52% 58% at 22% 96%, rgba(14, 116, 144, 0.20), transparent 72%),
+    #060a14;
+}
+
+/* Frosted surfaces: every card/popover becomes real glass - blur what's
+   behind, a hairline top highlight, and deep soft shadow. */
+.theme-glass .bg-card,
+.theme-glass .bg-popover {
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  background-image: linear-gradient(166deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.015) 48%, rgba(255, 255, 255, 0.04) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 18px 44px -18px rgba(1, 6, 18, 0.65);
+}
+
+/* Solid-on-translucent helpers keep their readability. */
+.theme-glass .bg-background {
+  background: transparent;
+}
+
+/* Inputs read as etched glass. */
+.theme-glass input,
+.theme-glass textarea,
+.theme-glass select {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Scrollbar tinted to the aurora accent. */
+.theme-glass .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.22);
+}
+
+.theme-glass .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.4);
+}
+
+/* Respect users who can't have heavy blur animating around. */
+@media (prefers-reduced-transparency: reduce) {
+  .theme-glass .bg-card,
+  .theme-glass .bg-popover {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-color: rgba(13, 20, 36, 0.96);
+  }
+}
+
+/* ── Premium coin wallet shine sweep ── */
+@keyframes coin-shine-sweep {
+  0%        { transform: translateX(-160%) skewX(-18deg); }
+  55%, 100% { transform: translateX(260%) skewX(-18deg); }
+}
+
+.coin-shine {
+  overflow: hidden;
+}
+
+.coin-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.09), transparent);
+  animation: coin-shine-sweep 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coin-shine::after {
+    animation: none;
+  }
+}
+
 /* ── 3D Loading Animations & Utilities ── */
 @keyframes spin-3d {
   0% {

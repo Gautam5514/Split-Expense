@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useScroll, AnimatePresence } from "framer-motion";
 import { Laptop, Tablet, Smartphone, Sparkles, CheckCircle2, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 export default function DeviceSlideShowcase() {
   const containerRef = useRef(null);
@@ -27,9 +28,6 @@ export default function DeviceSlideShowcase() {
     });
   }, [scrollYProgress]);
 
-  // Transform for progress bar width
-  const progressPercent = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
-
   const slides = [
     {
       id: "laptop",
@@ -37,11 +35,11 @@ export default function DeviceSlideShowcase() {
       title: "Widescreen Command Center",
       desc: "Manage your group trips, calculate complex split percentages, and track overall spending profiles on a unified, gorgeous desktop interface built for power users.",
       icon: Laptop,
-      imageSrc: "/laptop.png",
+      imageSrc: "/laptop.webp",
       color: "from-cyan-500 to-blue-500",
       accent: "text-cyan-400",
       accentBg: "bg-cyan-500/10",
-      glowColor: "rgba(34, 211, 238, 0.15)",
+      glowColor: "rgba(45, 212, 191, 0.18)",
       features: [
         "Full screen overview of split ledgers",
         "Detailed graphical expense analytics",
@@ -54,11 +52,11 @@ export default function DeviceSlideShowcase() {
       title: "Lounge & Audit Comfort",
       desc: "Review room audits and examine receipt details on a highly responsive tablet canvas. Settle balances from a couch, a hammock, or anywhere you unwind.",
       icon: Tablet,
-      imageSrc: "/tablet.png",
+      imageSrc: "/tablet.webp",
       color: "from-emerald-500 to-teal-500",
       accent: "text-emerald-400",
       accentBg: "bg-emerald-500/10",
-      glowColor: "rgba(52, 211, 153, 0.15)",
+      glowColor: "rgba(45, 212, 191, 0.18)",
       features: [
         "Interactive room balance visualizers",
         "Pinch-to-zoom scanned receipt viewer",
@@ -71,11 +69,11 @@ export default function DeviceSlideShowcase() {
       title: "Split on the Go",
       desc: "Log cost splits in seconds directly from the taxi, ticket line, or restaurant. Scan bills with offline AI OCR and clear pending debts with one-tap UPI settlements.",
       icon: Smartphone,
-      imageSrc: "/mobile.png",
+      imageSrc: "/mobile.webp",
       color: "from-pink-500 to-purple-500",
       accent: "text-pink-400",
       accentBg: "bg-pink-500/10",
-      glowColor: "rgba(244, 114, 182, 0.15)",
+      glowColor: "rgba(56, 189, 248, 0.18)",
       features: [
         "Instant camera OCR receipt scanning",
         "Tap-to-settle UPI & QR integration",
@@ -133,7 +131,7 @@ export default function DeviceSlideShowcase() {
         <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 items-center gap-6 sm:gap-12 lg:gap-16 relative z-10">
           
           {/* LEFT COLUMN: Features details (Width: 5 cols) */}
-          <div className="col-span-1 lg:col-span-5 flex flex-col justify-center text-left relative min-h-[300px] sm:min-h-[400px]">
+          <div className="col-span-1 lg:col-span-5 flex flex-col justify-center text-left relative min-h-[230px] sm:min-h-[400px]">
             
             <AnimatePresence mode="wait">
               <motion.div
@@ -176,56 +174,29 @@ export default function DeviceSlideShowcase() {
                 </ul>
 
                 <div className="mt-4">
-                  <button className={`px-5 py-2.5 rounded-full text-xs font-semibold text-white border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 transition-all duration-300 flex items-center gap-2 shadow-lg cursor-pointer`}>
+                  <Link
+                    href={`/demo/${slides[activeIndex].id}`}
+                    className={`px-5 py-2.5 rounded-full text-xs font-semibold text-white border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 transition-all duration-300 flex items-center gap-2 shadow-lg cursor-pointer inline-flex`}
+                  >
                     View Live Demo
                     <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  </Link>
                 </div>
               </motion.div>
             </AnimatePresence>
 
-            {/* Scrolling Navigation Tracker */}
-            <div className="mt-6 sm:mt-10 lg:mt-12 flex flex-col gap-3 max-w-xs">
-              <div className="flex justify-between items-center text-[10px] font-mono tracking-widest text-white/30">
-                <span>SCROLL PROGRESS</span>
-                <span className="text-white/70 font-bold">{`0${activeIndex + 1} / 03`}</span>
-              </div>
-              
-              {/* Dynamic scroll progress track */}
-              <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden relative">
-                <motion.div
-                  style={{ width: progressPercent }}
-                  className={`absolute top-0 bottom-0 left-0 bg-gradient-to-r ${slides[activeIndex].color} shadow-[0_0_8px_rgba(255,255,255,0.2)]`}
-                />
-              </div>
-
-              {/* Navigation click dot helpers */}
-              <div className="flex gap-2.5 mt-1">
-                {slides.map((slide, idx) => (
-                  <span
-                    key={slide.id}
-                    className={`w-2.5 h-1 rounded-full transition-all duration-300 ${
-                      activeIndex === idx
-                        ? `w-6 bg-gradient-to-r ${slide.color}`
-                        : "bg-white/10"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
           </div>
 
           {/* RIGHT COLUMN: Slide-out device container (Width: 7 cols) */}
-          <div className="col-span-1 lg:col-span-7 flex justify-center items-center h-[220px] sm:h-[400px] lg:h-full relative">
+          <div className="col-span-1 lg:col-span-7 flex justify-center items-center h-[240px] sm:h-[420px] lg:h-full relative">
             
             {/* Visual glow frame element underneath mockups */}
-            <div 
-              className="absolute w-72 h-72 sm:w-96 sm:h-96 rounded-full blur-3xl transition-colors duration-500 pointer-events-none"
+            <div
+              className="absolute w-80 h-80 sm:w-[28rem] sm:h-[28rem] rounded-full blur-3xl transition-colors duration-500 pointer-events-none"
               style={{
                 backgroundColor: slides[activeIndex].glowColor,
-                filter: "blur(90px)",
-                opacity: 0.7,
+                filter: "blur(100px)",
+                opacity: 0.65,
               }}
             />
 
@@ -243,10 +214,10 @@ export default function DeviceSlideShowcase() {
                 >
                   {/* Laptop rendering */}
                   {activeIndex === 0 && (
-                    <div className="w-[85%] sm:w-[90%] md:w-[95%] lg:w-[100%] max-w-[580px] drop-shadow-[0_20px_50px_rgba(0,0,0,0.85)]">
+                    <div className="w-[105%] sm:w-[110%] md:w-[118%] lg:w-[128%] max-w-[900px] drop-shadow-[0_30px_70px_rgba(0,0,0,0.9)]">
                       <img
-                        src="/laptop.png"
-                        className="w-full h-auto object-contain block"
+                        src="/laptop.webp"
+                        className="w-full h-auto object-contain block [filter:brightness(1.03)_contrast(1.08)_saturate(1.12)] [mask-image:radial-gradient(ellipse_70%_68%_at_center,#000_35%,rgba(0,0,0,0.4)_70%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_70%_68%_at_center,#000_35%,rgba(0,0,0,0.4)_70%,transparent_100%)]"
                         alt="Laptop Dashboard Layout"
                       />
                     </div>
@@ -254,10 +225,10 @@ export default function DeviceSlideShowcase() {
 
                   {/* Tablet rendering */}
                   {activeIndex === 1 && (
-                    <div className="w-[60%] sm:w-[65%] md:w-[70%] max-w-[420px] drop-shadow-[0_20px_50px_rgba(0,0,0,0.85)]">
+                    <div className="w-[82%] sm:w-[82%] md:w-[85%] max-w-[560px] drop-shadow-[0_30px_70px_rgba(0,0,0,0.9)]">
                       <img
-                        src="/tablet.png"
-                        className="w-full h-auto object-contain block"
+                        src="/tablet.webp"
+                        className="w-full h-auto object-contain block [filter:brightness(1.03)_contrast(1.08)_saturate(1.12)] [mask-image:radial-gradient(ellipse_72%_70%_at_center,#000_35%,rgba(0,0,0,0.4)_70%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_72%_70%_at_center,#000_35%,rgba(0,0,0,0.4)_70%,transparent_100%)]"
                         alt="Tablet Lounge Audit"
                       />
                     </div>
@@ -265,10 +236,10 @@ export default function DeviceSlideShowcase() {
 
                   {/* Mobile rendering */}
                   {activeIndex === 2 && (
-                    <div className="w-[35%] sm:w-[40%] md:w-[45%] max-w-[260px] drop-shadow-[0_20px_50px_rgba(0,0,0,0.85)]">
+                    <div className="w-[88%] sm:w-[78%] md:w-[74%] max-w-[500px] drop-shadow-[0_30px_70px_rgba(0,0,0,0.9)]">
                       <img
-                        src="/mobile.png"
-                        className="w-full h-auto object-contain block"
+                        src="/mobile.webp"
+                        className="w-full h-auto object-contain block [filter:brightness(1.03)_contrast(1.08)_saturate(1.12)] [mask-image:radial-gradient(ellipse_74%_72%_at_center,#000_38%,rgba(0,0,0,0.4)_72%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_74%_72%_at_center,#000_38%,rgba(0,0,0,0.4)_72%,transparent_100%)]"
                         alt="Mobile Companion App"
                       />
                     </div>
