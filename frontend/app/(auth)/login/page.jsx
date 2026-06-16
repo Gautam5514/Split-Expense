@@ -604,9 +604,9 @@ export default function LoginPage() {
             transform: "rotate(-25deg) skewX(-2deg) translateY(-80px)",
           }}
         >
-          <MarqueeColumn images={["/mobile.png", "/mobile.png", "/mobile.png"]} reverse={false} />
-          <MarqueeColumn images={["/mobile.png", "/mobile.png", "/mobile.png"]} reverse={true} />
-          <MarqueeColumn images={["/mobile.png", "/mobile.png", "/mobile.png"]} reverse={false} />
+          <MarqueeColumn images={["/mobile.webp", "/mobile.webp", "/mobile.webp"]} reverse={false} />
+          <MarqueeColumn images={["/mobile.webp", "/mobile.webp", "/mobile.webp"]} reverse={true} />
+          <MarqueeColumn images={["/mobile.webp", "/mobile.webp", "/mobile.webp"]} reverse={false} />
         </div>
       </div>
 
