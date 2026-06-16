@@ -2,20 +2,28 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/context/AuthContext";
+import { captureReferralFromLocation } from "@/lib/referral";
+
+// Above-the-fold: load eagerly so the hero paints immediately.
 import HeroSection from "@/components/home/HeroSection";
 import LogoSlider from "@/components/LogoSlider";
-import HowItWorksSection from "@/components/home/HowItWorksSection";
-import FeatureMindMap from "@/components/home/FeatureMindMap";
-import IntelligenceSection from "@/components/home/IntelligenceSection";
-import ShowcaseSection from "@/components/ShowcaseSection";
-import FeaturesSection from "@/components/home/FeaturesSection";
-import DeviceSlideShowcase from "@/components/home/DeviceSlideShowcase";
-import TestimonialsSection from "@/components/home/TestimonialsSection";
-import Footer from "@/components/Footer";
-import ScrollProgressAndTop from "@/components/ScrollProgressAndTop";
 import SmoothScroll from "@/components/SmoothScroll";
-import { captureReferralFromLocation } from "@/lib/referral";
+import ScrollProgressAndTop from "@/components/ScrollProgressAndTop";
+import LazySection from "@/components/LazySection";
+
+// Below-the-fold: each is its own code-split chunk that is only downloaded
+// and mounted when the user scrolls near it (see <LazySection>). This keeps
+// the initial JS bundle small so the page becomes interactive fast.
+const ShowcaseSection = dynamic(() => import("@/components/ShowcaseSection"));
+const IntelligenceSection = dynamic(() => import("@/components/home/IntelligenceSection"));
+const HowItWorksSection = dynamic(() => import("@/components/home/HowItWorksSection"));
+const FeatureMindMap = dynamic(() => import("@/components/home/FeatureMindMap"));
+const FeaturesSection = dynamic(() => import("@/components/home/FeaturesSection"));
+const DeviceSlideShowcase = dynamic(() => import("@/components/home/DeviceSlideShowcase"));
+const TestimonialsSection = dynamic(() => import("@/components/home/TestimonialsSection"));
+const Footer = dynamic(() => import("@/components/Footer"));
 
 export default function HomePage() {
   const { token } = useAuth();
@@ -38,16 +46,36 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col overflow-x-clip bg-background font-sans text-foreground selection:bg-primary selection:text-primary-foreground">
       <SmoothScroll />
       <ScrollProgressAndTop />
+
+      {/* Above the fold — eager */}
       <HeroSection />
       <LogoSlider />
-      <ShowcaseSection />
-      <IntelligenceSection />
-      <HowItWorksSection />
-      <FeatureMindMap />
-      <FeaturesSection />
-      <DeviceSlideShowcase />
-      <TestimonialsSection />
-      <Footer />
+
+      {/* Below the fold — chunked + mounted on demand */}
+      <LazySection minHeight="800vh">
+        <ShowcaseSection />
+      </LazySection>
+      <LazySection minHeight="100vh">
+        <IntelligenceSection />
+      </LazySection>
+      <LazySection minHeight="100vh">
+        <HowItWorksSection />
+      </LazySection>
+      <LazySection minHeight="100vh">
+        <FeatureMindMap />
+      </LazySection>
+      <LazySection minHeight="100vh">
+        <FeaturesSection />
+      </LazySection>
+      <LazySection minHeight="100vh">
+        <DeviceSlideShowcase />
+      </LazySection>
+      <LazySection minHeight="100vh">
+        <TestimonialsSection />
+      </LazySection>
+      <LazySection minHeight="40vh">
+        <Footer />
+      </LazySection>
     </div>
   );
 }

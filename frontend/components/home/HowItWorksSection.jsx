@@ -66,7 +66,7 @@ function DotGrid() {
 function Crosshair({ className = "" }) {
   return (
     <span className={`axiom-cross absolute z-20 flex items-center justify-center w-4 h-4 pointer-events-none ${className}`}>
-      <Plus size={16} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.35)" }} />
+      <Plus size={30} strokeWidth={2.75} style={{ color: "rgba(255,255,255,0.55)" }} />
     </span>
   );
 }
