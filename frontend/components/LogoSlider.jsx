@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Users, TrendingUp, Star, Globe } from "lucide-react";
 
 const logos = [
   { src: "/airbnb.png", name: "Airbnb" },
@@ -12,13 +10,6 @@ const logos = [
   { src: "/tripadvisor.png", name: "Tripadvisor" },
   { src: "/kayak.png", name: "Kayak" },
   { src: "/trivago.png", name: "Trivago" },
-];
-
-const stats = [
-  { icon: Users, value: "2,000+", label: "Active Groups", color: "#0891B2" },
-  { icon: TrendingUp, value: "₹50L+", label: "Total Split", color: "#0E7490" },
-  { icon: Star, value: "4.9 / 5", label: "User Rating", color: "#f59e0b" },
-  { icon: Globe, value: "120+", label: "Cities Covered", color: "#ec4899" },
 ];
 
 function LogoItem({ src, name }) {
@@ -32,10 +23,10 @@ function LogoItem({ src, name }) {
       alt={name}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`h-14 sm:h-18 w-auto object-contain transition-all duration-300 ease-out select-none cursor-pointer ${
-        hovered
-          ? "grayscale-0 brightness-100 invert-0 opacity-100 scale-115"
-          : "grayscale brightness-0 invert opacity-55"
+      // Smaller height keeps the low-res brand art looking crisp; a single
+      // muted white treatment unifies them, brightening gently on hover.
+      className={`h-7 w-auto select-none object-contain brightness-0 grayscale invert transition-all duration-300 ease-out sm:h-8 ${
+        hovered ? "scale-110 opacity-95" : "opacity-45"
       }`}
       draggable={false}
     />
@@ -44,39 +35,33 @@ function LogoItem({ src, name }) {
 
 export default function LogoSlider() {
   return (
-    <section className="relative py-12 overflow-hidden bg-[#030303]">
-
-      {/* Ambient background blend */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-[#030303] to-[#030303] z-0" />
-
-      <div className="relative z-10 max-w-6xl mx-auto px-6 mb-8">
-        <p className="text-center text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-white/30">
+    <section className="relative overflow-hidden bg-[#030303] py-14 sm:py-16">
+      {/* hairline-framed label */}
+      <div className="mx-auto mb-10 flex max-w-xl items-center gap-4 px-6 sm:mb-12">
+        <span className="h-px flex-1 bg-white/10" />
+        <p className="whitespace-nowrap text-center text-[10px] font-bold uppercase tracking-[0.22em] text-white/35 sm:text-[11px]">
           Used alongside your favorite platforms
         </p>
+        <span className="h-px flex-1 bg-white/10" />
       </div>
 
       {/* ── Logo strip (full-width marquee) ── */}
-      <div className="relative overflow-hidden w-full z-10">
-        {/* Left fade */}
-        <div 
-          className="absolute left-0 top-0 h-full w-32 pointer-events-none z-20"
-          style={{ background: "linear-gradient(to right, #030303 15%, transparent)" }} 
+      <div className="relative z-10 w-full overflow-hidden">
+        {/* Edge fades */}
+        <div
+          className="pointer-events-none absolute left-0 top-0 z-20 h-full w-20 sm:w-40"
+          style={{ background: "linear-gradient(to right, #030303, transparent)" }}
         />
-        {/* Right fade */}
-        <div 
-          className="absolute right-0 top-0 h-full w-32 pointer-events-none z-20"
-          style={{ background: "linear-gradient(to left, #030303 15%, transparent)" }} 
+        <div
+          className="pointer-events-none absolute right-0 top-0 z-20 h-full w-20 sm:w-40"
+          style={{ background: "linear-gradient(to left, #030303, transparent)" }}
         />
 
-        <div className="flex items-center gap-12 animate-logo-scroll" style={{ width: "max-content", willChange: "transform" }}>
+        <div className="flex w-max items-center animate-logo-scroll" style={{ willChange: "transform" }}>
           {[...Array(3)].map((_, setIdx) => (
-            <div key={setIdx} className="flex items-center gap-20 pr-20">
+            <div key={setIdx} className="flex items-center gap-14 pr-14 sm:gap-20 sm:pr-20">
               {logos.map(({ src, name }, i) => (
-                <LogoItem
-                  key={`${setIdx}-${i}`}
-                  src={src}
-                  name={name}
-                />
+                <LogoItem key={`${setIdx}-${i}`} src={src} name={name} />
               ))}
             </div>
           ))}

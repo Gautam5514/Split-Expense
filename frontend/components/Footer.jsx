@@ -223,8 +223,14 @@ export default function Footer() {
         </div>
 
         {/* Massive Serif Brand Watermark */}
-        <div className="w-full select-none pointer-events-none flex items-end justify-center border-t border-white/[0.03] pt-6 pb-2 overflow-hidden">
-          <span className="font-serif-premium leading-none text-[clamp(70px,15vw,220px)] tracking-tight text-white/[0.06] lowercase select-none">
+        <div className="w-full select-none pointer-events-none flex items-end justify-center border-t border-white/[0.07] pt-6 pb-2 overflow-hidden">
+          <span
+            className="font-serif-premium leading-none text-[clamp(70px,15vw,220px)] tracking-tight lowercase select-none bg-clip-text text-transparent"
+            style={{
+              backgroundImage:
+                "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 90%)",
+            }}
+          >
             splitease
           </span>
         </div>

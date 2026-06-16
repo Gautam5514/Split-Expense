@@ -18,6 +18,17 @@ const AUDIENCES = [
 
 const ROW_H = 40;
 
+/* Mobile: render the SAME organic map at a fixed internal width, scaled down
+   and placed in a horizontally-scrollable strip so the whole tree is viewable
+   by sliding sideways. (Desktop is untouched.) */
+const MOBILE_FW = 700; // internal map width on mobile
+const MOBILE_SCALE = 0.78; // shrink to fit a phone; scroll reveals the rest
+const TREE_H =
+  (AUDIENCES.reduce((n, a) => n + Math.max(1, a.items.length), 0) +
+    (AUDIENCES.length - 1) * 0.55) *
+    ROW_H +
+  48; // matches buildTree's H (padding * 2)
+
 /** A smooth horizontal cubic between two points. */
 function curve(px, py, cx, cy) {
   const dx = cx - px;
@@ -122,11 +133,32 @@ export default function FeatureMindMap() {
         <div ref={viewRef}>
           <div ref={ref} className="relative w-full">
             {compact ? (
-              <CompactTree play={play} reduce={reduce} />
+              /* Mobile: the full map, scaled down inside a sideways-scroll strip */
+              <div
+                className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
+              >
+                <div style={{ width: MOBILE_FW * MOBILE_SCALE, height: TREE_H * MOBILE_SCALE }}>
+                  <div
+                    style={{
+                      width: MOBILE_FW,
+                      transform: `scale(${MOBILE_SCALE})`,
+                      transformOrigin: "top left",
+                    }}
+                  >
+                    <OrganicTree width={MOBILE_FW} play={play} reduce={reduce} />
+                  </div>
+                </div>
+              </div>
             ) : (
               width > 0 && <OrganicTree width={width} play={play} reduce={reduce} />
             )}
           </div>
+          {compact && (
+            <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
+              ← swipe to explore →
+            </p>
+          )}
         </div>
       </div>
     </section>
@@ -169,6 +201,30 @@ function OrganicTree({ width, play, reduce }) {
             transition={{ duration: reduce ? 0 : 0.65, delay: reduce ? 0 : e.delay, ease: "easeInOut" }}
           />
         ))}
+
+        {/* Glowing dots that travel each branch start → end, pause, then loop.
+            keyPoints "0;1;1" with keyTimes "0;0.7;1" = move over the first 70%
+            of the cycle, then hold at the END for the remaining 30% before it
+            jumps back to the start and runs again. */}
+        {play && !reduce && edges.map((e, i) => {
+          const glowR = e.w + 3;
+          const coreR = e.w + 0.6;
+          const dur = (e.w >= 2 ? 2.9 : 2.3) + (i % 4) * 0.18;
+          return (
+            <g key={`flow-${e.id}`}>
+              <circle r={glowR} fill={e.color} opacity="0.3" />
+              <circle r={coreR} fill={e.color} />
+              <animateMotion
+                dur={`${dur}s`}
+                repeatCount="indefinite"
+                calcMode="linear"
+                keyPoints="0;1;1"
+                keyTimes="0;0.7;1"
+                path={e.d}
+              />
+            </g>
+          );
+        })}
       </svg>
 
       {/* Root pill — static wrapper keeps the vertical centering; inner motion
@@ -219,8 +275,8 @@ function OrganicTree({ width, play, reduce }) {
               <span
                 className={
                   n.level === 1
-                    ? "text-[13px] font-semibold uppercase tracking-[0.08em] text-white/90 whitespace-nowrap"
-                    : "text-[13px] font-normal text-white/55 whitespace-nowrap"
+                    ? "relative top-[10px] text-[13px] font-semibold uppercase tracking-[0.08em] text-white/90 whitespace-nowrap"
+                    : "relative top-[10px] text-[13px] font-normal text-white/55 whitespace-nowrap"
                 }
               >
                 {n.label}
@@ -229,47 +285,6 @@ function OrganicTree({ width, play, reduce }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-/* ── Mobile: root on top, audiences as a clean indented list ────── */
-function CompactTree({ play, reduce }) {
-  return (
-    <div className="flex flex-col gap-5">
-      <div
-        className="self-start flex items-center gap-2.5 rounded-full px-5 py-2.5"
-        style={{ background: "rgba(9,11,14,0.9)", border: `1px solid ${ACCENT}66`, boxShadow: `0 0 18px ${ACCENT}2a` }}
-      >
-        <span className="w-2 h-2 rounded-full" style={{ background: ACCENT }} />
-        <span className="font-mono text-sm font-bold uppercase tracking-wide text-white">SplitEase</span>
-      </div>
-
-      <motion.div
-        className="flex flex-col gap-5 pl-5 ml-2"
-        style={{ borderLeft: "1px solid rgba(255,255,255,0.08)" }}
-        initial="hidden"
-        animate={play ? "show" : "hidden"}
-        variants={{ hidden: {}, show: { transition: { staggerChildren: reduce ? 0 : 0.08 } } }}
-      >
-        {AUDIENCES.map((a) => (
-          <motion.div
-            key={a.id}
-            variants={{ hidden: { opacity: 0, x: reduce ? 0 : -10 }, show: { opacity: 1, x: 0 } }}
-            transition={{ duration: reduce ? 0 : 0.3 }}
-          >
-            <div className="flex items-center gap-2.5">
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: a.color, boxShadow: `0 0 7px ${a.color}aa` }} />
-              <span className="text-[13px] font-semibold uppercase tracking-[0.08em] text-white/90">{a.label}</span>
-            </div>
-            <div className="mt-1.5 ml-5 flex flex-wrap gap-x-4 gap-y-1">
-              {a.items.map((it) => (
-                <span key={it} className="text-[12px] text-white/45">{it}</span>
-              ))}
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
     </div>
   );
 }
