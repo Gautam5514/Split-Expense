@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Award,
   Calculator,
-  Coins,
   Link2,
   MessageCircleMore,
   ScanLine,
@@ -17,6 +16,23 @@ import {
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import SmoothScroll from "@/components/SmoothScroll";
+
+/* A proper filled coin-stack (reads clearly as "coins", unlike the thin
+   outline icon). Uses currentColor so it inherits the cyan accent. */
+function CoinsIcon({ size = 18, className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
+      {/* cylinder body (two stacked coins) */}
+      <path d="M5 7 V16 A7 2.6 0 0 0 19 16 V7 Z" fill="currentColor" opacity="0.5" />
+      {/* seam between the two coins */}
+      <path d="M5 11.5 A7 2.6 0 0 0 19 11.5" fill="none" stroke="#030303" strokeOpacity="0.35" strokeWidth="0.9" />
+      {/* top coin face */}
+      <ellipse cx="12" cy="7" rx="7" ry="2.6" fill="currentColor" />
+      {/* shine */}
+      <ellipse cx="9.5" cy="6.3" rx="2.4" ry="0.8" fill="#ffffff" opacity="0.45" />
+    </svg>
+  );
+}
 
 /* "What we offer" page: floating device imagery, the core offering cards,
    a refer-and-earn roadmap (real reward numbers from the referral system),
@@ -35,7 +51,7 @@ const REFER_STEPS = [
   { icon: Link2, title: "Share your link", desc: "Your profile has a unique referral code and QR. Share it anywhere." },
   { icon: UserPlus, title: "Friend joins", desc: "They sign up through your link and start splitting with their groups." },
   { icon: Zap, title: "Rewarded instantly", desc: "No waiting, no conditions - coins are credited the moment they join." },
-  { icon: Coins, title: "You both earn", desc: "50 coins land in your wallet, 25 in theirs. Automatically.", reward: true },
+  { icon: CoinsIcon, title: "You both earn", desc: "50 coins land in your wallet, 25 in theirs. Automatically.", reward: true },
 ];
 
 const TIERS = [
@@ -137,9 +153,15 @@ export default function WhatWeOfferPage() {
               transition={{ duration: 0.55, delay: i * 0.12, ease: "easeOut" }}
               className="relative lg:px-6 lg:first:pl-0 lg:last:pr-0"
             >
-              {/* Dashed connector to the next stop */}
+              {/* Continuous glowing connector to the next stop */}
               {i < REFER_STEPS.length - 1 && (
-                <span className="absolute right-[-12%] top-5 hidden w-1/4 border-t-2 border-dashed border-white/15 lg:block" />
+                <span
+                  className="absolute right-[-12%] top-5 hidden h-[2px] w-1/4 rounded-full lg:block"
+                  style={{
+                    background:
+                      "linear-gradient(to right, rgba(34,211,238,0), rgba(34,211,238,0.55) 28%, rgba(34,211,238,0.55) 72%, rgba(34,211,238,0))",
+                  }}
+                />
               )}
               <span
                 className={`flex h-11 w-11 items-center justify-center rounded-full border font-mono text-xs font-bold ${
@@ -154,7 +176,7 @@ export default function WhatWeOfferPage() {
               <p className="mt-2 text-sm leading-relaxed text-white/50">{step.desc}</p>
               {step.reward && (
                 <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-cyan-300">
-                  <Coins size={12} /> +50 you / +25 friend
+                  <CoinsIcon size={13} /> +50 you / +25 friend
                 </p>
               )}
             </motion.div>
