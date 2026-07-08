@@ -31,19 +31,12 @@ const app = express();
 const server = createServer(app);
 
 // -----------------------------------------
-//  CORS
+//  CORS — allow every origin (reflects the request's Origin header, which is
+//  required since credentials: true is incompatible with the "*" wildcard).
+//  FRONTEND_URL is still used elsewhere for generating absolute links.
 // -----------------------------------------
-const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000")
-  .split(",")
-  .map((u) => u.trim())
-  .filter(Boolean);
-
 const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS: origin ${origin} not allowed`));
-  },
+  origin: (origin, callback) => callback(null, true),
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"],
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
