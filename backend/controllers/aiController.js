@@ -1,9 +1,15 @@
 // controller/aiController.js
 
 import AiMessage from "../models/aiMessageModel.js";
-import { generateWithRetry } from "../services/geminiService.js";
+import { generateWithRetry as generateWithGemini } from "../services/geminiService.js";
+import { generateWithRetry as generateWithOpenAI } from "../services/openaiService.js";
 import { buildUserContext } from "../services/contextBuilder.js";
 import { detectIntent, handleSmartQuery } from "../services/smartQueryHandler.js";
+
+const PROVIDERS = {
+  gemini: { generate: generateWithGemini, label: "Gemini" },
+  openai: { generate: generateWithOpenAI, label: "ChatGPT" },
+};
 
 /**
  * Cleans response text while preserving professional markdown formatting.
@@ -15,23 +21,27 @@ const cleanText = (text = "") => {
     .trim();
 };
 
-const getAIServiceError = (err) => {
-  const message = err?.message || "";
+const getAIServiceError = (err, providerLabel = "AI") => {
+  const message = (err?.message || "").toLowerCase();
+  const code = err?.code || err?.error?.code;
 
-  if (err?.status === 403 && message.toLowerCase().includes("api key")) {
+  if (
+    err?.status === 401 ||
+    code === "invalid_api_key" ||
+    (err?.status === 403 && message.includes("api key"))
+  ) {
     return {
       status: 503,
       code: "AI_KEY_REJECTED",
-      message:
-        "SplitEase AI is not available because the Gemini API key was rejected. Replace GOOGLE_API_KEY on the server and restart the backend.",
+      message: `SplitEase AI is not available because the ${providerLabel} API key was rejected. Replace the key on the server and restart the backend.`,
     };
   }
 
-  if (err?.status === 429) {
+  if (err?.status === 429 || code === "insufficient_quota") {
     return {
       status: 429,
       code: "AI_RATE_LIMITED",
-      message: "SplitEase AI is temporarily rate limited. Please try again in a few seconds.",
+      message: `${providerLabel} is temporarily rate limited or has run out of quota. Please try again in a few seconds, or switch providers.`,
     };
   }
 
@@ -39,42 +49,43 @@ const getAIServiceError = (err) => {
     return {
       status: 503,
       code: "AI_OVERLOADED",
-      message:
-        "SplitEase AI is experiencing high demand right now. Please try again in a moment.",
+      message: `${providerLabel} is experiencing high demand right now. Please try again in a moment.`,
     };
   }
 
   return {
     status: 500,
     code: "AI_REQUEST_FAILED",
-    message: "An error occurred while processing your request with the AI.",
+    message: `An error occurred while processing your request with ${providerLabel}.`,
   };
 };
 
 export const queryAI = async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, provider } = req.body;
   const userId = req.user.id;
 
   if (!prompt) {
     return res.status(400).json({ message: "Prompt cannot be empty." });
   }
 
+  const requested = PROVIDERS[provider] ? provider : "gemini";
+
   try {
     // 1️⃣ Save the user's original question immediately.
-    await AiMessage.create({ userId, role: "user", content: prompt });
+    await AiMessage.create({ userId, role: "user", content: prompt, provider: requested });
 
     // 2️⃣ SMART BACKEND HANDLER — intercept common data queries, no AI needed.
     const intent = detectIntent(prompt);
     if (intent) {
       const smartReply = await handleSmartQuery(intent, userId, prompt);
       if (smartReply) {
-        await AiMessage.create({ userId, role: "ai", content: smartReply });
-        return res.json({ text: smartReply });
+        await AiMessage.create({ userId, role: "ai", content: smartReply, provider: "smart" });
+        return res.json({ text: smartReply, provider: "smart" });
       }
     }
 
-    // 3️⃣ SINGLE-CALL PROMPT: fetch DB context (no AI cost) and let one Gemini
-    // call decide for itself whether the question is personal or general.
+    // 3️⃣ SINGLE-CALL PROMPT: fetch DB context (no AI cost) and let one call
+    // decide for itself whether the question is personal or general.
     const context = await buildUserContext(userId);
 
     const finalPrompt = `
@@ -98,22 +109,40 @@ export const queryAI = async (req, res) => {
       **User Question**: "${prompt}"
     `;
 
-    // 4️⃣ GENERATE: single call with retry + model fallback protection.
-    const rawText = await generateWithRetry(finalPrompt);
+    // 4️⃣ GENERATE: try the requested provider first, then transparently fall
+    // back to the other provider if it's unavailable (key rejected, rate
+    // limited, overloaded) so the user still gets an answer.
+    const fallbackOrder = [requested, ...Object.keys(PROVIDERS).filter((p) => p !== requested)];
+    let rawText, usedProvider, lastErr;
+
+    for (const key of fallbackOrder) {
+      try {
+        rawText = await PROVIDERS[key].generate(finalPrompt);
+        usedProvider = key;
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.warn(`⚠️ Provider "${key}" failed, trying next fallback...`, err.message);
+      }
+    }
+
+    if (usedProvider === undefined) throw lastErr;
+
     let aiText = rawText || "Hmm... I had trouble generating an answer.";
 
     // 5️⃣ Clean the response for better UI presentation.
     aiText = cleanText(aiText);
 
     // 6️⃣ Save the AI's final response to the database.
-    await AiMessage.create({ userId, role: "ai", content: aiText });
+    await AiMessage.create({ userId, role: "ai", content: aiText, provider: usedProvider });
 
-    // 7️⃣ Send the clean response to the frontend.
-    res.json({ text: aiText });
+    // 7️⃣ Send the clean response to the frontend, noting which provider answered
+    // (useful if we silently fell back from the user's chosen provider).
+    res.json({ text: aiText, provider: usedProvider });
 
   } catch (err) {
     console.error("❌ [AI Controller Error]:", err);
-    const aiError = getAIServiceError(err);
+    const aiError = getAIServiceError(err, PROVIDERS[requested]?.label);
     res.status(aiError.status).json({
       message: aiError.message,
       code: aiError.code,
