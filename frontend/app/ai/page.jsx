@@ -26,6 +26,21 @@ import {
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react";
+
+/* ─── AI Providers ─── */
+const AI_PROVIDERS = [
+  { key: "gemini", label: "Gemini" },
+  { key: "openai", label: "ChatGPT" },
+];
+const PROVIDER_LABELS = { gemini: "Gemini", openai: "ChatGPT", smart: "Instant lookup" };
+
+/* ─── Chat retention: nothing is kept locally past 24 hours ─── */
+const CHAT_TTL_MS = 24 * 60 * 60 * 1000;
+const dropExpiredChats = (chatList) =>
+  chatList.filter((c) => {
+    const ts = parseInt(c.id, 10);
+    return !isNaN(ts) && Date.now() - ts < CHAT_TTL_MS;
+  });
 import { AnimatePresence, motion } from "framer-motion";
 import toast from "@/lib/toast";
 
@@ -97,6 +112,7 @@ export default function AiPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingChatId, setEditingChatId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
+  const [provider, setProvider] = useState("gemini");
 
   const scrollAreaRef = useRef(null);
   const abortRef = useRef(null);
@@ -107,12 +123,15 @@ export default function AiPage() {
       const savedCurrentId = localStorage.getItem("splitease_ai_current_id");
       const savedCollapsed = localStorage.getItem("splitease_ai_sidebar_collapsed");
       if (savedCollapsed) setIsSidebarCollapsed(JSON.parse(savedCollapsed));
-      if (savedChats) {
-        const parsed = JSON.parse(savedChats);
+      const savedProvider = localStorage.getItem("splitease_ai_provider");
+      if (savedProvider === "gemini" || savedProvider === "openai") setProvider(savedProvider);
+      const parsed = savedChats ? dropExpiredChats(JSON.parse(savedChats)) : [];
+      if (parsed.length > 0) {
         setChats(parsed);
+        save(parsed);
         if (savedCurrentId && parsed.some((c) => c.id === savedCurrentId)) {
           setCurrentChatId(savedCurrentId);
-        } else if (parsed.length > 0) {
+        } else {
           setCurrentChatId(parsed[0].id);
         }
       } else {
@@ -120,8 +139,29 @@ export default function AiPage() {
         const chat = { id, title: "New Chat", messages: [] };
         setChats([chat]);
         setCurrentChatId(id);
+        save([chat]);
       }
     } catch (e) {}
+  }, []);
+
+  // Sweep expired chats every few minutes so a tab left open past the
+  // 24-hour retention window still drops old conversations without a reload.
+  useEffect(() => {
+    const sweep = () => {
+      setChats((prev) => {
+        const fresh = dropExpiredChats(prev);
+        if (fresh.length === prev.length) return prev;
+        const next =
+          fresh.length > 0
+            ? fresh
+            : [{ id: Date.now().toString(), title: "New Chat", messages: [] }];
+        save(next);
+        setCurrentChatId((id) => (next.some((c) => c.id === id) ? id : next[0].id));
+        return next;
+      });
+    };
+    const interval = setInterval(sweep, 15 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const save = (updatedChats) =>
@@ -182,6 +222,11 @@ export default function AiPage() {
     [chats, editTitle]
   );
 
+  const selectProvider = useCallback((key) => {
+    setProvider(key);
+    localStorage.setItem("splitease_ai_provider", key);
+  }, []);
+
   const toggleCollapse = useCallback(() => {
     setIsSidebarCollapsed((prev) => {
       const next = !prev;
@@ -237,9 +282,13 @@ export default function AiPage() {
       save(updatedChats);
 
       try {
-        const res = await api.post("/ai/query", { prompt: trimmed }, { signal: ctrl.signal });
+        const res = await api.post(
+          "/ai/query",
+          { prompt: trimmed, provider },
+          { signal: ctrl.signal }
+        );
         const text = res.data?.text || "I couldn't generate a response.";
-        const aiMsg = { id: `a-${Date.now()}`, role: "ai", content: text };
+        const aiMsg = { id: `a-${Date.now()}`, role: "ai", content: text, provider: res.data?.provider };
         const final = chats.map((c) =>
           c.id === currentChatId
             ? { ...c, title: newTitle, messages: [...updatedMsgs, aiMsg] }
@@ -262,7 +311,7 @@ export default function AiPage() {
         setLoading(false);
       }
     },
-    [prompt, loading, currentChat, currentChatId, chats]
+    [prompt, loading, currentChat, currentChatId, chats, provider]
   );
 
   const stopRequest = useCallback(() => {
@@ -458,6 +507,22 @@ export default function AiPage() {
           </div>
 
           <div className="flex items-center gap-1.5 pointer-events-auto">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-lg border border-border/60 bg-card/90 backdrop-blur-md shadow-sm">
+              {AI_PROVIDERS.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => selectProvider(p.key)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                    provider === p.key
+                      ? "bg-primary text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
             {lastPrompt && !loading && (
               <button
                 type="button"
@@ -558,7 +623,9 @@ function ChatBubble({ message }) {
           {!isUser && (
             <div className="mt-3 pt-2.5 border-t border-border/40 flex items-center justify-between">
               <CopyBtn text={message.content} />
-              <span className="text-[10px] text-muted-foreground/50 font-mono">SplitEase AI</span>
+              <span className="text-[10px] text-muted-foreground/50 font-mono">
+                {PROVIDER_LABELS[message.provider] || "SplitEase AI"}
+              </span>
             </div>
           )}
         </div>
