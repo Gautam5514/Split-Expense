@@ -19,6 +19,7 @@ const inter = Inter({
 });
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: "SplitEase - Group Expense Splitter",
   description:
     "AI-powered group expense splitter. Split bills with friends, track shared costs, scan receipts with OCR, and settle up in one tap.",

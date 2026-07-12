@@ -1,5 +1,5 @@
 // 🌍 PWA Offline Caching logic
-const CACHE_NAME = 'splitwise-v1';
+const CACHE_NAME = 'splitease-static-v2';
 const STATIC_ASSETS = ['/', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -23,6 +23,17 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+
+  // Next.js/Turbopack chunks are content-addressed and must never be served
+  // from an old app-shell cache during development or after a deployment.
+  if (url.pathname.startsWith('/_next/')) return;
+
+  // Always fetch page navigations from the network so their referenced chunk
+  // graph matches the currently deployed build.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {

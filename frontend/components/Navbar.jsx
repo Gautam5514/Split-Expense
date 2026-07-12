@@ -420,7 +420,7 @@ export default function Navbar() {
       </HideOnScrollNav>
 
       {/* ── Mobile + Tablet Bottom Bar (hidden on md+) ── */}
-      {isLoggedIn && (
+      {isLoggedIn && pathname !== "/ai" && (
         <div className="md:hidden fixed bottom-3 inset-x-3 z-50 flex justify-around items-center h-16 rounded-2xl border border-foreground/10 bg-background/70 backdrop-blur-2xl shadow-[0_8px_32px_rgba(8,145,178,0.12)] px-1">
 
           {/* Left 2 links */}

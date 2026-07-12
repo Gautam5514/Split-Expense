@@ -2,14 +2,13 @@
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { api } from "@/lib/api";
+import { AnimatePresence, motion } from "framer-motion";
+import toast from "@/lib/toast";
 import {
-  Bot,
   Check,
   Clipboard,
-  Loader2,
   RefreshCw,
   Send,
-  Sparkles,
   Trash2,
   WalletCards,
   UsersRound,
@@ -19,12 +18,9 @@ import {
   MessageSquare,
   AlertTriangle,
   ArrowUpRight,
-  Plus,
   PenSquare,
   X,
   Search,
-  PanelLeftClose,
-  PanelLeft,
 } from "lucide-react";
 
 /* ─── AI Providers ─── */
@@ -34,6 +30,18 @@ const AI_PROVIDERS = [
 ];
 const PROVIDER_LABELS = { gemini: "Gemini", openai: "ChatGPT", smart: "Instant lookup" };
 
+function ChatGPTMark({ className = "h-4 w-4" }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true"><path fill="currentColor" d="M22.28 9.82a5.73 5.73 0 0 0-.49-4.68 5.82 5.82 0 0 0-6.27-2.79A5.76 5.76 0 0 0 11.2.43a5.82 5.82 0 0 0-5.56 4 5.75 5.75 0 0 0-3.84 2.8 5.82 5.82 0 0 0 .71 6.82 5.73 5.73 0 0 0 .49 4.68A5.82 5.82 0 0 0 9.27 21.5a5.76 5.76 0 0 0 4.33 1.93 5.82 5.82 0 0 0 5.56-4 5.75 5.75 0 0 0 3.84-2.8 5.82 5.82 0 0 0-.72-6.81Zm-8.67 12.12a4.27 4.27 0 0 1-2.73-.98l.14-.08 4.53-2.61a.73.73 0 0 0 .37-.64v-6.37l1.91 1.1v5.27a4.32 4.32 0 0 1-4.22 4.31Zm-9.3-3.95a4.28 4.28 0 0 1-.51-2.86l.14.09 4.53 2.61a.72.72 0 0 0 .74 0l5.52-3.19v2.21l-4.57 2.64a4.32 4.32 0 0 1-5.87-1.5ZM3.1 8a4.27 4.27 0 0 1 2.23-1.86v5.36c0 .27.14.51.37.64l5.52 3.19-1.91 1.1-4.57-2.64A4.32 4.32 0 0 1 3.1 8Zm15.2 3.86-5.52-3.19 1.91-1.1 4.57 2.64a4.32 4.32 0 0 1-.59 7.65V12.5a.74.74 0 0 0-.37-.64Zm1.9-2.99-.14-.09-4.53-2.61a.72.72 0 0 0-.74 0l-5.52 3.19V7.15l4.57-2.64a4.32 4.32 0 0 1 6.36 4.36ZM8.08 12.74l-1.91-1.1V6.37a4.32 4.32 0 0 1 7.09-3.33l-.14.08-4.53 2.61a.73.73 0 0 0-.37.64l-.14 6.37Zm1.04-2.19L11.58 9.13l2.46 1.42v2.84l-2.46 1.42-2.46-1.42v-2.84Z"/></svg>;
+}
+
+function GeminiMark({ className = "h-4 w-4" }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true"><defs><linearGradient id="gemini-gradient" x1="3" y1="21" x2="21" y2="3"><stop stopColor="#1c7dff"/><stop offset=".5" stopColor="#a35bff"/><stop offset="1" stopColor="#f04e98"/></linearGradient></defs><path fill="url(#gemini-gradient)" d="M12 2c.72 5.57 4.43 9.28 10 10-5.57.72-9.28 4.43-10 10-.72-5.57-4.43-9.28-10-10 5.57-.72 9.28-4.43 10-10Z"/></svg>;
+}
+
+function ProviderMark({ provider, className }) {
+  return provider === "openai" ? <ChatGPTMark className={className} /> : <GeminiMark className={className} />;
+}
+
 /* ─── Chat retention: nothing is kept locally past 24 hours ─── */
 const CHAT_TTL_MS = 24 * 60 * 60 * 1000;
 const dropExpiredChats = (chatList) =>
@@ -41,8 +49,6 @@ const dropExpiredChats = (chatList) =>
     const ts = parseInt(c.id, 10);
     return !isNaN(ts) && Date.now() - ts < CHAT_TTL_MS;
   });
-import { AnimatePresence, motion } from "framer-motion";
-import toast from "@/lib/toast";
 
 /* ─── Quick Prompt Suggestions ─── */
 const QUICK_PROMPTS = [
@@ -391,138 +397,15 @@ export default function AiPage() {
 
   return (
     <div
-      className="relative flex bg-background text-foreground overflow-hidden transition-colors duration-300 pt-6 lg:pt-8"
-      style={{ height: "calc(100dvh - 70px)" }}
+      className="relative flex h-[calc(100dvh-72px)] bg-background text-foreground overflow-hidden transition-colors duration-300 md:h-[calc(100dvh-80px)]"
     >
-      {/* ── Sidebar ── */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 flex shrink-0 flex-col border-r border-border/60 bg-card transition-all duration-300 lg:static lg:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } ${isSidebarCollapsed ? "lg:w-0 lg:opacity-0 lg:border-r-0 lg:pointer-events-none" : "w-[260px] lg:w-[260px]"}`}
-      >
-        {/* Header */}
-        <div className="px-4 pt-5 pb-4 border-b border-border/40">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg overflow-hidden border border-border bg-background flex items-center justify-center">
-                <img src="/logo-icon.png" className="w-full h-full object-cover" alt="" />
-              </div>
-              <span className="text-sm font-bold text-foreground">SplitEase AI</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={toggleCollapse}
-                className="hidden lg:flex w-7 h-7 items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition"
-                title="Collapse sidebar"
-              >
-                <PanelLeftClose size={14} />
-              </button>
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="lg:hidden w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground transition"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-[12.5px] font-semibold border border-border bg-foreground text-background hover:opacity-90 transition-all"
-          >
-            <Plus size={13} />
-            New Chat
-          </button>
-
-          <div className="relative mt-3">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground/50" />
-            <input
-              type="text"
-              placeholder="Search chats..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-background border border-border/60 text-[11.5px] rounded-lg pl-9 pr-4 py-2 outline-none focus:border-primary/40 text-foreground transition-all"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground">
-                <X size={12} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Chat History */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3 space-y-3">
-          {filteredChats.length === 0 ? (
-            <p className="text-center py-6 text-xs text-muted-foreground italic">
-              {searchQuery ? "No matching chats" : "No chats yet"}
-            </p>
-          ) : (
-            <>
-              {[
-                { label: "Today", chats: groupedChats.today },
-                { label: "Yesterday", chats: groupedChats.yesterday },
-                { label: "Previous 7 Days", chats: groupedChats.previous7Days },
-                { label: "Older", chats: groupedChats.older },
-              ]
-                .filter((g) => g.chats.length > 0)
-                .map(({ label, chats: group }) => (
-                  <div key={label} className="space-y-0.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 px-2 mb-1.5">
-                      {label}
-                    </p>
-                    {group.map(renderSidebarItem)}
-                  </div>
-                ))}
-            </>
-          )}
-        </div>
-      </aside>
-
-      {/* Mobile backdrop */}
-      {isSidebarOpen && (
-        <div
-          onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm lg:hidden"
-        />
-      )}
-
       {/* ── Main Chat Area ── */}
       <section className="flex flex-1 min-w-0 flex-col bg-background relative z-10">
         {/* Floating top controls */}
         <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
-          <div className="pointer-events-auto">
-            <button
-              onClick={() => {
-                if (window.innerWidth < 1024) setIsSidebarOpen(true);
-                else toggleCollapse();
-              }}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg border border-border/60 bg-card/90 backdrop-blur-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all shadow-sm ${
-                !isSidebarCollapsed ? "lg:hidden" : ""
-              }`}
-            >
-              <PanelLeft size={15} />
-            </button>
-          </div>
+          <div />
 
           <div className="flex items-center gap-1.5 pointer-events-auto">
-            <div className="flex items-center gap-0.5 p-0.5 rounded-lg border border-border/60 bg-card/90 backdrop-blur-md shadow-sm">
-              {AI_PROVIDERS.map((p) => (
-                <button
-                  key={p.key}
-                  type="button"
-                  onClick={() => selectProvider(p.key)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                    provider === p.key
-                      ? "bg-primary text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
             {lastPrompt && !loading && (
               <button
                 type="button"
@@ -578,6 +461,8 @@ export default function AiPage() {
           loading={loading}
           canSend={canSend}
           onStop={stopRequest}
+          provider={provider}
+          selectProvider={selectProvider}
         />
       </section>
     </div>
@@ -598,8 +483,8 @@ function ChatBubble({ message }) {
       className={`flex items-start gap-3 ${isUser ? "justify-end" : "justify-start"}`}
     >
       {!isUser && (
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 mt-0.5">
-          <Bot size={14} className="text-primary" />
+        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center text-foreground">
+          <ProviderMark provider={message.provider} className="h-5 w-5" />
         </div>
       )}
 
@@ -610,7 +495,7 @@ function ChatBubble({ message }) {
               ? "bg-primary text-white rounded-br-sm"
               : isError
               ? "bg-red-500/5 border border-red-500/20 text-red-700 dark:text-red-300 rounded-bl-sm"
-              : "bg-muted border border-border/50 text-foreground rounded-bl-sm"
+              : "bg-card border border-border/60 text-foreground rounded-bl-sm shadow-[0_10px_35px_-24px_rgba(8,145,178,0.45)]"
           }`}
         >
           {isError && (
@@ -813,9 +698,7 @@ function ThinkingBubble({ onStop }) {
       transition={{ duration: 0.16 }}
       className="flex items-start gap-3"
     >
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 mt-0.5">
-        <Bot size={14} className="text-primary" />
-      </div>
+      <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center text-foreground"><GeminiMark className="h-5 w-5" /></div>
       <div className="bg-muted border border-border/50 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-3 shadow-sm">
         <div className="flex items-center gap-1">
           {[0, 0.15, 0.3].map((delay, i) => (
@@ -850,8 +733,8 @@ function EmptyState({ onSuggestionClick }) {
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="mx-auto flex h-full max-w-lg flex-col items-center justify-center py-8 text-center"
     >
-      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-background border border-border shadow-sm">
-        <img src="/logo-icon.png" className="w-9 h-9 object-cover" alt="" />
+      <div className="mb-5 flex items-center gap-2 text-foreground">
+        <GeminiMark className="h-9 w-9" /><span className="h-7 w-px bg-border" /><ChatGPTMark className="h-8 w-8" />
       </div>
 
       <h2 className="text-xl font-bold text-foreground mb-1.5 tracking-tight">
@@ -887,7 +770,7 @@ function EmptyState({ onSuggestionClick }) {
 }
 
 /* ─── Prompt Input ─── */
-function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop }) {
+function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop, provider, selectProvider }) {
   const textareaRef = useRef(null);
   const MAX = 1200;
 
@@ -906,30 +789,44 @@ function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop }) {
   };
 
   return (
-    <div className="shrink-0 border-t border-border/40 bg-background/80 backdrop-blur-md px-4 py-3 md:px-8 xl:px-16">
-      <div className="mx-auto max-w-2xl">
+    <div className="shrink-0 bg-gradient-to-t from-background via-background/95 to-transparent px-3 pt-2 md:px-8 xl:px-16" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+      <div className="mx-auto max-w-3xl">
         <div
-          className={`flex items-end gap-3 rounded-2xl border bg-card px-4 py-3 shadow-sm transition-all duration-200 ${
-            loading ? "border-border/30" : "border-border/70 focus-within:border-primary/40 focus-within:shadow-[0_0_0_3px_rgba(8,145,178,0.06)]"
+          className={`relative overflow-visible rounded-[22px] border bg-card/95 shadow-[0_18px_55px_-24px_rgba(8,145,178,0.35)] backdrop-blur-xl transition-all duration-200 ${
+            loading ? "border-border/40" : "border-border/80 focus-within:border-primary/50 focus-within:shadow-[0_18px_60px_-24px_rgba(8,145,178,0.5)]"
           }`}
         >
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value.slice(0, MAX))}
-            onKeyDown={handleKeyDown}
-            disabled={loading}
-            placeholder="Ask anything about your expenses..."
-            className="flex-1 resize-none bg-transparent text-[13.5px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/50 disabled:opacity-40 custom-scrollbar"
-            style={{ minHeight: "24px", maxHeight: "160px" }}
-          />
+          <textarea ref={textareaRef} rows={1} value={prompt}
+            onChange={(e) => setPrompt(e.target.value.slice(0, MAX))} onKeyDown={handleKeyDown}
+            disabled={loading} placeholder="Ask SplitEase AI about spending, balances or your next trip…"
+            aria-label="Message SplitEase AI"
+            className="block w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[14px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/55 disabled:opacity-40 custom-scrollbar sm:px-5"
+            style={{ minHeight: "54px", maxHeight: "160px" }} />
 
+          <div className="flex items-center justify-between gap-3 px-3 pb-3 sm:px-4">
+            <details className="group relative z-40" aria-label="Choose AI model">
+              <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl border border-border/70 bg-muted/55 px-3 text-[12px] font-semibold text-foreground transition hover:bg-muted [&::-webkit-details-marker]:hidden">
+                <ProviderMark provider={provider} className="h-4 w-4" />
+                {PROVIDER_LABELS[provider]}
+                <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-muted-foreground transition group-open:rotate-180" aria-hidden="true"><path d="m6 8 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </summary>
+              <div className="absolute bottom-[calc(100%+10px)] left-0 z-50 w-56 overflow-hidden rounded-2xl border border-border/70 bg-card p-1.5 shadow-[0_22px_60px_-18px_rgba(0,0,0,0.4)]">
+                {AI_PROVIDERS.map((item) => (
+                  <button key={item.key} type="button" disabled={loading}
+                    onClick={(event) => { selectProvider(item.key); event.currentTarget.closest("details")?.removeAttribute("open"); }}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${provider === item.key ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                    <ProviderMark provider={item.key} className="h-5 w-5 shrink-0" />
+                    <span><span className="block text-[12px] font-semibold">{item.label}</span><span className="block text-[10px] opacity-65">{item.key === "gemini" ? "Fast, helpful answers" : "OpenAI intelligence"}</span></span>
+                    {provider === item.key && <Check size={13} className="ml-auto text-primary" />}
+                  </button>
+                ))}
+              </div>
+            </details>
           {loading ? (
             <button
               type="button"
               onClick={onStop}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border text-[12px] font-medium text-muted-foreground hover:text-foreground transition-all"
+              className="shrink-0 flex h-9 items-center gap-1.5 px-3 rounded-xl border border-border text-[12px] font-medium text-muted-foreground hover:text-foreground transition-all"
             >
               <Square size={9} className="fill-current text-red-500" />
               Stop
@@ -939,18 +836,20 @@ function PromptInput({ prompt, setPrompt, askAI, loading, canSend, onStop }) {
               type="button"
               onClick={() => askAI(prompt)}
               disabled={!canSend}
-              className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200 ${
+              aria-label="Send message"
+              className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 ${
                 canSend
                   ? "bg-primary text-white hover:opacity-90 hover:scale-[1.03] cursor-pointer"
                   : "bg-muted text-muted-foreground/40 cursor-not-allowed"
               }`}
             >
-              <Send size={14} />
+              <Send size={15} />
             </button>
           )}
+          </div>
         </div>
 
-        <p className="mt-1.5 text-center text-[10px] text-muted-foreground/40">
+        <p className="mt-1.5 hidden text-center text-[10px] text-muted-foreground/45 sm:block">
           Enter to send · Shift+Enter for new line
         </p>
       </div>

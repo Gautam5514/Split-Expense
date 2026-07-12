@@ -1,4 +1,4 @@
-const CACHE_NAME = 'splitwise-v1';
+const CACHE_NAME = 'splitease-static-v2';
 const STATIC_ASSETS = ['/', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -23,6 +23,12 @@ self.addEventListener('fetch', (event) => {
   // Only cache same-origin requests, skip API calls
   if (url.origin !== location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/_next/')) return;
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {

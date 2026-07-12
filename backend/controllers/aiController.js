@@ -109,24 +109,11 @@ export const queryAI = async (req, res) => {
       **User Question**: "${prompt}"
     `;
 
-    // 4️⃣ GENERATE: try the requested provider first, then transparently fall
-    // back to the other provider if it's unavailable (key rejected, rate
-    // limited, overloaded) so the user still gets an answer.
-    const fallbackOrder = [requested, ...Object.keys(PROVIDERS).filter((p) => p !== requested)];
-    let rawText, usedProvider, lastErr;
-
-    for (const key of fallbackOrder) {
-      try {
-        rawText = await PROVIDERS[key].generate(finalPrompt);
-        usedProvider = key;
-        break;
-      } catch (err) {
-        lastErr = err;
-        console.warn(`⚠️ Provider "${key}" failed, trying next fallback...`, err.message);
-      }
-    }
-
-    if (usedProvider === undefined) throw lastErr;
+    // 4️⃣ GENERATE with the provider explicitly selected by the user.
+    // Do not silently switch providers: the model selector is a contract and
+    // the response identity must always match it.
+    const usedProvider = requested;
+    const rawText = await PROVIDERS[requested].generate(finalPrompt);
 
     let aiText = rawText || "Hmm... I had trouble generating an answer.";
 
@@ -136,8 +123,7 @@ export const queryAI = async (req, res) => {
     // 6️⃣ Save the AI's final response to the database.
     await AiMessage.create({ userId, role: "ai", content: aiText, provider: usedProvider });
 
-    // 7️⃣ Send the clean response to the frontend, noting which provider answered
-    // (useful if we silently fell back from the user's chosen provider).
+    // 7️⃣ Send the response with the provider that was explicitly requested.
     res.json({ text: aiText, provider: usedProvider });
 
   } catch (err) {
