@@ -5,6 +5,29 @@ import User from "../models/userModel.js";
 import UserProfile from "../models/userProfileModel.js";
 import cloudinary from "../config/cloudinary.js";
 import Group from "../models/groupModel.js";
+import { onlineUsers } from "../index.js";
+import { sendPushToUsers } from "./notificationController.js";
+
+// Recipients whose socket sits in the given room are actively viewing that
+// conversation — they see the message live and shouldn't also get a push.
+export const usersViewingRoom = (io, roomName) => {
+  const room = io?.sockets?.adapter?.rooms?.get(roomName);
+  const viewing = new Set();
+  if (!room) return viewing;
+  for (const [userId, socketId] of onlineUsers) {
+    if (room.has(socketId)) viewing.add(userId);
+  }
+  return viewing;
+};
+
+export const chatPushBody = (text, hasMedia) =>
+  text
+    ? text.length > 120
+      ? `${text.slice(0, 117)}...`
+      : text
+    : hasMedia
+    ? "Sent an attachment"
+    : "New message";
 
 // ---------------------------------------------
 // CREATE OR GET CONVERSATION
@@ -193,6 +216,27 @@ export const sendMessage = async (req, res) => {
     if (io) io.to(conversationId).emit("newMessage", { ...message.toObject() });
 
     res.json({ data: message });
+
+    // Push to members not actively viewing this conversation (fire-and-forget,
+    // after the response so it never adds latency to the send).
+    const viewing = usersViewingRoom(io, String(conversationId));
+    const pushRecipients = convo.members
+      .map(String)
+      .filter((m) => m !== String(sender) && !viewing.has(m));
+
+    if (pushRecipients.length) {
+      sendPushToUsers(pushRecipients, {
+        title: req.user.name || "New message",
+        body: chatPushBody(text, !!mediaData),
+        data: {
+          link: "/chat",
+          type: "chat",
+          senderId: String(sender),
+          senderName: req.user.name || "",
+          senderEmail: req.user.email || "",
+        },
+      }).catch((err) => console.error("chat push error:", err.message));
+    }
   } catch (err) {
     console.error("sendMessage error:", err);
     res.status(500).json({ message: err.message });

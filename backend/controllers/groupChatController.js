@@ -3,6 +3,8 @@ import GroupMessage from "../models/groupMessageModel.js";
 import cloudinary from "../config/cloudinary.js";
 import UserProfile from "../models/userProfileModel.js";
 import User from "../models/userModel.js";
+import { sendPushToUsers } from "./notificationController.js";
+import { chatPushBody, usersViewingRoom } from "./chatController.js";
 
 /**
  * ✅ GET /api/groups/:groupId/messages
@@ -125,6 +127,26 @@ export const sendGroupMessage = async (req, res) => {
     // emit socket event
     const io = req.app.get("io");
     if (io) io.to(`group:${groupId}`).emit("newGroupMessage", populated);
+
+    // Push to members not actively viewing this group chat (fire-and-forget,
+    // after the response so it never adds latency to the send).
+    const viewing = usersViewingRoom(io, `group:${groupId}`);
+    const pushRecipients = group.members
+      .map(String)
+      .filter((m) => m !== String(uid) && !viewing.has(m));
+
+    if (pushRecipients.length) {
+      sendPushToUsers(pushRecipients, {
+        title: group.name || "Group chat",
+        body: `${req.user.name ? `${req.user.name}: ` : ""}${chatPushBody(text, !!mediaData)}`,
+        data: {
+          link: "/groupchat",
+          type: "group-chat",
+          groupId: String(groupId),
+          groupName: group.name || "",
+        },
+      }).catch((err) => console.error("group chat push error:", err.message));
+    }
   } catch (err) {
     console.error("sendGroupMessage error:", err);
     res.status(500).json({ message: "Server error" });

@@ -46,6 +46,22 @@ export const createNotification = async (userIds, message, link, type = "group")
   }
 };
 
+/**
+ * 📲 Push-only dispatch (Expo mobile + FCM web) with no DB record and no
+ * socket emit — used for chat messages, which have their own unread counters
+ * and would flood the notification bell if stored.
+ */
+export const sendPushToUsers = async (userIds, payload) => {
+  try {
+    const recipientIds = userIds.map((id) => String(id));
+    if (!recipientIds.length) return;
+    await sendExpoPushNotifications(recipientIds, payload);
+    await sendFCMWebPushNotifications(recipientIds, payload);
+  } catch (err) {
+    console.error("❌ sendPushToUsers:", err.message);
+  }
+};
+
 const EXPO_PUSH_ENDPOINT = "https://exp.host/--/api/v2/push/send";
 
 const isValidExpoPushToken = (token) =>
