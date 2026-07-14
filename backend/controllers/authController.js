@@ -122,6 +122,20 @@ export const sendLoginOtp = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid email or password." });
 
+    // This is deliberately a per-user database setting. It lets explicitly
+    // provisioned accounts sign in without weakening OTP for everyone else.
+    const hasTemporaryOtpBypass =
+      user.loginOtpBypassExpires && user.loginOtpBypassExpires > new Date();
+    if (user.skipLoginOtp || hasTemporaryOtpBypass) {
+      user.loginOtp = null;
+      user.loginOtpExpires = null;
+      // Temporary bypasses are one-time. The permanent flag is reserved for
+      // explicitly provisioned service/test users.
+      user.loginOtpBypassExpires = null;
+      await user.save();
+      return res.status(200).json({ requiresOtp: false });
+    }
+
     // Throttle: block re-send if an OTP was issued < 60 s ago
     if (user.loginOtpExpires && user.loginOtpExpires - Date.now() > 9 * 60 * 1000)
       return res.status(429).json({ message: "An OTP was just sent. Please wait a moment before requesting another." });
@@ -213,7 +227,10 @@ export const sendLoginOtp = async (req, res) => {
       `,
     });
 
-    res.status(200).json({ message: "OTP sent to your registered email." });
+    res.status(200).json({
+      requiresOtp: true,
+      message: "OTP sent to your registered email.",
+    });
   } catch (err) {
     console.error("Send Login OTP Error:", err);
     res.status(500).json({ message: err.message });

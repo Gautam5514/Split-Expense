@@ -200,7 +200,23 @@ export default function LoginPage() {
 
   const clearError = (field) => setErrors((p) => ({ ...p, [field]: "" }));
 
-  // ── Step 1: validate & send OTP ──────────────────────────────────────────
+  const completeEmailLogin = async () => {
+    const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+    const idToken = await result.user.getIdToken();
+    await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
+    clearStoredReferralCode();
+    toast.success("Login successful!");
+
+    const pendingInvite = localStorage.getItem("pendingInvite");
+    if (pendingInvite) {
+      localStorage.removeItem("pendingInvite");
+      router.push(`/join/${pendingInvite}`);
+    } else {
+      router.push("/users");
+    }
+  };
+
+  // ── Email/password login ─────────────────────────────────────────────────
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     const errs = {};
@@ -212,15 +228,19 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      await api.post("/auth/send-login-otp", { email: email.trim(), password });
-      setOtp("");
-      setStep("otp");
-      startCooldown();
-      toast.success("Verification code sent to your email.");
+      // Firebase validates the email/password and issues the real app token.
+      // Login OTP is intentionally disabled, so Nodemailer is not involved.
+      await completeEmailLogin();
     } catch (err) {
       const data = err?.response?.data;
       if (data?.field) setErrors((p) => ({ ...p, [data.field]: data.message }));
-      else setErrors({ password: data?.message || "Invalid email or password." });
+      else if (err?.code === "auth/invalid-credential" || err?.code === "auth/wrong-password" || err?.code === "auth/user-not-found") {
+        setErrors({ password: "Invalid email or password." });
+      } else if (err?.code === "auth/too-many-requests") {
+        setErrors({ password: "Too many login attempts. Please try again later." });
+      } else {
+        setErrors({ password: data?.message || err?.message || "Login failed. Please try again." });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -251,20 +271,8 @@ export default function LoginPage() {
     try {
       await api.post("/auth/verify-login-otp", { email: email.trim(), otp });
 
-      // OTP passed - now complete Firebase auth
-      const result = await signInWithEmailAndPassword(auth, email.trim(), password);
-      const idToken = await result.user.getIdToken();
-      await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
-      clearStoredReferralCode();
-      toast.success("Login successful!");
-
-      const pendingInvite = localStorage.getItem("pendingInvite");
-      if (pendingInvite) {
-        localStorage.removeItem("pendingInvite");
-        router.push(`/join/${pendingInvite}`);
-      } else {
-        router.push("/users");
-      }
+      // OTP passed - now complete Firebase auth.
+      await completeEmailLogin();
     } catch (err) {
       const data = err?.response?.data;
       setErrors({ otp: data?.message || "Invalid or expired code. Please try again." });

@@ -5,6 +5,10 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: false }, // optional for Firebase users
+  // Intended for explicitly provisioned service/test accounts only. Normal
+  // users still complete the email OTP challenge before Firebase sign-in.
+  skipLoginOtp: { type: Boolean, default: false },
+  loginOtpBypassExpires: { type: Date, default: null },
   photoURL: { type: String, default: "" },
   expoPushTokens: [
     {
