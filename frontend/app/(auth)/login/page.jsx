@@ -47,6 +47,11 @@ const expenseCards = [
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const OTP_LENGTH = 6;
 
+// TEMPORARY APP-REVIEW MODE:
+// Keep the OTP implementation below for later, but make it impossible to
+// enter or render that flow. Email/password currently signs in via Firebase.
+const LOGIN_OTP_ENABLED = false;
+
 // ── OTP input: 6 individual boxes ──────────────────────────────────────────
 function OtpInput({ value, onChange, disabled }) {
   const inputsRef = useRef([]);
@@ -181,6 +186,12 @@ export default function LoginPage() {
 
   useEffect(() => { if (token) router.replace("/users"); }, [token, router]);
 
+  // If a browser retained the old OTP screen during a deployment, force it
+  // back to the direct email/password form while review mode is active.
+  useEffect(() => {
+    if (!LOGIN_OTP_ENABLED && step === "otp") setStep("login");
+  }, [step]);
+
   // Capture ?ref=CODE for attribution at first-ever signup.
   useEffect(() => {
     captureReferralFromLocation();
@@ -246,7 +257,10 @@ export default function LoginPage() {
     }
   };
 
-  // ── Resend OTP ────────────────────────────────────────────────────────────
+  // ── OTP implementation retained for later ────────────────────────────────
+  // These handlers are unreachable while LOGIN_OTP_ENABLED is false.
+  // Set the flag to true and restore the send step in handleEmailLogin when
+  // OTP login is needed again.
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
     try {
@@ -452,7 +466,7 @@ export default function LoginPage() {
           )}
 
           {/* ── STEP: otp ───────────────────────────────────────────────── */}
-          {step === "otp" && (
+          {LOGIN_OTP_ENABLED && step === "otp" && (
             <>
               <div className="text-center mb-6">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(8,145,178,0.08)", border: "1px solid rgba(8,145,178,0.2)" }}>
