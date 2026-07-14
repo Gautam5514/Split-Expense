@@ -98,10 +98,15 @@ export const findOrCreateUser = async ({ uid, email, name, picture }) => {
   }
 
   // Sync mutable fields that can change after account creation.
+  //
+  // NOTE: `name` is deliberately NOT synced here. This function runs on every
+  // authenticated request, and the incoming `name` is the Firebase token's
+  // displayName. Re-syncing it would overwrite a name the user edited in their
+  // profile on the very next request. The user's in-app name is authoritative;
+  // profile edits also push the new name back to Firebase to keep them aligned.
   const updates = {};
   if (!user.firebaseUid && uid) updates.firebaseUid = uid;
   if (picture && user.photoURL !== picture) updates.photoURL = picture;
-  if (name && user.name !== name) updates.name = name;
 
   if (Object.keys(updates).length) {
     await User.updateOne({ _id: user._id }, { $set: updates });

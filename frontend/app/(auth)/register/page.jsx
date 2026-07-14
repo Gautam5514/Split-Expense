@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import toast from "@/lib/toast";
-import { Eye, EyeOff, User, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Lock, Loader2, ArrowRight, ShieldCheck, RotateCcw } from "lucide-react";
 import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from "firebase/auth";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -10,6 +10,82 @@ import { auth, googleProvider } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { captureReferralFromLocation, getStoredReferralCode, clearStoredReferralCode } from "@/lib/referral";
+
+const OTP_LENGTH = 6;
+
+// ── OTP input: 6 individual boxes ──────────────────────────────────────────
+function OtpInput({ value, onChange, disabled }) {
+  const inputsRef = useRef([]);
+  const digits = value.split("");
+
+  const handleKey = (e, idx) => {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      const next = [...digits];
+      if (next[idx]) {
+        next[idx] = "";
+        onChange(next.join(""));
+      } else if (idx > 0) {
+        next[idx - 1] = "";
+        onChange(next.join(""));
+        inputsRef.current[idx - 1]?.focus();
+      }
+      return;
+    }
+    if (e.key === "ArrowLeft" && idx > 0) { inputsRef.current[idx - 1]?.focus(); return; }
+    if (e.key === "ArrowRight" && idx < OTP_LENGTH - 1) { inputsRef.current[idx + 1]?.focus(); return; }
+  };
+
+  const handleChange = (e, idx) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    if (!raw) return;
+    if (raw.length > 1) {
+      const pasted = raw.slice(0, OTP_LENGTH);
+      onChange(pasted.padEnd(OTP_LENGTH, "").split("").slice(0, OTP_LENGTH).join(""));
+      inputsRef.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
+      return;
+    }
+    const next = [...digits];
+    next[idx] = raw[0];
+    onChange(next.join(""));
+    if (idx < OTP_LENGTH - 1) inputsRef.current[idx + 1]?.focus();
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    onChange(pasted.padEnd(OTP_LENGTH, ""));
+    inputsRef.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
+  };
+
+  return (
+    <div className="flex gap-2.5 justify-center">
+      {Array.from({ length: OTP_LENGTH }).map((_, idx) => (
+        <input
+          key={idx}
+          ref={(el) => (inputsRef.current[idx] = el)}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={digits[idx] || ""}
+          disabled={disabled}
+          onChange={(e) => handleChange(e, idx)}
+          onKeyDown={(e) => handleKey(e, idx)}
+          onPaste={handlePaste}
+          onFocus={(e) => e.target.select()}
+          className="w-11 text-center text-xl font-bold text-white rounded-xl outline-none transition-all duration-200 disabled:opacity-50"
+          style={{
+            height: "52px",
+            background: digits[idx] ? "rgba(8,145,178,0.15)" : "rgba(255,255,255,0.04)",
+            border: digits[idx] ? "1.5px solid rgba(8,145,178,0.7)" : "1.5px solid rgba(255,255,255,0.1)",
+            boxShadow: digits[idx] ? "0 0 0 3px rgba(8,145,178,0.12)" : "none",
+            caretColor: "transparent",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 function MarqueeColumn({ images, reverse }) {
   return (
@@ -86,6 +162,9 @@ export default function RegisterPage() {
     captureReferralFromLocation();
   }, []);
 
+  // step: "form" | "otp"
+  const [step, setStep] = useState("form");
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -93,6 +172,23 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [focused, setFocused] = useState("");
   const [errors, setErrors] = useState({});
+
+  // OTP step
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef(null);
+
+  const startCooldown = () => {
+    setResendCooldown(60);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) { clearInterval(cooldownRef.current); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+  useEffect(() => () => clearInterval(cooldownRef.current), []);
 
   const clearError = (field) =>
     setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -124,33 +220,80 @@ export default function RegisterPage() {
     return Object.keys(e).length === 0;
   };
 
+  // ── Step 1: validate + send email verification code ──────────────────────
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!validateRegister()) return;
     setIsLoading(true);
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(result.user, { displayName: name });
-      // Force-refresh so the new displayName is embedded in the token before
-      // we sync with the backend - otherwise MongoDB would get an empty name.
-      const idToken = await result.user.getIdToken(true);
-      // Sync user with MongoDB - no JWT is returned; onIdTokenChanged sets the token.
-      await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
-      clearStoredReferralCode();
-      toast.success("Account created successfully!");
-      const pendingInvite = localStorage.getItem("pendingInvite");
-      if (pendingInvite) {
-        localStorage.removeItem("pendingInvite");
-        router.push(`/join/${pendingInvite}`);
-      } else {
-        router.push("/users");
-      }
+      // Verify the email is real and unused BEFORE creating any account.
+      await api.post("/auth/send-signup-otp", { name: name.trim(), email: email.trim() });
+      setOtp("");
+      setStep("otp");
+      startCooldown();
+      toast.success("Verification code sent to your email.");
     } catch (err) {
       const data = err?.response?.data;
       if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
-      else toast.error(data?.message || "Registration failed.");
+      else toast.error(data?.message || "Couldn't send verification code. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // ── Step 2: verify code, then actually create the Firebase account ────────
+  const completeSignup = async () => {
+    const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    await updateProfile(result.user, { displayName: name.trim() });
+    // Force-refresh so the new displayName is embedded in the token before
+    // we sync with the backend - otherwise MongoDB would get an empty name.
+    const idToken = await result.user.getIdToken(true);
+    // Sync user with MongoDB - no JWT is returned; onIdTokenChanged sets the token.
+    await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
+    clearStoredReferralCode();
+    toast.success("Account created successfully!");
+    const pendingInvite = localStorage.getItem("pendingInvite");
+    if (pendingInvite) {
+      localStorage.removeItem("pendingInvite");
+      router.push(`/join/${pendingInvite}`);
+    } else {
+      router.push("/users");
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (otp.length < OTP_LENGTH) {
+      setErrors({ otp: "Please enter the complete 6-digit code." });
+      return;
+    }
+    setOtpLoading(true);
+    setErrors({});
+    try {
+      await api.post("/auth/verify-signup-otp", { email: email.trim(), otp });
+      await completeSignup();
+    } catch (err) {
+      const data = err?.response?.data;
+      // Firebase creation errors (rare, e.g. race with another signup) also land here.
+      if (err?.code === "auth/email-already-in-use") {
+        setErrors({ otp: "This email was just registered. Please sign in instead." });
+      } else {
+        setErrors({ otp: data?.message || err?.message || "Invalid or expired code. Please try again." });
+      }
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    try {
+      await api.post("/auth/send-signup-otp", { name: name.trim(), email: email.trim() });
+      setOtp("");
+      startCooldown();
+      toast.success("New verification code sent.");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to resend code.");
     }
   };
 
@@ -204,6 +347,10 @@ export default function RegisterPage() {
 
         {/* Center Content Wrapper */}
         <div className="w-full max-w-[360px] mx-auto my-auto py-6">
+
+          {/* ── STEP: form ──────────────────────────────────────────────── */}
+          {step === "form" && (
+          <>
           <div className="mb-6">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">Create your account</h2>
             <p className="text-slate-400 text-sm">Free forever · No credit card required</p>
@@ -317,6 +464,63 @@ export default function RegisterPage() {
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
           </div>
+          </>
+          )}
+
+          {/* ── STEP: otp ───────────────────────────────────────────────── */}
+          {step === "otp" && (
+            <>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(8,145,178,0.08)", border: "1px solid rgba(8,145,178,0.2)" }}>
+                  <ShieldCheck className="w-8 h-8 text-sky-400 animate-pulse" />
+                </div>
+                <h2 className="text-2xl font-extrabold text-white tracking-tight mb-2">Verify your email</h2>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  We sent a 6-digit code to<br />
+                  <span className="text-white font-semibold">{email}</span>
+                </p>
+              </div>
+
+              <form onSubmit={handleVerifyOtp} className="space-y-6">
+                <div>
+                  <OtpInput value={otp} onChange={setOtp} disabled={otpLoading} />
+                  {errors.otp && <p className="text-red-400 text-xs mt-3 text-center">{errors.otp}</p>}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={otpLoading || otp.length < OTP_LENGTH}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-black bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer text-sm"
+                >
+                  {otpLoading ? <Loader2 className="animate-spin w-4.5 h-4.5 text-black" /> : "Verify & Create account"}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center space-y-4">
+                <div>
+                  <p className="text-slate-500 text-xs mb-1">Didn't receive the code?</p>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={resendCooldown > 0}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer outline-none"
+                    style={{ color: resendCooldown > 0 ? "#64748B" : "#FFF" }}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => { setStep("form"); setOtp(""); setErrors({}); }}
+                  className="text-xs text-slate-400 hover:text-white transition-colors font-bold cursor-pointer outline-none"
+                >
+                  ← Back
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Grayscale partner logos */}

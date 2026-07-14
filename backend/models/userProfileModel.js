@@ -21,16 +21,10 @@ const userProfileSchema = new mongoose.Schema({
   state: String,
   favoritePlace: String,
 
-  profession: {
-    type: String,
-    enum: [
-      "Student",
-      "Working Professional",
-      "Freelancer",
-      "Entrepreneur",
-      "Other",
-    ],
-  },
+  // Free text: the profile form takes this as a plain input (e.g. "Software
+  // Engineer"), so it must not be restricted to a fixed enum - an off-list
+  // value would throw a validation error and fail the entire profile save.
+  profession: { type: String },
 
   timezone: String,
   bio: String,

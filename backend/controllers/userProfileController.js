@@ -33,7 +33,16 @@ export const updateProfile = async (req, res) => {
 
     // Update name on the base User model if provided
     if (name && name.trim()) {
-      await User.findByIdAndUpdate(req.user.id, { name: name.trim() });
+      const trimmedName = name.trim();
+      await User.findByIdAndUpdate(req.user.id, { name: trimmedName });
+
+      // Keep Firebase's displayName in sync so the auth token carries the same
+      // name and nothing reverts it on the next request. Non-fatal.
+      if (req.user.firebaseUid) {
+        admin.auth()
+          .updateUser(req.user.firebaseUid, { displayName: trimmedName })
+          .catch((err) => console.error("Firebase displayName sync failed:", err.message));
+      }
     }
 
     const profile = await UserProfile.findOneAndUpdate(

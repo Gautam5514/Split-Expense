@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import CustomCursor from "@/components/CustomCursor";
 import InstallPrompt from "@/components/InstallPrompt";
 import GlassThemeGate from "@/components/GlassThemeGate";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -71,24 +72,42 @@ export default function RootLayout({ children }) {
             __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&d)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`,
           }}
         />
-        <ThemeProvider>
-          <AuthProvider>
-            <NotificationProvider>
-              <GlassThemeGate />
-              <Navbar />
-              <Toaster
-                position="top-right"
-                toastOptions={{ className: "glass-toast-premium" }}
-              />
-              <MainWrapper>
-                {children}
-              </MainWrapper>
-              <AppFooter />
-              <CustomCursor />
-              <InstallPrompt />
-            </NotificationProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            <AuthProvider>
+              <NotificationProvider>
+                <GlassThemeGate />
+                <Navbar />
+                <Toaster
+                  position="top-right"
+                  gutter={10}
+                  toastOptions={{
+                    // Per-type classes are applied per call in lib/toast.js so
+                    // custom toasts (the notification popup) stay unstyled.
+                    duration: 3500,
+                    success: {
+                      duration: 3000,
+                      iconTheme: { primary: "#10B981", secondary: "#FFFFFF" },
+                    },
+                    error: {
+                      duration: 4500,
+                      iconTheme: { primary: "#E5484D", secondary: "#FFFFFF" },
+                    },
+                    loading: {
+                      iconTheme: { primary: "#0891B2", secondary: "#E4E9F0" },
+                    },
+                  }}
+                />
+                <MainWrapper>
+                  {children}
+                </MainWrapper>
+                <AppFooter />
+                <CustomCursor />
+                <InstallPrompt />
+              </NotificationProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

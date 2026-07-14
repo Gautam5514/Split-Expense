@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { register, login, googleLogin, forgotPassword, resetPassword, sendLoginOtp, verifyLoginOtp } from "../controllers/authController.js";
+import { register, login, googleLogin, forgotPassword, resetPassword, sendLoginOtp, verifyLoginOtp, sendSignupOtp, verifySignupOtp } from "../controllers/authController.js";
 
 const router = express.Router();
 
@@ -13,10 +13,21 @@ const authLimiter = rateLimit({
   message: { message: "Too many attempts. Please try again in 15 minutes." },
 });
 
-// 5 attempts per 15 min - password reset and OTP must be tighter
+// 5 attempts per 15 min - password reset and login OTP must be tighter
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many attempts. Please try again in 15 minutes." },
+});
+
+// Signup verification needs a little more room: one send plus a few code
+// entries (mistypes happen). Brute force is still bounded by the per-record
+// attempt counter in the SignupOtp model.
+const signupOtpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 12,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many attempts. Please try again in 15 minutes." },
@@ -29,5 +40,7 @@ router.post("/forgot-password",  strictLimiter, forgotPassword);
 router.post("/reset-password",   strictLimiter, resetPassword);
 router.post("/send-login-otp",   strictLimiter, sendLoginOtp);
 router.post("/verify-login-otp", strictLimiter, verifyLoginOtp);
+router.post("/send-signup-otp",  signupOtpLimiter, sendSignupOtp);
+router.post("/verify-signup-otp", signupOtpLimiter, verifySignupOtp);
 
 export default router;

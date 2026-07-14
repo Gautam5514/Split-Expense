@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import User from "../models/userModel.js";
+import SignupOtp from "../models/signupOtpModel.js";
 import admin from "../config/firebaseAdmin.js";
 import { isValidEmail, validatePassword } from "../middleware/validate.js";
 import { sendEmail } from "../utils/emailService.js";
@@ -45,6 +46,191 @@ export const register = async (req, res) => {
     res.status(201).json({ user });
   } catch (err) {
     console.error("Register Error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// -------------------- SIGNUP EMAIL VERIFICATION --------------------
+// Builds the branded 6-digit verification email used at signup.
+const buildSignupOtpEmail = ({ name, otp, frontendUrl }) => {
+  const logoUrl = `${frontendUrl}/logo-icon.png`;
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#06101C;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#06101C;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0B1A2B;border-radius:20px;overflow:hidden;border:1px solid rgba(8,145,178,0.15);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#0A2540 0%,#0D2E50 100%);padding:32px 40px;text-align:center;border-bottom:1px solid rgba(8,145,178,0.2);">
+            <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+              <tr>
+                <td style="vertical-align:middle;padding-right:12px;">
+                  <img src="${logoUrl}" alt="SplitEase" width="44" height="44" style="border-radius:12px;border:1px solid rgba(8,145,178,0.3);display:block;" />
+                </td>
+                <td style="vertical-align:middle;">
+                  <span style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">SplitEase</span>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:12px 0 0;font-size:13px;color:rgba(8,145,178,0.8);letter-spacing:0.5px;text-transform:uppercase;font-weight:600;">Verify your email</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px 40px 32px;">
+            <p style="margin:0 0 8px;font-size:15px;color:#94a3b8;">Hi <strong style="color:#e2e8f0;">${name || "there"}</strong>,</p>
+            <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.7;">
+              Welcome to SplitEase! Enter the code below to verify your email and finish creating your account. This code expires in <strong style="color:#e2e8f0;">10 minutes</strong>.
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center" style="padding:0 0 28px;">
+                  <div style="display:inline-block;background:linear-gradient(135deg,rgba(8,145,178,0.12),rgba(14,116,144,0.08));border:1.5px solid rgba(8,145,178,0.35);border-radius:16px;padding:24px 48px;">
+                    <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:rgba(8,145,178,0.7);letter-spacing:2px;text-transform:uppercase;">Verification Code</p>
+                    <p style="margin:0;font-size:42px;font-weight:800;color:#ffffff;letter-spacing:10px;font-variant-numeric:tabular-nums;">${otp}</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px 20px;">
+                  <p style="margin:0 0 6px;font-size:12px;color:#475569;">• This code is valid for <strong style="color:#94a3b8;">10 minutes</strong> only.</p>
+                  <p style="margin:0 0 6px;font-size:12px;color:#475569;">• Never share this code with anyone.</p>
+                  <p style="margin:0;font-size:12px;color:#475569;">• If you didn't try to sign up, <strong style="color:#f87171;">ignore this email</strong>.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 40px 32px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#1e3a4f;">© ${new Date().getFullYear()} SplitEase · Email Verification</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+};
+
+// -------------------- SEND SIGNUP OTP --------------------
+// Verifies the email is real and not already taken BEFORE any account exists.
+export const sendSignupOtp = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    if (!name?.trim() || name.trim().length < 2)
+      return res.status(400).json({ field: "name", message: "Name must be at least 2 characters." });
+    if (!isValidEmail(email))
+      return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Reject duplicates up front - in Mongo and in Firebase.
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser)
+      return res.status(400).json({ field: "email", message: "An account with this email already exists. Please sign in instead." });
+
+    try {
+      await admin.auth().getUserByEmail(normalizedEmail);
+      // If the above didn't throw, the email exists in Firebase.
+      return res.status(400).json({ field: "email", message: "An account with this email already exists. Please sign in instead." });
+    } catch (fbErr) {
+      // auth/user-not-found is the expected happy path; anything else is a real error.
+      if (fbErr.code !== "auth/user-not-found") {
+        console.error("Firebase getUserByEmail error:", fbErr.message);
+      }
+    }
+
+    // Throttle resend: block if a code was sent < 60s ago.
+    const existingOtp = await SignupOtp.findOne({ email: normalizedEmail });
+    if (existingOtp && Date.now() - existingOtp.lastSentAt.getTime() < 60 * 1000) {
+      return res.status(429).json({ message: "A code was just sent. Please wait a moment before requesting another." });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await SignupOtp.findOneAndUpdate(
+      { email: normalizedEmail },
+      { otpHash, expiresAt, attempts: 0, lastSentAt: new Date() },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim();
+    await sendEmail({
+      to: normalizedEmail,
+      subject: "Verify your email for SplitEase",
+      html: buildSignupOtpEmail({ name: name.trim(), otp, frontendUrl }),
+    });
+
+    res.status(200).json({ message: "Verification code sent to your email." });
+  } catch (err) {
+    console.error("Send Signup OTP Error:", err?.responseCode, err?.message);
+
+    // Distinguish a provider quota/rate block (e.g. Gmail "550 Daily user
+    // sending limit exceeded") from a generic failure. A quota block is an
+    // operational issue (the mailbox is out of daily sends), not a bug - the
+    // fix is a higher-volume email provider, not a retry.
+    const isQuota =
+      err?.responseCode === 550 ||
+      err?.responseCode === 421 ||
+      err?.responseCode === 452 ||
+      /limit exceeded|quota|rate limit|too many/i.test(err?.message || "");
+
+    if (isQuota) {
+      // Roll back the stored code so a later retry (after the limit resets or a
+      // new provider is configured) can re-send cleanly.
+      const em = req.body?.email?.trim?.().toLowerCase();
+      if (em) await SignupOtp.deleteOne({ email: em }).catch(() => {});
+      return res.status(503).json({
+        message: "Email service is temporarily unavailable (daily sending limit reached). Please try again later.",
+      });
+    }
+
+    res.status(500).json({ message: "We couldn't send the verification email. Please try again in a moment." });
+  }
+};
+
+// -------------------- VERIFY SIGNUP OTP --------------------
+export const verifySignupOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp)
+      return res.status(400).json({ message: "Email and code are required." });
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const record = await SignupOtp.findOne({ email: normalizedEmail });
+
+    if (!record)
+      return res.status(400).json({ message: "No code found. Please request a new one." });
+
+    if (Date.now() > record.expiresAt.getTime()) {
+      await SignupOtp.deleteOne({ _id: record._id });
+      return res.status(400).json({ message: "This code has expired. Please request a new one." });
+    }
+
+    if (record.attempts >= 5) {
+      await SignupOtp.deleteOne({ _id: record._id });
+      return res.status(429).json({ message: "Too many incorrect attempts. Please request a new code." });
+    }
+
+    const hashedOtp = crypto.createHash("sha256").update(otp.trim()).digest("hex");
+    if (hashedOtp !== record.otpHash) {
+      record.attempts += 1;
+      await record.save();
+      return res.status(400).json({ message: "Incorrect code. Please try again." });
+    }
+
+    // Verified - remove the record so the code can't be reused.
+    await SignupOtp.deleteOne({ _id: record._id });
+    res.status(200).json({ verified: true, message: "Email verified. You can finish creating your account." });
+  } catch (err) {
+    console.error("Verify Signup OTP Error:", err);
     res.status(500).json({ message: err.message });
   }
 };

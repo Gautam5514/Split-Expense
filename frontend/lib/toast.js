@@ -44,10 +44,10 @@ smartToast.success = (message, options) => showToast(message, options, "success"
 smartToast.error = (message, options) => showToast(message, options, "error");
 smartToast.loading = (message, options) => showToast(message, options, "loading");
 
-smartToast.custom = (cb, options = {}) => {
-  options.className = `${options.className || ""} glass-toast-premium`.trim();
-  return toast.custom(cb, options);
-};
+// Custom toasts (e.g. the live notification popup) render their own fully
+// styled card, so we deliberately do NOT wrap them in the toast surface -
+// otherwise they'd sit inside a second solid card.
+smartToast.custom = (cb, options = {}) => toast.custom(cb, options);
 
 smartToast.dismiss = (id) => toast.dismiss(id);
 

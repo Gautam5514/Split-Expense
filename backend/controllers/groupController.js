@@ -9,7 +9,7 @@ import User from "../models/userModel.js";
 import { createNotification } from "../controllers/notificationController.js";
 import UserProfile from "../models/userProfileModel.js";
 import crypto from "crypto";
-import { sendEmail } from "../utils/emailService.js";
+import { sendEmail, sendEmailsSafely } from "../utils/emailService.js";
 
 // Helper utilities
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
@@ -262,14 +262,15 @@ export const addMembersByEmail = async (req, res) => {
       const joinLink = `${frontendUrl}/join/${group.inviteCode}`;
       const inviterName = req.user.name || "A friend";
 
-      const emailPromises = unregisteredEmails.map((email) =>
-        sendEmail({
+      // Send sequentially through the pooled transporter so a batch of invites
+      // never opens a burst of parallel SMTP connections (which Gmail rejects).
+      await sendEmailsSafely(
+        unregisteredEmails.map((email) => ({
           to: email,
           subject: `${inviterName} invited you to split expenses on SplitEase`,
           html: buildInviteEmailHtml({ inviterName, groupName: group.name, joinLink, email }),
-        }).catch((err) => console.error(`Failed to send invite to ${email}:`, err.message))
+        }))
       );
-      await Promise.all(emailPromises);
     }
 
     // Build response

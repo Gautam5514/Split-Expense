@@ -168,57 +168,70 @@ main:has(.h-screen) {
   padding-top: 0 !important;
 }
 
-/* ── Premium Glassmorphic Toasts ── */
+/* ── App Toasts ──────────────────────────────────────────────────────────
+   Flat, opaque, crisp. No glass/blur. Small 6px radius (not rounded-xl).
+   The status color is carried by the icon plus a faint tinted glow in the
+   shadow - a green-lit success, a red-lit error - on an otherwise neutral
+   card. Class name kept (`glass-toast-premium`) so JS references don't break. */
 .glass-toast-premium {
-  background: rgba(255, 255, 255, 0.88) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  border: 1px solid rgba(220, 229, 240, 0.95) !important;
+  --toast-glow: rgba(11, 25, 41, 0.10);
+  background: #FFFFFF !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #E4E9F0 !important;
   box-shadow:
-    0 10px 30px -10px rgba(8, 145, 178, 0.08),
-    0 1px 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 20px 40px -15px rgba(0, 0, 0, 0.06) !important;
+    0 1px 2px rgba(11, 25, 41, 0.06),
+    0 8px 22px -10px var(--toast-glow) !important;
   color: #0B1929 !important;
-  border-radius: 16px !important;
-  padding: 14px 22px !important;
+  border-radius: 6px !important;
+  padding: 11px 15px !important;
+  gap: 10px !important;
   font-weight: 600 !important;
-  font-size: 0.875rem !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.005em !important;
   font-family: 'Inter', sans-serif !important;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  max-width: 380px !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .dark .glass-toast-premium {
-  background: rgba(13, 27, 48, 0.92) !important;
-  border: 1px solid rgba(28, 52, 86, 0.95) !important;
-  box-shadow:
-    0 10px 30px -10px rgba(0, 0, 0, 0.5),
-    0 1px 1px 0 rgba(34, 211, 238, 0.04) inset,
-    0 20px 40px -15px rgba(0, 0, 0, 0.4) !important;
-  color: #EDF4FF !important;
+  --toast-glow: rgba(0, 0, 0, 0.55);
+  background: #0E1A2B !important;
+  border: 1px solid #20334B !important;
+  color: #E9F1FB !important;
 }
 
+/* Per-type: colored border edge + a matching soft glow. */
 .glass-toast-premium.success {
-  border-color: rgba(16, 185, 129, 0.3) !important;
+  --toast-glow: rgba(16, 185, 129, 0.28);
+  border-color: rgba(16, 185, 129, 0.45) !important;
 }
-
 .dark .glass-toast-premium.success {
-  border-color: rgba(52, 211, 153, 0.2) !important;
+  --toast-glow: rgba(16, 185, 129, 0.22);
+  border-color: rgba(52, 211, 153, 0.38) !important;
 }
 
 .glass-toast-premium.error {
-  border-color: rgba(239, 68, 68, 0.3) !important;
+  --toast-glow: rgba(229, 72, 77, 0.28);
+  border-color: rgba(229, 72, 77, 0.45) !important;
 }
-
 .dark .glass-toast-premium.error {
-  border-color: rgba(248, 113, 113, 0.2) !important;
+  --toast-glow: rgba(248, 113, 113, 0.22);
+  border-color: rgba(248, 113, 113, 0.38) !important;
 }
 
 .glass-toast-premium.loading {
-  border-color: rgba(8, 145, 178, 0.3) !important;
+  --toast-glow: rgba(8, 145, 178, 0.26);
+  border-color: rgba(8, 145, 178, 0.45) !important;
+}
+.dark .glass-toast-premium.loading {
+  --toast-glow: rgba(34, 211, 238, 0.20);
+  border-color: rgba(34, 211, 238, 0.36) !important;
 }
 
-.dark .glass-toast-premium.loading {
-  border-color: rgba(34, 211, 238, 0.2) !important;
+@media (prefers-reduced-motion: reduce) {
+  .glass-toast-premium { transition: none !important; }
 }
 
 @media (max-width: 768px) {
@@ -238,10 +251,8 @@ main:has(.h-screen) {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
-    border-radius: 14px !important;
-    padding: 11px 18px !important;
-    font-size: 0.825rem !important;
-    text-align: center !important;
+    padding: 11px 15px !important;
+    font-size: 0.8125rem !important;
   }
 }
 
