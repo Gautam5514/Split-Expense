@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { register, login, googleLogin, forgotPassword, resetPassword, sendLoginOtp, verifyLoginOtp, sendSignupOtp, verifySignupOtp } from "../controllers/authController.js";
+import { login, googleLogin, forgotPassword, resetPassword, sendLoginOtp, verifyLoginOtp, sendSignupOtp, verifySignupOtp } from "../controllers/authController.js";
 
 const router = express.Router();
 
@@ -33,7 +33,8 @@ const signupOtpLimiter = rateLimit({
   message: { message: "Too many attempts. Please try again in 15 minutes." },
 });
 
-router.post("/register",         authLimiter,   register);
+// No /register route: accounts are only ever created by verifySignupOtp, after
+// the email has been proven with a code.
 router.post("/login",            authLimiter,   login);
 router.post("/google",           authLimiter,   googleLogin);
 router.post("/forgot-password",  strictLimiter, forgotPassword);

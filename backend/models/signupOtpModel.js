@@ -5,6 +5,9 @@ import mongoose from "mongoose";
 // never become accounts. Records auto-expire via a TTL index on `expiresAt`.
 const signupOtpSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  // Captured when the code is sent so account creation uses the name that was
+  // actually verified, rather than trusting whatever the client posts back.
+  name: { type: String, required: true, trim: true },
   otpHash: { type: String, required: true },
   // Guards against brute-forcing the 6-digit code.
   attempts: { type: Number, default: 0 },

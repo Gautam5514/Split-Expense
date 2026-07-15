@@ -71,25 +71,38 @@ export const ensureReferralCode = async (userId) => {
  * Atomically finds-or-creates a user by email. Mirrors the upsert previously
  * duplicated in authMiddleware/googleLogin, plus referral-code generation on
  * first creation. Returns { user, isNew }.
+ *
+ * `allowCreate: false` turns this into a pure lookup that returns
+ * `{ user: null }` for an unknown email instead of provisioning one. Callers
+ * use it to refuse provisioning for a Firebase account whose email was never
+ * proven (see authMiddleware) - the gate belongs on creation only, so accounts
+ * that predate email verification keep working.
  */
-export const findOrCreateUser = async ({ uid, email, name, picture }) => {
+export const findOrCreateUser = async ({ uid, email, name, picture, allowCreate = true }) => {
   const normalizedEmail = email.toLowerCase().trim();
 
-  const result = await User.findOneAndUpdate(
-    { email: normalizedEmail },
-    {
-      $setOnInsert: {
-        firebaseUid: uid,
-        email: normalizedEmail,
-        name: name || normalizedEmail.split("@")[0],
-        photoURL: picture || "",
-      },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true, includeResultMetadata: true }
-  );
+  let user;
+  let isNew = false;
 
-  let user = result.value;
-  const isNew = !!result.lastErrorObject?.upserted;
+  if (allowCreate) {
+    const result = await User.findOneAndUpdate(
+      { email: normalizedEmail },
+      {
+        $setOnInsert: {
+          firebaseUid: uid,
+          email: normalizedEmail,
+          name: name || normalizedEmail.split("@")[0],
+          photoURL: picture || "",
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true, includeResultMetadata: true }
+    );
+    user = result.value;
+    isNew = !!result.lastErrorObject?.upserted;
+  } else {
+    user = await User.findOne({ email: normalizedEmail });
+    if (!user) return { user: null, isNew: false };
+  }
 
   // Backfill a referral code for brand-new signups AND pre-existing accounts
   // that were created before the referral system shipped.

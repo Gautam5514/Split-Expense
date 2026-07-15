@@ -80,9 +80,9 @@ Handling added in `sendSignupOtp`: a quota/rate block (`550`/`421`/`452` or a
 "daily sending limit reached, try again later" message (instead of a vague 500),
 and rolls back the stored code so a later retry re-sends cleanly.
 
-**Decision:** stay on Gmail for now — the daily limit resets in ~24h and signup
-works again. It will recur under real traffic; the drop-in fix when needed is to
-point `SMTP_*` at Brevo (300/day free) / SendGrid / SES.
+**Decision (superseded 2026-07-15):** we initially stayed on Gmail. The quota
+block recurred and is currently blocking all signups, so the decision is now to
+**move to Brevo**. See "Still open: email delivery" at the end of this document.
 
 ---
 
@@ -155,12 +155,57 @@ Frontend:
      sync. Includes resend (60s cooldown) and a Back button.
 - Google signup is unchanged (Google emails are already verified).
 
-### Known limitation
-Signup OTP is enforced in the client flow + duplicate-checked server-side. A
-determined user could still call Firebase directly and bypass the code, because
-account creation happens client-side (this was already true before). Fully
-server-enforced signup would require the backend to be the one that creates the
-Firebase user — a larger change, noted here for later.
+### Update (2026-07-15): signup is now fully server-enforced ✅
+
+The limitation noted here previously — "a determined user could still call
+Firebase directly and bypass the code, because account creation happens
+client-side" — has been closed. Three separate holes existed:
+
+1. **Client-side account creation.** The register page called
+   `createUserWithEmailAndPassword` itself, so the OTP was only a UI formality.
+2. **`authMiddleware` auto-provisioned anyone.** It called `findOrCreateUser`
+   for *any* valid Firebase token, so an account created directly against the
+   public web API key became a real user on its first request. `POST /auth/google`
+   had the same problem.
+3. **`POST /auth/register` was an open door.** It created a working Firebase +
+   Mongo account from name/email/password with **no verification at all**.
+   Nothing called it.
+
+What changed:
+
+- `verifySignupOtp` now **creates the account itself** (`admin.auth().createUser`
+  with `emailVerified: true`, since the code just proved the inbox), then returns
+  a **Firebase custom token**. The register page calls `signInWithCustomToken`
+  instead of creating anything. The `name` comes from the stored OTP record, not
+  from whatever the client posts back.
+- `findOrCreateUser` gained `allowCreate`. `authMiddleware` and `googleLogin`
+  pass `allowCreate: decoded.email_verified === true` and return **403
+  `EMAIL_NOT_VERIFIED`** otherwise. The gate is on **creation only** — existing
+  accounts (which have `emailVerified: false` from the old client-side flow) are
+  *not* locked out. This was verified explicitly.
+- `POST /auth/register` and its handler were **removed**.
+
+Verified end-to-end against local server + live Firebase/Mongo (probe accounts
+cleaned up afterwards):
+
+| Check | Result |
+|---|---|
+| `POST /auth/register` | 404 — endpoint gone |
+| Correct OTP | 201 + `customToken`; Firebase `emailVerified: true`; Mongo user + referral code |
+| Wrong OTP | 400, no account created |
+| Code replay after use | record consumed, cannot be reused |
+| **Direct Firebase signup → `/auth/google`** | **403 `EMAIL_NOT_VERIFIED`, no user created** |
+| **Direct Firebase signup → `/api/profile`** | **403 `EMAIL_NOT_VERIFIED`, no user created** |
+| **Legacy user (`email_verified: false`, already in Mongo)** | **200 — not locked out** |
+
+### Still open: email delivery (the actual blocker)
+
+Signup cannot complete for anyone while Gmail's daily quota is exhausted — the
+code never arrives. Confirmed live: `POST /api/auth/send-signup-otp` → **503**
+"daily sending limit reached". **Decision: move to Brevo** (300/day free). This
+is an env-var change only (`SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=587`,
+`SMTP_USER`/`SMTP_PASS` from the Brevo SMTP key, `SMTP_FROM` a verified sender);
+no code change, because all sending goes through `emailService.js`.
 
 ---
 

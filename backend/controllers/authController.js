@@ -9,46 +9,11 @@ import { findOrCreateUser, attributeReferral, recordActiveDay } from "../utils/r
 import { ATTRIBUTION_WINDOW_HOURS } from "../config/referralConfig.js";
 
 
-export const register = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-
-    if (!name?.trim() || name.trim().length < 2)
-      return res.status(400).json({ field: "name", message: "Name must be at least 2 characters." });
-    if (name.trim().length > 100)
-      return res.status(400).json({ field: "name", message: "Name must be under 100 characters." });
-    if (!isValidEmail(email))
-      return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
-    const pwErr = validatePassword(password);
-    if (pwErr) return res.status(400).json({ field: "password", message: pwErr });
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res.status(400).json({ message: "User already exists" });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // ✅ Create in Firebase too
-    const fbUser = await admin.auth().createUser({
-      email,
-      password,
-      displayName: name,
-    });
-
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      firebaseUid: fbUser.uid,
-    });
-
-    // No JWT - client authenticates via Firebase ID token.
-    res.status(201).json({ user });
-  } catch (err) {
-    console.error("Register Error:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
+// NOTE: the old `register` handler was removed. It created a fully working
+// Firebase + Mongo account from name/email/password with no email verification
+// at all, so it was a straight bypass of the signup OTP for anyone who posted
+// to it directly. Nothing called it - signup now goes through
+// sendSignupOtp -> verifySignupOtp, which is the only way an account is made.
 
 // -------------------- SIGNUP EMAIL VERIFICATION --------------------
 // Builds the branded 6-digit verification email used at signup.
@@ -120,12 +85,18 @@ const buildSignupOtpEmail = ({ name, otp, frontendUrl }) => {
 // Verifies the email is real and not already taken BEFORE any account exists.
 export const sendSignupOtp = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, password } = req.body;
 
     if (!name?.trim() || name.trim().length < 2)
       return res.status(400).json({ field: "name", message: "Name must be at least 2 characters." });
+    if (name.trim().length > 100)
+      return res.status(400).json({ field: "name", message: "Name must be under 100 characters." });
     if (!isValidEmail(email))
       return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
+    // Checked here as well as at verify time so a weak password fails before we
+    // spend an email send on it. The password itself is never stored.
+    const pwErr = validatePassword(password);
+    if (pwErr) return res.status(400).json({ field: "password", message: pwErr });
 
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -157,7 +128,7 @@ export const sendSignupOtp = async (req, res) => {
 
     await SignupOtp.findOneAndUpdate(
       { email: normalizedEmail },
-      { otpHash, expiresAt, attempts: 0, lastSentAt: new Date() },
+      { name: name.trim(), otpHash, expiresAt, attempts: 0, lastSentAt: new Date() },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
@@ -199,9 +170,11 @@ export const sendSignupOtp = async (req, res) => {
 // -------------------- VERIFY SIGNUP OTP --------------------
 export const verifySignupOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp, password, referralCode } = req.body;
     if (!email || !otp)
       return res.status(400).json({ message: "Email and code are required." });
+    const pwErr = validatePassword(password);
+    if (pwErr) return res.status(400).json({ field: "password", message: pwErr });
 
     const normalizedEmail = email.trim().toLowerCase();
     const record = await SignupOtp.findOne({ email: normalizedEmail });
@@ -226,12 +199,61 @@ export const verifySignupOtp = async (req, res) => {
       return res.status(400).json({ message: "Incorrect code. Please try again." });
     }
 
-    // Verified - remove the record so the code can't be reused.
+    // Code is correct. The SERVER creates the account from here - the browser
+    // never calls createUserWithEmailAndPassword. That is what makes email
+    // verification an actual guarantee rather than a client-side formality:
+    // no code path can produce an account without first proving the inbox.
+    // `emailVerified: true` is honest here - the OTP just proved it - and it
+    // is what lets authMiddleware provision this user later.
+    let fbUser;
+    try {
+      fbUser = await admin.auth().createUser({
+        email: normalizedEmail,
+        password,
+        // Codes issued before `name` was added to the model won't carry one;
+        // they stay valid for their 10-minute TTL after this deploys, and
+        // createUser rejects a non-string displayName.
+        displayName: record.name || normalizedEmail.split("@")[0],
+        emailVerified: true,
+      });
+    } catch (fbErr) {
+      if (fbErr.code === "auth/email-already-exists") {
+        await SignupOtp.deleteOne({ _id: record._id });
+        return res.status(400).json({
+          field: "email",
+          message: "An account with this email already exists. Please sign in instead.",
+        });
+      }
+      throw fbErr;
+    }
+
+    // Consume the code only once the account really exists, so a failure above
+    // leaves the user able to retry with the code they already have.
     await SignupOtp.deleteOne({ _id: record._id });
-    res.status(200).json({ verified: true, message: "Email verified. You can finish creating your account." });
+
+    const { user } = await findOrCreateUser({
+      uid: fbUser.uid,
+      email: normalizedEmail,
+      name: record.name,
+    });
+
+    // Mirror the password hash the way resetPassword and login expect to find it.
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.updateOne({ _id: user._id }, { $set: { password: hashedPassword } });
+
+    if (referralCode && !user.referredBy) {
+      await attributeReferral(user, referralCode);
+    }
+    await recordActiveDay(user);
+
+    // A custom token lets the client sign in as this brand-new user without
+    // ever having created it itself.
+    const customToken = await admin.auth().createCustomToken(fbUser.uid);
+
+    res.status(201).json({ verified: true, customToken, user });
   } catch (err) {
     console.error("Verify Signup OTP Error:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "We couldn't finish creating your account. Please try again." });
   }
 };
 
@@ -265,10 +287,27 @@ export const googleLogin = async (req, res) => {
   try {
     const { token, referralCode } = req.body;
     const decoded = await admin.auth().verifyIdToken(token);
-    const { uid, email, name, picture } = decoded;
+    const { uid, email, name, picture, email_verified: emailVerified } = decoded;
 
-    // Atomic upsert - prevents duplicate user creation under concurrent requests
-    const { user, isNew } = await findOrCreateUser({ uid, email, name, picture });
+    // Atomic upsert - prevents duplicate user creation under concurrent requests.
+    // Gated on a verified email for the same reason as authMiddleware: this
+    // endpoint accepts any valid Firebase token, so without the gate an account
+    // created directly against the Firebase API could provision itself here and
+    // skip the signup OTP. Real Google sign-ins are always verified.
+    const { user, isNew } = await findOrCreateUser({
+      uid,
+      email,
+      name,
+      picture,
+      allowCreate: emailVerified === true,
+    });
+
+    if (!user) {
+      return res.status(403).json({
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email address before using SplitEase.",
+      });
+    }
 
     // Attribution applies at signup, but `isNew` alone is unreliable: a
     // parallel authenticated request can hit authMiddleware first and create

@@ -17,7 +17,7 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid or expired token. Please sign in again." });
     }
 
-    const { uid, email, name, picture } = decoded;
+    const { uid, email, name, picture, email_verified: emailVerified } = decoded;
 
     if (!email) {
       return res.status(401).json({ message: "Token missing email claim." });
@@ -25,7 +25,27 @@ export const authMiddleware = async (req, res, next) => {
 
     // Atomic upsert - findOne + create is NOT atomic and causes duplicate users
     // under concurrent requests (e.g. authMiddleware + googleLogin firing together).
-    const { user } = await findOrCreateUser({ uid, email, name, picture });
+    //
+    // Provisioning is gated on a verified email. Anyone can create a Firebase
+    // password account directly with the public web API key, skipping the
+    // signup OTP entirely; without this gate that account would silently
+    // become a real user on its first authenticated request. Google sign-ins
+    // and accounts created by verifySignupOtp both arrive already verified.
+    // The gate is on creation only, so existing users are never locked out.
+    const { user } = await findOrCreateUser({
+      uid,
+      email,
+      name,
+      picture,
+      allowCreate: emailVerified === true,
+    });
+
+    if (!user) {
+      return res.status(403).json({
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email address before using SplitEase.",
+      });
+    }
 
     // Fire-and-forget: don't let active-day bookkeeping block the request.
     recordActiveDay(user).catch((err) => console.error("recordActiveDay error:", err.message));

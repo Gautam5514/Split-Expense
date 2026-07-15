@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import toast from "@/lib/toast";
 import { Eye, EyeOff, User, Mail, Lock, Loader2, ArrowRight, ShieldCheck, RotateCcw } from "lucide-react";
-import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from "firebase/auth";
+import { signInWithCustomToken, signInWithPopup } from "firebase/auth";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { auth, googleProvider } from "@/lib/firebaseClient";
@@ -226,8 +226,12 @@ export default function RegisterPage() {
     if (!validateRegister()) return;
     setIsLoading(true);
     try {
-      // Verify the email is real and unused BEFORE creating any account.
-      await api.post("/auth/send-signup-otp", { name: name.trim(), email: email.trim() });
+      // Verify the email is real and unused BEFORE any account exists.
+      await api.post("/auth/send-signup-otp", {
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
       setOtp("");
       setStep("otp");
       startCooldown();
@@ -241,26 +245,11 @@ export default function RegisterPage() {
     }
   };
 
-  // ── Step 2: verify code, then actually create the Firebase account ────────
-  const completeSignup = async () => {
-    const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
-    await updateProfile(result.user, { displayName: name.trim() });
-    // Force-refresh so the new displayName is embedded in the token before
-    // we sync with the backend - otherwise MongoDB would get an empty name.
-    const idToken = await result.user.getIdToken(true);
-    // Sync user with MongoDB - no JWT is returned; onIdTokenChanged sets the token.
-    await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
-    clearStoredReferralCode();
-    toast.success("Account created successfully!");
-    const pendingInvite = localStorage.getItem("pendingInvite");
-    if (pendingInvite) {
-      localStorage.removeItem("pendingInvite");
-      router.push(`/join/${pendingInvite}`);
-    } else {
-      router.push("/users");
-    }
-  };
-
+  // ── Step 2: the code proves the inbox; the SERVER creates the account ─────
+  // The browser deliberately does not call createUserWithEmailAndPassword here.
+  // It hands the code + password to the backend, which only creates the account
+  // once the code checks out and returns a custom token to sign in with - so an
+  // unverified email can never become an account.
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (otp.length < OTP_LENGTH) {
@@ -270,13 +259,28 @@ export default function RegisterPage() {
     setOtpLoading(true);
     setErrors({});
     try {
-      await api.post("/auth/verify-signup-otp", { email: email.trim(), otp });
-      await completeSignup();
+      const { data } = await api.post("/auth/verify-signup-otp", {
+        email: email.trim(),
+        otp,
+        password,
+        referralCode: getStoredReferralCode(),
+      });
+      await signInWithCustomToken(auth, data.customToken);
+      clearStoredReferralCode();
+      toast.success("Account created successfully!");
+      const pendingInvite = localStorage.getItem("pendingInvite");
+      if (pendingInvite) {
+        localStorage.removeItem("pendingInvite");
+        router.push(`/join/${pendingInvite}`);
+      } else {
+        router.push("/users");
+      }
     } catch (err) {
       const data = err?.response?.data;
-      // Firebase creation errors (rare, e.g. race with another signup) also land here.
-      if (err?.code === "auth/email-already-in-use") {
-        setErrors({ otp: "This email was just registered. Please sign in instead." });
+      if (data?.field === "email") {
+        // Raced with another signup for the same address - back to the form.
+        setStep("form");
+        setErrors({ email: data.message });
       } else {
         setErrors({ otp: data?.message || err?.message || "Invalid or expired code. Please try again." });
       }
@@ -288,7 +292,11 @@ export default function RegisterPage() {
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
     try {
-      await api.post("/auth/send-signup-otp", { name: name.trim(), email: email.trim() });
+      await api.post("/auth/send-signup-otp", {
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
       setOtp("");
       startCooldown();
       toast.success("New verification code sent.");
