@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import toast from "@/lib/toast";
 import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight, ShieldCheck, RotateCcw } from "lucide-react";
@@ -10,6 +9,7 @@ import { auth, googleProvider } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { captureReferralFromLocation, getStoredReferralCode, clearStoredReferralCode } from "@/lib/referral";
+import AuthVisual from "@/components/AuthVisual";
 
 const expenseCards = [
   {
@@ -126,35 +126,6 @@ function OtpInput({ value, onChange, disabled }) {
           }}
         />
       ))}
-    </div>
-  );
-}
-
-function MarqueeColumn({ images, reverse }) {
-  return (
-    <div className="w-full flex flex-col gap-6 overflow-hidden h-[180%]">
-      <motion.div
-        className="flex flex-col gap-6"
-        initial={{ y: reverse ? "-50%" : "0%" }}
-        animate={{ y: reverse ? "0%" : "-50%" }}
-        transition={{
-          repeat: Infinity,
-          ease: "linear",
-          duration: 35,
-        }}
-      >
-        {[...images, ...images].map((src, i) => (
-          <div
-            key={i}
-            className="rounded-[24px] overflow-hidden border border-white/[0.08] shadow-2xl bg-[#090D14] aspect-[9/19] w-full"
-            style={{
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
-            }}
-          >
-            <img src={src} className="w-full h-full object-cover animate-pulse-slow" alt="App Screen" />
-          </div>
-        ))}
-      </motion.div>
     </div>
   );
 }
@@ -613,24 +584,7 @@ export default function LoginPage() {
 
       </div>
 
-      {/* RIGHT PANEL: Isometric Scrolling Collage */}
-      <div className="hidden lg:flex lg:w-[52%] h-full relative overflow-hidden bg-[#070707]">
-        {/* Dark overlay gradients */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-black/85 via-transparent to-black/90 z-10 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,#070707_100%)] z-10 pointer-events-none" />
-
-        {/* Skewed screen columns marquee */}
-        <div 
-          className="absolute w-[140%] h-[140%] -top-[20%] -left-[20%] grid grid-cols-3 gap-6 opacity-60 pointer-events-none select-none"
-          style={{
-            transform: "rotate(-25deg) skewX(-2deg) translateY(-80px)",
-          }}
-        >
-          <MarqueeColumn images={["/mobile.webp", "/mobile.webp", "/mobile.webp"]} reverse={false} />
-          <MarqueeColumn images={["/mobile.webp", "/mobile.webp", "/mobile.webp"]} reverse={true} />
-          <MarqueeColumn images={["/mobile.webp", "/mobile.webp", "/mobile.webp"]} reverse={false} />
-        </div>
-      </div>
+      <AuthVisual mode="login" />
 
     </div>
   );

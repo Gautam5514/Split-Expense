@@ -12,6 +12,7 @@ import LogoSlider from "@/components/LogoSlider";
 import SmoothScroll from "@/components/SmoothScroll";
 import ScrollProgressAndTop from "@/components/ScrollProgressAndTop";
 import LazySection from "@/components/LazySection";
+import SearchIntentSection from "@/components/home/SearchIntentSection";
 
 // Below-the-fold: each is its own code-split chunk that is only downloaded
 // and mounted when the user scrolls near it (see <LazySection>). This keeps
@@ -73,6 +74,7 @@ export default function HomePage() {
       <LazySection minHeight="100vh">
         <TestimonialsSection />
       </LazySection>
+      <SearchIntentSection />
       <LazySection minHeight="40vh">
         <Footer />
       </LazySection>

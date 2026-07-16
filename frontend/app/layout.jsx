@@ -20,14 +20,32 @@ const inter = Inter({
 });
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  title: "SplitEase - Group Expense Splitter",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online"),
+  title: {
+    default: "SplitEase: Group, Trip & Flat Expense Manager",
+    template: "%s | SplitEase",
+  },
   description:
-    "AI-powered group expense splitter. Split bills with friends, track shared costs, scan receipts with OCR, and settle up in one tap.",
+    "Split trip costs, household bills and group expenses with SplitEase. Track who paid, calculate balances, scan receipts and settle shared expenses easily.",
   keywords: [
     "expense splitter", "split bills", "group expenses", "travel expense tracker",
-    "bill splitting app", "splitwise alternative", "settle up", "shared expenses",
+    "bill splitting app", "trip expense manager", "flat expense manager",
+    "roommate expense tracker", "travel expense splitter", "settle up", "shared expenses",
   ],
+  authors: [{ name: "SplitEase" }],
+  creator: "SplitEase",
+  publisher: "SplitEase",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   manifest: "/manifest.json",
   applicationName: "SplitEase",
   appleWebApp: {
@@ -37,16 +55,17 @@ export const metadata = {
   },
   openGraph: {
     type: "website",
-    title: "SplitEase - Group Expense Splitter",
+    url: "/",
+    title: "SplitEase: Group, Trip & Flat Expense Manager",
     description:
-      "Split bills, track shared costs, and settle up instantly. Powered by AI.",
+      "Split trip costs, household bills and group expenses. Track who paid and settle balances without awkward calculations.",
     siteName: "SplitEase",
     images: [{ url: "/logo-icon.png", width: 512, height: 512, alt: "SplitEase" }],
   },
   twitter: {
-    card: "summary",
-    title: "SplitEase - Group Expense Splitter",
-    description: "Split bills, track shared costs, and settle up instantly.",
+    card: "summary_large_image",
+    title: "SplitEase: Group, Trip & Flat Expense Manager",
+    description: "The simple way to split travel, roommate and group expenses.",
     images: ["/logo-icon.png"],
   },
   icons: {
@@ -58,6 +77,50 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online";
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${siteUrl}/#website`,
+        url: siteUrl,
+        name: "SplitEase",
+        alternateName: "Split Ease",
+        description: "A group, trip and shared household expense manager.",
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": `${siteUrl}/#app`,
+        name: "SplitEase",
+        url: siteUrl,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web, Android, iOS",
+        description: "SplitEase helps friends, travellers, roommates and groups track shared expenses, calculate balances and settle up.",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+        },
+        featureList: [
+          "Group expense splitting",
+          "Trip expense management",
+          "Roommate and flat expense tracking",
+          "Receipt scanning",
+          "Live balance tracking",
+          "Flexible bill splits",
+        ],
+      },
+      {
+        "@type": "Organization",
+        "@id": `${siteUrl}/#organization`,
+        name: "SplitEase",
+        url: siteUrl,
+        logo: `${siteUrl}/logo-icon.png`,
+      },
+    ],
+  };
+
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
@@ -66,6 +129,10 @@ export default function RootLayout({ children }) {
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen bg-background text-foreground transition-colors duration-300">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         {/* Inline script to apply dark/light class before first paint - prevents flash */}
         <script
           dangerouslySetInnerHTML={{
