@@ -205,6 +205,12 @@ export default function Navbar() {
                 Pricing
               </Link>
               <Link
+                href="/blog"
+                className="hidden md:block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
+              >
+                Blog
+              </Link>
+              <Link
                 href="/login"
                 className="px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
               >

@@ -5,10 +5,40 @@ import { Component } from "react";
 // whole React tree and leaves a blank page with only a console error - terrible
 // for an entry point. This boundary catches those errors and shows a recovery
 // screen instead of a blank one.
+//
+// ChunkLoadError gets special treatment: it means the open tab is referencing
+// JS chunk files from a previous server build (dev-server restart or a fresh
+// production deploy). The code itself is fine - only a full reload can fetch
+// HTML that points at the current chunks - so we reload automatically instead
+// of showing the user an error for something a refresh always fixes.
+
+const isChunkError = (err) =>
+  err?.name === "ChunkLoadError" ||
+  /ChunkLoadError|Loading chunk [^ ]+ failed|Failed to load chunk|error loading dynamically imported module|Importing a module script failed/i.test(
+    err?.message || ""
+  );
+
+const RELOAD_STAMP_KEY = "splitease-chunk-reload-at";
+
+// Reload at most once per 30s window. If chunks are still broken after a
+// reload (server actually down, real 404), fall through to the error screen
+// instead of reload-looping.
+function reloadOnceForStaleChunks() {
+  try {
+    const last = Number(sessionStorage.getItem(RELOAD_STAMP_KEY) || 0);
+    if (Date.now() - last < 30_000) return false;
+    sessionStorage.setItem(RELOAD_STAMP_KEY, String(Date.now()));
+  } catch {
+    // sessionStorage unavailable - reload anyway, worst case the guard is lost
+  }
+  window.location.reload();
+  return true;
+}
+
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, reloading: false };
   }
 
   static getDerivedStateFromError() {
@@ -17,7 +47,28 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error("App crashed:", error, info);
+    if (isChunkError(error) && reloadOnceForStaleChunks()) {
+      this.setState({ reloading: true });
+    }
   }
+
+  componentDidMount() {
+    // Chunk loads triggered outside React rendering (router prefetch, a
+    // dynamic import inside an onClick) reject a promise instead of throwing
+    // during render, so the boundary above never sees them.
+    window.addEventListener("unhandledrejection", this.handleRejection);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("unhandledrejection", this.handleRejection);
+  }
+
+  handleRejection = (event) => {
+    if (isChunkError(event.reason) && reloadOnceForStaleChunks()) {
+      event.preventDefault();
+      this.setState({ reloading: true });
+    }
+  };
 
   handleReload = () => {
     this.setState({ hasError: false });
@@ -25,6 +76,14 @@ export default class ErrorBoundary extends Component {
   };
 
   render() {
+    if (this.state.reloading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] text-white px-6">
+          <p className="text-slate-400 text-sm animate-pulse">Updating to the latest version…</p>
+        </div>
+      );
+    }
+
     if (!this.state.hasError) return this.props.children;
 
     return (

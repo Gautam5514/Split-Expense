@@ -17,7 +17,9 @@ export const generateWithRetry = async (prompt) => {
       const completion = await client.chat.completions.create({
         model,
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
+        // Low temperature: answers involve money math, where consistency
+        // matters far more than creative variety.
+        temperature: 0.4,
       });
       return completion.choices?.[0]?.message?.content ?? "";
     } catch (err) {

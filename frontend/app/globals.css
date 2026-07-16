@@ -32,67 +32,72 @@
   --font-serif-premium: 'Instrument Serif', 'Playfair Display', Georgia, serif;
 }
 
-/* ── Light Mode - Soft Paper ── */
+/* ── Light Mode - SplitEase Default ──
+   The light-mode twin of the landing page's black/white/cyan brand:
+   neutral white paper, near-black ink, the signature cyan accent. */
 :root {
-  --background: #F5F7FA;
-  --foreground: #1A2332;
+  --background: #FAFAFA;
+  --foreground: #111111;
 
   --card: #FFFFFF;
-  --card-foreground: #1A2332;
+  --card-foreground: #111111;
 
   --popover: #FFFFFF;
-  --popover-foreground: #1A2332;
+  --popover-foreground: #111111;
 
   --primary: #0891B2;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #EDF5F8;
-  --secondary-foreground: #155E75;
+  --secondary: #F0F0F0;
+  --secondary-foreground: #0E7490;
 
-  --muted: #EEF2F7;
-  --muted-foreground: #667085;
+  --muted: #F0F0F0;
+  --muted-foreground: #71717A;
 
-  --accent: #EEF2F7;
-  --accent-foreground: #1A2332;
+  --accent: #F0F0F0;
+  --accent-foreground: #111111;
 
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
-  --border: #E2E8F0;
-  --input: #E2E8F0;
+  --border: #E5E5E5;
+  --input: #E5E5E5;
   --ring: #0891B2;
   --radius: 0.625rem;
 }
 
-/* ── Dark Mode - Deep Slate ── */
+/* ── Dark Mode - SplitEase Default ──
+   The exact landing page combination: near-black background, #111 cards,
+   hairline neutral borders, white text and the cyan brand accent - so the
+   app after login looks like one continuous product with the landing. */
 .dark {
-  --background: #0F1623;
-  --foreground: #E4EAF2;
+  --background: #050505;
+  --foreground: #F5F5F5;
 
-  --card: #18222F;
-  --card-foreground: #E4EAF2;
+  --card: #111111;
+  --card-foreground: #F5F5F5;
 
-  --popover: #18222F;
-  --popover-foreground: #E4EAF2;
+  --popover: #141414;
+  --popover-foreground: #F5F5F5;
 
-  --primary: #0EA5E9;
-  --primary-foreground: #0A1628;
+  --primary: #0891B2;
+  --primary-foreground: #FFFFFF;
 
-  --secondary: #1C2B3C;
-  --secondary-foreground: #A8BECF;
+  --secondary: #1A1A1A;
+  --secondary-foreground: #A1A1AA;
 
-  --muted: #1C2B3C;
-  --muted-foreground: #8494A6;
+  --muted: #1A1A1A;
+  --muted-foreground: #A1A1AA;
 
-  --accent: #1C2B3C;
-  --accent-foreground: #E4EAF2;
+  --accent: #1A1A1A;
+  --accent-foreground: #F5F5F5;
 
   --destructive: #F87171;
   --destructive-foreground: #FFFFFF;
 
-  --border: #243347;
-  --input: #243347;
-  --ring: #0EA5E9;
+  --border: #232323;
+  --input: #232323;
+  --ring: #0891B2;
 }
 
 body {

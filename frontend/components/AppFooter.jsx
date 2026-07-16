@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const FOOTER_LINKS = [
   { label: "Privacy Policy", href: "/privacy" },
@@ -10,16 +11,20 @@ const FOOTER_LINKS = [
   { label: "Contact Us", href: "/contact" },
 ];
 
+// Full-height in-app pages where even the logged-in footer would get in the way.
 const HIDDEN_ON = ["/", "/login", "/register", "/reset-password", "/chat", "/groupchat", "/ai"];
 
 export default function AppFooter() {
   const pathname = usePathname() || "";
+  const { token } = useAuth();
 
   const shouldHide = HIDDEN_ON.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
 
-  if (shouldHide) return null;
+  // This is the logged-in app's footer. Public pages (landing, blog,
+  // pricing, ...) bring their own full landing Footer instead.
+  if (!token || shouldHide) return null;
 
   return (
     <footer className="hidden sm:block border-t border-border bg-background">

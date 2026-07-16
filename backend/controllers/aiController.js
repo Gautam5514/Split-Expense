@@ -1,6 +1,5 @@
 // controller/aiController.js
 
-import AiMessage from "../models/aiMessageModel.js";
 import { generateWithRetry as generateWithGemini } from "../services/geminiService.js";
 import { generateWithRetry as generateWithOpenAI } from "../services/openaiService.js";
 import { buildUserContext } from "../services/contextBuilder.js";
@@ -60,6 +59,23 @@ const getAIServiceError = (err, providerLabel = "AI") => {
   };
 };
 
+// Recent turns of the active chat, sent by the client so the AI can answer
+// follow-ups ("and last month?", "how much of that was food?"). Sanitized
+// hard: only known roles, capped count and length - never trusted blindly.
+const sanitizeHistory = (history) => {
+  if (!Array.isArray(history)) return [];
+  return history
+    .filter(
+      (m) =>
+        m &&
+        (m.role === "user" || m.role === "ai") &&
+        typeof m.content === "string" &&
+        m.content.trim()
+    )
+    .slice(-12)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 1500) }));
+};
+
 export const queryAI = async (req, res) => {
   const { prompt, provider } = req.body;
   const userId = req.user.id;
@@ -68,48 +84,70 @@ export const queryAI = async (req, res) => {
     return res.status(400).json({ message: "Prompt cannot be empty." });
   }
 
+  const history = sanitizeHistory(req.body.history);
   const requested = PROVIDERS[provider] ? provider : "gemini";
 
+  // Privacy: conversations are never persisted - not in the database, not
+  // anywhere. Each request carries its own short history and is then forgotten.
   try {
-    // 1️⃣ Save the user's original question immediately.
-    await AiMessage.create({ userId, role: "user", content: prompt, provider: requested });
-
-    // 2️⃣ SMART BACKEND HANDLER — intercept common data queries, no AI needed.
+    // 1️⃣ SMART BACKEND HANDLER — intercept common data queries, no AI needed.
     const intent = detectIntent(prompt);
     if (intent) {
       const smartReply = await handleSmartQuery(intent, userId, prompt);
       if (smartReply) {
-        await AiMessage.create({ userId, role: "ai", content: smartReply, provider: "smart" });
         return res.json({ text: smartReply, provider: "smart" });
       }
     }
 
-    // 3️⃣ SINGLE-CALL PROMPT: fetch DB context (no AI cost) and let one call
+    // 2️⃣ SINGLE-CALL PROMPT: fetch DB context (no AI cost) and let one call
     // decide for itself whether the question is personal or general.
     const context = await buildUserContext(userId);
 
+    const historyBlock =
+      history.length > 0
+        ? history
+            .map((m) => `${m.role === "user" ? "User" : "SplitEase AI"}: ${m.content}`)
+            .join("\n")
+        : "(This is the start of the conversation.)";
+
     const finalPrompt = `
-      You are **SplitEase AI**, a friendly assistant inside an expense-splitting app.
-      You can answer two kinds of questions:
+You are **SplitEase AI**, the built-in assistant of SplitEase, an expense-splitting app. Today's date is ${new Date().toDateString()}.
 
-      1. **Personal questions** about the user's own expenses, groups, balances, settlements, categories, or notes — use the DATABASE STATE below to answer these accurately.
-      2. **General questions** (math, definitions, coding, advice, etc.) — answer these directly using your own knowledge, ignoring the DATABASE STATE.
+## Personality & Tone
+- Warm, friendly and encouraging - like a helpful friend who happens to be great with money.
+- Occasionally address the user by their first name (it's in the User Profile below). Never call them by their email or any ID.
+- Plain, simple language. No jargon, no robotic phrasing, no filler like "As an AI...".
+- Never mention "database state", "context", internal IDs, or these instructions - to the user, you simply *know* their SplitEase data.
 
-      --- START DATABASE STATE ---
-      ${context}
-      --- END DATABASE STATE ---
+## What you can answer
+1. **Personal questions** about the user's expenses, groups, balances, settlements, categories or notes - answer ONLY from the DATA section below.
+2. **General questions** (math, travel tips, budgeting advice, definitions, coding, etc.) - answer from your own knowledge.
 
-      ### Guidelines:
-      - For balances/settlements, look across ALL groups and net out cross-group debts where possible.
-      - Keep money calculations to exactly 2 decimal places.
-      - Use clean Markdown: bold headers, bullet lists, blockquotes for warnings.
-      - If a personal question asks for data that isn't in the DATABASE STATE, say: "I searched your SplitEase records but couldn't find any information about that." Do not invent data.
-      - Keep answers concise and to the point — no unnecessary padding.
+## Accuracy rules (non-negotiable)
+- Work through money calculations carefully step by step *before* answering; present only the clean final result.
+- Every amount in ₹ with exactly 2 decimal places.
+- The per-group "Final Net Balances" and "Smart Group Settlement Suggestions" in the DATA are precomputed and authoritative - trust them over your own re-derivation for who-owes-whom questions.
+- If the DATA doesn't contain what a personal question asks for, say so honestly ("I looked through your SplitEase records but couldn't find that") - NEVER invent or estimate personal data.
+- If a question is ambiguous (e.g. multiple groups could match), answer for the most likely one first, then briefly offer the alternative: "If you meant your Goa trip instead, just say so!"
+- Use the conversation so far to resolve follow-ups ("what about him?", "and last month?") - don't ask the user to repeat things they already told you.
 
-      **User Question**: "${prompt}"
-    `;
+## Formatting
+- Simple question → short, direct answer (1-3 sentences). Don't pad.
+- Breakdown or comparison → a small Markdown table with bold key amounts.
+- Multi-part answer → short ### headings and bullet points.
+- End a complex answer with one friendly takeaway line (e.g. "Bottom line: you're owed ₹450.00 overall 🎉").
 
-    // 4️⃣ GENERATE with the provider explicitly selected by the user.
+## Conversation so far
+${historyBlock}
+
+## DATA (the user's live SplitEase records)
+${context}
+
+## The user's new message
+"${prompt}"
+`;
+
+    // 3️⃣ GENERATE with the provider explicitly selected by the user.
     // Do not silently switch providers: the model selector is a contract and
     // the response identity must always match it.
     const usedProvider = requested;
@@ -117,13 +155,10 @@ export const queryAI = async (req, res) => {
 
     let aiText = rawText || "Hmm... I had trouble generating an answer.";
 
-    // 5️⃣ Clean the response for better UI presentation.
+    // 4️⃣ Clean the response for better UI presentation.
     aiText = cleanText(aiText);
 
-    // 6️⃣ Save the AI's final response to the database.
-    await AiMessage.create({ userId, role: "ai", content: aiText, provider: usedProvider });
-
-    // 7️⃣ Send the response with the provider that was explicitly requested.
+    // 5️⃣ Send the response with the provider that was explicitly requested.
     res.json({ text: aiText, provider: usedProvider });
 
   } catch (err) {

@@ -15,13 +15,10 @@ import {
   ReceiptText,
   Lightbulb,
   Square,
-  MessageSquare,
   AlertTriangle,
   ArrowUpRight,
-  PenSquare,
-  X,
-  Search,
 } from "lucide-react";
+import { auth } from "@/lib/firebaseClient";
 
 /* ─── AI Providers ─── */
 const AI_PROVIDERS = [
@@ -41,14 +38,6 @@ function GeminiMark({ className = "h-4 w-4" }) {
 function ProviderMark({ provider, className }) {
   return provider === "openai" ? <ChatGPTMark className={className} /> : <GeminiMark className={className} />;
 }
-
-/* ─── Chat retention: nothing is kept locally past 24 hours ─── */
-const CHAT_TTL_MS = 24 * 60 * 60 * 1000;
-const dropExpiredChats = (chatList) =>
-  chatList.filter((c) => {
-    const ts = parseInt(c.id, 10);
-    return !isNaN(ts) && Date.now() - ts < CHAT_TTL_MS;
-  });
 
 /* ─── Quick Prompt Suggestions ─── */
 const QUICK_PROMPTS = [
@@ -86,38 +75,15 @@ const QUICK_PROMPTS = [
   },
 ];
 
-/* ─── Chat Grouping ─── */
-function getGroupedChats(chats) {
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const yesterdayStart = todayStart - 864e5;
-  const sevenDaysAgo = todayStart - 7 * 864e5;
-
-  return chats.reduce(
-    (acc, chat) => {
-      const ts = parseInt(chat.id);
-      if (isNaN(ts) || ts < sevenDaysAgo) acc.older.push(chat);
-      else if (ts < yesterdayStart) acc.previous7Days.push(chat);
-      else if (ts < todayStart) acc.yesterday.push(chat);
-      else acc.today.push(chat);
-      return acc;
-    },
-    { today: [], yesterday: [], previous7Days: [], older: [] }
-  );
-}
-
 /* ─── Root Page ─── */
 export default function AiPage() {
-  const [chats, setChats] = useState([]);
-  const [currentChatId, setCurrentChatId] = useState("");
+  // Privacy by design: the conversation lives only in this component's memory.
+  // Nothing is written to localStorage or any server store - leaving the page
+  // erases the chat completely.
+  const [messages, setMessages] = useState([]);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [lastPrompt, setLastPrompt] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [editingChatId, setEditingChatId] = useState(null);
-  const [editTitle, setEditTitle] = useState("");
   const [provider, setProvider] = useState("gemini");
 
   const scrollAreaRef = useRef(null);
@@ -125,133 +91,23 @@ export default function AiPage() {
 
   useEffect(() => {
     try {
-      const savedChats = localStorage.getItem("splitease_ai_chats");
-      const savedCurrentId = localStorage.getItem("splitease_ai_current_id");
-      const savedCollapsed = localStorage.getItem("splitease_ai_sidebar_collapsed");
-      if (savedCollapsed) setIsSidebarCollapsed(JSON.parse(savedCollapsed));
+      // The provider choice is the only remembered preference.
       const savedProvider = localStorage.getItem("splitease_ai_provider");
       if (savedProvider === "gemini" || savedProvider === "openai") setProvider(savedProvider);
-      const parsed = savedChats ? dropExpiredChats(JSON.parse(savedChats)) : [];
-      if (parsed.length > 0) {
-        setChats(parsed);
-        save(parsed);
-        if (savedCurrentId && parsed.some((c) => c.id === savedCurrentId)) {
-          setCurrentChatId(savedCurrentId);
-        } else {
-          setCurrentChatId(parsed[0].id);
-        }
-      } else {
-        const id = Date.now().toString();
-        const chat = { id, title: "New Chat", messages: [] };
-        setChats([chat]);
-        setCurrentChatId(id);
-        save([chat]);
-      }
+      // Purge chat data an earlier version of this page stored locally.
+      ["splitease_ai_chats", "splitease_ai_current_id", "splitease_ai_sidebar_collapsed"].forEach(
+        (key) => localStorage.removeItem(key)
+      );
     } catch (e) {}
   }, []);
 
-  // Sweep expired chats every few minutes so a tab left open past the
-  // 24-hour retention window still drops old conversations without a reload.
-  useEffect(() => {
-    const sweep = () => {
-      setChats((prev) => {
-        const fresh = dropExpiredChats(prev);
-        if (fresh.length === prev.length) return prev;
-        const next =
-          fresh.length > 0
-            ? fresh
-            : [{ id: Date.now().toString(), title: "New Chat", messages: [] }];
-        save(next);
-        setCurrentChatId((id) => (next.some((c) => c.id === id) ? id : next[0].id));
-        return next;
-      });
-    };
-    const interval = setInterval(sweep, 15 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const save = (updatedChats) =>
-    localStorage.setItem("splitease_ai_chats", JSON.stringify(updatedChats));
-
-  const handleNewChat = useCallback(() => {
-    const id = Date.now().toString();
-    const chat = { id, title: "New Chat", messages: [] };
-    const updated = [chat, ...chats];
-    setChats(updated);
-    setCurrentChatId(id);
-    save(updated);
-    localStorage.setItem("splitease_ai_current_id", id);
-    setPrompt("");
-    if (isSidebarOpen) setIsSidebarOpen(false);
-  }, [chats, isSidebarOpen]);
-
-  const handleDeleteChat = useCallback(
-    (idToDelete, e) => {
-      e.stopPropagation();
-      const updated = chats.filter((c) => c.id !== idToDelete);
-      if (updated.length === 0) {
-        const id = Date.now().toString();
-        const chat = { id, title: "New Chat", messages: [] };
-        setChats([chat]);
-        setCurrentChatId(id);
-        save([chat]);
-        localStorage.setItem("splitease_ai_current_id", id);
-      } else {
-        setChats(updated);
-        if (currentChatId === idToDelete) {
-          setCurrentChatId(updated[0].id);
-          localStorage.setItem("splitease_ai_current_id", updated[0].id);
-        }
-        save(updated);
-      }
-      toast.success("Chat deleted");
-    },
-    [chats, currentChatId]
-  );
-
-  const startEditing = useCallback((id, title, e) => {
-    e.stopPropagation();
-    setEditingChatId(id);
-    setEditTitle(title);
-  }, []);
-
-  const handleRename = useCallback(
-    (id, e) => {
-      if (e) e.stopPropagation();
-      if (!editTitle.trim()) return setEditingChatId(null);
-      const updated = chats.map((c) => (c.id === id ? { ...c, title: editTitle.trim() } : c));
-      setChats(updated);
-      setEditingChatId(null);
-      save(updated);
-      toast.success("Renamed");
-    },
-    [chats, editTitle]
-  );
-
   const selectProvider = useCallback((key) => {
     setProvider(key);
-    localStorage.setItem("splitease_ai_provider", key);
+    try {
+      localStorage.setItem("splitease_ai_provider", key);
+    } catch (e) {}
   }, []);
 
-  const toggleCollapse = useCallback(() => {
-    setIsSidebarCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem("splitease_ai_sidebar_collapsed", JSON.stringify(next));
-      return next;
-    });
-  }, []);
-
-  const filteredChats = useMemo(() => {
-    if (!searchQuery.trim()) return chats;
-    return chats.filter((c) => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [chats, searchQuery]);
-
-  const groupedChats = useMemo(() => getGroupedChats(filteredChats), [filteredChats]);
-  const currentChat = useMemo(
-    () => chats.find((c) => c.id === currentChatId) || chats[0] || null,
-    [chats, currentChatId]
-  );
-  const messages = useMemo(() => currentChat?.messages || [], [currentChat]);
   const canSend = prompt.trim().length > 0 && !loading;
 
   useEffect(() => {
@@ -265,59 +121,44 @@ export default function AiPage() {
   const askAI = useCallback(
     async (currentPrompt = prompt) => {
       const trimmed = currentPrompt.trim();
-      if (!trimmed || loading || !currentChat) return;
+      if (!trimmed || loading) return;
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
 
-      const userMsg = { id: `u-${Date.now()}`, role: "user", content: trimmed };
-      const updatedMsgs = [...currentChat.messages, userMsg];
-      let newTitle = currentChat.title;
-      if (currentChat.title === "New Chat" && currentChat.messages.length === 0) {
-        newTitle = trimmed.split(" ").slice(0, 5).join(" ");
-        if (newTitle.length > 28) newTitle = newTitle.slice(0, 28) + "…";
-      }
+      // Recent turns give the AI memory, so follow-up questions work.
+      const history = messages
+        .filter((m) => !m.error)
+        .slice(-10)
+        .map((m) => ({ role: m.role, content: m.content }));
 
-      const updatedChats = chats.map((c) =>
-        c.id === currentChatId ? { ...c, title: newTitle, messages: updatedMsgs } : c
-      );
-      setChats(updatedChats);
+      const userMsg = { id: `u-${Date.now()}`, role: "user", content: trimmed };
+      setMessages((prev) => [...prev, userMsg]);
       setPrompt("");
       setLoading(true);
       setLastPrompt(trimmed);
-      save(updatedChats);
 
       try {
         const res = await api.post(
           "/ai/query",
-          { prompt: trimmed, provider },
+          { prompt: trimmed, provider, history },
           { signal: ctrl.signal }
         );
         const text = res.data?.text || "I couldn't generate a response.";
         const aiMsg = { id: `a-${Date.now()}`, role: "ai", content: text, provider: res.data?.provider };
-        const final = chats.map((c) =>
-          c.id === currentChatId
-            ? { ...c, title: newTitle, messages: [...updatedMsgs, aiMsg] }
-            : c
-        );
-        setChats(final);
-        save(final);
+        setMessages((prev) => [...prev, aiMsg]);
       } catch (err) {
         if (err.name === "CanceledError" || err.code === "ERR_CANCELED") return;
         const errText = err.response?.data?.message || "SplitEase AI is unavailable right now.";
         toast.error(errText);
         const errorMsg = { id: `e-${Date.now()}`, role: "ai", content: errText, error: true };
-        const final = chats.map((c) =>
-          c.id === currentChatId ? { ...c, messages: [...updatedMsgs, errorMsg] } : c
-        );
-        setChats(final);
-        save(final);
+        setMessages((prev) => [...prev, errorMsg]);
       } finally {
         if (abortRef.current === ctrl) abortRef.current = null;
         setLoading(false);
       }
     },
-    [prompt, loading, currentChat, currentChatId, chats, provider]
+    [prompt, loading, messages, provider]
   );
 
   const stopRequest = useCallback(() => {
@@ -329,71 +170,12 @@ export default function AiPage() {
   const clearChat = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
-    if (currentChat) {
-      const updated = chats.map((c) =>
-        c.id === currentChatId ? { ...c, messages: [] } : c
-      );
-      setChats(updated);
-      save(updated);
-    }
+    setMessages([]);
     setPrompt("");
+    setLastPrompt("");
     setLoading(false);
     toast.success("Chat cleared");
-  }, [chats, currentChatId, currentChat]);
-
-  const renderSidebarItem = (chat) => {
-    const isActive = chat.id === currentChatId;
-    const isEditing = chat.id === editingChatId;
-    return (
-      <div
-        key={chat.id}
-        onClick={() => {
-          setCurrentChatId(chat.id);
-          localStorage.setItem("splitease_ai_current_id", chat.id);
-          if (isSidebarOpen) setIsSidebarOpen(false);
-        }}
-        className={`group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-all duration-200 cursor-pointer ${
-          isActive
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-        }`}
-      >
-        <MessageSquare size={13} className="shrink-0 opacity-60" />
-        {isEditing ? (
-          <input
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleRename(chat.id);
-              if (e.key === "Escape") setEditingChatId(null);
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="flex-1 bg-background text-foreground text-xs px-2 py-0.5 rounded border border-border outline-none focus:ring-1 focus:ring-primary min-w-0"
-            autoFocus
-          />
-        ) : (
-          <span className="flex-1 text-[12.5px] font-medium truncate pr-10">{chat.title}</span>
-        )}
-        <div className="absolute right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-card pl-3">
-          {isEditing ? (
-            <button onClick={(e) => handleRename(chat.id, e)} className="p-1 rounded hover:bg-muted text-emerald-500">
-              <Check size={11} />
-            </button>
-          ) : (
-            <>
-              <button onClick={(e) => startEditing(chat.id, chat.title, e)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition">
-                <PenSquare size={11} />
-              </button>
-              <button onClick={(e) => handleDeleteChat(chat.id, e)} className="p-1 rounded text-muted-foreground hover:text-red-500 transition">
-                <Trash2 size={11} />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  };
+  }, []);
 
   return (
     <div
@@ -447,7 +229,7 @@ export default function AiPage() {
                 {messages.map((msg) => (
                   <ChatBubble key={msg.id} message={msg} />
                 ))}
-                {loading && <ThinkingBubble onStop={stopRequest} />}
+                {loading && <ThinkingBubble onStop={stopRequest} provider={provider} />}
               </motion.div>
             )}
           </AnimatePresence>
@@ -518,7 +300,7 @@ function ChatBubble({ message }) {
 
       {isUser && (
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted border border-border text-[11px] font-bold mt-0.5">
-          U
+          {(auth.currentUser?.displayName || auth.currentUser?.email || "U").trim().charAt(0).toUpperCase()}
         </div>
       )}
     </motion.div>
@@ -553,7 +335,7 @@ function parseMarkdownToBlocks(text) {
 }
 
 function parseInlineMarkdown(text, isUser) {
-  const parts = text.split(/(\\*\\*.*?\\*\\*|\\*.*?\\*|`.*?`)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**"))
       return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
@@ -689,7 +471,7 @@ function CopyBtn({ text }) {
 }
 
 /* ─── Thinking Bubble ─── */
-function ThinkingBubble({ onStop }) {
+function ThinkingBubble({ onStop, provider }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -698,7 +480,7 @@ function ThinkingBubble({ onStop }) {
       transition={{ duration: 0.16 }}
       className="flex items-start gap-3"
     >
-      <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center text-foreground"><GeminiMark className="h-5 w-5" /></div>
+      <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center text-foreground"><ProviderMark provider={provider} className="h-5 w-5" /></div>
       <div className="bg-muted border border-border/50 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-3 shadow-sm">
         <div className="flex items-center gap-1">
           {[0, 0.15, 0.3].map((delay, i) => (
@@ -710,7 +492,7 @@ function ThinkingBubble({ onStop }) {
             />
           ))}
         </div>
-        <span className="text-[12.5px] text-muted-foreground">Thinking…</span>
+        <span className="text-[12.5px] text-muted-foreground">{PROVIDER_LABELS[provider] || "SplitEase AI"} is thinking…</span>
         <button
           type="button"
           onClick={onStop}
@@ -738,10 +520,14 @@ function EmptyState({ onSuggestionClick }) {
       </div>
 
       <h2 className="text-xl font-bold text-foreground mb-1.5 tracking-tight">
-        How can SplitEase AI help?
+        {(() => {
+          const firstName = auth.currentUser?.displayName?.trim().split(" ")[0];
+          return firstName ? `Hi ${firstName} 👋 How can I help?` : "How can SplitEase AI help?";
+        })()}
       </h2>
       <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed mb-6">
-        Ask about group balances, trip expenses, debt simplification, and more.
+        Ask about your balances, trips and spending — follow-up questions work
+        too. Nothing is saved: leaving this page erases the conversation.
       </p>
 
       <div className="w-full grid grid-cols-1 gap-2 sm:grid-cols-2">

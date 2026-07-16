@@ -42,8 +42,11 @@ const GLASS_PREVIEW_BG =
   "radial-gradient(80% 70% at 15% 0%, rgba(56,189,248,0.22), transparent 70%), radial-gradient(70% 60% at 90% 15%, rgba(167,139,250,0.18), transparent 70%), radial-gradient(70% 65% at 30% 100%, rgba(14,116,144,0.25), transparent 72%), #060a14";
 
 const PREMIUM_THEMES = [
+  // The Default theme IS the app's built-in palette (the landing page look) -
+  // free for everyone. Applying it simply clears custom colors, so the CSS
+  // defaults in globals.css take over.
+  { id: "default", isDefault: true, name: "SplitEase Default", desc: "The signature landing page look", cost: 0, primary: "#0891B2", bg: "#FAFAFA", dark: "#050505", card: "#111111", line: "#232323" },
   { id: "glass", glass: true, name: "Aurora Glass", desc: "Frosted glass over a live aurora", cost: 1000, primary: "#38bdf8", bg: "#F4F7FB", dark: "#060a14", card: "rgba(255,255,255,0.07)", line: "rgba(255,255,255,0.16)" },
-  { id: "midnight-black", name: "Midnight Black", desc: "The landing page look", cost: 200, primary: "#22d3ee", bg: "#F4F7FB", dark: "#030303", card: "#111111", line: "#27272a" },
   { id: "royal-amethyst", name: "Royal Amethyst", desc: "Deep violet, regal glow", cost: 450, primary: "#a855f7", bg: "#faf5ff", dark: "#0b0613", card: "#160d24", line: "#2c1b45" },
   { id: "emerald-noir", name: "Emerald Noir", desc: "Dark forest, mint accents", cost: 550, primary: "#34d399", bg: "#f0fdf4", dark: "#04120c", card: "#0b2015", line: "#16382a" },
   { id: "crimson-velvet", name: "Crimson Velvet", desc: "Moody red, velvet depth", cost: 600, primary: "#fb7185", bg: "#fff1f2", dark: "#140408", card: "#220a10", line: "#3d1520" },
@@ -51,7 +54,7 @@ const PREMIUM_THEMES = [
 ];
 
 const PRESETS = [
-  { name: "Default Accent", primary: "#0891B2", bg: "#F4F7FB", dark: "#0f172a" },
+  { name: "Classic Slate", primary: "#0891B2", bg: "#F4F7FB", dark: "#0f172a" },
   { name: "Emerald Zen", primary: "#10b981", bg: "#f0fdf4", dark: "#051f15" },
   { name: "Midnight Nebula", primary: "#d946ef", bg: "#faf5ff", dark: "#090615" },
   { name: "Sunset Glow", primary: "#f97316", bg: "#fff7ed", dark: "#1c0d02" },
@@ -100,7 +103,7 @@ export default function ThemePage() {
 
   const premiumStaged = PREMIUM_THEMES.find((t) => t.name === preset?.name) || null;
   const ownsTheme = (t) =>
-    unlockedItems.includes(`theme:${t.id}`) || (t.glass && GLASS_TEST_MODE);
+    t.isDefault || unlockedItems.includes(`theme:${t.id}`) || (t.glass && GLASS_TEST_MODE);
   const ownsFont = (f) => f.cost === 0 || unlockedItems.includes(`font:${f.id}`);
 
   // Purchase flow: a locked item opens the confirm modal; confirming spends
@@ -151,7 +154,8 @@ export default function ThemePage() {
 
   const pickMode = (id) => {
     setPendingTheme(id);
-    if (id === "light" && premiumStaged) setPreset(null); // premium needs dark mode
+    // Premium themes need dark mode; SplitEase Default has a light twin.
+    if (id === "light" && premiumStaged && !premiumStaged.isDefault) setPreset(null);
   };
 
   const pickFont = (f) => {
@@ -181,6 +185,12 @@ export default function ThemePage() {
       // toggling would immediately switch glass back off.
       setGlassTheme(true);
       setFont(pendingFont);
+    } else if (stagedPremium?.isDefault) {
+      // SplitEase Default is the built-in palette: clearing custom colors
+      // lets the globals.css defaults (the landing page look) take over.
+      if (pendingTheme !== theme) toggleTheme();
+      setFont(pendingFont);
+      resetColors();
     } else {
       if (pendingTheme !== theme) toggleTheme();
       setFont(pendingFont);
@@ -302,7 +312,7 @@ export default function ThemePage() {
               <p className="text-[11px] text-muted-foreground">Tap a color to stage it, tap again to keep your current colors.</p>
             </Section>
 
-            <Section icon={Crown} title="Premium themes">
+            <Section icon={Crown} title="Themes">
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {PREMIUM_THEMES.map((t) => {
                   const owned = ownsTheme(t);
@@ -344,6 +354,10 @@ export default function ThemePage() {
                             <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-cyan-600 text-white px-2.5 py-1 text-[10px] font-bold">
                               <Check size={10} strokeWidth={3} /> Staged
                             </span>
+                          ) : t.isDefault ? (
+                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 px-2.5 py-1 text-[10px] font-bold">
+                              <Sparkles size={10} /> Free
+                            </span>
                           ) : (
                             <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-1 text-[10px] font-bold">
                               <Check size={10} strokeWidth={3} /> Owned
@@ -379,7 +393,7 @@ export default function ThemePage() {
                 })}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Stage any premium theme to preview it live for free. Unlocking spends your coins once — after that the theme is yours forever, even if your balance drops. Earn coins via Referrals &amp; Rewards on your profile.
+                SplitEase Default — the landing page look — is free for everyone. Stage any premium theme to preview it live for free; unlocking spends your coins once and the theme is yours forever, even if your balance drops. Earn coins via Referrals &amp; Rewards on your profile.
               </p>
             </Section>
 
@@ -517,8 +531,8 @@ function Preview({ dark, premium, accent, fontFamily, textSize }) {
   const c = premium
     ? { bg: premium.dark, card: premium.card, line: premium.line, text: "#f4f4f5", dim: "#9ca3af" }
     : dark
-    ? { bg: "#0f172a", card: "#1e293b", line: "#334155", text: "#e2e8f0", dim: "#94a3b8" }
-    : { bg: "#f4f7fb", card: "#ffffff", line: "#e2e8f0", text: "#1a2332", dim: "#64748b" };
+    ? { bg: "#050505", card: "#111111", line: "#232323", text: "#f5f5f5", dim: "#a1a1aa" }
+    : { bg: "#fafafa", card: "#ffffff", line: "#e5e5e5", text: "#111111", dim: "#71717a" };
 
   return (
     <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">

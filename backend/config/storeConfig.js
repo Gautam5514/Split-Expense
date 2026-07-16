@@ -4,8 +4,10 @@
 
 export const STORE_ITEMS = {
   // Premium themes
+  // Midnight Black was removed from sale: the landing page look is now the
+  // free built-in "SplitEase Default" theme. Existing owners keep the item
+  // in unlockedItems; it simply no longer gates anything.
   "theme:glass": { type: "theme", name: "Aurora Glass", cost: 1000 },
-  "theme:midnight-black": { type: "theme", name: "Midnight Black", cost: 200 },
   "theme:royal-amethyst": { type: "theme", name: "Royal Amethyst", cost: 450 },
   "theme:emerald-noir": { type: "theme", name: "Emerald Noir", cost: 550 },
   "theme:crimson-velvet": { type: "theme", name: "Crimson Velvet", cost: 600 },

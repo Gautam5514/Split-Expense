@@ -18,7 +18,12 @@ export const generateWithRetry = async (prompt) => {
   for (const modelName of MODEL_PRIORITY) {
     try {
       console.log(`Trying Gemini model: ${modelName}`);
-      const model = genAI.getGenerativeModel({ model: modelName });
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        // Low temperature: answers involve money math, where consistency
+        // matters far more than creative variety.
+        generationConfig: { temperature: 0.4 },
+      });
       const result = await model.generateContent(prompt);
       return result.response.text();
     } catch (err) {

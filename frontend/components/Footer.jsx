@@ -165,7 +165,7 @@ export default function Footer() {
               </h4>
               <ul className="flex flex-col gap-3">
                 {[
-                  { label: "Media Center", href: "/contact" },
+                  { label: "Blog", href: "/blog" },
                   { label: "About Us", href: "/about" },
                   { label: "Careers", href: "/contact" },
                   { label: "Contact Us", href: "/contact" },
