@@ -16,10 +16,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Safety net: if Firebase never fires onIdTokenChanged (bad/missing config,
     // or it can't reach Google's servers to restore a session), `loading` would
-    // stay true forever and `if (loading) return null` below would blank the
-    // ENTIRE site with only a network error in the console. This guarantees the
-    // app renders as logged-out after a few seconds instead of hanging. (A
-    // synchronous Firebase-init throw is separately caught by <ErrorBoundary>.)
+    // stay true forever. This guarantees consumers see a resolved (logged-out)
+    // state after a few seconds instead of hanging. (A synchronous
+    // Firebase-init throw is separately caught by <ErrorBoundary>.)
     const failSafe = setTimeout(() => setLoading(false), 6000);
 
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
@@ -46,10 +45,12 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  if (loading) return null;
-
+  // IMPORTANT: never blank `children` while auth restores. Returning null here
+  // wipes the server-rendered HTML of EVERY page (blog, landing, login…) —
+  // crawlers see an empty <body>, defeating all the SEO work. Pages that need
+  // auth read `loading`/`token` and handle the brief unresolved window locally.
   return (
-    <AuthContext.Provider value={{ token, setToken }}>
+    <AuthContext.Provider value={{ token, setToken, loading }}>
       {children}
     </AuthContext.Provider>
   );

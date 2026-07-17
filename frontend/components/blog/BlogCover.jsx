@@ -1,29 +1,48 @@
-// Generated cover art for blog posts: pure CSS/SVG drawn from each post's
-// accent colors, so every article gets a unique, on-brand banner with zero
-// image downloads. Server-safe (no client hooks).
+import Image from "next/image";
 
-export default function BlogCover({ post, compact = false }) {
-  const { c1 = "#0891B2", c2 = "#0EA5E9", chips = [] } = post.cover || {};
-  const gridId = `bg-grid-${post.slug}${compact ? "-c" : ""}`;
+// Original editorial artwork is paired with the existing data chips and accent
+// treatment so the cards still feel native to the SplitEase design system.
+
+export default function BlogCover({ post, compact = false, fill = false }) {
+  const { image, alt = "", c1 = "#0891B2", c2 = "#0EA5E9", chips = [] } = post.cover || {};
+  const gridId = `bg-grid-${post.slug}${compact ? "-c" : fill ? "-f" : ""}`;
   const shownChips = compact ? chips.slice(0, 2) : chips;
 
   return (
     <div
-      aria-hidden="true"
+      aria-label={alt || undefined}
+      role={alt ? "img" : undefined}
       className={`relative w-full overflow-hidden bg-[#070707] ${
-        compact ? "aspect-[16/8]" : "aspect-[16/9] sm:aspect-[21/8]"
+        fill
+          ? "aspect-[16/9] md:aspect-auto md:h-full md:min-h-[320px]"
+          : compact
+            ? "aspect-[16/8]"
+            : "aspect-[16/9] sm:aspect-[21/8]"
       }`}
     >
-      {/* Accent gradient wash */}
+      {image && (
+        <Image
+          src={image}
+          alt=""
+          fill
+          priority={fill}
+          sizes={fill ? "(min-width: 768px) 560px, 100vw" : compact ? "(min-width: 1024px) 340px, (min-width: 768px) 50vw, 100vw" : "(min-width: 1024px) 896px, 100vw"}
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+        />
+      )}
+
+      {/* Dark accent wash keeps chips legible and ties every photo together. */}
       <div
         className="absolute inset-0"
         style={{
-          background: `radial-gradient(65% 90% at 12% 8%, ${c1}38, transparent 68%), radial-gradient(60% 85% at 88% 92%, ${c2}30, transparent 68%), radial-gradient(40% 55% at 55% 45%, ${c1}14, transparent 70%), #070707`,
+          background: image
+            ? `linear-gradient(180deg, rgba(0,0,0,0.08), rgba(0,0,0,0.46)), radial-gradient(60% 90% at 8% 8%, ${c1}28, transparent 72%), radial-gradient(55% 80% at 94% 90%, ${c2}20, transparent 72%)`
+            : `radial-gradient(65% 90% at 12% 8%, ${c1}38, transparent 68%), radial-gradient(60% 85% at 88% 92%, ${c2}30, transparent 68%), #070707`,
         }}
       />
 
       {/* Fine grid */}
-      <svg className="absolute inset-0 h-full w-full opacity-[0.14]">
+      <svg className="absolute inset-0 h-full w-full opacity-[0.09]">
         <defs>
           <pattern id={gridId} width="34" height="34" patternUnits="userSpaceOnUse">
             <path d="M 34 0 L 0 0 0 34" fill="none" stroke="white" strokeOpacity="0.22" strokeWidth="1" />
@@ -37,15 +56,6 @@ export default function BlogCover({ post, compact = false }) {
         className="absolute -inset-y-1/2 left-[30%] w-[26%] rotate-[24deg]"
         style={{ background: `linear-gradient(90deg, transparent, ${c2}12, transparent)` }}
       />
-
-      {/* Category watermark */}
-      <span
-        className={`font-serif-premium pointer-events-none absolute -bottom-3 right-3 select-none leading-none text-white/[0.06] ${
-          compact ? "text-[3.2rem]" : "text-[4rem] sm:text-[6rem]"
-        }`}
-      >
-        {post.category}
-      </span>
 
       {/* Floating glass chips */}
       {shownChips.map((chip, i) => (
@@ -66,8 +76,15 @@ export default function BlogCover({ post, compact = false }) {
         </span>
       ))}
 
-      {/* Bottom fade into the card below */}
-      <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
+      {/* Fade into the card surface: bottom when stacked, right edge in fill layout */}
+      <div
+        className={`absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#0A0A0A] to-transparent ${
+          fill ? "md:hidden" : ""
+        }`}
+      />
+      {fill && (
+        <div className="hidden md:block absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-[#0A0A0A] to-transparent" />
+      )}
     </div>
   );
 }

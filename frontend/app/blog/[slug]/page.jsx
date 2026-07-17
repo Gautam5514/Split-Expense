@@ -33,12 +33,13 @@ export async function generateMetadata({ params }) {
       description: post.description,
       siteName: "SplitEase",
       publishedTime: post.date,
-      images: [{ url: "/logo-icon.png", width: 512, height: 512, alt: "SplitEase" }],
+      images: [{ url: post.cover.image, width: 1672, height: 941, alt: post.cover.alt }],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.description,
+      images: [post.cover.image],
     },
   };
 }
@@ -72,7 +73,7 @@ export default async function BlogPostPage({ params }) {
           name: "SplitEase",
           logo: { "@type": "ImageObject", url: `${siteUrl}/logo-icon.png` },
         },
-        image: `${siteUrl}/logo-icon.png`,
+        image: `${siteUrl}${post.cover.image}`,
       },
       {
         "@type": "FAQPage",
@@ -156,7 +157,7 @@ export default async function BlogPostPage({ params }) {
       {/* ── Article body ── */}
       <article className="relative z-10 w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-6 -mt-14 sm:-mt-20 pb-6">
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0A0A0A]">
-          {/* Generated cover art - unique per post, drawn from its accent colors */}
+          {/* Original editorial cover art, unique to this guide. */}
           <BlogCover post={post} />
 
           <div className="px-5 py-8 sm:px-11 sm:py-11 lg:px-16 lg:py-13">

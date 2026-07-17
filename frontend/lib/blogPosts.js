@@ -18,7 +18,7 @@ export const BLOG_POSTS = [
     ],
     date: "2026-07-02",
     readTime: "7 min read",
-    cover: { c1: "#0891B2", c2: "#0EA5E9", chips: ["₹1,840 · Dinner", "Split 4 ways", "Settled ✓"] },
+    cover: { image: "/blog/friends-split-dinner.png", alt: "Four friends splitting a restaurant bill around a dark dinner table", c1: "#0891B2", c2: "#0EA5E9", chips: ["₹1,840 · Dinner", "Split 4 ways", "Settled ✓"] },
     intro: [
       "Money is the fastest way to make a great friendship awkward. Someone pays for dinner, someone covers the cab, someone books the hotel — and three weeks later nobody remembers who owes whom, so nobody asks, and someone quietly eats the cost.",
       "The fix isn't spreadsheets or awkward reminders. It's a simple system: record every shared expense the moment it happens, agree on the split rule upfront, and settle in one payment at the end. Here's exactly how to do it.",
@@ -85,7 +85,7 @@ export const BLOG_POSTS = [
     ],
     date: "2026-06-14",
     readTime: "6 min read",
-    cover: { c1: "#10B981", c2: "#34D399", chips: ["Rent ₹30,000", "40 / 35 / 25", "Bills split ✓"] },
+    cover: { image: "/blog/roommates-rent.png", alt: "Three sets of apartment keys beside a floor plan for roommates", c1: "#10B981", c2: "#34D399", chips: ["Rent ₹30,000", "40 / 35 / 25", "Bills split ✓"] },
     intro: [
       "Living with roommates cuts your costs by half — and doubles your accounting. Rent, electricity, WiFi, the cleaning help, groceries, the gas cylinder, that one Amazon order everyone used. Small amounts, every week, forever.",
       "The households that stay friends aren't the ones that spend the least. They're the ones with a system. This guide covers the fairest ways to split each type of household cost, and how to automate the whole thing.",
@@ -151,7 +151,7 @@ export const BLOG_POSTS = [
     ],
     date: "2026-05-20",
     readTime: "8 min read",
-    cover: { c1: "#F97316", c2: "#0EA5E9", chips: ["Goa Trip 🌴", "₹52,300 total", "3 transfers"] },
+    cover: { image: "/blog/group-trip.png", alt: "Travel essentials, receipts and money arranged for a group trip", c1: "#F97316", c2: "#0EA5E9", chips: ["Goa Trip 🌴", "₹52,300 total", "3 transfers"] },
     intro: [
       "Every group trip has a CFO — the friend who booked the villa, paid the airport taxi, and covered dinner when the restaurant wouldn't split the bill. By day three they've fronted half the trip's budget, and by the ride home they're doing forensic accounting from memory and crumpled receipts.",
       "It doesn't have to work that way. With the right setup, a group trip's finances run themselves: everyone pays for things as convenient, the app keeps score, and the trip ends with one or two transfers instead of a spreadsheet argument.",
@@ -217,7 +217,7 @@ export const BLOG_POSTS = [
     ],
     date: "2026-06-28",
     readTime: "6 min read",
-    cover: { c1: "#A855F7", c2: "#38BDF8", chips: ["Unlimited free", "No daily cap", "OCR receipts"] },
+    cover: { image: "/blog/splitwise-alternative.png", alt: "A modern phone breaking through a glass paywall toward an open path", c1: "#A855F7", c2: "#38BDF8", chips: ["Unlimited free", "No daily cap", "OCR receipts"] },
     intro: [
       "Splitwise deserves credit for making 'just put it on the app' a normal sentence. But its free tier now caps daily expenses, holds back receipt scanning, and pushes ads between entries — which sends a lot of groups searching for an alternative that stays out of the way.",
       "Switching costs are low: expense splitting apps have no lock-in beyond habit. What matters is picking one your whole group will actually use. Here's the checklist, and how SplitEase measures up.",
@@ -277,7 +277,7 @@ export const BLOG_POSTS = [
     ],
     date: "2026-04-22",
     readTime: "5 min read",
-    cover: { c1: "#F59E0B", c2: "#0891B2", chips: ["12 IOUs → 2", "Net balance", "₹0 left"] },
+    cover: { image: "/blog/debt-simplification.png", alt: "Many amber payment paths simplified into two clean blue transfers", c1: "#F59E0B", c2: "#0891B2", chips: ["12 IOUs → 2", "Net balance", "₹0 left"] },
     intro: [
       "At the end of a trip, your group doesn't really have a web of debts — it has one simple fact per person: their net balance. Everything else is noise.",
       "Understanding this one idea is what turns settlement from a headache into two quick transfers. Here's the math, minus the jargon.",
@@ -334,7 +334,7 @@ export const BLOG_POSTS = [
     ],
     date: "2026-03-30",
     readTime: "5 min read",
-    cover: { c1: "#EC4899", c2: "#0EA5E9", chips: ["Scan receipt 📷", "₹3,240 detected", "Ask AI"] },
+    cover: { image: "/blog/ai-receipt-scanning.png", alt: "A phone using AI to scan a receipt on a dark table", c1: "#EC4899", c2: "#0EA5E9", chips: ["Scan receipt 📷", "₹3,240 detected", "Ask AI"] },
     intro: [
       "Every abandoned expense tracker dies the same death: entry friction. Logging a coffee is easy. Logging the supermarket run — forty items, weird totals, a discount at the bottom — is homework, and nobody does homework on holiday.",
       "This is the problem OCR and AI actually solve. Not dashboards, not charts: the ten seconds between paying for something and having it recorded correctly.",

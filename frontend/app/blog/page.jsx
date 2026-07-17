@@ -1,9 +1,9 @@
-import Link from "next/link";
 import Footer from "@/components/Footer";
-import BlogCover from "@/components/blog/BlogCover";
+import BlogPageContent from "@/components/blog/BlogPageContent";
 import { BLOG_POSTS } from "@/lib/blogPosts";
 
 // Server-rendered for SEO: the full post list ships as HTML, no JS required.
+// The category filter is a client-side progressive enhancement on top.
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online";
 
@@ -25,30 +25,62 @@ export const metadata = {
     siteName: "SplitEase",
     images: [{ url: "/logo-icon.png", width: 512, height: 512, alt: "SplitEase" }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "The SplitEase Blog — Master Shared Expenses",
+    description:
+      "Guides on splitting expenses with friends, roommates and travel groups, from the team building SplitEase.",
+  },
 };
 
-const formatDate = (iso) =>
-  new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-
 export default function BlogPage() {
-  const [featured, ...rest] = BLOG_POSTS;
+  // Only card-level fields cross the server→client boundary; shipping full
+  // article bodies (sections, faqs) in the hydration payload would bloat the page.
+  const [featured, ...rest] = BLOG_POSTS.map(
+    ({ slug, category, title, description, date, readTime, cover }) => ({
+      slug, category, title, description, date, readTime, cover,
+    })
+  );
 
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Blog",
-    "@id": `${siteUrl}/blog#blog`,
-    url: `${siteUrl}/blog`,
-    name: "The SplitEase Blog",
-    description:
-      "Guides and ideas on splitting expenses with friends, roommates and travel groups.",
-    publisher: { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: "SplitEase" },
-    blogPost: BLOG_POSTS.map((p) => ({
-      "@type": "BlogPosting",
-      headline: p.title,
-      url: `${siteUrl}/blog/${p.slug}`,
-      datePublished: p.date,
-      author: { "@type": "Organization", name: "SplitEase" },
-    })),
+    "@graph": [
+      {
+        "@type": "Blog",
+        "@id": `${siteUrl}/blog#blog`,
+        url: `${siteUrl}/blog`,
+        name: "The SplitEase Blog",
+        description:
+          "Guides and ideas on splitting expenses with friends, roommates and travel groups.",
+        publisher: { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: "SplitEase" },
+        blogPost: BLOG_POSTS.map((p) => ({
+          "@type": "BlogPosting",
+          headline: p.title,
+          description: p.description,
+          url: `${siteUrl}/blog/${p.slug}`,
+          datePublished: p.date,
+          author: { "@type": "Organization", name: "SplitEase" },
+        })),
+      },
+      {
+        "@type": "ItemList",
+        "@id": `${siteUrl}/blog#postlist`,
+        itemListElement: BLOG_POSTS.map((p, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `${siteUrl}/blog/${p.slug}`,
+          name: p.title,
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${siteUrl}/blog#breadcrumb`,
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+          { "@type": "ListItem", position: 2, name: "Blog", item: `${siteUrl}/blog` },
+        ],
+      },
+    ],
   };
 
   return (
@@ -105,90 +137,8 @@ export default function BlogPage() {
         </picture>
       </section>
 
-      {/* ── Featured post ── */}
-      <section className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 -mt-24 sm:-mt-32">
-        <Link
-          href={`/blog/${featured.slug}`}
-          className="group block overflow-hidden rounded-3xl border border-white/10 bg-[#0A0A0A] transition-all duration-300 hover:border-cyan-500/30 hover:shadow-[0_30px_80px_-40px_rgba(8,145,178,0.4)]"
-        >
-          <BlogCover post={featured} />
-          <div className="p-6 sm:p-10">
-            <div className="flex flex-wrap items-center gap-3 text-[11px] font-bold uppercase tracking-widest">
-              <span className="rounded-full bg-cyan-500/10 border border-cyan-500/25 px-3 py-1 text-cyan-400">
-                Featured
-              </span>
-              <span className="text-white/40">{featured.category}</span>
-              <span className="text-white/30">·</span>
-              <span className="text-white/40">{formatDate(featured.date)}</span>
-              <span className="text-white/30">·</span>
-              <span className="text-white/40">{featured.readTime}</span>
-            </div>
-            <h2 className="font-serif-premium mt-5 text-2xl sm:text-4xl leading-tight text-white group-hover:text-cyan-100 transition-colors">
-              {featured.title}
-            </h2>
-            <p className="mt-4 max-w-3xl text-sm sm:text-base leading-relaxed text-white/55">
-              {featured.description}
-            </p>
-            <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-white group-hover:gap-3.5 transition-all">
-              Read the guide <span aria-hidden>→</span>
-            </span>
-          </div>
-        </Link>
-      </section>
-
-      {/* ── Post grid ── */}
-      <section className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-14 sm:py-20">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {rest.map((post) => (
-            <Link
-              key={post.slug}
-              href={`/blog/${post.slug}`}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0A0A0A] transition-all duration-300 hover:-translate-y-1 hover:border-cyan-500/30 hover:shadow-[0_25px_60px_-35px_rgba(8,145,178,0.45)]"
-            >
-              <BlogCover post={post} compact />
-              <div className="flex flex-1 flex-col p-6">
-                <div className="flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-widest text-white/40">
-                  <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-white/60">
-                    {post.category}
-                  </span>
-                  <span>{post.readTime}</span>
-                </div>
-                <h3 className="font-serif-premium mt-4 text-xl leading-snug text-white group-hover:text-cyan-100 transition-colors">
-                  {post.title}
-                </h3>
-                <p className="mt-3 flex-1 text-[13px] leading-relaxed text-white/50">
-                  {post.description}
-                </p>
-                <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-4">
-                  <span className="text-[11px] font-semibold text-white/35">{formatDate(post.date)}</span>
-                  <span className="text-[12px] font-bold text-white/60 group-hover:text-cyan-400 transition-colors">
-                    Read →
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 pb-20 sm:pb-28 text-center">
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-[#0d0d0d] to-black p-9 sm:p-14">
-          <h2 className="font-serif-premium text-2xl sm:text-4xl text-white mb-4">
-            Stop reading about it. Split your first bill.
-          </h2>
-          <p className="text-white/55 text-sm sm:text-base max-w-xl mx-auto mb-8 leading-relaxed">
-            Free forever — unlimited groups, live balances, receipt scanning
-            and one-tap settlements.
-          </p>
-          <Link
-            href="/register"
-            className="inline-block px-8 py-3.5 rounded-full font-bold text-black bg-white hover:bg-white/95 transition-all hover:scale-105 active:scale-95 text-sm sm:text-base shadow-[0_4px_25px_rgba(255,255,255,0.18)]"
-          >
-            Get Started For Free
-          </Link>
-        </div>
-      </section>
+      {/* ── Everything below the hero, in the landing page's design language ── */}
+      <BlogPageContent featured={featured} posts={rest} />
 
       <Footer />
     </div>
