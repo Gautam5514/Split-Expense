@@ -56,7 +56,8 @@ export default function Navbar() {
   const isAuthPage =
     cleanPath.startsWith("/login") ||
     cleanPath.startsWith("/register") ||
-    cleanPath.startsWith("/reset-password");
+    cleanPath.startsWith("/reset-password") ||
+    cleanPath.startsWith("/admin");
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);

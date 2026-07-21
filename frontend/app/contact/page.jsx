@@ -2,20 +2,26 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mail, MapPin, MessageSquare, Send } from "lucide-react";
+import { ArrowLeft, Mail, MapPin, MessageSquare, Send, Loader2 } from "lucide-react";
 import toast from "@/lib/toast";
+import { api } from "@/lib/api";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    toast.success("Thanks. Your message is ready to send by email.");
-    const subject = encodeURIComponent(`SplitEase support request from ${form.name || "user"}`);
-    const body = encodeURIComponent(
-      `Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`
-    );
-    window.location.href = `mailto:support@splitease.app?subject=${subject}&body=${body}`;
+    setSubmitting(true);
+    try {
+      await api.post("/contact", form);
+      toast.success("Message sent. Our team will get back to you by email.");
+      setForm({ name: "", email: "", message: "" });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to send message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -84,9 +90,10 @@ export default function ContactPage() {
 
               <button
                 type="submit"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-600 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-cyan-700 sm:w-fit"
+                disabled={submitting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-600 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-cyan-700 disabled:opacity-60 sm:w-fit"
               >
-                <Send size={16} />
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                 Send message
               </button>
             </form>

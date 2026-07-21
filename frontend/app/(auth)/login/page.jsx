@@ -8,6 +8,7 @@ import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { adminApi, setAdminToken } from "@/lib/adminApi";
 import { captureReferralFromLocation, getStoredReferralCode, clearStoredReferralCode } from "@/lib/referral";
 import AuthVisual from "@/components/AuthVisual";
 
@@ -45,6 +46,9 @@ const expenseCards = [
 ];
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// The admin account's "email" (e.g. gautam@admin) is a fixed login id, not a
+// real address, so it never has a dot after the @ - real user emails always do.
+const looksLikeAdminId = (value) => /^[^\s@]+@[^\s@]+$/.test(value) && !emailRegex.test(value);
 const OTP_LENGTH = 6;
 
 // TEMPORARY APP-REVIEW MODE:
@@ -201,15 +205,27 @@ export default function LoginPage() {
   // ── Email/password login ─────────────────────────────────────────────────
   const handleEmailLogin = async (e) => {
     e.preventDefault();
+    const trimmedEmail = email.trim();
+    const isAdminAttempt = looksLikeAdminId(trimmedEmail);
+
     const errs = {};
-    if (!email.trim()) errs.email = "Email address is required.";
-    else if (!emailRegex.test(email.trim())) errs.email = "Please enter a valid email address.";
+    if (!trimmedEmail) errs.email = "Email address is required.";
+    else if (!isAdminAttempt && !emailRegex.test(trimmedEmail)) errs.email = "Please enter a valid email address.";
     if (!password) errs.password = "Password is required.";
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
     setIsLoading(true);
     try {
+      if (isAdminAttempt) {
+        // Admin credentials live in a separate DB record, not Firebase - this
+        // is the same login form, just a different auth path behind it.
+        const { data } = await adminApi.post("/admin/login", { email: trimmedEmail, password });
+        setAdminToken(data.token);
+        toast.success("Welcome back.");
+        router.push("/admin");
+        return;
+      }
       // Firebase validates the email/password and issues the real app token.
       // Login OTP is intentionally disabled, so Nodemailer is not involved.
       await completeEmailLogin();

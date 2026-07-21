@@ -20,14 +20,21 @@ export default function LazySection({
   rootMargin = "600px 0px",
 }) {
   const ref = useRef(null);
-  // If IntersectionObserver is unavailable (very old browsers), render eagerly.
-  const [show, setShow] = useState(
-    () => typeof IntersectionObserver === "undefined"
-  );
+  // Always false on both server and first client render, so SSR markup and
+  // hydration match. Flipped to true post-mount (see effect below).
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
+    if (show) return;
+
+    // If IntersectionObserver is unavailable (very old browsers), render eagerly.
+    if (typeof IntersectionObserver === "undefined") {
+      setShow(true);
+      return;
+    }
+
     const el = ref.current;
-    if (!el || show) return;
+    if (!el) return;
 
     const io = new IntersectionObserver(
       ([entry]) => {

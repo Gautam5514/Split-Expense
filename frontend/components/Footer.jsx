@@ -167,7 +167,7 @@ export default function Footer() {
                 {[
                   { label: "Blog", href: "/blog" },
                   { label: "About Us", href: "/about" },
-                  { label: "Careers", href: "/contact" },
+                  { label: "Careers", href: "/careers" },
                   { label: "Contact Us", href: "/contact" },
                   { label: "LinkedIn", href: "https://linkedin.com", external: true }
                 ].map((link) => (

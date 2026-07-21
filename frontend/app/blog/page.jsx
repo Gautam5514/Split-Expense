@@ -1,6 +1,6 @@
 import Footer from "@/components/Footer";
 import BlogPageContent from "@/components/blog/BlogPageContent";
-import { BLOG_POSTS } from "@/lib/blogPosts";
+import { getAllPosts } from "@/lib/blogPostsServer";
 
 // Server-rendered for SEO: the full post list ships as HTML, no JS required.
 // The category filter is a client-side progressive enhancement on top.
@@ -33,10 +33,12 @@ export const metadata = {
   },
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const allPosts = await getAllPosts();
+
   // Only card-level fields cross the server→client boundary; shipping full
   // article bodies (sections, faqs) in the hydration payload would bloat the page.
-  const [featured, ...rest] = BLOG_POSTS.map(
+  const [featured, ...rest] = allPosts.map(
     ({ slug, category, title, description, date, readTime, cover }) => ({
       slug, category, title, description, date, readTime, cover,
     })
@@ -53,7 +55,7 @@ export default function BlogPage() {
         description:
           "Guides and ideas on splitting expenses with friends, roommates and travel groups.",
         publisher: { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: "SplitEase" },
-        blogPost: BLOG_POSTS.map((p) => ({
+        blogPost: allPosts.map((p) => ({
           "@type": "BlogPosting",
           headline: p.title,
           description: p.description,
@@ -65,7 +67,7 @@ export default function BlogPage() {
       {
         "@type": "ItemList",
         "@id": `${siteUrl}/blog#postlist`,
-        itemListElement: BLOG_POSTS.map((p, i) => ({
+        itemListElement: allPosts.map((p, i) => ({
           "@type": "ListItem",
           position: i + 1,
           url: `${siteUrl}/blog/${p.slug}`,

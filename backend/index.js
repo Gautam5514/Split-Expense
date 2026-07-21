@@ -23,6 +23,10 @@ import notepadeRoutes from "./routes/notepadRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import referralRoutes from "./routes/referralRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
+import blogRoutes from "./routes/blogRoutes.js";
+import careerRoutes from "./routes/careerRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -213,6 +217,10 @@ app.use("/api/notepads", notepadeRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/referrals", referralRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/blog", blogRoutes);
+app.use("/api/careers", careerRoutes);
+app.use("/api/admin", adminRoutes);
 
 // -----------------------------------------
 //  GLOBAL ERROR HANDLER

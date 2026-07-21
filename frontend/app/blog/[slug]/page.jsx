@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Footer from "@/components/Footer";
 import BlogCover from "@/components/blog/BlogCover";
-import { BLOG_POSTS, getPostBySlug } from "@/lib/blogPosts";
+import { BLOG_POSTS } from "@/lib/blogPosts";
+import { getAllPosts, getMergedPostBySlug } from "@/lib/blogPostsServer";
 
-// Fully static article pages: pre-rendered HTML with BlogPosting + FAQPage
-// structured data - exactly what search engines want to see.
+// Static posts are pre-rendered at build time (SEO-critical, hand-written
+// content). Admin-authored DB posts render on-demand instead - dynamicParams
+// stays true so a slug that isn't in the static list still resolves.
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online";
 
@@ -13,13 +15,9 @@ export function generateStaticParams() {
   return BLOG_POSTS.map((p) => ({ slug: p.slug }));
 }
 
-// Only the slugs above exist; anything else is a real 404 (correct status
-// code matters for SEO - soft 404s dilute crawl budget).
-export const dynamicParams = false;
-
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getMergedPostBySlug(slug);
   if (!post) return {};
   return {
     title: post.title,
@@ -49,10 +47,11 @@ const formatDate = (iso) =>
 
 export default async function BlogPostPage({ params }) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getMergedPostBySlug(slug);
   if (!post) notFound();
 
-  const related = BLOG_POSTS.filter((p) => p.slug !== post.slug).slice(0, 3);
+  const allPosts = await getAllPosts();
+  const related = allPosts.filter((p) => p.slug !== post.slug).slice(0, 3);
 
   const structuredData = {
     "@context": "https://schema.org",

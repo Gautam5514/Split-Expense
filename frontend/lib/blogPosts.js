@@ -375,6 +375,329 @@ export const BLOG_POSTS = [
       },
     ],
   },
+  {
+    slug: "how-to-split-a-restaurant-bill-fairly",
+    category: "Dining",
+    title: "How to Split a Restaurant Bill Fairly: 6 Simple Methods",
+    description:
+      "Learn how to split a restaurant bill fairly when people order different items, share dishes, pay tax and tip, or want separate payments — without awkward math.",
+    keywords: [
+      "how to split a restaurant bill",
+      "split dinner bill fairly",
+      "restaurant bill splitting app",
+      "split bill with tax and tip",
+      "divide restaurant bill",
+    ],
+    date: "2026-07-21",
+    readTime: "8 min read",
+    cover: { image: "/blog/how-to-split-restaurant-bill.png", alt: "Two diners using phones to split a restaurant receipt after a shared meal", c1: "#F59E0B", c2: "#06B6D4", chips: ["Dinner ₹3,680", "Tax + tip included", "Fair split ✓"] },
+    intro: [
+      "The meal was easy. Dividing the bill is where the evening can get complicated: one person skipped drinks, two people shared a starter, and the final receipt adds tax and service charge to everything.",
+      "There is no single fair formula for every table. The best method matches how differently people ordered and is agreed before the calculator comes out. Use this guide to choose the right split in under a minute.",
+    ],
+    sections: [
+      {
+        h2: "1. Split equally when everyone ordered similarly",
+        p: [
+          "An equal split is the fastest option when meals and drinks cost roughly the same. Divide the final total — including tax, service charge and tip — by the number of diners. Do not spend ten minutes correcting a difference of ₹30 unless someone asks.",
+          "Equal splitting works especially well for set menus, buffets and shared family-style meals. It works poorly when one person did not drink, a child ate less, or one order was much more expensive.",
+        ],
+      },
+      {
+        h2: "2. Pay for what you ordered",
+        p: [
+          "For noticeably different orders, assign each item to the person who consumed it. Divide shared dishes among the people who ate them, then allocate tax, service charge and tip in proportion to each person's subtotal. That keeps the extras fair instead of splitting them equally after itemizing the food.",
+          "A receipt scanning app makes this practical: scan the receipt, confirm the total, select the diners and record the custom shares without passing one calculator around the table.",
+        ],
+      },
+      {
+        h2: "3. Use shares for adults, children or non-drinkers",
+        p: [
+          "Weighted shares are a useful middle ground. For example, adults can count as one share, children as half a share, and someone who only had a snack as half a share. Add the shares, divide the bill by that number, then multiply by each person's share.",
+          "For alcohol, separate the drinks subtotal and split it only among those who drank. The remaining food bill can still be divided equally, which is faster than itemizing every plate.",
+        ],
+      },
+      {
+        h2: "How to avoid awkwardness at the table",
+        list: [
+          "Choose equal, itemized or weighted splitting before asking for the bill.",
+          "Include every fee in the recorded total so nobody is left covering tax or tip.",
+          "Let one person pay the restaurant and log everyone else's share immediately.",
+          "Use a visible group balance and settle digitally instead of relying on memory.",
+        ],
+      },
+      {
+        h2: "Split the dinner in seconds with SplitEase",
+        p: [
+          "Create a dinner group in SplitEase, scan the receipt and choose an equal, custom or itemized split. Everyone can see the same calculation, and the app carries each person's balance forward if your group goes for dessert or takes a cab afterward.",
+        ],
+      },
+    ],
+    faqs: [
+      { q: "What is the fairest way to split a restaurant bill?", a: "Split equally when orders are similar. When costs differ significantly, assign individual items, divide shared dishes among participants, and allocate tax and tip in proportion to each person's subtotal." },
+      { q: "Should tax and tip be split equally?", a: "If the meal is split equally, split tax and tip equally too. For an itemized bill, allocate tax, service charge and tip proportionally so higher-cost orders carry a fair share of the extras." },
+      { q: "How do you split a bill when only some people drink alcohol?", a: "Separate the alcohol subtotal and divide it only among the people who drank. Split the food and other shared costs using the method the whole table agreed on." },
+    ],
+  },
+  {
+    slug: "split-expenses-on-an-international-group-trip",
+    category: "Travel",
+    title: "How to Split Expenses on an International Group Trip",
+    description:
+      "A practical guide to tracking shared travel costs across currencies, handling exchange rates, fees and cash, and settling an international group trip fairly.",
+    keywords: [
+      "split expenses international trip",
+      "multi currency group expense tracker",
+      "split travel costs with friends abroad",
+      "track foreign currency expenses",
+      "international trip budget app",
+    ],
+    date: "2026-07-18",
+    readTime: "9 min read",
+    cover: { image: "/blog/international-group-trip-expenses.png", alt: "Four friends organizing shared travel expenses together in an airport lounge", c1: "#0EA5E9", c2: "#F59E0B", chips: ["4 travellers", "3 currencies", "One final balance"] },
+    intro: [
+      "International group travel adds a second layer to ordinary expense splitting. Your hotel is charged in one currency, airport food in another, and someone's card converts both at a rate nobody can reconstruct a week later.",
+      "The goal is not to predict every exchange rate. It is to record each cost consistently, preserve what the payer actually spent, and agree on one settlement currency before departure.",
+    ],
+    sections: [
+      {
+        h2: "Choose a base currency before the first booking",
+        p: [
+          "Pick the currency in which the group will view balances and settle at the end — usually the currency most travellers use at home. Record the original foreign amount as a note or receipt, but use the payer's actual card debit in the base currency whenever it is available.",
+          "This avoids arguments about a theoretical market rate. The relevant number is what the payer was truly charged, including the card issuer's conversion.",
+        ],
+      },
+      {
+        h2: "Handle exchange rates and card fees consistently",
+        p: [
+          "For a pending card charge, use a reliable rate on the purchase date and correct the expense after it posts. If the bank adds a foreign transaction fee, include it in that expense because it was part of the cost of paying for the group.",
+          "Do not mix rate methods from person to person. A simple written rule — actual posted debit first, purchase-day rate when unavailable — keeps the whole trip auditable.",
+        ],
+      },
+      {
+        h2: "Track cash without losing the trail",
+        p: [
+          "Treat an ATM withdrawal as moving your own money, not as a group expense. Record the taxi, market purchase or tip only when that cash is spent. If an ATM fee funded shared cash, include the fee proportionally rather than leaving one traveller to absorb it.",
+          "Photograph cash receipts where possible and add a short note immediately where receipts are uncommon. Small cash purchases are the expenses groups forget most often.",
+        ],
+      },
+      {
+        h2: "A simple international trip workflow",
+        list: [
+          "Create the group and agree on the base currency before booking flights or stays.",
+          "Log the payer's actual converted charge and attach the original receipt.",
+          "Exclude travellers from activities, rooms or meals they did not join.",
+          "Wait for pending card charges to finalize, then settle once in the base currency.",
+          "Use net balances to minimize the number of cross-border transfers and fees.",
+        ],
+      },
+    ],
+    faqs: [
+      { q: "How do you split group trip expenses in different currencies?", a: "Choose one base currency, record the payer's actual converted card debit when available, keep the original amount on the receipt, and settle every final balance in the chosen base currency." },
+      { q: "Which exchange rate should a travel group use?", a: "Use the actual posted card conversion because it reflects what the payer spent. If that is unavailable, use a reliable purchase-day rate and apply the same rule to everyone." },
+      { q: "Who pays foreign transaction and ATM fees?", a: "When a fee was incurred to pay a shared expense, include it in that expense and split it among the participants. Personal withdrawal or transfer fees should remain personal." },
+    ],
+  },
+  {
+    slug: "how-couples-should-split-expenses",
+    category: "Couples",
+    title: "How Should Couples Split Expenses? 5 Fair Systems",
+    description:
+      "Compare five fair ways couples can split rent, bills, groceries and dates — equally, by income, by category or with a shared account — and choose what fits.",
+    keywords: [
+      "how should couples split expenses",
+      "split bills based on income",
+      "couples expense tracker",
+      "shared expenses for unmarried couples",
+      "50 50 relationship finances",
+    ],
+    date: "2026-07-15",
+    readTime: "8 min read",
+    cover: { image: "/blog/couples-shared-expenses.png", alt: "A couple calmly reviewing shared household expenses on a tablet", c1: "#14B8A6", c2: "#F59E0B", chips: ["Rent + bills", "60 / 40 split", "Both agree ✓"] },
+    intro: [
+      "A fair financial system for a couple is not always a 50/50 system. Equal contributions can feel simple when incomes are close, but the same rule can leave one partner with no savings when salaries differ sharply.",
+      "The best arrangement is one both people understand, can afford and can revisit without turning every purchase into a relationship test. These five systems cover most couples, from new partners sharing dates to long-term households planning together.",
+    ],
+    sections: [
+      {
+        h2: "1. Split everything 50/50",
+        p: [
+          "Each partner pays half of shared rent, utilities, groceries, travel and dates. It is transparent and easy to track, especially when incomes and spending preferences are similar.",
+          "The drawback is affordability: equal amounts do not create equal impact when one income is much lower. If the system prevents one partner from saving or participating comfortably, it needs adjusting.",
+        ],
+      },
+      {
+        h2: "2. Split bills in proportion to income",
+        p: [
+          "Add both take-home incomes, calculate each person's percentage of the total, and use those percentages for shared necessities. If one partner earns 60% of the combined income, a 60/40 split keeps the burden more proportional.",
+          "Recalculate after a major salary change, job loss or parental leave. Decide together whether bonuses and irregular freelance income count, so the formula remains predictable.",
+        ],
+      },
+      {
+        h2: "3. Divide bills by category",
+        p: [
+          "One person might pay rent while the other covers groceries, utilities and transport. This reduces transfers, but only works when the categories are reviewed: rising grocery prices can make an arrangement unfair without either partner noticing.",
+        ],
+      },
+      {
+        h2: "4. Fund a shared account or monthly pot",
+        p: [
+          "Both partners contribute an agreed amount to a joint spending pot, equally or by income. Shared costs come from it while personal accounts stay separate. This creates a useful boundary between 'ours' and 'mine' without combining every financial decision.",
+        ],
+      },
+      {
+        h2: "5. Track shared costs and settle monthly",
+        p: [
+          "For couples who want separate accounts and flexibility, log shared purchases as they happen and settle the net balance once a month. SplitEase can apply equal or custom shares to each expense, so rent can be 60/40 while a weekend planned by one partner uses a different agreement.",
+        ],
+      },
+      {
+        h2: "The money conversation to have first",
+        list: [
+          "Define which costs are shared and which remain personal.",
+          "Agree on a comfortable lifestyle based on the lower budget, not only the higher income.",
+          "Set a threshold for purchases that should be discussed first.",
+          "Review the arrangement every three to six months and after major life changes.",
+        ],
+      },
+    ],
+    faqs: [
+      { q: "Should couples split expenses 50/50?", a: "A 50/50 split works when incomes and financial capacity are similar. When they differ, an income-based percentage can create a more equal burden while keeping contributions transparent." },
+      { q: "How do you calculate an income-based bill split?", a: "Divide each person's take-home pay by the couple's combined take-home pay. Apply those percentages to agreed shared expenses and recalculate after meaningful income changes." },
+      { q: "Should unmarried couples combine finances?", a: "They do not have to. Many couples keep personal accounts and use a shared account or expense tracker only for agreed household costs, preserving independence and clear records." },
+    ],
+  },
+  {
+    slug: "ways-to-split-a-bill-equally-percentages-shares",
+    category: "Money Math",
+    title: "4 Ways to Split a Bill: Equal, Percentage, Shares or Exact Amount",
+    description:
+      "Understand equal, percentage, share-based and exact-amount bill splits with formulas and examples, so every group expense is divided fairly the first time.",
+    keywords: [
+      "ways to split a bill",
+      "split bill by percentage",
+      "split expenses by shares",
+      "custom bill split calculator",
+      "equal vs unequal expense split",
+    ],
+    date: "2026-07-12",
+    readTime: "7 min read",
+    cover: { image: "/blog/split-bill-methods.png", alt: "A phone and calculator illustrating four different methods for splitting a bill", c1: "#8B5CF6", c2: "#06B6D4", chips: ["Equal", "Percentage", "Shares · Exact"] },
+    intro: [
+      "'Split the bill' can mean four different calculations. Equal splits are quick, percentages reflect an agreed ratio, shares handle different levels of use, and exact amounts reproduce what each person consumed.",
+      "Choosing the right method before entering the expense prevents rounding problems and arguments later. Here is how every method works, with simple examples.",
+    ],
+    sections: [
+      {
+        h2: "Equal split: one total divided by everyone",
+        p: [
+          "Formula: total cost ÷ number of participants. A ₹2,400 taxi package shared by four travellers is ₹600 each. Use equal splitting for costs everyone benefits from similarly, such as accommodation, WiFi or a group taxi.",
+          "Before dividing, decide whether children, guests or people who joined for only part of the expense count as full participants.",
+        ],
+      },
+      {
+        h2: "Percentage split: use an agreed ratio",
+        p: [
+          "Formula: total cost × each person's percentage. A ₹30,000 rent split 60/40 becomes ₹18,000 and ₹12,000. All percentages must add to 100.",
+          "This is useful for couples splitting by income, roommates assigning different room values, or a business team allocating costs by department budget.",
+        ],
+      },
+      {
+        h2: "Share-based split: assign relative weights",
+        p: [
+          "Formula: total cost ÷ total shares × each person's shares. For a ₹3,000 cost with shares of 2, 2 and 1, each share is ₹600; the participants pay ₹1,200, ₹1,200 and ₹600.",
+          "Shares are easier than percentages when usage differs naturally — adults and children, full-trip and weekend guests, or larger and smaller rooms.",
+        ],
+      },
+      {
+        h2: "Exact amounts: enter each person's real cost",
+        p: [
+          "Assign a specific amount to every person, making sure the values add to the receipt total. This method is best for restaurant items, event tickets at different prices, or shopping where purchases are clearly individual.",
+          "Remember to allocate shared fees, discounts, tax and tips. A common error is assigning the visible items but leaving the payer to cover the receipt's remaining charges.",
+        ],
+      },
+      {
+        h2: "Which splitting method should you choose?",
+        list: [
+          "Use equal when access or consumption is roughly the same.",
+          "Use percentages for a stable financial ratio such as income or room value.",
+          "Use shares when people participated at different levels.",
+          "Use exact amounts when the receipt clearly identifies individual consumption.",
+          "Use SplitEase to mix methods across expenses while keeping one live group balance.",
+        ],
+      },
+    ],
+    faqs: [
+      { q: "How do you split a bill by percentage?", a: "Multiply the total by each person's agreed percentage and confirm all percentages add to 100. For ₹10,000 split 70/30, the shares are ₹7,000 and ₹3,000." },
+      { q: "What does splitting by shares mean?", a: "Shares are relative weights. Add all shares, divide the total by that number, then multiply by each person's shares. It is useful when some people should pay half or double another person's amount." },
+      { q: "What is the best method for splitting shared expenses?", a: "Use the simplest method that reflects real benefit or consumption: equal for common costs, percentage for an agreed ratio, shares for different participation, and exact amounts for itemized purchases." },
+    ],
+  },
+  {
+    slug: "wedding-expense-tracker-budget-guide",
+    category: "Events",
+    title: "Wedding Expense Tracker: How to Share Costs Without Confusion",
+    description:
+      "Build a clear wedding budget, track vendor payments and split shared costs between couples and families with a practical wedding expense tracker system.",
+    keywords: [
+      "wedding expense tracker",
+      "wedding budget tracker",
+      "split wedding costs between families",
+      "track wedding vendor payments",
+      "shared wedding expenses app",
+    ],
+    date: "2026-07-09",
+    readTime: "9 min read",
+    cover: { image: "/blog/wedding-expense-tracker.png", alt: "A couple and family members organizing wedding costs around a planning table", c1: "#D4A574", c2: "#06B6D4", chips: ["Budget ₹8,00,000", "Deposits tracked", "Families aligned"] },
+    intro: [
+      "Wedding costs rarely arrive as one neat bill. They arrive as venue deposits, photographer installments, outfit purchases, catering advances and last-minute payments — often paid by different people across two families.",
+      "A useful wedding expense tracker answers three questions instantly: what has been committed, who paid it, and what is still due. Set up that shared record before the first deposit and the budget becomes far easier to control.",
+    ],
+    sections: [
+      {
+        h2: "Start with a total budget and category limits",
+        p: [
+          "Set the maximum amount you can spend without relying on gifts or uncertain future income. Then give major categories — venue, catering, photography, clothing, decor, travel and entertainment — their own ceiling.",
+          "Keep a contingency of 5% to 10% outside those category limits. Weddings create late changes, but a reserve turns them into planned costs instead of credit card debt.",
+        ],
+      },
+      {
+        h2: "Separate estimates, commitments and payments",
+        p: [
+          "A ₹1,50,000 photographer quote is not yet an expense, but it matters to the forecast. Mark it as estimated until the contract is signed, committed once booked, and paid only as installments leave an account.",
+          "For every vendor, record the full agreed price, deposit, remaining balance, due dates and cancellation terms. Attach invoices or receipts so the couple and both families work from the same facts.",
+        ],
+      },
+      {
+        h2: "How to split wedding costs between families",
+        p: [
+          "Avoid vague promises such as 'we will handle the reception.' List the actual expenses included in that commitment and agree whether overspending within a category changes the contribution.",
+          "Families can contribute fixed amounts, percentages of the full wedding, or responsibility for selected categories. None is automatically fairest; clarity, affordability and voluntary agreement matter more than tradition.",
+        ],
+      },
+      {
+        h2: "A wedding payment workflow that stays organized",
+        list: [
+          "Create one shared group for the people authorized to view and add costs.",
+          "Name each expense with the vendor, category and installment number.",
+          "Attach the invoice and record who paid immediately after every transfer.",
+          "Review committed versus paid totals weekly as the event approaches.",
+          "Settle family balances at agreed milestones instead of after the wedding.",
+        ],
+      },
+      {
+        h2: "Use SplitEase as a shared wedding expense tracker",
+        p: [
+          "SplitEase keeps payer records, receipts and custom contribution ratios in one group. A venue deposit can be split by percentage, outfits assigned to individuals and a family dinner shared equally — while the live balance still shows the simplest way to reimburse everyone.",
+        ],
+      },
+    ],
+    faqs: [
+      { q: "What should a wedding expense tracker include?", a: "Track the category, vendor, estimated and agreed price, payer, payment status, deposit, remaining balance, due date and receipt or contract for every wedding cost." },
+      { q: "How should wedding costs be divided between families?", a: "Agree on fixed contributions, percentages or clearly defined categories based on what each party can comfortably afford. Document exactly what each commitment covers before bookings are made." },
+      { q: "How often should you review a wedding budget?", a: "Review it monthly early in planning, then weekly during the final six to eight weeks. Always update the tracker immediately after signing a contract or making a payment." },
+    ],
+  },
 ];
 
 export const getPostBySlug = (slug) => BLOG_POSTS.find((p) => p.slug === slug);
