@@ -4,20 +4,20 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
-  Bell, LogOut, Moon, Sun, User, ChevronDown,
+  Bell, LogOut, User, ChevronDown,
   Home, PlusCircle, MessageCircle, MessageCircleMore,
   Bot, Sparkles, ReceiptText, UsersRound, CheckCircle2,
   Clock3, BellRing, Settings, Palette, Download, HelpCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import useTheme from "@/hooks/useTheme";
 import { useNotifications } from "@/context/NotificationContext";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebaseClient";
 import { api } from "@/lib/api";
 import HideOnScrollNav from "@/components/HideOnScrollNav";
 import CoinBadge from "@/components/CoinBadge";
+import ThemeToggle from "@/components/ThemeToggle";
 import useCoins from "@/hooks/useCoins";
 
 const NAV_LINKS = [
@@ -40,7 +40,6 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { token, setToken } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { notifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -328,14 +327,7 @@ export default function Navbar() {
             )}
 
             {/* Theme Toggle */}
-            {isLoggedIn && (
-              <button
-                onClick={toggleTheme}
-                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-foreground/55 hover:text-foreground hover:bg-foreground/5 transition-all"
-              >
-                {theme === "dark" ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} />}
-              </button>
-            )}
+            {isLoggedIn && <ThemeToggle />}
 
             {/* Profile Menu */}
             {isLoggedIn && (
