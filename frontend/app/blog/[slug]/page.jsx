@@ -1,9 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Github, Linkedin, Instagram, Mail } from "lucide-react";
 import Footer from "@/components/Footer";
 import BlogCover from "@/components/blog/BlogCover";
 import { BLOG_POSTS } from "@/lib/blogPosts";
 import { getAllPosts, getMergedPostBySlug } from "@/lib/blogPostsServer";
+
+// Lucide has no current X logo, so this mirrors the mark used in the footer.
+function XIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+const AUTHOR_ICONS = { github: Github, x: XIcon, linkedin: Linkedin, instagram: Instagram, contact: Mail };
 
 // Static posts are pre-rendered at build time (SEO-critical, hand-written
 // content). Admin-authored DB posts render on-demand instead - dynamicParams
@@ -53,6 +65,16 @@ export default async function BlogPostPage({ params }) {
   const allPosts = await getAllPosts();
   const related = allPosts.filter((p) => p.slug !== post.slug).slice(0, 3);
 
+  const authorSchema = post.author
+    ? {
+        "@type": "Person",
+        name: post.author,
+        ...(post.authorLinks && {
+          sameAs: post.authorLinks.filter((l) => l.href.startsWith("http")).map((l) => l.href),
+        }),
+      }
+    : { "@type": "Organization", name: "SplitEase", url: siteUrl };
+
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -65,7 +87,7 @@ export default async function BlogPostPage({ params }) {
         keywords: post.keywords.join(", "),
         datePublished: post.date,
         dateModified: post.date,
-        author: { "@type": "Organization", name: "SplitEase", url: siteUrl },
+        author: authorSchema,
         publisher: {
           "@type": "Organization",
           "@id": `${siteUrl}/#organization`,
@@ -125,7 +147,7 @@ export default async function BlogPostPage({ params }) {
             {post.title}
           </h1>
           <div className="flex flex-wrap items-center justify-center gap-3 text-[12px] font-semibold text-white/45">
-            <span>By the SplitEase Team</span>
+            <span>By {post.author || "the SplitEase Team"}</span>
             <span aria-hidden>·</span>
             <time dateTime={post.date}>{formatDate(post.date)}</time>
             <span aria-hidden>·</span>
@@ -168,6 +190,40 @@ export default async function BlogPostPage({ params }) {
               {para}
             </p>
           ))}
+
+          {post.authorLinks && (
+            <div className="mb-10 flex flex-col gap-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 sm:flex-row sm:items-center sm:p-6">
+              {post.authorImage && (
+                <img
+                  src={post.authorImage}
+                  alt={post.author}
+                  className="h-24 w-24 shrink-0 rounded-2xl object-cover object-top sm:h-28 sm:w-28"
+                />
+              )}
+              <div className="min-w-0">
+                <p className="text-base font-bold text-white">{post.author}</p>
+                {post.authorRole && <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400">{post.authorRole}</p>}
+                {post.authorBio && <p className="mt-2 text-sm leading-relaxed text-white/55">{post.authorBio}</p>}
+                <div className="mt-4 flex flex-wrap gap-2.5">
+                  {post.authorLinks.map((link) => {
+                    const Icon = AUTHOR_ICONS[link.key];
+                    return (
+                      <a
+                        key={link.href}
+                        href={link.href}
+                        target={link.href.startsWith("http") ? "_blank" : undefined}
+                        rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-3.5 py-1.5 text-xs font-semibold text-white/70 transition-colors hover:border-cyan-400/30 hover:text-white"
+                      >
+                        {Icon && <Icon className="h-3.5 w-3.5" />}
+                        {link.label}
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {post.sections.map((section) => (
             <section key={section.h2} className="mt-10">

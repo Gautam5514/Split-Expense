@@ -1,12 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail, Trash2, CheckCircle2, Circle, Inbox } from "lucide-react";
+import { Mail, Phone, Trash2, CheckCircle2, Circle, Inbox } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import toast from "@/lib/toast";
 import { Card, EmptyState, IconButton, LoadingBlock, PageHeader, StatusPill } from "@/components/admin/AdminUI";
 
 const STATUS_TONE = { new: "cyan", read: "amber", resolved: "emerald" };
+
+const SUBJECT_LABEL = {
+  general: "General",
+  support: "Support",
+  billing: "Billing",
+  partnership: "Partnership",
+  feedback: "Feedback",
+  bug: "Bug report",
+};
 
 const initials = (name = "") =>
   name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
@@ -81,12 +90,20 @@ export default function AdminMessagesPage() {
                   </span>
                   <div className="min-w-0">
                     <p className="truncate font-bold text-white">{m.name}</p>
-                    <a href={`mailto:${m.email}`} className="flex items-center gap-1.5 text-xs text-white/40 hover:text-cyan-300">
-                      <Mail size={11} /> {m.email}
-                    </a>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <a href={`mailto:${m.email}`} className="flex items-center gap-1.5 text-xs text-white/40 hover:text-cyan-300">
+                        <Mail size={11} /> {m.email}
+                      </a>
+                      {m.phone && (
+                        <a href={`tel:${m.phone}`} className="flex items-center gap-1.5 text-xs text-white/40 hover:text-cyan-300">
+                          <Phone size={11} /> {m.phone}
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
+                  <StatusPill tone="violet">{SUBJECT_LABEL[m.subject] || "General"}</StatusPill>
                   <StatusPill tone={STATUS_TONE[m.status]}>{m.status}</StatusPill>
                   <span className="text-[11px] font-medium text-white/30">
                     {new Date(m.createdAt).toLocaleDateString()}

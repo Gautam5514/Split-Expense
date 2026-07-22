@@ -1,4 +1,3 @@
-import { FileText } from "lucide-react";
 import InfoPageLayout from "@/components/InfoPageLayout";
 
 const sections = [
@@ -24,6 +23,13 @@ const sections = [
     ],
   },
   {
+    title: "Termination",
+    body: [
+      "You may stop using SplitEase and delete your account at any time from account settings.",
+      "We may suspend or terminate access for accounts that violate these terms, including abuse of other users or misuse of shared group data.",
+    ],
+  },
+  {
     title: "Service changes",
     body: [
       "Features may change over time as we improve the product. We may update these terms when functionality, legal requirements, or operating practices change.",
@@ -36,16 +42,12 @@ export default function TermsPage() {
   return (
     <InfoPageLayout
       eyebrow="Legal"
-      title="Terms and Conditions"
+      title="Terms of Service"
       description="The rules for using SplitEase, including account responsibility, acceptable use, and how shared expense records are handled."
-      icon={FileText}
+      effectiveDate="May 27, 2026"
       sections={sections}
-      asideTitle="Terms summary"
-      asideItems={[
-        { label: "Last updated", value: "May 27, 2026" },
-        { label: "Payments", value: "SplitEase tracks balances but does not process external repayments." },
-        { label: "Questions", value: "Contact support if any term is unclear." },
-      ]}
+      contactNote="Not sure how a term applies to your group? We're happy to clarify."
+      currentHref="/terms"
     />
   );
 }

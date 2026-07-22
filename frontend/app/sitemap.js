@@ -6,14 +6,23 @@ export default function sitemap() {
   const pages = [
     { path: "", priority: 1, changeFrequency: "weekly" },
     { path: "/what-we-offer", priority: 0.9, changeFrequency: "monthly" },
+    { path: "/features/ai-expense-splitter", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/features/smart-settlements", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/features/ocr-receipt-scan", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/features/group-chat-hub", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/features/qr-invites", priority: 0.6, changeFrequency: "monthly" },
+    { path: "/features/secure-login", priority: 0.6, changeFrequency: "monthly" },
     { path: "/how-it-works", priority: 0.8, changeFrequency: "monthly" },
     { path: "/blog", priority: 0.8, changeFrequency: "weekly" },
     { path: "/pricing", priority: 0.7, changeFrequency: "monthly" },
     { path: "/downloadapp", priority: 0.7, changeFrequency: "monthly" },
     { path: "/help-center", priority: 0.5, changeFrequency: "monthly" },
     { path: "/contact", priority: 0.4, changeFrequency: "yearly" },
+    { path: "/legal", priority: 0.2, changeFrequency: "yearly" },
     { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
     { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
+    { path: "/security", priority: 0.2, changeFrequency: "yearly" },
+    { path: "/cookies", priority: 0.2, changeFrequency: "yearly" },
   ];
 
   const staticEntries = pages.map(({ path, ...page }) => ({

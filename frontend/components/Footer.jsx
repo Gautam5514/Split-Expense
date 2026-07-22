@@ -66,6 +66,12 @@ const InstagramIcon = () => (
   </svg>
 );
 
+const LinkedinIcon = () => (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+  </svg>
+);
+
 export default function Footer() {
   return (
     <footer className="relative w-full overflow-hidden border-t border-white/[0.04] bg-[#030303] pt-16 sm:pt-24 pb-4">
@@ -109,9 +115,10 @@ export default function Footer() {
             {/* Social Icons Row */}
             <div className="flex items-center gap-3.5 mb-5">
               {[
-                { icon: <GithubIcon />, href: "https://github.com" },
-                { icon: <XIcon />, href: "https://x.com" },
-                { icon: <InstagramIcon />, href: "https://instagram.com" }
+                { icon: <GithubIcon />, href: "https://github.com/Gautam5514" },
+                { icon: <XIcon />, href: "https://x.com/Gautamp5514" },
+                { icon: <InstagramIcon />, href: "https://www.instagram.com/gautamp5514/" },
+                { icon: <LinkedinIcon />, href: "https://www.linkedin.com/in/gautam-pandit-4b185224b/" }
               ].map((social, i) => (
                 <a
                   key={i}
@@ -141,10 +148,12 @@ export default function Footer() {
               </h4>
               <ul className="flex flex-col gap-3">
                 {[
-                  { label: "AI Expense Splitter", href: "/ai" },
-                  { label: "Smart Settlements", href: "/dashboard" },
-                  { label: "OCR Receipt Scan", href: "/dashboard" },
-                  { label: "Group Chat Hub", href: "/groupchat" }
+                  { label: "AI Expense Splitter", href: "/features/ai-expense-splitter" },
+                  { label: "Smart Settlements", href: "/features/smart-settlements" },
+                  { label: "OCR Receipt Scan", href: "/features/ocr-receipt-scan" },
+                  { label: "Group Chat Hub", href: "/features/group-chat-hub" },
+                  { label: "QR & Link Invites", href: "/features/qr-invites" },
+                  { label: "Secure OTP Login", href: "/features/secure-login" }
                 ].map((link) => (
                   <li key={link.label}>
                     <Link
@@ -168,8 +177,7 @@ export default function Footer() {
                   { label: "Blog", href: "/blog" },
                   { label: "About Us", href: "/about" },
                   { label: "Careers", href: "/careers" },
-                  { label: "Contact Us", href: "/contact" },
-                  { label: "LinkedIn", href: "https://linkedin.com", external: true }
+                  { label: "Contact Us", href: "/contact" }
                 ].map((link) => (
                   <li key={link.label}>
                     {link.external ? (
@@ -201,11 +209,11 @@ export default function Footer() {
               </h4>
               <ul className="flex flex-col gap-3">
                 {[
-                  { label: "Legal Overview", href: "/privacy" },
-                  { label: "Security Center", href: "/privacy" },
+                  { label: "Legal Overview", href: "/legal" },
+                  { label: "Security Center", href: "/security" },
                   { label: "Privacy Policy", href: "/privacy" },
                   { label: "Terms of Service", href: "/terms" },
-                  { label: "Cookie Settings", href: "/privacy" }
+                  { label: "Cookie Settings", href: "/cookies" }
                 ].map((link) => (
                   <li key={link.label}>
                     <Link

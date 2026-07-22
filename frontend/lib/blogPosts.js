@@ -4,11 +4,131 @@
 
 export const BLOG_POSTS = [
   {
+    slug: "gautam-pandit-founder-splitease-story",
+    category: "Founder Story",
+    title: "Gautam Pandit: The Story Behind SplitEase - Why I Built It, and Everything I Learned Along the Way",
+    description:
+      "Gautam Pandit is the founder and developer of SplitEase, the group expense-splitting app built for flatmates, roommates, and trip planning. Read the full story - from a college problem to a live product.",
+    keywords: [
+      "Gautam Pandit",
+      "SplitEase founder",
+      "who developed SplitEase",
+      "who built SplitEase",
+      "SplitEase app developer",
+      "Gautam Pandit SplitEase",
+    ],
+    date: "2026-07-22",
+    readTime: "10 min read",
+    author: "Gautam Pandit",
+    authorRole: "Founder & Developer, SplitEase",
+    authorImage: "/blog/gautam-pandit-portrait.png",
+    authorBio:
+      "Gautam Pandit is the founder and sole developer of SplitEase - he designed, built, and continues to maintain the product end-to-end, from the original research to the code running in production today.",
+    authorLinks: [
+      { label: "GitHub", key: "github", href: "https://github.com/Gautam5514" },
+      { label: "X / Twitter", key: "x", href: "https://x.com/Gautamp5514" },
+      { label: "LinkedIn", key: "linkedin", href: "https://www.linkedin.com/in/gautam-pandit-4b185224b/" },
+      { label: "Instagram", key: "instagram", href: "https://www.instagram.com/gautamp5514/" },
+      { label: "Contact", key: "contact", href: "/contact" },
+    ],
+    cover: {
+      image: "/blog/gautam-pandit-portrait.png",
+      alt: "Gautam Pandit, founder and developer of SplitEase",
+      c1: "#0891B2",
+      c2: "#8B5CF6",
+      objectPosition: "center 22%",
+      chips: ["Founder story", "Built solo"],
+    },
+    intro: [
+      "There's a question I get asked a lot now that SplitEase is live and growing: \"Who actually built this?\" So this post is my honest answer - not a polished press release, but the real story of how a problem I lived through in college turned into a product that people now use to split expenses with their friends, flatmates, and travel groups.",
+      "My name is Gautam Pandit. I'm the founder and developer of SplitEase - a group expense-splitting app for flatmates, roommates, trip planning, and pretty much any situation where money gets shared between people. This is the story of how it started, what broke along the way, and how it finally became a real, working product.",
+    ],
+    sections: [
+      {
+        h2: "Where it actually started",
+        p: [
+          "Like most product ideas that end up mattering, this one didn't start as a \"startup idea.\" It started as an everyday annoyance.",
+          "In college, I was constantly in situations where money was shared between a group - a flat full of roommates splitting rent, groceries, and electricity bills; a trip with friends where everyone paid for different things at different times; a hostel mess where nobody could remember who owed who what by the end of the month. Somebody would pay for dinner, somebody else would cover the cab, someone would forget to pay their share for weeks, and by the time anyone tried to sort it out, nobody actually knew the real numbers anymore.",
+          "What frustrated me wasn't just the math - it was that nobody around me had actually solved this properly. There were tools that technically let you log an expense, but nothing that felt built for the way groups like mine actually lived and spent. I kept waiting for someone to build something that just got it. Nobody did. So eventually, I decided I would.",
+        ],
+      },
+      {
+        h2: "The six months before I wrote a single line of code",
+        p: [
+          "Here's something I think a lot of people skip when they talk about building a product: most of the real work happens before you touch a keyboard.",
+          "Before I wrote any code, I spent close to six months in research - genuinely trying to understand the problem, not just the feature list. I looked at how people actually split money in real groups, where existing tools broke down, what made people abandon a shared expense sheet halfway through a trip, and what would actually make someone trust an app enough to track their money in it.",
+          "Once I felt like I understood the problem properly, I moved into the part most people find boring but I found essential: documentation. I wrote a full SRS (Software Requirements Specification) - laying out exactly what the product needed to do, for whom, and why. This wasn't a formality. It became the reference point I kept coming back to every time I was tempted to add a feature that sounded exciting but didn't actually serve the core problem.",
+          "From there, I moved into researching the right tech stack. I didn't want to pick tools because they were trendy - I wanted a stack that could actually support real-time group interactions, receipt scanning, an AI assistant, and cross-platform apps, without falling apart as usage grew. Then came system design - mapping out how data would flow, how balances would stay accurate in real time, how the mobile and web apps would share the same backend, and how the whole thing would hold up once real users, and their real money conversations, started depending on it.",
+          "Only after all of that did development actually begin.",
+        ],
+      },
+      {
+        h2: "Building SplitEase: the stack and the system",
+        p: [
+          "I wanted SplitEase to feel modern and reliable, not experimental. So the architecture is deliberately straightforward - nothing exotic, just the right tool for each job:",
+        ],
+        list: [
+          "Web app: Next.js 16, React 19, Tailwind CSS, and Framer Motion, built as a full installable PWA",
+          "Mobile app: Expo (React Native) - Android is live, iOS is built on the same codebase",
+          "Backend & real-time layer: Node.js with an Express REST API, and Socket.IO powering live chat, presence, and real-time balance updates",
+          "Intelligence layer: an OCR pipeline for receipt scanning, plus an AI assistant that answers natural questions about a group's expenses",
+          "Media pipeline: Cloudinary for handling receipt images and shared media",
+          "Database: MongoDB with Mongoose models, with balance data cached and invalidated on write so numbers stay both fast and correct",
+          "Auth & security: Firebase authentication, server-side group-membership checks, input validation, and rate limiting on every request",
+        ],
+      },
+      {
+        h2: "What it looks like today",
+        p: [
+          "SplitEase is live and being used in the real world, not just running as a demo:",
+        ],
+        list: [
+          "Live on the web, with an Android app already deployed and iOS in progress on the same codebase",
+          "Hundreds of users across hundreds of groups, with a growing base of monthly active users",
+          "Thousands of expenses logged, and a steady stream of settlements completed every week",
+          "An AI assistant that's already answered thousands of real questions about group spending",
+          "Receipt OCR scanning running with strong accuracy, with ongoing work to push it higher",
+        ],
+      },
+      {
+        h2: "Every day, a little more optimized",
+        p: [
+          "Nothing about SplitEase was \"finished\" the day it launched, and honestly, it still isn't. I treat it as a living product - going back through the app regularly to make things faster, fix rough edges, tighten up the balance calculations, and improve the parts users actually interact with the most. Small, boring improvements, day after day, are what most people never see - but they're the difference between an app that feels clunky and one that feels like it just works.",
+        ],
+      },
+      {
+        h2: "Why I'm sharing this",
+        p: [
+          "I didn't build SplitEase because I saw a market gap on a spreadsheet. I built it because I lived the problem, got frustrated that nobody had solved it properly, and decided that was going to be my problem to fix. Six months of research, a full SRS, real system design, a stack chosen for the long run, and a lot of iteration later, it's a real product that real groups depend on to keep their shared expenses honest.",
+          "SplitEase is built to work for flatmates, roommates, trip groups, family expenses - basically any situation where a group needs to know, clearly and instantly, who owes what. And it's still evolving. If you're using SplitEase, or thinking about it, I'd genuinely love your feedback, good, bad, or \"this one thing is annoying.\" That feedback is exactly what shapes what I build next.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        q: "Who built SplitEase?",
+        a: "SplitEase was built by Gautam Pandit, who designed, developed, and continues to maintain the app end-to-end - from the original research and SRS to the Next.js web app and the Expo-based mobile app.",
+      },
+      {
+        q: "Why did Gautam Pandit build SplitEase?",
+        a: "He lived the problem firsthand in college, splitting rent, trips, and group bills with friends and roommates with no tool built for how those groups actually spent money, and decided to build one himself instead of waiting for someone else to.",
+      },
+      {
+        q: "What tech stack does SplitEase use?",
+        a: "The web app runs on Next.js, React, and Tailwind CSS as an installable PWA. The mobile app is built with Expo (React Native). The backend is Node.js and Express with Socket.IO for real time, MongoDB for data, Firebase for authentication, and Cloudinary for media.",
+      },
+      {
+        q: "Is SplitEase free to use?",
+        a: "Yes. SplitEase has no monetization yet by design - the goal is to earn genuine, engaged usage first, and only consider pricing once the product has clearly proven its value at scale.",
+      },
+    ],
+  },
+  {
     slug: "how-to-split-expenses-with-friends",
     category: "Guides",
     title: "How to Split Expenses With Friends Without Ruining the Friendship",
     description:
-      "A practical 2026 guide to splitting bills, trips and group expenses with friends fairly — the rules, the math, and the apps that keep money from getting awkward.",
+      "A practical 2026 guide to splitting bills, trips and group expenses with friends fairly - the rules, the math, and the apps that keep money from getting awkward.",
     keywords: [
       "how to split expenses with friends",
       "split bills with friends",
@@ -20,7 +140,7 @@ export const BLOG_POSTS = [
     readTime: "7 min read",
     cover: { image: "/blog/friends-split-dinner.png", alt: "Four friends splitting a restaurant bill around a dark dinner table", c1: "#0891B2", c2: "#0EA5E9", chips: ["₹1,840 · Dinner", "Split 4 ways", "Settled ✓"] },
     intro: [
-      "Money is the fastest way to make a great friendship awkward. Someone pays for dinner, someone covers the cab, someone books the hotel — and three weeks later nobody remembers who owes whom, so nobody asks, and someone quietly eats the cost.",
+      "Money is the fastest way to make a great friendship awkward. Someone pays for dinner, someone covers the cab, someone books the hotel - and three weeks later nobody remembers who owes whom, so nobody asks, and someone quietly eats the cost.",
       "The fix isn't spreadsheets or awkward reminders. It's a simple system: record every shared expense the moment it happens, agree on the split rule upfront, and settle in one payment at the end. Here's exactly how to do it.",
     ],
     sections: [
@@ -28,29 +148,29 @@ export const BLOG_POSTS = [
         h2: "Why splitting expenses goes wrong",
         p: [
           "Most groups fail at expense splitting for the same three reasons: expenses are remembered instead of recorded, split rules are decided after the money is spent, and debts are settled one-by-one instead of netted out.",
-          "Memory is the biggest killer. Studies on informal lending consistently show people underestimate what they owe and overestimate what they're owed. Neither person is lying — that's just how memory works. The only cure is writing it down at the moment of payment.",
+          "Memory is the biggest killer. Studies on informal lending consistently show people underestimate what they owe and overestimate what they're owed. Neither person is lying - that's just how memory works. The only cure is writing it down at the moment of payment.",
         ],
       },
       {
         h2: "The 4 rules of drama-free expense splitting",
         list: [
-          "Record instantly — log the expense before you leave the restaurant, not at the end of the trip.",
-          "Agree on the rule first — equal split, by consumption, or by income. Any rule works if it's agreed before the spending starts.",
-          "Net everything out — if A owes B ₹500 and B owes A ₹300, that's one ₹200 payment, not two transfers.",
-          "Settle on a schedule — end of the trip, end of the month. A deadline stops small debts from becoming resentments.",
+          "Record instantly - log the expense before you leave the restaurant, not at the end of the trip.",
+          "Agree on the rule first - equal split, by consumption, or by income. Any rule works if it's agreed before the spending starts.",
+          "Net everything out - if A owes B ₹500 and B owes A ₹300, that's one ₹200 payment, not two transfers.",
+          "Settle on a schedule - end of the trip, end of the month. A deadline stops small debts from becoming resentments.",
         ],
       },
       {
         h2: "Equal split vs. itemized split: which is fair?",
         p: [
-          "Equal splits are perfect for genuinely shared costs — the villa, the taxi, the groceries. But forcing an equal split on a dinner where one person had a salad and another ordered for the table breeds silent resentment.",
-          "The fair rule of thumb: split shared infrastructure equally, split consumption by usage. A good expense splitting app lets you do both in the same group — equal split for the hotel, itemized shares for the dinner — without any manual math.",
+          "Equal splits are perfect for genuinely shared costs - the villa, the taxi, the groceries. But forcing an equal split on a dinner where one person had a salad and another ordered for the table breeds silent resentment.",
+          "The fair rule of thumb: split shared infrastructure equally, split consumption by usage. A good expense splitting app lets you do both in the same group - equal split for the hotel, itemized shares for the dinner - without any manual math.",
         ],
       },
       {
         h2: "Let an app do the accounting",
         p: [
-          "This is exactly the problem SplitEase was built for. Create a free group, add your friends, and log each expense as it happens — who paid, and how it splits. The app keeps a live balance for every member, then generates the minimum set of payments to settle everyone up.",
+          "This is exactly the problem SplitEase was built for. Create a free group, add your friends, and log each expense as it happens - who paid, and how it splits. The app keeps a live balance for every member, then generates the minimum set of payments to settle everyone up.",
           "No more mental math, no more 'I'll get you back later'. Everyone sees the same numbers, so there's nothing to argue about.",
         ],
       },
@@ -62,7 +182,7 @@ export const BLOG_POSTS = [
       },
       {
         q: "How do you politely ask a friend to pay you back?",
-        a: "Use a shared expense app so the balance is visible to both of you — the app does the asking. A neutral 'balances are up on SplitEase, settle whenever works' removes all the awkwardness of a personal demand.",
+        a: "Use a shared expense app so the balance is visible to both of you, the app does the asking. A neutral 'balances are up on SplitEase, settle whenever works' removes all the awkwardness of a personal demand.",
       },
       {
         q: "Is there a free app to split expenses with friends?",
@@ -75,7 +195,7 @@ export const BLOG_POSTS = [
     category: "Roommates",
     title: "The Best Way to Split Rent and Bills With Roommates in 2026",
     description:
-      "Room sizes differ, incomes differ, and the electricity bill spikes every summer. Here's how to split rent, utilities and household costs with roommates — fairly and automatically.",
+      "Room sizes differ, incomes differ, and the electricity bill spikes every summer. Here's how to split rent, utilities and household costs with roommates, fairly and automatically.",
     keywords: [
       "split rent with roommates",
       "roommate expense tracker",
@@ -87,7 +207,7 @@ export const BLOG_POSTS = [
     readTime: "6 min read",
     cover: { image: "/blog/roommates-rent.png", alt: "Three sets of apartment keys beside a floor plan for roommates", c1: "#10B981", c2: "#34D399", chips: ["Rent ₹30,000", "40 / 35 / 25", "Bills split ✓"] },
     intro: [
-      "Living with roommates cuts your costs by half — and doubles your accounting. Rent, electricity, WiFi, the cleaning help, groceries, the gas cylinder, that one Amazon order everyone used. Small amounts, every week, forever.",
+      "Living with roommates cuts your costs by half - and doubles your accounting. Rent, electricity, WiFi, the cleaning help, groceries, the gas cylinder, that one Amazon order everyone used. Small amounts, every week, forever.",
       "The households that stay friends aren't the ones that spend the least. They're the ones with a system. This guide covers the fairest ways to split each type of household cost, and how to automate the whole thing.",
     ],
     sections: [
@@ -101,23 +221,23 @@ export const BLOG_POSTS = [
       {
         h2: "Utilities and groceries: track, don't estimate",
         p: [
-          "Utilities fluctuate — a summer electricity bill can be triple the winter one. Estimating 'my share is about ₹800' every month compounds into real money. The fix is recording the actual bill in a shared flat expense manager and splitting the true amount.",
+          "Utilities fluctuate - a summer electricity bill can be triple the winter one. Estimating 'my share is about ₹800' every month compounds into real money. The fix is recording the actual bill in a shared flat expense manager and splitting the true amount.",
           "Groceries are trickier because consumption differs. Most flats do best with a hybrid: shared staples (oil, cleaning supplies, milk) split equally, personal items excluded, and occasional big items itemized to whoever asked for them.",
         ],
       },
       {
         h2: "The monthly settle-up ritual",
         list: [
-          "Pick a fixed day — the 1st, right after rent day, works for most flats.",
+          "Pick a fixed day, the 1st, right after rent day, works for most flats.",
           "Everyone's balance is already live in the app, so there's nothing to compute.",
-          "The app suggests the minimum payments — usually one or two transfers settle the whole flat.",
+          "The app suggests the minimum payments - usually one or two transfers settle the whole flat.",
           "Mark them paid and start the month at zero. No carry-overs, no 'we'll adjust it later'.",
         ],
       },
       {
         h2: "Set it up once in SplitEase",
         p: [
-          "Create a 'Flat' group in SplitEase, add your roommates, and log expenses as they happen — the rent as a custom split, the bills equally, the one-off purchases to whoever they belong to. Everyone sees the same live balances all month, and settlement day becomes a 30-second task instead of a negotiation.",
+          "Create a 'Flat' group in SplitEase, add your roommates, and log expenses as they happen - the rent as a custom split, the bills equally, the one-off purchases to whoever they belong to. Everyone sees the same live balances all month, and settlement day becomes a 30-second task instead of a negotiation.",
         ],
       },
     ],
@@ -128,11 +248,11 @@ export const BLOG_POSTS = [
       },
       {
         q: "What is the best app for splitting bills with roommates?",
-        a: "SplitEase is built for exactly this: a shared flat group with live balances, custom split ratios for rent, equal splits for utilities, itemized splits for groceries, and one-tap monthly settlement — free.",
+        a: "SplitEase is built for exactly this: a shared flat group with live balances, custom split ratios for rent, equal splits for utilities, itemized splits for groceries, and one-tap monthly settlement, free.",
       },
       {
         q: "How do you handle a roommate who always pays late?",
-        a: "Make balances visible and settlement scheduled. When the whole flat sees the same numbers on the same day each month, late payment becomes a visible exception rather than a private favour — which is usually enough social pressure to fix it.",
+        a: "Make balances visible and settlement scheduled. When the whole flat sees the same numbers on the same day each month, late payment becomes a visible exception rather than a private favour - which is usually enough social pressure to fix it.",
       },
     ],
   },
@@ -153,14 +273,14 @@ export const BLOG_POSTS = [
     readTime: "8 min read",
     cover: { image: "/blog/group-trip.png", alt: "Travel essentials, receipts and money arranged for a group trip", c1: "#F97316", c2: "#0EA5E9", chips: ["Goa Trip 🌴", "₹52,300 total", "3 transfers"] },
     intro: [
-      "Every group trip has a CFO — the friend who booked the villa, paid the airport taxi, and covered dinner when the restaurant wouldn't split the bill. By day three they've fronted half the trip's budget, and by the ride home they're doing forensic accounting from memory and crumpled receipts.",
+      "Every group trip has a CFO - the friend who booked the villa, paid the airport taxi, and covered dinner when the restaurant wouldn't split the bill. By day three they've fronted half the trip's budget, and by the ride home they're doing forensic accounting from memory and crumpled receipts.",
       "It doesn't have to work that way. With the right setup, a group trip's finances run themselves: everyone pays for things as convenient, the app keeps score, and the trip ends with one or two transfers instead of a spreadsheet argument.",
     ],
     sections: [
       {
         h2: "Before the trip: create the group first",
         p: [
-          "Set up the trip group before the first booking is made, because the big pre-trip expenses — flights, hotels, train tickets — are the easiest to lose track of. When the villa booking goes straight into the group the moment it's paid, it never becomes a 'wait, who paid for the stay?' mystery in month two.",
+          "Set up the trip group before the first booking is made, because the big pre-trip expenses - flights, hotels, train tickets - are the easiest to lose track of. When the villa booking goes straight into the group the moment it's paid, it never becomes a 'wait, who paid for the stay?' mystery in month two.",
           "Add every traveller to the group, including the friend who 'will pay cash for everything'. Especially that friend.",
         ],
       },

@@ -1,21 +1,29 @@
 import ContactMessage from "../models/contactMessageModel.js";
 import { isValidEmail, isValidObjectId } from "../middleware/validate.js";
 
+const CONTACT_SUBJECTS = ["general", "support", "billing", "partnership", "feedback", "bug"];
+
 // -------------------- PUBLIC --------------------
 export const submitContactMessage = async (req, res) => {
   try {
-    const { name, email, message } = req.body;
+    const { name, email, phone, subject, message } = req.body;
 
     if (!name?.trim() || name.trim().length < 2)
       return res.status(400).json({ field: "name", message: "Name must be at least 2 characters." });
     if (!isValidEmail(email))
       return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
+    if (phone && phone.trim().length > 20)
+      return res.status(400).json({ field: "phone", message: "Phone number looks too long." });
+    if (subject && !CONTACT_SUBJECTS.includes(subject))
+      return res.status(400).json({ field: "subject", message: "Please choose a valid subject." });
     if (!message?.trim() || message.trim().length < 10)
       return res.status(400).json({ field: "message", message: "Message must be at least 10 characters." });
 
     const saved = await ContactMessage.create({
       name: name.trim(),
       email: email.trim().toLowerCase(),
+      phone: phone?.trim() || "",
+      subject: subject || "general",
       message: message.trim(),
     });
 

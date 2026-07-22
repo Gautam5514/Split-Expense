@@ -169,7 +169,7 @@ export default function BlogPageContent({ featured, posts }) {
                 style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
               >
                 <span className="font-mono text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: "rgba(255,255,255,0.35)" }}>
-                  SplitEase Team · <time dateTime={featured.date}>{formatDate(featured.date)}</time>
+                  {featured.author || "SplitEase Team"} · <time dateTime={featured.date}>{formatDate(featured.date)}</time>
                 </span>
                 <ReadPill accent="#22d3ee">Read the guide</ReadPill>
               </div>

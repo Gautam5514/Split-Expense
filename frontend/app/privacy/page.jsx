@@ -1,4 +1,3 @@
-import { ShieldCheck } from "lucide-react";
 import InfoPageLayout from "@/components/InfoPageLayout";
 
 const sections = [
@@ -30,6 +29,13 @@ const sections = [
       "Deleting your account may remove profile data, groups you created, expenses, messages, and related records, subject to technical and legal retention requirements.",
     ],
   },
+  {
+    title: "Your rights",
+    body: [
+      "You can request a copy of the personal data we hold about you, ask us to correct inaccurate details, or request deletion of your account and associated records.",
+      "To exercise any of these rights, contact support using the details below and we will respond within a reasonable time.",
+    ],
+  },
 ];
 
 export default function PrivacyPage() {
@@ -38,14 +44,10 @@ export default function PrivacyPage() {
       eyebrow="Privacy"
       title="Privacy Policy"
       description="A clear summary of what SplitEase collects, why it is used, and how your expense data is protected."
-      icon={ShieldCheck}
+      effectiveDate="May 27, 2026"
       sections={sections}
-      asideTitle="Privacy summary"
-      asideItems={[
-        { label: "Last updated", value: "May 27, 2026" },
-        { label: "Data purpose", value: "Account access, expense splitting, groups, chat, invitations, and support." },
-        { label: "Support email", value: "support@splitease.app" },
-      ]}
+      contactNote="Questions about how your data is handled? Reach out and we'll walk you through it."
+      currentHref="/privacy"
     />
   );
 }

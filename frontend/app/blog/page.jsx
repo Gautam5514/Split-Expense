@@ -39,8 +39,8 @@ export default async function BlogPage() {
   // Only card-level fields cross the server→client boundary; shipping full
   // article bodies (sections, faqs) in the hydration payload would bloat the page.
   const [featured, ...rest] = allPosts.map(
-    ({ slug, category, title, description, date, readTime, cover }) => ({
-      slug, category, title, description, date, readTime, cover,
+    ({ slug, category, title, description, date, readTime, cover, author }) => ({
+      slug, category, title, description, date, readTime, cover, author,
     })
   );
 
@@ -61,7 +61,7 @@ export default async function BlogPage() {
           description: p.description,
           url: `${siteUrl}/blog/${p.slug}`,
           datePublished: p.date,
-          author: { "@type": "Organization", name: "SplitEase" },
+          author: p.author ? { "@type": "Person", name: p.author } : { "@type": "Organization", name: "SplitEase" },
         })),
       },
       {

@@ -4,7 +4,7 @@ import Image from "next/image";
 // treatment so the cards still feel native to the SplitEase design system.
 
 export default function BlogCover({ post, compact = false, fill = false }) {
-  const { image, alt = "", c1 = "#0891B2", c2 = "#0EA5E9", chips = [] } = post.cover || {};
+  const { image, alt = "", c1 = "#0891B2", c2 = "#0EA5E9", chips = [], objectPosition } = post.cover || {};
   const gridId = `bg-grid-${post.slug}${compact ? "-c" : fill ? "-f" : ""}`;
   const shownChips = compact ? chips.slice(0, 2) : chips;
 
@@ -27,6 +27,7 @@ export default function BlogCover({ post, compact = false, fill = false }) {
           fill
           priority={fill}
           sizes={fill ? "(min-width: 768px) 560px, 100vw" : compact ? "(min-width: 1024px) 340px, (min-width: 768px) 50vw, 100vw" : "(min-width: 1024px) 896px, 100vw"}
+          style={objectPosition ? { objectPosition } : undefined}
           className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025]"
         />
       )}
