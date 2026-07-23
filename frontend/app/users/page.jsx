@@ -198,7 +198,7 @@ export default function UserDashboardPage() {
                 style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}
               >
                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                 Add Trip
+                 Add Group
               </button>
             </div>
           </motion.form>
