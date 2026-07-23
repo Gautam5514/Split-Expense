@@ -49,6 +49,57 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// 🛡️ IndexedDB version guard - must be installed BEFORE the Firebase SDK loads.
+// A database left on this origin at a higher version than the SDK requests can
+// never be opened again (IndexedDB refuses downgrades and throws VersionError:
+// "The requested version (1) is less than the existing version (2)"). These
+// stores are regenerable cache, so deleting a stale one is safe.
+(() => {
+  const FIREBASE_DB_VERSIONS = {
+    'firebase-heartbeat-database': 1,
+    'firebase-installations-database': 1,
+    'firebase-messaging-database': 1,
+    'fcm_token_details_db': 5,
+  };
+
+  if (typeof indexedDB === 'undefined') return;
+
+  const originalOpen = indexedDB.open.bind(indexedDB);
+  indexedDB.open = function open(name, version) {
+    const request =
+      version === undefined ? originalOpen(name) : originalOpen(name, version);
+
+    if (name in FIREBASE_DB_VERSIONS) {
+      request.addEventListener('error', () => {
+        if (request.error && request.error.name === 'VersionError') {
+          console.warn(`[sw] Deleting stale IndexedDB "${name}"`);
+          indexedDB.deleteDatabase(name);
+        }
+      });
+    }
+
+    return request;
+  };
+
+  // Proactive sweep (indexedDB.databases() is unsupported in Firefox).
+  if (typeof indexedDB.databases === 'function') {
+    indexedDB
+      .databases()
+      .then((dbs) => {
+        dbs
+          .filter(
+            ({ name, version }) =>
+              name in FIREBASE_DB_VERSIONS && version > FIREBASE_DB_VERSIONS[name]
+          )
+          .forEach(({ name, version }) => {
+            console.warn(`[sw] Removing stale IndexedDB "${name}" (v${version})`);
+            indexedDB.deleteDatabase(name);
+          });
+      })
+      .catch(() => {});
+  }
+})();
+
 // Firebase Messaging compat SDK
 importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js");

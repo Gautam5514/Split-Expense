@@ -1,5 +1,6 @@
 import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 import app from "./firebaseClient";
+import { purgeStaleFirebaseDatabases } from "./firebaseIdbGuard";
 
 const SW_PATH = "/firebase-messaging-sw.js";
 
@@ -67,13 +68,28 @@ export const getNotificationPermission = async () => {
       return null;
     }
 
+    // Clear any stale higher-versioned Firebase IndexedDB stores before FCM
+    // reads its token cache, otherwise getToken() fails with a VersionError.
+    await purgeStaleFirebaseDatabases();
+
     const swRegistration = await getActiveSWRegistration();
     const messaging = getMessaging(app);
 
-    const token = await getToken(messaging, {
-      vapidKey,
-      serviceWorkerRegistration: swRegistration,
-    });
+    const requestToken = () =>
+      getToken(messaging, { vapidKey, serviceWorkerRegistration: swRegistration });
+
+    let token;
+    try {
+      token = await requestToken();
+    } catch (err) {
+      if (err?.name !== "VersionError" && !/existing version/i.test(err?.message ?? "")) {
+        throw err;
+      }
+      // The open() guard has now deleted the offending database, so this second
+      // attempt gets a freshly created store at the version the SDK expects.
+      console.warn("⚠️ Stale FCM IndexedDB detected - retrying getToken()");
+      token = await requestToken();
+    }
 
     if (!token) {
       console.error("❌ FCM returned an empty token - check VAPID key and SW registration");

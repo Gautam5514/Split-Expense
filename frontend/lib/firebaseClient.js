@@ -1,6 +1,17 @@
 // lib/firebase.js
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import {
+  installFirebaseIdbVersionGuard,
+  purgeStaleFirebaseDatabases,
+} from "./firebaseIdbGuard";
+
+// ✅ Must run before any Firebase code touches IndexedDB, otherwise a stale
+// higher-versioned database on this origin makes every open() throw VersionError.
+if (typeof window !== "undefined") {
+  installFirebaseIdbVersionGuard();
+  purgeStaleFirebaseDatabases();
+}
 
 // ✅ Firebase config - keep using your .env values
 const firebaseConfig = {
