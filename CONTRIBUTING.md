@@ -17,13 +17,14 @@ looks. 💪
 
 1. [Ways you can contribute](#-ways-you-can-contribute)
 2. [The big picture (how contributing works)](#-the-big-picture)
-3. [Step‑by‑step: your first pull request](#-step-by-step-your-first-pull-request)
-4. [Setting up the project locally](#-setting-up-the-project-locally)
-5. [🔒 Keeping secrets safe (READ THIS)](#-keeping-secrets-safe-read-this)
-6. [Commit & branch naming](#-commit--branch-naming)
-7. [Opening the pull request](#-opening-the-pull-request)
-8. [After you open the PR](#-after-you-open-the-pr)
-9. [Need help?](#-need-help)
+3. [Working from an issue (start here!)](#-working-from-an-issue-start-here)
+4. [Step‑by‑step: your first pull request](#-step-by-step-your-first-pull-request)
+5. [Setting up the project locally](#-setting-up-the-project-locally)
+6. [🔒 Keeping secrets safe (READ THIS)](#-keeping-secrets-safe-read-this)
+7. [Commit & branch naming](#-commit--branch-naming)
+8. [Opening the pull request](#-opening-the-pull-request)
+9. [After you open the PR](#-after-you-open-the-pr)
+10. [Need help?](#-need-help)
 
 ---
 
@@ -68,6 +69,70 @@ standard "fork & pull request" flow. Here's the whole journey in one picture:
 ```
 
 Don't memorise it — the commands below do each step for you.
+
+---
+
+## 🎯 Working from an issue (start here!)
+
+Most contributions start from an **issue** — a bug or feature request listed on
+the [Issues tab](https://github.com/Gautam5514/Split-Expense/issues). Instead of
+guessing what to work on, pick an issue and turn it into a pull request. Here's
+how. 👇
+
+### 1. Find an issue to work on
+Browse the [open issues](https://github.com/Gautam5514/Split-Expense/issues).
+- 🟢 New here? Filter by the **`good first issue`** label — those are beginner‑friendly.
+- 🙋 Want a bigger challenge? Look for **`help wanted`**.
+- Read the issue fully — it usually tells you **which files to look at** and the
+  **acceptance criteria** (what "done" looks like).
+
+### 2. Claim the issue (so no two people do the same work)
+Leave a comment on the issue like:
+
+> "Hi! I'd like to work on this. 🙌"
+
+Wait for a maintainer to assign it to you (or give a 👍). This avoids two people
+building the same thing.
+
+### 3. Create a branch named after the issue
+Include the issue **number** so it's easy to track. For example, for issue **#2**
+about the Careers page:
+
+```bash
+git checkout -b fix/2-careers-page-ui
+```
+
+> Tip: `type/<issue-number>-short-description`, e.g. `fix/5-slow-api-query`.
+
+### 4. Make your changes
+Fix the problem described in the issue. Check off each item in the issue's
+**acceptance criteria** as you go — that's your to‑do list. ✅
+
+### 5. Commit, referencing the issue
+Mention the issue number in your commit so GitHub links them:
+
+```bash
+git add .
+git commit -m "Fix #2: correct spacing and mobile layout on Careers page"
+```
+
+### 6. Push and open a PR that **closes the issue**
+Push your branch (see the full steps below), then in your **PR description**
+write one of these magic phrases:
+
+```
+Closes #2
+```
+
+> Using **`Closes #<number>`** (or `Fixes #`, `Resolves #`) means GitHub will
+> **automatically close the issue** when your PR is merged. This is the key link
+> between an issue and its fix — always add it! 🔗
+
+**That's the whole loop:** find issue → claim it → branch → fix → PR with
+`Closes #N` → maintainer merges → issue closes automatically. 🎉
+
+> 💡 No open issue for your idea? **Open one first**, describe it, and then follow
+> the same steps. It lets maintainers give feedback before you spend time coding.
 
 ---
 
@@ -240,7 +305,9 @@ When you open your PR, please:
 - **Give it a clear title** describing the change.
 - **Fill in the PR template** (it appears automatically).
 - **Explain what and why** — what problem does this solve?
-- **Link the issue** if there is one (e.g. "Closes #12").
+- **Link the issue you're fixing** by writing **`Closes #<number>`** in the
+  description (e.g. `Closes #2`). GitHub then auto‑closes that issue when your PR
+  is merged. ← don't skip this!
 - **Add screenshots** for any visual/UI change.
 - **Confirm no secrets** are included.
 
