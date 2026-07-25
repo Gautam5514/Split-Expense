@@ -105,13 +105,6 @@ export default function AdminDashboardPage() {
           </h1>
           <p className="mt-2.5 text-sm text-white/40">Here&apos;s what&apos;s happening across SplitEase right now.</p>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-2 text-[11.5px] font-bold text-white/50">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          </span>
-          Live data
-        </span>
       </div>
 
       {loading ? (
@@ -121,10 +114,10 @@ export default function AdminDashboardPage() {
           {/* Hero metrics */}
           <div className="grid gap-4 sm:grid-cols-3">
             {HERO_CARDS.map((card) => (
-              <div key={card.key} className={`relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111114] p-6 ring-1 ring-inset ${card.ring}`}>
+              <div key={card.key} className={`relative overflow-hidden rounded border border-white/[0.08] bg-[#111114] p-6 ring-1 ring-inset ${card.ring}`}>
                 <div className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br ${card.glow} blur-2xl`} />
                 <div className="relative">
-                  <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${card.iconTone}`}>
+                  <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full ${card.iconTone}`}>
                     <card.icon size={18} strokeWidth={2.2} />
                   </span>
                   <p className="font-serif-premium mt-5 text-[44px] font-normal leading-none tracking-tight text-white">
@@ -144,7 +137,7 @@ export default function AdminDashboardPage() {
               { key: "openJobs", label: "Open roles", total: stats?.totalJobs, icon: Briefcase, tone: "text-sky-300 bg-sky-400/10", href: "/admin/careers" },
               { key: "totalApplications", label: "Applications", icon: FileText, tone: "text-violet-300 bg-violet-400/10", href: "/admin/careers/applications" },
             ].map((c) => (
-              <Link key={c.key} href={c.href} className="group flex min-w-0 items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#111114] p-4 transition-colors hover:border-white/[0.16]">
+              <Link key={c.key} href={c.href} className="group flex min-w-0 items-center gap-3 rounded border border-white/[0.08] bg-[#111114] p-4 transition-colors hover:border-white/[0.16]">
                 <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${c.tone}`}>
                   <c.icon size={15} />
                 </span>

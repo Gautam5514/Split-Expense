@@ -8,9 +8,9 @@ import { animate } from "framer-motion";
 // (messages, blog, careers, dashboard) reads as one consistent product
 // instead of independently-styled screens.
 
-export function PageHeader({ eyebrow, title, description, action }) {
+export function PageHeader({ eyebrow, title, description, action, className = "mb-7" }) {
   return (
-    <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+    <div className={`flex flex-wrap items-start justify-between gap-4 ${className}`}>
       <div>
         {eyebrow && (
           <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-400/70">{eyebrow}</p>
@@ -107,7 +107,7 @@ export function LoadingBlock() {
 
 export function Card({ children, className = "" }) {
   return (
-    <div className={`rounded-2xl border border-white/[0.08] bg-[#111114] ${className}`}>
+    <div className={`rounded border border-white/[0.08] bg-[#111114] ${className}`}>
       {children}
     </div>
   );

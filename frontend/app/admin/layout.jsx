@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard, MessageSquare, Newspaper, Briefcase, LogOut,
-  Sparkles, ChevronsUpDown, ExternalLink,
+  ChevronsUpDown, ExternalLink,
 } from "lucide-react";
 import { getAdminToken, clearAdminToken } from "@/lib/adminApi";
 
@@ -28,8 +28,8 @@ const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 function Logo() {
   return (
-    <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-gradient-to-br from-cyan-300 via-cyan-400 to-cyan-600 shadow-[0_1px_0_rgba(255,255,255,0.5)_inset,0_6px_16px_-4px_rgba(34,211,238,0.55)]">
-      <Sparkles size={14} className="text-[#04222A]" strokeWidth={2.5} />
+    <span className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-[9px] ring-1 ring-white/[0.1] shadow-[0_6px_16px_-6px_rgba(34,211,238,0.45)]">
+      <img src="/logo-icon.png" alt="SplitEase" className="h-full w-full object-cover" />
     </span>
   );
 }
@@ -91,8 +91,8 @@ export default function AdminLayout({ children }) {
       <div className="pointer-events-none fixed -left-20 top-0 h-[480px] w-[620px] rounded-full bg-cyan-500/[0.05] blur-[140px]" />
       <div className="pointer-events-none fixed right-0 top-1/3 h-[380px] w-[480px] rounded-full bg-violet-500/[0.03] blur-[140px]" />
 
-      <aside className="relative z-10 hidden w-[248px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0A0A0D]/80 px-3.5 py-5 backdrop-blur-xl sm:flex">
-        <Link href="/admin" className="mb-7 flex items-center gap-2.5 px-2">
+      <aside className="sticky top-0 z-10 hidden h-screen w-[248px] shrink-0 self-start flex-col border-r border-white/[0.06] bg-[#0A0A0D]/80 px-3.5 py-5 backdrop-blur-xl sm:flex">
+        <Link href="/admin" className="mb-7 flex shrink-0 items-center gap-2.5 px-2">
           <Logo />
           <div>
             <p className="text-[13.5px] font-extrabold leading-tight tracking-tight">SplitEase</p>
@@ -100,7 +100,7 @@ export default function AdminLayout({ children }) {
           </div>
         </Link>
 
-        <nav className="flex flex-1 flex-col gap-5">
+        <nav className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto">
           {NAV_GROUPS.map((group) => (
             <div key={group.label}>
               <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/25">{group.label}</p>
@@ -117,13 +117,13 @@ export default function AdminLayout({ children }) {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-white/35 transition-colors hover:bg-white/[0.035] hover:text-white/70"
+          className="mt-3 mb-2 flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-white/35 transition-colors hover:bg-white/[0.035] hover:text-white/70"
         >
           <ExternalLink size={15} />
           View live site
         </a>
 
-        <div ref={menuRef} className="relative border-t border-white/[0.06] pt-3">
+        <div ref={menuRef} className="relative shrink-0 border-t border-white/[0.06] pt-3">
           <button
             onClick={() => setMenuOpen((v) => !v)}
             className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-white/[0.04]"
