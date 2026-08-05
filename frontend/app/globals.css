@@ -145,6 +145,19 @@ html {
   }
 }
 
+/* Brand wordmark colour - one flat violet, no gradient.
+   Violet is the core of the logo mark, and being off the cyan hue it stays
+   distinct from the cyan buttons and active nav pill instead of blending into
+   them the way the old cyan text did. Two values only: one per theme. */
+.brand-text {
+  color: #7C3AED;
+}
+
+.dark .brand-text,
+.theme-glass .brand-text {
+  color: #A78BFA;
+}
+
 /* WhatsApp Background Pattern */
 .wa-bg-pattern {
   background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");

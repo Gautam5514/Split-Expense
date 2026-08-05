@@ -158,8 +158,8 @@ export default function UserDashboardPage() {
   return (
     <div className="min-h-screen bg-background pb-28 sm:pb-12 pt-4 sm:pt-6 px-3 sm:px-4 lg:px-8">
       {/* Decorative blur orbs */}
-      <div className="fixed top-16 -left-16 w-72 h-72 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none -z-0" />
-      <div className="fixed top-40 -right-16 w-80 h-80 bg-teal-500/5 rounded-full blur-[120px] pointer-events-none -z-0" />
+      <div className="fixed top-16 -left-16 w-72 h-72 bg-violet-500/5 rounded-full blur-[100px] pointer-events-none -z-0" />
+      <div className="fixed top-40 -right-16 w-80 h-80 bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none -z-0" />
 
       <div className="max-w-7xl mx-auto space-y-6 relative z-10">
 
@@ -168,7 +168,7 @@ export default function UserDashboardPage() {
           <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
               Hi,{" "}
-              <span className="bg-gradient-to-r from-cyan-600 via-teal-500 to-sky-500 dark:from-cyan-400 dark:to-sky-400 bg-clip-text text-transparent font-extrabold">
+              <span className="brand-text font-extrabold">
                 {profile?.name || "there"}
               </span>
             </h1>

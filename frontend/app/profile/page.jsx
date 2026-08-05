@@ -145,7 +145,7 @@ export default function ProfilePage() {
 
         {/* Identity card: gradient cover, overlapping avatar, chips, completeness */}
         <div className="min-w-0 lg:col-start-1 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-          <div className="relative h-24 sm:h-28 lg:h-32 bg-gradient-to-r from-cyan-600 via-teal-500 to-sky-500">
+          <div className="relative h-24 sm:h-28 lg:h-32 bg-violet-600">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.25),transparent_45%)]" />
           </div>
 

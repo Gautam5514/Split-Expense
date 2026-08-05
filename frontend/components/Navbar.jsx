@@ -158,7 +158,7 @@ export default function Navbar() {
             <span className={`font-extrabold text-base sm:text-xl tracking-tight transition-all duration-300 ${
               !isLoggedIn 
                 ? "text-white font-serif-premium lowercase text-lg sm:text-2xl" 
-                : "bg-gradient-to-r from-cyan-600 via-teal-500 to-sky-500 dark:from-cyan-400 dark:via-teal-300 dark:to-sky-400 bg-clip-text text-transparent"
+                : "brand-text"
             }`}>
               SplitEase
             </span>
