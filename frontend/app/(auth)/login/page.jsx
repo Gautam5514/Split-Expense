@@ -587,17 +587,6 @@ export default function LoginPage() {
 
         </div>
 
-        {/* Grayscale partner logos */}
-        <div className="mt-8 text-center pb-2">
-          <p className="text-[9px] font-semibold text-slate-600 uppercase tracking-widest mb-3">Trusted by users at</p>
-          <div className="flex justify-center items-center gap-6 opacity-30 grayscale filter">
-            <img src="/airbnb.png" className="h-3.5 object-contain" alt="Airbnb" />
-            <img src="/expedia.png" className="h-3.5 object-contain" alt="Expedia" />
-            <img src="/tripadvisor.png" className="h-3.5 object-contain" alt="Tripadvisor" />
-            <img src="/skyscanner.png" className="h-3.5 object-contain" alt="Skyscanner" />
-          </div>
-        </div>
-
       </div>
 
       <AuthVisual mode="login" />

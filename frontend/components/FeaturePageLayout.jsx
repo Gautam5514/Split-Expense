@@ -18,11 +18,21 @@ const FEATURE_PAGES = [
   { label: "Secure OTP Login", href: "/features/secure-login" },
 ];
 
+// Every feature page must say plainly whether what it describes is live,
+// in beta, or still being built - never let marketing copy alone imply a
+// feature is available when it isn't.
+const STATUS_STYLES = {
+  Available: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+  Beta: "border-amber-400/30 bg-amber-400/10 text-amber-300",
+  "Coming soon": "border-white/15 bg-white/5 text-white/50",
+};
+
 export default function FeaturePageLayout({
   tag,
   tagColor = "text-cyan-400",
   glowBg = "bg-cyan-500/10",
   borderHover = "hover:border-cyan-500/25",
+  status = "Available",
   title,
   description,
   image,
@@ -49,9 +59,14 @@ export default function FeaturePageLayout({
 
           <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-16">
             <div>
-              <span className={`text-[10px] font-extrabold uppercase tracking-widest font-mono ${tagColor}`}>
-                {tag}
-              </span>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className={`text-[10px] font-extrabold uppercase tracking-widest font-mono ${tagColor}`}>
+                  {tag}
+                </span>
+                <span className={`rounded-full border px-2.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.12em] ${STATUS_STYLES[status] || STATUS_STYLES.Available}`}>
+                  {status}
+                </span>
+              </div>
               <h1 className="font-serif-premium mt-4 text-4xl font-normal leading-[1.08] tracking-tight sm:text-5xl">
                 {title}
               </h1>

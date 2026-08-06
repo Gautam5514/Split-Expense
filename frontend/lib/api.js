@@ -25,6 +25,12 @@ api.interceptors.request.use(async (config) => {
 
   try {
     const auth = await getFirebaseAuth();
+    // On a hard refresh, Firebase restores the session from IndexedDB
+    // asynchronously - auth.currentUser is null until that finishes.
+    // authStateReady() resolves once the SDK has settled its first real
+    // state, so requests fired immediately on page load wait instead of
+    // going out unauthenticated and silently 401ing.
+    await auth.authStateReady();
     const user = auth.currentUser;
     if (user) {
       const idToken = await user.getIdToken();
@@ -36,6 +42,32 @@ api.interceptors.request.use(async (config) => {
 
   return config;
 });
+
+// If a request still comes back 401 (token expired mid-session, clock skew,
+// revoked session, etc.), force one silent token refresh and retry once
+// before giving up - avoids surfacing a stale-token failure to the user.
+api.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const { config, response } = error;
+    if (response?.status !== 401 || config?._retried) {
+      return Promise.reject(error);
+    }
+    config._retried = true;
+
+    try {
+      const auth = await getFirebaseAuth();
+      const user = auth.currentUser;
+      if (!user) return Promise.reject(error);
+
+      const freshToken = await user.getIdToken(true);
+      config.headers.Authorization = `Bearer ${freshToken}`;
+      return api(config);
+    } catch {
+      return Promise.reject(error);
+    }
+  }
+);
 
 // Kept for backward compatibility with components that call setAuthToken().
 // The interceptor above is the authoritative auth source.

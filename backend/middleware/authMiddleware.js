@@ -13,8 +13,14 @@ export const authMiddleware = async (req, res, next) => {
     let decoded;
     try {
       decoded = await admin.auth().verifyIdToken(token);
-    } catch {
-      return res.status(401).json({ message: "Invalid or expired token. Please sign in again." });
+    } catch (err) {
+      // Distinguish expiry (client can silently refresh + retry) from a
+      // genuinely invalid/revoked token (client must force a sign-out).
+      const isExpired = err?.code === "auth/id-token-expired";
+      return res.status(401).json({
+        code: isExpired ? "TOKEN_EXPIRED" : "TOKEN_INVALID",
+        message: "Invalid or expired token. Please sign in again.",
+      });
     }
 
     const { uid, email, name, picture, email_verified: emailVerified } = decoded;

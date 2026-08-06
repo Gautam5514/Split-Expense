@@ -67,7 +67,7 @@ export default function DeviceSlideShowcase() {
       id: "mobile",
       tag: "MOBILE COMPANION",
       title: "Split on the Go",
-      desc: "Log cost splits in seconds directly from the taxi, ticket line, or restaurant. Scan bills with offline AI OCR and clear pending debts with one-tap UPI settlements.",
+      desc: "Log cost splits in seconds directly from the taxi, ticket line, or restaurant. Attach a receipt photo to any expense and confirm settlements right from your phone.",
       icon: Smartphone,
       imageSrc: "/mobile.webp",
       color: "from-pink-500 to-purple-500",
@@ -75,9 +75,9 @@ export default function DeviceSlideShowcase() {
       accentBg: "bg-pink-500/10",
       glowColor: "rgba(56, 189, 248, 0.18)",
       features: [
-        "Instant camera OCR receipt scanning",
-        "Tap-to-settle UPI & QR integration",
-        "Offline-first logging & automatic syncing"
+        "Attach receipt photos to any expense",
+        "QR & link invites to join a group instantly",
+        "Two-party settlement requests, confirmed in-app"
       ]
     },
   ];

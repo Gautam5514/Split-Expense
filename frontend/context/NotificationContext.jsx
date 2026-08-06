@@ -5,7 +5,7 @@ import toast from "@/lib/toast";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { API_URL } from "@/lib/config";
-import { BellRing, Clock3, ReceiptText, UsersRound } from "lucide-react";
+import { BellRing, Clock3, ReceiptText, UsersRound, HandCoins } from "lucide-react";
 import { getNotificationPermission, onForegroundMessage } from "@/lib/firebaseMessaging";
 
 const NotificationContext = createContext();
@@ -17,6 +17,14 @@ const getNotificationMeta = (type) => {
       Icon: ReceiptText,
       iconClass: "bg-emerald-500/10 text-emerald-500 ring-emerald-500/15",
       accentClass: "from-emerald-500/20 via-transparent to-teal-500/10",
+    };
+  }
+  if (type === "settlement") {
+    return {
+      label: "Settlement update",
+      Icon: HandCoins,
+      iconClass: "bg-amber-500/10 text-amber-600 ring-amber-500/15",
+      accentClass: "from-amber-500/20 via-transparent to-orange-500/10",
     };
   }
   return {

@@ -2,52 +2,6 @@
 
 import Link from "next/link";
 
-// Custom Security & Compliance Badges matching the Obsidian aesthetic
-const GDPRBadge = () => (
-  <div className="relative w-[52px] h-[52px] rounded-full border border-white/[0.08] bg-white/[0.02] flex flex-col items-center justify-center text-center group hover:border-white/[0.15] hover:bg-white/[0.04] transition-all duration-300">
-    <svg className="absolute inset-0 w-full h-full text-white/[0.04] animate-[spin_32s_linear_infinite]" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3, 5" />
-    </svg>
-    <span className="text-[9px] font-extrabold text-[#A0AEC0] tracking-widest leading-none">GDPR</span>
-    <span className="text-[5px] text-[#718096] uppercase tracking-wider font-semibold mt-0.5">Compliant</span>
-  </div>
-);
-
-const SOC2Badge = () => (
-  <div className="relative w-[52px] h-[52px] rounded-full border border-white/[0.08] bg-white/[0.02] flex flex-col items-center justify-center text-center group hover:border-white/[0.15] hover:bg-white/[0.04] transition-all duration-300">
-    <div className="absolute inset-[3px] rounded-full border border-white/[0.03]" />
-    <span className="text-[7px] text-[#718096] font-extrabold tracking-[0.05em] leading-none">AICPA</span>
-    <span className="text-[9px] font-extrabold text-[#A0AEC0] tracking-widest mt-0.5 leading-none">SOC 2</span>
-    <span className="text-[5px] text-[#718096] uppercase tracking-wider font-semibold mt-0.5 leading-none">Type II</span>
-  </div>
-);
-
-const ISO27001Badge = () => (
-  <div className="relative w-[52px] h-[52px] rounded-full border border-white/[0.08] bg-white/[0.02] flex flex-col items-center justify-center text-center group hover:border-white/[0.15] hover:bg-white/[0.04] transition-all duration-300">
-    <div className="absolute inset-[3px] rounded-full border border-white/[0.03]" />
-    <span className="text-[5px] text-[#718096] font-bold uppercase tracking-wider leading-none">ISO/IEC</span>
-    <span className="text-[9px] font-extrabold text-[#A0AEC0] tracking-widest mt-0.5 leading-none">27001</span>
-    <span className="text-[5px] text-[#718096] uppercase tracking-wider font-semibold mt-0.5 leading-none">Security</span>
-  </div>
-);
-
-const ISO22301Badge = () => (
-  <div className="relative w-[52px] h-[52px] rounded-full border border-white/[0.08] bg-white/[0.02] flex flex-col items-center justify-center text-center group hover:border-white/[0.15] hover:bg-white/[0.04] transition-all duration-300">
-    <div className="absolute inset-[3px] rounded-full border border-white/[0.03]" />
-    <span className="text-[5px] text-[#718096] font-bold uppercase tracking-wider leading-none">ISO/IEC</span>
-    <span className="text-[9px] font-extrabold text-[#A0AEC0] tracking-widest mt-0.5 leading-none">22301</span>
-    <span className="text-[5px] text-[#718096] uppercase tracking-wider font-semibold mt-0.5 leading-none">Business</span>
-  </div>
-);
-
-const PCIDSSBadge = () => (
-  <div className="relative w-[52px] h-[52px] rounded-full border border-white/[0.08] bg-white/[0.02] flex flex-col items-center justify-center text-center group hover:border-white/[0.15] hover:bg-white/[0.04] transition-all duration-300">
-    <div className="absolute inset-[3px] rounded-full border border-white/[0.03]" />
-    <span className="text-[8px] font-extrabold text-[#A0AEC0] tracking-wider leading-none">PCI DSS</span>
-    <span className="text-[5px] text-[#718096] uppercase tracking-wider font-semibold mt-0.5 leading-none">Certified</span>
-  </div>
-);
-
 const GithubIcon = () => (
   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
@@ -98,19 +52,22 @@ export default function Footer() {
               </span>
             </div>
 
-            {/* Registered Company Info */}
+            {/* Company Info */}
             <p className="text-xs text-[#718096] leading-relaxed max-w-sm">
-              SplitEase Technologies Private Limited is a financial software platform registered in India with corporate identification number U6326982. Registered office: 12th Floor, Tech Hub Tower, Outer Ring Road, Bengaluru, Karnataka, 560103.
+              SplitEase is an expense-splitting platform. For support or legal inquiries, reach us at{" "}
+              <a href="mailto:support@splitease.app" className="text-[#A0AEC0] hover:text-white transition-colors">
+                support@splitease.app
+              </a>.
             </p>
 
-            {/* Trust Badges */}
-            <div className="flex flex-wrap gap-3 mt-7 mb-8">
-              <GDPRBadge />
-              <SOC2Badge />
-              <ISO27001Badge />
-              <ISO22301Badge />
-              <PCIDSSBadge />
-            </div>
+            {/* Honest security note - no certification claims without audited evidence */}
+            <p className="text-[11px] text-[#718096] leading-relaxed mt-4 max-w-sm">
+              Security practices inspired by OWASP standards - TLS encryption in transit, encryption at rest.{" "}
+              <Link href="/security" className="text-[#A0AEC0] hover:text-white transition-colors underline decoration-white/20">
+                See our security page
+              </Link>
+              {" "}for details.
+            </p>
 
             {/* Social Icons Row */}
             <div className="flex items-center gap-3.5 mb-5">
@@ -134,7 +91,7 @@ export default function Footer() {
 
             {/* Copyright block */}
             <p className="text-[11px] text-[#4A5568] leading-relaxed">
-              &copy; {new Date().getFullYear()} SplitEase Technologies Private Limited. SplitEase, SplitEase AI, and their respective logo marks are registered trademarks of SplitEase Technologies.
+              &copy; {new Date().getFullYear()} SplitEase. SplitEase and the SplitEase logo are trademarks of SplitEase.
             </p>
           </div>
 

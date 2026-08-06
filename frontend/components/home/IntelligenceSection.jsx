@@ -24,11 +24,11 @@ const ROW = "clamp(44px, 6.5vw, 92px)";
 
 const WORDS = [
   { label: "INSTANT SPLIT", info: "EQUAL, SHARES OR EXACT. SETTLED IN ONE TAP" },
-  { label: "RECEIPT VISION", info: "OCR SCANS ITEMIZE EVERY BILL AUTOMATICALLY" },
+  { label: "RECEIPT VISION", info: "ATTACH BILL PHOTOS NOW - AI ITEMIZATION COMING SOON" },
   { label: "SETTLE CHAT", info: "EVERY PAYMENT LIVES INSIDE THE CONVERSATION" },
   { label: "DEBT GRAPH", info: "BALANCES ROUTED THROUGH MINIMAL TRANSFERS" },
   { label: "LIVE LEDGER", info: "REAL-TIME SYNC ACROSS EVERY DEVICE" },
-  { label: "UPI BRIDGE", info: "CLEAR ALL DEBTS IN SECONDS, NO REMINDERS" },
+  { label: "SETTLE CONFIRM", info: "TWO-PARTY CONFIRMATION BEFORE ANY BALANCE MOVES" },
 ];
 
 // Active index grows forever; content repeats so the scroll never jumps back up.

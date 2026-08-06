@@ -6,6 +6,7 @@ import toast from "@/lib/toast";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -41,6 +42,7 @@ const getCategoryColor = (cat, index) => {
 
 export default function UserDashboardPage() {
   const router = useRouter();
+  const { token, loading: authLoading } = useAuth();
 
   const [analytics, setAnalytics]           = useState(null);
   const [groups, setGroups]                 = useState([]);
@@ -55,7 +57,13 @@ export default function UserDashboardPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    // Wait for Firebase to finish restoring the session on a hard refresh -
+    // fetching before it resolves means every request goes out unauthenticated.
+    if (authLoading) return;
+    if (!token) { setLoading(false); return; }
+    fetchData();
+  }, [token, authLoading]);
 
   const fetchData = async () => {
     try {
@@ -169,12 +177,9 @@ export default function UserDashboardPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
               Hi,{" "}
               <span className="brand-text font-extrabold">
-                {profile?.name || "there"}
+                {profile?.name?.split(" ")[0] || "there"}
               </span>
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Your shared expenses and active trip insights.
-            </p>
           </motion.div>
 
           <motion.form

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import Expense from "../models/expenseModel.js";
 import Group from "../models/groupModel.js";
 
-const to2 = (n) => Number(Number(n).toFixed(2));
+export const to2 = (n) => Number(Number(n).toFixed(2));
 
 // Map<groupId, { data, expiresAt }> - invalidated on any expense write
 const balanceCache = new Map();
@@ -32,6 +32,51 @@ const buildSettlement = (balancesObj) => {
   return txns;
 };
 
+// Single source of truth for "how much does each member currently owe/get
+// owed" - shared by the HTTP endpoint below AND settlement-request
+// validation, so the two can never drift apart on rounding/logic.
+export const computeGroupBalances = async (groupId) => {
+  const group = await Group.findById(groupId).populate("members", "name email");
+  if (!group) return null;
+
+  // Deduplicate members (guards against corrupt DB state)
+  const seenIds = new Set();
+  const uniqueMembers = group.members.filter((m) => {
+    const id = m._id.toString();
+    if (seenIds.has(id)) return false;
+    seenIds.add(id);
+    return true;
+  });
+
+  const activeMembers = uniqueMembers.map((m) => m._id.toString());
+  const activeSet = new Set(activeMembers);
+
+  // Init balances ONLY for active members
+  const balances = {};
+  for (const id of activeMembers) balances[id] = 0;
+
+  const expenses = await Expense.find({ groupId }).lean();
+
+  for (const exp of expenses) {
+    const payerId = exp.paidBy?.toString?.();
+    if (payerId && activeSet.has(payerId)) {
+      balances[payerId] = to2((balances[payerId] || 0) + Number(exp.amount || 0));
+    }
+
+    if (!Array.isArray(exp.splits)) continue;
+
+    for (const s of exp.splits) {
+      if (!s?.userId) continue;
+      const uid = s.userId.toString();
+      if (activeSet.has(uid)) {
+        balances[uid] = to2((balances[uid] || 0) - Number(s.share || 0));
+      }
+    }
+  }
+
+  return { group, uniqueMembers, activeSet, balances };
+};
+
 export const getBalances = async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -41,44 +86,9 @@ export const getBalances = async (req, res) => {
       return res.json(cached.data);
     }
 
-    // Get the CURRENT active members
-    const group = await Group.findById(groupId).populate("members", "name email");
-    if (!group) return res.status(404).json({ message: "Group not found" });
-
-    // Deduplicate members (guards against corrupt DB state)
-    const seenIds = new Set();
-    const uniqueMembers = group.members.filter((m) => {
-      const id = m._id.toString();
-      if (seenIds.has(id)) return false;
-      seenIds.add(id);
-      return true;
-    });
-
-    const activeMembers = uniqueMembers.map((m) => m._id.toString());
-    const activeSet = new Set(activeMembers);
-
-    // Init balances ONLY for active members
-    const balances = {};
-    for (const id of activeMembers) balances[id] = 0;
-
-    const expenses = await Expense.find({ groupId }).lean();
-
-    for (const exp of expenses) {
-      const payerId = exp.paidBy?.toString?.();
-      if (payerId && activeSet.has(payerId)) {
-        balances[payerId] = to2((balances[payerId] || 0) + Number(exp.amount || 0));
-      }
-
-      if (!Array.isArray(exp.splits)) continue;
-
-      for (const s of exp.splits) {
-        if (!s?.userId) continue;
-        const uid = s.userId.toString();
-        if (activeSet.has(uid)) {
-          balances[uid] = to2((balances[uid] || 0) - Number(s.share || 0));
-        }
-      }
-    }
+    const computed = await computeGroupBalances(groupId);
+    if (!computed) return res.status(404).json({ message: "Group not found" });
+    const { uniqueMembers, balances } = computed;
 
     // readable - use uniqueMembers so no user appears twice
     const readable = uniqueMembers.map((m) => ({

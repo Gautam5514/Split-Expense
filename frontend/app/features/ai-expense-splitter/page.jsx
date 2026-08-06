@@ -12,7 +12,7 @@ const useCase = {
 const steps = [
   { title: "Ask a question", desc: "Type something like “how much do I owe Raj?” or “split this ₹3,200 dinner three ways.”" },
   { title: "AI reads the group", desc: "It pulls real balances, past expenses, and members - no manual context needed." },
-  { title: "Get a straight answer", desc: "A clear breakdown or split suggestion, with a tap-to-settle option when you're ready." },
+  { title: "Get a straight answer", desc: "A clear breakdown or split suggestion, based on your group's real expenses and balances." },
 ];
 
 export default function AIExpenseSplitterPage() {

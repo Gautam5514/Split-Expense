@@ -1,11 +1,13 @@
 import mongoose from "mongoose";
 import Expense from "../models/expenseModel.js";
 import Group from "../models/groupModel.js";
+import SettlementRequest from "../models/settlementRequestModel.js";
 import { createNotification } from "../controllers/notificationController.js";
-import { invalidateBalanceCache } from "../controllers/balanceController.js";
+import { invalidateBalanceCache, computeGroupBalances, to2 } from "../controllers/balanceController.js";
 import { runOcr } from "../utils/ocrService.js";
 import { isValidObjectId } from "../middleware/validate.js";
 import { incrementExpenseCount } from "../utils/referralService.js";
+import { io } from "../index.js";
 
 const VALID_CATEGORIES = ["general", "food", "travel", "stay", "shopping", "bills"];
 
@@ -212,57 +214,279 @@ export const getExpenses = async (req, res) => {
   }
 };
 
-// POST /api/expenses/settle
-// Records a settlement payment: `from` pays `to` the given amount.
+// ── Settlement request/confirm flow ──────────────────────────────────────
+//
+// A settlement can never be written to Expense (and therefore can never move
+// a balance) from a single party's say-so. Whoever clicks first only creates
+// a `pending` SettlementRequest; the OTHER party must explicitly confirm it
+// before createSettlementExpense() below ever runs. This closes the old
+// /expenses/settle bug where any member could silently zero out anyone
+// else's debt with no counterparty approval.
+//
 // Math: paidBy=from (+amount to from's balance), splits=[{to, amount}] (-amount from to's balance)
 // Net effect: both balances move toward 0. Future expenses accumulate from the new 0 baseline.
-export const recordSettlement = async (req, res) => {
+const createSettlementExpense = async ({ groupId, fromUserId, toUserId, amount, method }) => {
+  const expense = await Expense.create({
+    groupId:      new mongoose.Types.ObjectId(groupId),
+    description:  `Settlement (${method === "online" ? "Online" : "Cash"})`,
+    amount,
+    paidBy:       new mongoose.Types.ObjectId(fromUserId),
+    splitType:    "exact",
+    category:     "general",
+    participants: [new mongoose.Types.ObjectId(toUserId)],
+    splits:       [{ userId: new mongoose.Types.ObjectId(toUserId), share: amount }],
+    isSettlement: true,
+    date:         new Date(),
+  });
+  invalidateBalanceCache(groupId);
+  return expense;
+};
+
+// How much `fromUserId` can currently settle with `toUserId`, per the live
+// balance sheet - never trust a client-supplied amount against a stale
+// balance. Returns null if either user has no live group balance (e.g. not
+// a member, or the group vanished).
+const maxSettleableBetween = (balances, fromUserId, toUserId) => {
+  const fromBal = balances[String(fromUserId)];
+  const toBal = balances[String(toUserId)];
+  if (fromBal === undefined || toBal === undefined) return null;
+  if (fromBal > -0.01) return 0; // fromUser doesn't currently owe anything
+  if (toBal < 0.01) return 0;    // toUser isn't currently owed anything
+  return to2(Math.min(-fromBal, toBal));
+};
+
+const populateRequest = (query) =>
+  query
+    .populate("fromUserId", "name email")
+    .populate("toUserId", "name email")
+    .populate("initiatedBy", "name email")
+    .lean();
+
+// POST /api/expenses/settle/request
+// Either party can initiate ("I paid" / "I received payment") - the OTHER
+// party must confirm before anything touches the ledger.
+export const requestSettlement = async (req, res) => {
   try {
-    const { groupId, fromUserId, toUserId, amount } = req.body;
+    const uid = asId(req.user);
+    const { groupId, fromUserId, toUserId, amount, method = "cash", note = "" } = req.body;
 
     if (!groupId || !fromUserId || !toUserId || !amount)
       return res.status(400).json({ message: "groupId, fromUserId, toUserId and amount are required." });
+    if (sameId(fromUserId, toUserId))
+      return res.status(400).json({ message: "A member cannot settle with themselves." });
+    if (!["cash", "online"].includes(method))
+      return res.status(400).json({ message: "Invalid payment method." });
 
     const amt = Number(amount);
     if (isNaN(amt) || amt <= 0)
       return res.status(400).json({ message: "Amount must be a positive number." });
+    if (amt > 9999999)
+      return res.status(400).json({ message: "Amount exceeds the maximum limit of ₹99,99,999." });
+
+    // Only the two people actually involved can start a claim about their own debt.
+    if (!sameId(uid, fromUserId) && !sameId(uid, toUserId))
+      return res.status(403).json({ message: "You can only settle a balance you're a party to." });
 
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found." });
+    if (!ensureMember(group, fromUserId) || !ensureMember(group, toUserId))
+      return res.status(403).json({ message: "Both members must be part of this group." });
 
-    const allMemberIds = group.members.map(String);
-    if (!allMemberIds.includes(String(fromUserId)) || !allMemberIds.includes(String(toUserId)))
-      return res.status(403).json({ message: "Both users must be members of this group." });
+    // Math validation: never let a claimed settlement exceed the live outstanding balance.
+    const computed = await computeGroupBalances(groupId);
+    if (!computed) return res.status(404).json({ message: "Group not found." });
+    const maxSettleable = maxSettleableBetween(computed.balances, fromUserId, toUserId);
+    if (!maxSettleable) {
+      return res.status(400).json({
+        message: "There is no outstanding balance between these two members right now.",
+      });
+    }
+    if (amt > maxSettleable + 0.01) {
+      return res.status(400).json({
+        message: `Amount exceeds the outstanding balance - at most ₹${maxSettleable.toFixed(2)} can be settled between these two members right now.`,
+      });
+    }
 
-    const expense = await Expense.create({
-      groupId:      new mongoose.Types.ObjectId(groupId),
-      description:  `Settlement`,
-      amount:       amt,
-      paidBy:       new mongoose.Types.ObjectId(fromUserId),
-      splitType:    "exact",
-      category:     "general",
-      participants: [new mongoose.Types.ObjectId(toUserId)],
-      splits:       [{ userId: new mongoose.Types.ObjectId(toUserId), share: amt }],
-      isSettlement: true,
-      date:         new Date(),
-    });
+    let request;
+    try {
+      request = await SettlementRequest.create({
+        groupId, fromUserId, toUserId,
+        amount: amt, method, note: note.trim().slice(0, 200),
+        initiatedBy: uid,
+      });
+    } catch (err) {
+      if (err.code === 11000) {
+        return res.status(409).json({ message: "A settlement request between these two members is already pending." });
+      }
+      throw err;
+    }
 
-    // Notify both parties
-    await createNotification(
-      [toUserId],
-      `Settlement of ₹${amt.toFixed(0)} has been recorded in "${group.name}"`,
-      `/groups/${groupId}`,
-      "group"
-    );
+    const populated = await populateRequest(SettlementRequest.findById(request._id));
 
-    const populated = await Expense.findById(expense._id)
-      .populate("paidBy", "name email")
-      .populate("splits.userId", "name email")
-      .lean();
-    invalidateBalanceCache(groupId);
+    const counterpartyId = sameId(uid, fromUserId) ? toUserId : fromUserId;
+    const initiatorIsPayer = sameId(uid, fromUserId);
+    const message = initiatorIsPayer
+      ? `${req.user.name} says they paid you ₹${amt.toFixed(0)} in "${group.name}". Tap to confirm.`
+      : `${req.user.name} says they received ₹${amt.toFixed(0)} from you in "${group.name}". Tap to confirm.`;
+
+    await createNotification([counterpartyId], message, `/groups/${groupId}`, "settlement");
+    io.to(`group:${groupId}`).emit("settlementUpdate", { groupId, kind: "requested" });
+
     res.status(201).json(populated);
   } catch (err) {
-    console.error("❌ recordSettlement:", err.message);
+    console.error("❌ requestSettlement:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/expenses/settle/:requestId/confirm
+// Only the party who did NOT initiate the request may confirm it.
+export const confirmSettlementRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    if (!isValidObjectId(requestId))
+      return res.status(400).json({ message: "Invalid request id." });
+
+    const uid = asId(req.user);
+    const request = await SettlementRequest.findById(requestId);
+    if (!request) return res.status(404).json({ message: "Settlement request not found." });
+    if (request.status !== "pending")
+      return res.status(409).json({ message: `This settlement request was already ${request.status}.` });
+    if (!sameId(request.fromUserId, uid) && !sameId(request.toUserId, uid))
+      return res.status(403).json({ message: "You are not a party to this settlement." });
+    if (sameId(request.initiatedBy, uid))
+      return res.status(403).json({ message: "You can't confirm your own settlement request - the other member needs to." });
+
+    const group = await Group.findById(request.groupId);
+    if (!group) return res.status(404).json({ message: "Group not found." });
+
+    // Re-validate against the CURRENT balance, not the balance at request time -
+    // other expenses may have changed things since this request was created.
+    const computed = await computeGroupBalances(request.groupId);
+    if (!computed) return res.status(404).json({ message: "Group not found." });
+    const maxSettleable = maxSettleableBetween(computed.balances, request.fromUserId, request.toUserId);
+    if (!maxSettleable || Number(request.amount) > maxSettleable + 0.01) {
+      return res.status(409).json({
+        message: "Balances have changed since this request was made and it no longer matches the outstanding amount. Reject it and ask for a new request.",
+      });
+    }
+
+    const expense = await createSettlementExpense({
+      groupId: request.groupId,
+      fromUserId: request.fromUserId,
+      toUserId: request.toUserId,
+      amount: Number(request.amount),
+      method: request.method,
+    });
+
+    request.status = "confirmed";
+    request.expenseId = expense._id;
+    request.respondedAt = new Date();
+    await request.save();
+
+    await createNotification(
+      [request.initiatedBy],
+      `${req.user.name} confirmed the ₹${Number(request.amount).toFixed(0)} settlement in "${group.name}".`,
+      `/groups/${request.groupId}`,
+      "settlement"
+    );
+    io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "confirmed" });
+
+    const populated = await populateRequest(SettlementRequest.findById(request._id));
+    res.json({ request: populated, expense });
+  } catch (err) {
+    console.error("❌ confirmSettlementRequest:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/expenses/settle/:requestId/reject
+// The counterparty disputes the claim ("I haven't received/paid this") - no
+// balance change, the requester is notified so they can correct and resend.
+export const rejectSettlementRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    if (!isValidObjectId(requestId))
+      return res.status(400).json({ message: "Invalid request id." });
+
+    const uid = asId(req.user);
+    const request = await SettlementRequest.findById(requestId);
+    if (!request) return res.status(404).json({ message: "Settlement request not found." });
+    if (request.status !== "pending")
+      return res.status(409).json({ message: `This settlement request was already ${request.status}.` });
+    if (sameId(request.initiatedBy, uid))
+      return res.status(403).json({ message: "You can't reject your own settlement request - cancel it instead." });
+    if (!sameId(request.fromUserId, uid) && !sameId(request.toUserId, uid))
+      return res.status(403).json({ message: "You are not a party to this settlement." });
+
+    request.status = "rejected";
+    request.respondedAt = new Date();
+    await request.save();
+
+    const group = await Group.findById(request.groupId).select("name").lean();
+    await createNotification(
+      [request.initiatedBy],
+      `${req.user.name} said this ₹${Number(request.amount).toFixed(0)} settlement wasn't confirmed in "${group?.name || "your group"}". Check the details and try again.`,
+      `/groups/${request.groupId}`,
+      "settlement"
+    );
+    io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "rejected" });
+
+    const populated = await populateRequest(SettlementRequest.findById(request._id));
+    res.json(populated);
+  } catch (err) {
+    console.error("❌ rejectSettlementRequest:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/expenses/settle/:requestId/cancel
+// The initiator can withdraw their own still-pending claim.
+export const cancelSettlementRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    if (!isValidObjectId(requestId))
+      return res.status(400).json({ message: "Invalid request id." });
+
+    const uid = asId(req.user);
+    const request = await SettlementRequest.findById(requestId);
+    if (!request) return res.status(404).json({ message: "Settlement request not found." });
+    if (request.status !== "pending")
+      return res.status(409).json({ message: `This settlement request was already ${request.status}.` });
+    if (!sameId(request.initiatedBy, uid))
+      return res.status(403).json({ message: "Only the person who sent this request can cancel it." });
+
+    request.status = "cancelled";
+    request.respondedAt = new Date();
+    await request.save();
+
+    io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "cancelled" });
+
+    const populated = await populateRequest(SettlementRequest.findById(request._id));
+    res.json(populated);
+  } catch (err) {
+    console.error("❌ cancelSettlementRequest:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/expenses/settle/pending/:groupId
+export const getPendingSettlements = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const uid = asId(req.user);
+
+    const group = await Group.findById(groupId).select("members").lean();
+    if (!group) return res.status(404).json({ message: "Group not found." });
+    if (!ensureMember(group, uid))
+      return res.status(403).json({ message: "You are not a member of this group." });
+
+    const pending = await populateRequest(
+      SettlementRequest.find({ groupId, status: "pending" }).sort({ createdAt: -1 })
+    );
+    res.json(pending);
+  } catch (err) {
+    console.error("❌ getPendingSettlements:", err.message);
     res.status(500).json({ message: err.message });
   }
 };

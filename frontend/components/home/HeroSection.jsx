@@ -43,7 +43,7 @@ export default function HeroSection() {
           transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
           className="text-white/60 text-sm sm:text-base md:text-lg max-w-2xl text-center leading-relaxed mb-8 sm:mb-10 font-medium px-4"
         >
-          AI-powered expense management available now - with intelligent receipt scanning and smart settling launching soon.
+          Split expenses with your groups and settle up with smart settlement suggestions, available now - with AI-powered receipt scanning coming soon.
         </motion.p>
 
         {/* CTA Button */}

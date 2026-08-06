@@ -31,3 +31,6 @@ next-env.d.ts
 # Nested repository metadata
 frontend/.git/
 frontend/.git.frontend-backup/
+
+# Local notes
+INTERVIEW_PREP.md

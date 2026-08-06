@@ -8,7 +8,6 @@ import { captureReferralFromLocation } from "@/lib/referral";
 
 // Above-the-fold: load eagerly so the hero paints immediately.
 import HeroSection from "@/components/home/HeroSection";
-import LogoSlider from "@/components/LogoSlider";
 import SmoothScroll from "@/components/SmoothScroll";
 import ScrollProgressAndTop from "@/components/ScrollProgressAndTop";
 import LazySection from "@/components/LazySection";
@@ -50,7 +49,6 @@ export default function HomePage() {
 
       {/* Above the fold — eager */}
       <HeroSection />
-      <LogoSlider />
 
       {/* Below the fold — chunked + mounted on demand */}
       <LazySection minHeight="800vh">

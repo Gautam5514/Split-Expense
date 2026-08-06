@@ -72,6 +72,8 @@ const notificationTitleForType = (type) => {
   switch (type) {
     case "expense":
       return "New expense";
+    case "settlement":
+      return "Settlement update";
     case "group":
     default:
       return "SplitEase";

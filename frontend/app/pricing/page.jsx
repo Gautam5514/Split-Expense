@@ -15,7 +15,7 @@ const PLANS = [
   {
     name: "Splitease",
     price: "Free",
-    blurb: "Everything you need to split with friends. Groups, AI receipt scanning, chat, and UPI settlement.",
+    blurb: "Everything you need to split with friends. Groups, receipt photos, chat, and smart settlements.",
     cta: "Start for free",
     href: "/register",
     featured: true,
@@ -44,11 +44,11 @@ const FEATURE_GROUPS = [
   },
   {
     title: "AI & Receipts",
-    blurb: "Let the scanner do the typing.",
+    blurb: "Let the assistant help - scanning is on the way.",
     rows: [
-      ["AI OCR receipt scanning", true, true],
-      ["Auto-itemized line entries", true, true],
+      ["Attach receipt photos to expenses", true, true],
       ["Built-in AI assistant", true, true],
+      ["AI-powered receipt scanning & auto-itemization", false, "soon"],
       ["Priority scan queue", false, "soon"],
       ["Bulk receipt import", false, "soon"],
     ],
@@ -59,8 +59,9 @@ const FEATURE_GROUPS = [
     rows: [
       ["Real-time group chat", true, true],
       ["Payments recorded in chat", true, true],
-      ["Minimum-transfer settlement", true, true],
-      ["One-tap UPI settle up", true, true],
+      ["Minimum-transfer settlement suggestions", true, true],
+      ["Settlement requests with two-party confirmation", true, true],
+      ["Direct UPI payment integration", false, "soon"],
       ["Automatic payment reminders", false, "soon"],
     ],
   },
@@ -80,7 +81,7 @@ const FEATURE_GROUPS = [
 const FAQS = [
   {
     q: "Is Splitease really free?",
-    a: "Yes. Every core feature, including groups, splits, AI receipt scanning, chat, and UPI settlement, is free. There are no member caps, trial timers, or locked features.",
+    a: "Yes. Every core feature, including groups, splits, chat, the AI assistant, and settlement tracking, is free. There are no member caps, trial timers, or locked features. AI-powered receipt scanning is on the roadmap.",
   },
   {
     q: "Will I ever have to pay?",

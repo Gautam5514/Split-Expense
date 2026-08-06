@@ -4,7 +4,7 @@ const sections = [
   {
     title: "Who this covers",
     body: [
-      "SplitEase Technologies Private Limited operates the SplitEase app, website, and related services. These legal pages apply to anyone who creates an account, joins a group, or otherwise uses SplitEase.",
+      "SplitEase operates the SplitEase app, website, and related services. These legal pages apply to anyone who creates an account, joins a group, or otherwise uses SplitEase.",
       "Where a specific policy (Privacy, Terms, Security, Cookies) goes into more detail than this overview, that policy governs.",
     ],
   },
@@ -20,8 +20,7 @@ const sections = [
   {
     title: "Company details",
     body: [
-      "SplitEase Technologies Private Limited is a financial software platform registered in India with corporate identification number U6326982.",
-      "Registered office: 12th Floor, Tech Hub Tower, Outer Ring Road, Bengaluru, Karnataka, 560103.",
+      "Formal registered-entity details (legal name, registration number, and registered address) will be published here once verified and finalized. Until then, treat SplitEase as the operating brand name, not a confirmed registered legal entity.",
     ],
   },
   {

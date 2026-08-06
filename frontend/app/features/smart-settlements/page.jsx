@@ -5,14 +5,14 @@ const useCase = {
   paragraphs: [
     "The moment someone adds an expense, every member's balance recalculates instantly - no refreshing, no one running mental math at the table.",
     "Smart Settlements also works out the minimum number of transfers needed to clear a group, instead of everyone paying everyone back individually. Six people can settle a trip in two or three payments instead of fifteen.",
-    "When it's time to actually pay, one tap starts a UPI settle-up and logs it against the group automatically - so the balance and the real-world payment never fall out of sync.",
+    "When it's time to actually pay - by cash or a bank/UPI transfer you make yourselves - one side files a settlement claim and the other confirms it before the balance moves, so no one can mark a debt paid unilaterally. Direct in-app UPI payment is on our roadmap.",
   ],
 };
 
 const steps = [
   { title: "Add an expense", desc: "Log who paid and how it's split - equally, by percentage, shares, or exact amounts." },
   { title: "Balances update live", desc: "Every member's net position recalculates instantly across every device in the group." },
-  { title: "Settle in one tap", desc: "SplitEase works out the fewest transfers needed and lets you settle by UPI directly." },
+  { title: "Settle with confirmation", desc: "SplitEase works out the fewest transfers needed; the payer files a claim and the payee confirms it before the balance changes." },
 ];
 
 export default function SmartSettlementsPage() {
@@ -30,7 +30,7 @@ export default function SmartSettlementsPage() {
       points={[
         "Real-time synchronization across every device",
         "Instant net-debt calculations for the whole group",
-        "Minimum-transfer settlements and one-tap UPI settle up",
+        "Minimum-transfer settlements with two-party confirmation",
       ]}
       steps={steps}
       currentHref="/features/smart-settlements"

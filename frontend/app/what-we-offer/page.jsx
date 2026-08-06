@@ -40,10 +40,10 @@ function CoinsIcon({ size = 18, className = "" }) {
 
 const OFFERINGS = [
   { icon: Calculator, title: "Smart Split Engine", desc: "Split equally, by percentage, shares, or exact amounts. The math is handled the moment an expense lands." },
-  { icon: ScanLine, title: "AI Receipt Scanner", desc: "Snap any bill and OCR reads every line item, itemizes it, and adds it to the group automatically." },
+  { icon: ScanLine, title: "AI Receipt Scanner", desc: "Attach a photo of any bill to an expense so everyone can see exactly what they're paying for. Automatic item extraction is coming soon.", soon: true },
   { icon: MessageCircleMore, title: "Settle Chat", desc: "Talk and split in the same place. Every expense and payment lives inside the group conversation." },
   { icon: Zap, title: "Minimal Transfers", desc: "Our optimizer nets all balances and routes the fewest possible payments to settle the whole group." },
-  { icon: Wallet, title: "One-Tap UPI Settle", desc: "Clear every debt with UPI in seconds. Each settlement is recorded and balances reset to zero." },
+  { icon: Wallet, title: "Two-Party Settlements", desc: "Claim a payment and the other side confirms it before any balance changes - no one-sided 'mark as paid'. Direct UPI payment integration is coming soon." },
   { icon: Trophy, title: "Elite Club Rewards", desc: "Earn coins by referring friends and unlock badges, custom themes, priority support, and early access." },
 ];
 
@@ -129,9 +129,16 @@ export default function WhatWeOfferPage() {
               transition={{ duration: 0.55, delay: (i % 3) * 0.1, ease: "easeOut" }}
               className="group rounded-2xl border border-white/[0.08] bg-[#0B0B0F] p-7 transition-colors duration-300 hover:border-cyan-400/30"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20 transition-transform duration-300 group-hover:scale-110">
-                <item.icon size={21} />
-              </span>
+              <div className="flex items-start justify-between gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20 transition-transform duration-300 group-hover:scale-110">
+                  <item.icon size={21} />
+                </span>
+                {item.soon && (
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-white/50">
+                    Coming soon
+                  </span>
+                )}
+              </div>
               <h3 className="font-serif-premium mt-5 text-xl font-normal">{item.title}</h3>
               <p className="mt-2.5 text-sm leading-relaxed text-white/50">{item.desc}</p>
             </motion.div>

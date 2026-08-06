@@ -9,6 +9,7 @@ import MemberPicker from "@/components/MemberPicker";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import InviteModal from "@/components/InviteModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import MembersModal from "@/components/MembersModal";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -38,11 +39,13 @@ import {
   UserPlus,
   Zap,
   Wallet2,
+  Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import NotepadSection from "@/components/Notepad/NotepadSection";
 import OcrViewModal from "@/components/OcrViewModal";
 import Loader3D from "@/components/Loader3D";
+import socket, { connectSocket } from "@/lib/socket";
 
 const categoryIcons = {
   food: Utensils,
@@ -71,7 +74,7 @@ const fmtDate = new Intl.DateTimeFormat("en-IN", {
 export default function GroupDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, loading: authLoading } = useAuth();
   const groupId = useMemo(() => params?.id, [params]);
 
   const [group, setGroup] = useState(null);
@@ -80,10 +83,12 @@ export default function GroupDetailPage() {
   const [adding, setAdding] = useState(false);
   const [expenses, setExpenses] = useState([]);
   const [balances, setBalances] = useState(null);
+  const [pendingSettlements, setPendingSettlements] = useState([]);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showOcrModal, setShowOcrModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedOcr, setSelectedOcr] = useState(null);
   const [expandedPayerId, setExpandedPayerId] = useState(null);
@@ -124,15 +129,47 @@ export default function GroupDetailPage() {
     }
   };
 
-  useEffect(() => {
-    if (groupId) {
-      // Fetch current user's MongoDB _id - Firebase token payload doesn't carry it
-      api.get("/users/me").then((r) => setMeId(r.data?._id || r.data?.id || null)).catch(() => {});
-      fetchGroup();
-      fetchExpenses();
-      fetchBalances();
+  const fetchPendingSettlements = async () => {
+    try {
+      const res = await api.get(`/expenses/settle/pending/${groupId}`);
+      setPendingSettlements(res.data || []);
+    } catch {
+      // Non-critical - the Smart Settlements list still works without this.
     }
-  }, [groupId]);
+  };
+
+  useEffect(() => {
+    // Wait for Firebase to finish restoring the session on a hard refresh -
+    // fetching before it resolves means every request goes out unauthenticated.
+    if (authLoading) return;
+    if (!groupId || !token) return;
+    // Fetch current user's MongoDB _id - Firebase token payload doesn't carry it
+    api.get("/users/me").then((r) => setMeId(r.data?._id || r.data?.id || null)).catch(() => {});
+    fetchGroup();
+    fetchExpenses();
+    fetchBalances();
+    fetchPendingSettlements();
+  }, [groupId, token, authLoading]);
+
+  // Live refresh: any confirm/reject/cancel from the other party (or from
+  // this user on another tab) pushes a "settlementUpdate" event to everyone
+  // viewing this group, so the balances/pending list never go stale.
+  useEffect(() => {
+    if (!groupId || !token) return;
+    connectSocket();
+    socket.emit("joinGroup", groupId);
+    const onSettlementUpdate = (payload) => {
+      if (String(payload?.groupId) !== String(groupId)) return;
+      fetchBalances();
+      fetchExpenses();
+      fetchPendingSettlements();
+    };
+    socket.on("settlementUpdate", onSettlementUpdate);
+    return () => {
+      socket.off("settlementUpdate", onSettlementUpdate);
+      socket.emit("leaveGroup", groupId);
+    };
+  }, [groupId, token]);
 
   const handleAddMembers = async (emails) => {
     if (!emails?.length) return;
@@ -177,22 +214,56 @@ export default function GroupDetailPage() {
     fetchBalances();
   };
 
-  const handleRecordSettlement = async (fromUser, toUser, amount) => {
+  // Settlements are two-party: this only files a claim. It never moves a
+  // balance by itself - only the counterparty's confirm does (see
+  // handleConfirmSettlement below). Prevents either side from unilaterally
+  // marking a debt paid.
+  const handleRequestSettlement = async (fromUser, toUser, amount, method, note) => {
     try {
-      setLoading(true);
-      await api.post("/expenses/settle", {
+      await api.post("/expenses/settle/request", {
         groupId,
         fromUserId: fromUser.userId,
         toUserId: toUser.userId,
         amount: Number(amount),
+        method,
+        note,
       });
-      toast.success(`Settlement of ₹${Number(amount).toFixed(0)} recorded. Balances updated.`);
+      toast.success("Settlement request sent - waiting for their confirmation.");
+      fetchPendingSettlements();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to send settlement request");
+    }
+  };
+
+  const handleConfirmSettlement = async (requestId) => {
+    try {
+      await api.post(`/expenses/settle/${requestId}/confirm`);
+      toast.success("Settlement confirmed. Balances updated.");
       fetchExpenses();
       fetchBalances();
+      fetchPendingSettlements();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to record settlement");
-    } finally {
-      setLoading(false);
+      toast.error(e?.response?.data?.message || "Failed to confirm settlement");
+    }
+  };
+
+  const handleRejectSettlement = async (requestId) => {
+    try {
+      await api.post(`/expenses/settle/${requestId}/reject`);
+      toast.success("Settlement request rejected.");
+      fetchPendingSettlements();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to reject settlement request");
+    }
+  };
+
+  const handleCancelSettlement = async (requestId) => {
+    try {
+      await api.post(`/expenses/settle/${requestId}/cancel`);
+      toast.success("Settlement request cancelled.");
+      fetchPendingSettlements();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to cancel settlement request");
     }
   };
 
@@ -365,8 +436,12 @@ export default function GroupDetailPage() {
             )}
           </div>
 
-          {/* Members */}
-          <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm">
+          {/* Members - tap anywhere to open the full searchable roster */}
+          <button
+            type="button"
+            onClick={() => setShowMembersModal(true)}
+            className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm text-left hover:border-primary/40 hover:bg-muted/20 transition cursor-pointer"
+          >
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Active Group Size</p>
             <p className="text-2xl font-black text-foreground mt-2">
               {group.members?.length || 0} Members
@@ -389,15 +464,9 @@ export default function GroupDetailPage() {
                   </div>
                 )}
               </div>
-              {isCreator && (
-                <div className="flex items-center gap-2 text-[11px] font-semibold">
-                  <button onClick={() => setShowAddMember(true)} className="text-primary hover:underline cursor-pointer">Add Member</button>
-                  <span className="text-muted-foreground">|</span>
-                  <button onClick={() => setShowInviteModal(true)} className="text-primary hover:underline cursor-pointer">Invite Friends</button>
-                </div>
-              )}
+              <span className="text-[11px] font-semibold text-primary">Manage</span>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* ── TWO-COLUMN LAYOUT ── */}
@@ -632,7 +701,12 @@ export default function GroupDetailPage() {
                 <motion.div key="balances" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
                   className="lg:hidden space-y-3">
-                  <BalancesCard balances={balances} meId={meId} onSettle={handleRecordSettlement} onAddExpense={() => setShowExpenseModal(true)} />
+                  <BalancesCard balances={balances} pendingSettlements={pendingSettlements} meId={meId}
+                    onRequestSettlement={handleRequestSettlement}
+                    onConfirmSettlement={handleConfirmSettlement}
+                    onRejectSettlement={handleRejectSettlement}
+                    onCancelSettlement={handleCancelSettlement}
+                    onAddExpense={() => setShowExpenseModal(true)} />
                 </motion.div>
               )}
 
@@ -641,11 +715,16 @@ export default function GroupDetailPage() {
 
           {/* RIGHT SIDEBAR */}
           <div className="hidden lg:flex flex-col gap-5">
-            <BalancesCard balances={balances} meId={meId} onSettle={handleRecordSettlement} />
+            <BalancesCard balances={balances} pendingSettlements={pendingSettlements} meId={meId}
+              onRequestSettlement={handleRequestSettlement}
+              onConfirmSettlement={handleConfirmSettlement}
+              onRejectSettlement={handleRejectSettlement}
+              onCancelSettlement={handleCancelSettlement} />
             <MembersCard group={group} isCreator={isCreator}
               onAdd={() => setShowAddMember(true)}
               onInvite={() => setShowInviteModal(true)}
-              onRemove={handleRemove} />
+              onRemove={handleRemove}
+              onViewAll={() => setShowMembersModal(true)} />
           </div>
         </div>
       </div>
@@ -683,14 +762,44 @@ export default function GroupDetailPage() {
           />
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {showMembersModal && (
+          <MembersModal
+            group={group}
+            isCreator={isCreator}
+            onClose={() => setShowMembersModal(false)}
+            onAdd={() => { setShowMembersModal(false); setShowAddMember(true); }}
+            onInvite={() => { setShowMembersModal(false); setShowInviteModal(true); }}
+            onRemove={handleRemove}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 /* ── Group Balances sidebar card ── */
-function BalancesCard({ balances, meId, onSettle, onAddExpense }) {
-  // pendingConfirm holds the suggestion index awaiting creditor confirmation
-  const [pendingConfirm, setPendingConfirm] = useState(null);
+function BalancesCard({ balances, pendingSettlements, meId, onRequestSettlement, onConfirmSettlement, onRejectSettlement, onCancelSettlement, onAddExpense }) {
+  // activeForm holds the suggestion index whose payment-method picker is open
+  const [activeForm, setActiveForm] = useState(null);
+  const [method, setMethod] = useState("cash");
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const findPendingFor = (s) =>
+    pendingSettlements?.find(
+      (r) => String(r.fromUserId._id) === String(s.from.userId) && String(r.toUserId._id) === String(s.to.userId)
+    );
+
+  const openForm = (i) => { setActiveForm(i); setMethod("cash"); setNote(""); };
+  const closeForm = () => setActiveForm(null);
+
+  const submitRequest = async (s) => {
+    setSubmitting(true);
+    await onRequestSettlement(s.from, s.to, s.amount, method, note.trim());
+    setSubmitting(false);
+    closeForm();
+  };
 
   return (
     <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
@@ -754,7 +863,8 @@ function BalancesCard({ balances, meId, onSettle, onAddExpense }) {
           {balances.suggestions.map((s, i) => {
             const isDebtor   = String(s.from.userId) === String(meId); // I owe money
             const isCreditor = String(s.to.userId)   === String(meId); // I am owed money
-            const isAwaiting = pendingConfirm === i;
+            const pending = findPendingFor(s);
+            const isFormOpen = activeForm === i;
 
             return (
               <div key={i} className="bg-muted/40 border border-border rounded-xl p-3.5 space-y-2.5">
@@ -770,52 +880,38 @@ function BalancesCard({ balances, meId, onSettle, onAddExpense }) {
                   </span>
                 </p>
 
-                {/* Debtor: direct "I've Paid" button */}
-                {isDebtor && (
+                {pending ? (
+                  <PendingSettlementRow
+                    pending={pending}
+                    meId={meId}
+                    onConfirm={onConfirmSettlement}
+                    onReject={onRejectSettlement}
+                    onCancel={onCancelSettlement}
+                  />
+                ) : isFormOpen ? (
+                  <SettlementRequestForm
+                    method={method} setMethod={setMethod}
+                    note={note} setNote={setNote}
+                    submitting={submitting}
+                    onSubmit={() => submitRequest(s)}
+                    onCancel={closeForm}
+                    verb={isDebtor ? "pay" : "receive"}
+                  />
+                ) : isDebtor ? (
                   <button
-                    onClick={() => onSettle(s.from, s.to, s.amount)}
+                    onClick={() => openForm(i)}
                     className="w-full flex items-center justify-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
                   >
                     <CheckCircle size={13} /> I&apos;ve Paid ₹{s.amount.toFixed(0)}
                   </button>
-                )}
-
-                {/* Creditor: confirm-received flow */}
-                {isCreditor && !isAwaiting && (
+                ) : isCreditor ? (
                   <button
-                    onClick={() => setPendingConfirm(i)}
+                    onClick={() => openForm(i)}
                     className="w-full flex items-center justify-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
                   >
-                    <CheckCircle size={13} /> Confirm Payment Received
+                    <CheckCircle size={13} /> Mark ₹{s.amount.toFixed(0)} as Received
                   </button>
-                )}
-
-                {/* Inline confirmation for creditor */}
-                {isCreditor && isAwaiting && (
-                  <div className="rounded-lg border border-amber-400/40 bg-amber-50/60 dark:bg-amber-950/30 p-3 space-y-2">
-                    <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium leading-snug">
-                      Has <span className="font-bold">{s.from.name}</span> actually paid you{" "}
-                      <span className="font-bold">₹{s.amount.toFixed(0)}</span>?
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setPendingConfirm(null); onSettle(s.from, s.to, s.amount); }}
-                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 rounded-lg text-xs transition cursor-pointer"
-                      >
-                        Yes, Confirm
-                      </button>
-                      <button
-                        onClick={() => setPendingConfirm(null)}
-                        className="flex-1 border border-border text-muted-foreground hover:bg-muted/50 font-semibold py-1.5 rounded-lg text-xs transition cursor-pointer"
-                      >
-                        No, Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Third party: no action, just info */}
-                {!isDebtor && !isCreditor && (
+                ) : (
                   <p className="text-[10px] text-muted-foreground text-center py-0.5">
                     Only the people involved can record this settlement
                   </p>
@@ -829,18 +925,133 @@ function BalancesCard({ balances, meId, onSettle, onAddExpense }) {
   );
 }
 
+/* ── A pending settlement claim on a suggestion row: either "waiting on the
+   other party" (if I initiated it) or "confirm/reject" (if I need to act) ── */
+function PendingSettlementRow({ pending, meId, onConfirm, onReject, onCancel }) {
+  const isInitiator = String(pending.initiatedBy._id) === String(meId);
+  const initiatorPaid = String(pending.initiatedBy._id) === String(pending.fromUserId._id);
+  const counterpartyName = initiatorPaid ? pending.toUserId.name : pending.fromUserId.name;
+  const methodLabel = pending.method === "online" ? "via online transfer" : "in cash";
+
+  if (isInitiator) {
+    return (
+      <div className="rounded-lg border border-amber-400/30 bg-amber-50/50 dark:bg-amber-950/20 p-3 space-y-2">
+        <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium leading-snug flex items-center gap-1.5">
+          <Clock size={12} className="shrink-0" /> Waiting for {counterpartyName} to confirm
+        </p>
+        <button
+          onClick={() => onCancel(pending._id)}
+          className="w-full border border-border text-muted-foreground hover:bg-muted/50 font-semibold py-1.5 rounded-lg text-xs transition cursor-pointer"
+        >
+          Cancel Request
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-amber-400/40 bg-amber-50/60 dark:bg-amber-950/30 p-3 space-y-2">
+      <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium leading-snug">
+        <span className="font-bold">{pending.initiatedBy.name}</span> says{" "}
+        {initiatorPaid ? "they paid you" : "they received"}{" "}
+        <span className="font-bold">₹{Number(pending.amount).toFixed(0)}</span> {methodLabel}. Confirm?
+      </p>
+      {pending.note && (
+        <p className="text-[10px] text-amber-700/80 dark:text-amber-400/70 italic truncate">&ldquo;{pending.note}&rdquo;</p>
+      )}
+      <div className="flex gap-2">
+        <button
+          onClick={() => onConfirm(pending._id)}
+          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 rounded-lg text-xs transition cursor-pointer"
+        >
+          Yes, Confirm
+        </button>
+        <button
+          onClick={() => onReject(pending._id)}
+          className="flex-1 border border-border text-muted-foreground hover:bg-muted/50 font-semibold py-1.5 rounded-lg text-xs transition cursor-pointer"
+        >
+          Not Yet
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Payment-method picker shown before a settlement claim is sent ── */
+function SettlementRequestForm({ method, setMethod, note, setNote, submitting, onSubmit, onCancel, verb }) {
+  return (
+    <div className="rounded-lg border border-border bg-background/60 p-3 space-y-2.5">
+      <p className="text-[11px] text-muted-foreground font-medium">How did you {verb}?</p>
+      <div className="flex gap-2">
+        {[
+          { key: "cash", label: "Cash", Icon: Wallet2 },
+          { key: "online", label: "Online", Icon: Zap },
+        ].map(({ key, label, Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setMethod(key)}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+              method === key
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border text-muted-foreground hover:bg-muted/50"
+            }`}
+          >
+            <Icon size={12} /> {label}
+          </button>
+        ))}
+      </div>
+      <input
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        maxLength={200}
+        placeholder="Add a note (optional) - e.g. UPI ref no."
+        className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-card border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
+      />
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={onSubmit}
+          className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-bold py-1.5 rounded-lg text-xs transition cursor-pointer"
+        >
+          {submitting ? "Sending…" : "Send Request"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 border border-border text-muted-foreground hover:bg-muted/50 font-semibold py-1.5 rounded-lg text-xs transition cursor-pointer"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── Members sidebar card ── */
-function MembersCard({ group, isCreator, onAdd, onInvite, onRemove }) {
+function MembersCard({ group, isCreator, onAdd, onInvite, onRemove, onViewAll }) {
   const creatorId = String(group.createdBy?._id || group.createdBy);
+  const members = group.members || [];
+  const OVERFLOW_AT = 6;
+  const visibleMembers = members.length > OVERFLOW_AT ? members.slice(0, OVERFLOW_AT) : members;
+  const remaining = members.length - visibleMembers.length;
 
   return (
     <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-        <h3 className="font-bold text-base text-foreground">Members ({group.members?.length || 0})</h3>
+        <h3 className="font-bold text-base text-foreground">Members ({members.length})</h3>
+        {members.length > OVERFLOW_AT && (
+          <button type="button" onClick={onViewAll}
+            className="text-xs font-semibold text-primary hover:underline cursor-pointer">
+            View All
+          </button>
+        )}
       </div>
 
       <div className="divide-y divide-border">
-        {group.members?.map((m) => {
+        {visibleMembers.map((m) => {
           const isMemberCreator = String(m._id) === creatorId;
           return (
             <div key={m._id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/25 transition group">
@@ -873,6 +1084,13 @@ function MembersCard({ group, isCreator, onAdd, onInvite, onRemove }) {
           );
         })}
       </div>
+
+      {remaining > 0 && (
+        <button type="button" onClick={onViewAll}
+          className="w-full flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs font-semibold text-muted-foreground hover:text-primary hover:bg-muted/25 border-t border-border transition cursor-pointer">
+          +{remaining} more member{remaining !== 1 ? "s" : ""}
+        </button>
+      )}
 
       <div className="px-5 py-4 space-y-2.5 border-t border-border">
         {isCreator && (
