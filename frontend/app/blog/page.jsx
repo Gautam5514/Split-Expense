@@ -38,11 +38,26 @@ export default async function BlogPage() {
 
   // Only card-level fields cross the server→client boundary; shipping full
   // article bodies (sections, faqs) in the hydration payload would bloat the page.
-  const [featured, ...rest] = allPosts.map(
+  // Ensure the Founder Story post stays at the head (featured post)
+  const mappedPosts = allPosts.map(
     ({ slug, category, title, description, date, readTime, cover, author }) => ({
       slug, category, title, description, date, readTime, cover, author,
     })
   );
+
+  const featuredIndex = mappedPosts.findIndex(
+    (p) => p.slug === "gautam-pandit-founder-splitease-story" || p.category === "Founder Story"
+  );
+
+  let featured;
+  let rest;
+
+  if (featuredIndex !== -1) {
+    featured = mappedPosts[featuredIndex];
+    rest = mappedPosts.filter((_, idx) => idx !== featuredIndex);
+  } else {
+    [featured, ...rest] = mappedPosts;
+  }
 
   const structuredData = {
     "@context": "https://schema.org",

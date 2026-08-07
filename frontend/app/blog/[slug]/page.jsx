@@ -68,10 +68,12 @@ export default async function BlogPostPage({ params }) {
   const authorSchema = post.author
     ? {
         "@type": "Person",
+        "@id": post.author === "Gautam Pandit" ? `${siteUrl}/#gautam-pandit` : undefined,
         name: post.author,
-        ...(post.authorLinks && {
-          sameAs: post.authorLinks.filter((l) => l.href.startsWith("http")).map((l) => l.href),
-        }),
+        jobTitle: post.authorRole || "Founder & Developer",
+        url: `${siteUrl}/about`,
+        image: post.authorImage ? `${siteUrl}${post.authorImage}` : undefined,
+        sameAs: post.authorLinks ? post.authorLinks.filter((l) => l.href.startsWith("http")).map((l) => l.href) : [],
       }
     : { "@type": "Organization", name: "SplitEase", url: siteUrl };
 

@@ -5,6 +5,7 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.onli
 export default function sitemap() {
   const pages = [
     { path: "", priority: 1, changeFrequency: "weekly" },
+    { path: "/about", priority: 0.9, changeFrequency: "weekly" },
     { path: "/what-we-offer", priority: 0.9, changeFrequency: "monthly" },
     { path: "/features/ai-expense-splitter", priority: 0.7, changeFrequency: "monthly" },
     { path: "/features/smart-settlements", priority: 0.7, changeFrequency: "monthly" },
@@ -34,7 +35,7 @@ export default function sitemap() {
   const blogEntries = BLOG_POSTS.map((post) => ({
     url: `${siteUrl}/blog/${post.slug}`,
     lastModified: new Date(post.date),
-    priority: 0.6,
+    priority: post.slug === "gautam-pandit-founder-splitease-story" ? 0.95 : 0.7,
     changeFrequency: "monthly",
   }));
 
