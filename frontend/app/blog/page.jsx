@@ -23,7 +23,7 @@ export const metadata = {
     description:
       "Guides on splitting expenses with friends, roommates and travel groups, from the team building SplitEase.",
     siteName: "SplitEase",
-    images: [{ url: "/logo-icon.png", width: 512, height: 512, alt: "SplitEase" }],
+    images: [{ url: "/logo.svg", width: 512, height: 512, alt: "SplitEase" }],
   },
   twitter: {
     card: "summary_large_image",

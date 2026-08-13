@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">SplitEase Indian tricolour logo</title>
+  <desc id="description">The SplitEase interlocking-link mark in saffron, white, green and Ashoka blue.</desc>
+
+  <!-- Festival palette: change these four values to recolour the logo globally. -->
+  <style>
+    :root {
+      --festival-top: #ff9933;
+      --festival-middle: #ffffff;
+      --festival-bottom: #138808;
+      --festival-accent: #000080;
+    }
+  </style>
+
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#171c24"/>
+      <stop offset="1" stop-color="#080b11"/>
+    </linearGradient>
+    <linearGradient id="tricolour" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--festival-top)"/>
+      <stop offset=".315" stop-color="var(--festival-top)"/>
+      <stop offset=".34" stop-color="var(--festival-middle)"/>
+      <stop offset=".66" stop-color="var(--festival-middle)"/>
+      <stop offset=".685" stop-color="var(--festival-bottom)"/>
+      <stop offset="1" stop-color="var(--festival-bottom)"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="13" result="blur"/>
+      <feOffset dy="8" result="offset"/>
+      <feColorMatrix in="offset" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .58 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect x="38" y="38" width="436" height="436" rx="90" fill="url(#background)" stroke="#39414d" stroke-width="2" filter="url(#shadow)"/>
+
+  <!-- Two open links preserve the original SplitEase symbol. -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M221 152A122 122 0 1 0 255 342" stroke="#05070b" stroke-width="79" opacity=".8"/>
+    <path d="M221 152A122 122 0 1 0 255 342" stroke="url(#tricolour)" stroke-width="66"/>
+    <path d="M221 152A122 122 0 1 0 255 342" stroke="var(--festival-accent)" stroke-width="5" opacity=".82"/>
+
+    <path d="M291 360A122 122 0 1 0 257 170" stroke="#05070b" stroke-width="79" opacity=".8"/>
+    <path d="M291 360A122 122 0 1 0 257 170" stroke="url(#tricolour)" stroke-width="66"/>
+    <path d="M291 360A122 122 0 1 0 257 170" stroke="var(--festival-accent)" stroke-width="5" opacity=".82"/>
+  </g>
+
+  <!-- Small Ashoka Chakra detail at the centre of the link. -->
+  <g transform="translate(256 256)" stroke="var(--festival-accent)" fill="none" opacity=".96">
+    <circle r="18" stroke-width="3"/>
+    <circle r="3" fill="var(--festival-accent)" stroke="none"/>
+    <g stroke-width="1.6">
+      <path d="M0-17V17M-17 0H17M-12-12L12 12M12-12L-12 12"/>
+      <path d="M-6.5-15.7L6.5 15.7M6.5-15.7L-6.5 15.7M-15.7-6.5L15.7 6.5M-15.7 6.5L15.7-6.5"/>
+    </g>
+  </g>
+</svg>

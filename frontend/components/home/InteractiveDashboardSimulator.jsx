@@ -394,7 +394,7 @@ export default function InteractiveDashboardSimulator() {
           <aside className="w-48 xl:w-52 flex-shrink-0 flex flex-col py-5 px-3 border-r border-white/10 bg-white/[0.03] backdrop-blur-md">
             <div className="flex items-center gap-2 px-2 mb-6">
               <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center border border-white/10 flex-shrink-0 bg-cyan-950">
-                <img src="/logo-icon.png" className="w-full h-full object-cover" alt="Logo" />
+                <img src="/logo.svg" className="w-full h-full object-cover" alt="Logo" />
               </div>
               <span className="font-extrabold text-sm text-white tracking-tight">SplitEase</span>
             </div>

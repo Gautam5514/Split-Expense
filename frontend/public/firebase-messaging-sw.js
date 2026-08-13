@@ -131,8 +131,8 @@ messaging.onBackgroundMessage((payload) => {
 
   return self.registration.showNotification(notificationTitle, {
     body: notificationBody,
-    icon: "/logo-icon.png",
-    badge: "/logo-icon.png",
+    icon: "/logo.svg",
+    badge: "/logo.svg",
     tag,
     requireInteraction: true,
     vibrate: [200, 100, 200],

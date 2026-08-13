@@ -62,20 +62,20 @@ export const metadata = {
     description:
       "Split trip costs, household bills and group expenses. Created by Gautam Pandit to simplify shared finances with zero paywalls.",
     siteName: "SplitEase",
-    images: [{ url: "/logo-icon.png", width: 512, height: 512, alt: "SplitEase by Gautam Pandit" }],
+    images: [{ url: "/logo.svg", width: 512, height: 512, alt: "SplitEase by Gautam Pandit" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "SplitEase: Group, Trip & Flat Expense Manager | Gautam Pandit",
     description: "The simple way to split travel, roommate and group expenses, created by Gautam Pandit.",
-    images: ["/logo-icon.png"],
+    images: ["/logo.svg"],
     creator: "@Gautamp5514",
   },
   icons: {
     icon: [
-      { url: "/logo-icon.png", type: "image/png" },
+      { url: "/logo.svg", type: "image/svg+xml" },
     ],
-    apple: "/icons/apple-touch-icon.png",
+    apple: "/logo.svg",
   },
 };
 
@@ -98,7 +98,7 @@ export default function RootLayout({ children }) {
         "@id": `${siteUrl}/#organization`,
         name: "SplitEase",
         url: siteUrl,
-        logo: `${siteUrl}/logo-icon.png`,
+        logo: `${siteUrl}/logo.svg`,
         founder: { "@id": `${siteUrl}/#gautam-pandit` },
         foundingDate: "2026",
         sameAs: [

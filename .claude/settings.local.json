@@ -15,7 +15,8 @@
       "Bash(npm uninstall *)",
       "Bash(npx next *)",
       "Bash(node -e \"console.log\\(require\\('@xyflow/react/package.json'\\).version\\)\")",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(xargs -I{} echo {})"
     ],
     "additionalDirectories": [
       "/Users/kunalkumar/Desktop/Gautam/Split/frontend/app/groups/[id]"
