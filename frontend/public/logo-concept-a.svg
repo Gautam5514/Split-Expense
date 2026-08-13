@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SplitEase Unity Split — Concept A</title>
+  <desc id="desc">The original SplitEase twin-link logo, formed by a community of six people sharing one evenly split expense.</desc>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="76%">
+      <stop stop-color="#17243a"/><stop offset=".55" stop-color="#080e18"/><stop offset="1" stop-color="#02050a"/>
+    </radialGradient>
+    <linearGradient id="saffron" x1="75" y1="110" x2="255" y2="380" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffd36a"/><stop offset=".28" stop-color="#ff9b25"/><stop offset=".7" stop-color="#ff6a00"/><stop offset="1" stop-color="#c83b00"/>
+    </linearGradient>
+    <linearGradient id="green" x1="255" y1="115" x2="435" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#54e892"/><stop offset=".35" stop-color="#11a653"/><stop offset=".75" stop-color="#07833e"/><stop offset="1" stop-color="#004f2a"/>
+    </linearGradient>
+    <linearGradient id="white" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff"/><stop offset=".5" stop-color="#dbeaff"/><stop offset="1" stop-color="#8fa9c5"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff" stop-opacity=".6"/><stop offset=".3" stop-color="#fff" stop-opacity=".05"/><stop offset=".7" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#6e8ba8" stop-opacity=".45"/>
+    </linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="170%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="b"/><feOffset dy="12" result="o"/>
+      <feColorMatrix in="o" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .8 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="coinGlow" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="b"/><feFlood flood-color="#5f80ff" flood-opacity=".9"/>
+      <feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect x="30" y="30" width="452" height="452" rx="106" fill="url(#bg)" stroke="url(#rim)" stroke-width="2.5" filter="url(#shadow)"/>
+  <rect x="41" y="41" width="430" height="430" rx="96" fill="none" stroke="#fff" stroke-opacity=".055"/>
+
+  <!-- The original SplitEase twin-link silhouette stays unmistakably intact. -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M217 137A127 127 0 1 0 256 348" stroke="#010409" stroke-width="88"/>
+    <path d="M217 137A127 127 0 1 0 256 348" stroke="url(#saffron)" stroke-width="72" filter="url(#glow)"/>
+    <path d="M217 137A127 127 0 1 0 256 348" stroke="url(#rim)" stroke-width="5" opacity=".75"/>
+
+    <path d="M295 375A127 127 0 1 0 256 164" stroke="#010409" stroke-width="88"/>
+    <path d="M295 375A127 127 0 1 0 256 164" stroke="url(#green)" stroke-width="72" filter="url(#glow)"/>
+    <path d="M295 375A127 127 0 1 0 256 164" stroke="url(#rim)" stroke-width="5" opacity=".75"/>
+  </g>
+
+  <!-- Six people are embedded into the links; their open arms collectively create both rings. -->
+  <g stroke="#06101c" stroke-width="8" paint-order="stroke" filter="url(#shadow)">
+    <!-- saffron community -->
+    <g fill="url(#saffron)">
+      <circle cx="151" cy="151" r="17"/><path d="M127 198q24-34 48 0l12 17h-72z"/>
+      <circle cx="103" cy="270" r="17"/><path d="M80 316q23-34 47 0l13 17H67z"/>
+      <circle cx="172" cy="374" r="17"/><path d="M148 419q24-34 48 0l12 17h-72z"/>
+    </g>
+    <!-- green community -->
+    <g fill="url(#green)">
+      <circle cx="340" cy="138" r="17"/><path d="M316 184q24-34 48 0l12 17h-72z"/>
+      <circle cx="409" cy="255" r="17"/><path d="M385 301q24-34 48 0l12 17h-72z"/>
+      <circle cx="361" cy="374" r="17"/><path d="M337 420q24-34 48 0l12 17h-72z"/>
+    </g>
+  </g>
+
+  <!-- White hand-to-hand connectors: nobody is isolated from the group. -->
+  <g fill="none" stroke="url(#white)" stroke-width="9" stroke-linecap="round" opacity=".95">
+    <path d="M177 190Q211 212 229 239"/><path d="M128 311q47 1 78 28"/><path d="M196 402q30-11 50-40"/>
+    <path d="M316 178q-27 24-35 61"/><path d="M384 294q-42 8-72 39"/><path d="M337 402q-35-11-61-41"/>
+  </g>
+
+  <!-- Shared expense at the intersection: one bill, divided fairly among six. -->
+  <g transform="translate(256 276)" filter="url(#coinGlow)">
+    <circle r="67" fill="#030814" stroke="#d8b45b" stroke-width="5"/>
+    <circle r="57" fill="#f8fbff" stroke="#fff" stroke-width="3"/>
+    <circle r="42" fill="none" stroke="#071a78" stroke-width="4"/>
+    <g stroke="#071a78" stroke-width="2.4">
+      <path d="M0 0V-41M0 0l35.5-20.5M0 0l35.5 20.5M0 0v41M0 0l-35.5 20.5M0 0l-35.5-20.5"/>
+      <circle r="9" fill="#071a78"/>
+    </g>
+    <!-- six small equal shares -->
+    <g fill="#071a78">
+      <circle cx="0" cy="-32" r="3.5"/><circle cx="27.7" cy="-16" r="3.5"/><circle cx="27.7" cy="16" r="3.5"/>
+      <circle cx="0" cy="32" r="3.5"/><circle cx="-27.7" cy="16" r="3.5"/><circle cx="-27.7" cy="-16" r="3.5"/>
+    </g>
+  </g>
+
+  <!-- Small cyan pulse connects the special edition to SplitEase's product UI. -->
+  <circle cx="256" cy="276" r="76" fill="none" stroke="#22d3ee" stroke-width="2" stroke-dasharray="3 9" opacity=".6"/>
+</svg>

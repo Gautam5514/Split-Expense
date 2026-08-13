@@ -70,7 +70,7 @@ export default function AboutPage() {
           "@type": "Organization",
           name: "SplitEase",
           url: siteUrl,
-          logo: `${siteUrl}/logo.svg`,
+          logo: `${siteUrl}/logo-concept-a.svg`,
         },
         url: `${siteUrl}/about`,
         image: `${siteUrl}/blog/gautam-pandit-portrait.png`,

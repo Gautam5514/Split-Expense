@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SplitEase Unity Split — Core Brand</title>
+  <desc id="desc">The SplitEase twin-link mark formed by six people sharing one expense, in the application's violet and cyan colours.</desc>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="76%">
+      <stop stop-color="#17243a"/><stop offset=".55" stop-color="#080e18"/><stop offset="1" stop-color="#02050a"/>
+    </radialGradient>
+    <linearGradient id="violet" x1="75" y1="110" x2="255" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d8b4fe"/><stop offset=".28" stop-color="#a855f7"/><stop offset=".68" stop-color="#7c3aed"/><stop offset="1" stop-color="#4c1d95"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="255" y1="110" x2="438" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a5f3fc"/><stop offset=".3" stop-color="#22d3ee"/><stop offset=".68" stop-color="#0891b2"/><stop offset="1" stop-color="#155e75"/>
+    </linearGradient>
+    <linearGradient id="bridge" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff"/><stop offset=".45" stop-color="#dbeafe"/><stop offset="1" stop-color="#7dd3fc"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff" stop-opacity=".62"/><stop offset=".3" stop-color="#fff" stop-opacity=".05"/><stop offset=".72" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#67e8f9" stop-opacity=".4"/>
+    </linearGradient>
+    <linearGradient id="splitDisc" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#c084fc"/><stop offset=".48" stop-color="#7c3aed"/><stop offset=".52" stop-color="#22d3ee"/><stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="170%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="b"/><feOffset dy="12" result="o"/>
+      <feColorMatrix in="o" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .82 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="violetGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="b"/><feFlood flood-color="#8b5cf6" flood-opacity=".7"/>
+      <feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="b"/><feFlood flood-color="#22d3ee" flood-opacity=".68"/>
+      <feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="coreGlow" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="b"/><feFlood flood-color="#67e8f9" flood-opacity=".85"/>
+      <feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect x="30" y="30" width="452" height="452" rx="106" fill="url(#bg)" stroke="url(#rim)" stroke-width="2.5" filter="url(#shadow)"/>
+  <rect x="41" y="41" width="430" height="430" rx="96" fill="none" stroke="#fff" stroke-opacity=".055"/>
+  <ellipse cx="190" cy="250" rx="140" ry="165" fill="#7c3aed" opacity=".09"/>
+  <ellipse cx="325" cy="250" rx="140" ry="165" fill="#22d3ee" opacity=".075"/>
+
+  <!-- Original SplitEase interlocking geometry. -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M217 137A127 127 0 1 0 256 348" stroke="#010409" stroke-width="88"/>
+    <path d="M217 137A127 127 0 1 0 256 348" stroke="url(#violet)" stroke-width="72" filter="url(#violetGlow)"/>
+    <path d="M217 137A127 127 0 1 0 256 348" stroke="url(#rim)" stroke-width="5" opacity=".78"/>
+    <path d="M295 375A127 127 0 1 0 256 164" stroke="#010409" stroke-width="88"/>
+    <path d="M295 375A127 127 0 1 0 256 164" stroke="url(#cyan)" stroke-width="72" filter="url(#cyanGlow)"/>
+    <path d="M295 375A127 127 0 1 0 256 164" stroke="url(#rim)" stroke-width="5" opacity=".78"/>
+  </g>
+
+  <!-- Six group members are part of the mark, not decorative additions. -->
+  <g stroke="#050b15" stroke-width="8" paint-order="stroke" filter="url(#shadow)">
+    <g fill="url(#violet)">
+      <circle cx="151" cy="151" r="17"/><path d="M127 198q24-34 48 0l12 17h-72z"/>
+      <circle cx="103" cy="270" r="17"/><path d="M80 316q23-34 47 0l13 17H67z"/>
+      <circle cx="172" cy="374" r="17"/><path d="M148 419q24-34 48 0l12 17h-72z"/>
+    </g>
+    <g fill="url(#cyan)">
+      <circle cx="340" cy="138" r="17"/><path d="M316 184q24-34 48 0l12 17h-72z"/>
+      <circle cx="409" cy="255" r="17"/><path d="M385 301q24-34 48 0l12 17h-72z"/>
+      <circle cx="361" cy="374" r="17"/><path d="M337 420q24-34 48 0l12 17h-72z"/>
+    </g>
+  </g>
+
+  <!-- Everyone connects to the same shared expense. -->
+  <g fill="none" stroke="url(#bridge)" stroke-width="9" stroke-linecap="round">
+    <path d="M177 190Q211 212 229 239"/><path d="M128 311q47 1 78 28"/><path d="M196 402q30-11 50-40"/>
+    <path d="M316 178q-27 24-35 61"/><path d="M384 294q-42 8-72 39"/><path d="M337 402q-35-11-61-41"/>
+  </g>
+
+  <!-- Core product symbol: six equal shares, one balanced settlement. -->
+  <g transform="translate(256 276)" filter="url(#coreGlow)">
+    <circle r="67" fill="#030814" stroke="url(#splitDisc)" stroke-width="6"/>
+    <circle r="56" fill="#0b1422" stroke="#dbeafe" stroke-width="3"/>
+    <circle r="42" fill="none" stroke="url(#splitDisc)" stroke-width="4"/>
+    <g stroke="url(#splitDisc)" stroke-width="3">
+      <path d="M0 0V-41M0 0l35.5-20.5M0 0l35.5 20.5M0 0v41M0 0l-35.5 20.5M0 0l-35.5-20.5"/>
+    </g>
+    <circle r="11" fill="url(#splitDisc)" stroke="#e0f2fe" stroke-width="2"/>
+    <g fill="#e0f2fe">
+      <circle cx="0" cy="-32" r="3.5"/><circle cx="27.7" cy="-16" r="3.5"/><circle cx="27.7" cy="16" r="3.5"/>
+      <circle cx="0" cy="32" r="3.5"/><circle cx="-27.7" cy="16" r="3.5"/><circle cx="-27.7" cy="-16" r="3.5"/>
+    </g>
+  </g>
+  <circle cx="256" cy="276" r="77" fill="none" stroke="#22d3ee" stroke-width="2" stroke-dasharray="3 9" opacity=".7"/>
+</svg>

@@ -11,25 +11,25 @@
   "categories": ["finance", "utilities", "travel"],
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "/logo-concept-a.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/logo.svg",
+      "src": "/logo-concept-a.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
     },
     {
-      "src": "/logo.svg",
+      "src": "/logo-concept-a.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/logo.svg",
+      "src": "/logo-concept-a.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"

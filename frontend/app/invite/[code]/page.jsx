@@ -28,7 +28,7 @@ export default function InvitePage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm text-center">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <img src="/logo.svg" alt="SplitEase" className="w-8 h-8 rounded-xl" />
+          <img src="/logo-concept-a.svg" alt="SplitEase" className="w-8 h-8 rounded-xl" />
           <span className="text-xl font-extrabold text-foreground">SplitEase</span>
         </div>
 
