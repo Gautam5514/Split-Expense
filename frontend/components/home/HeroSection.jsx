@@ -31,7 +31,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.95, ease: "easeOut" }}
-          className="font-serif-premium font-normal text-white text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] tracking-tight leading-[1.05] text-center mb-6 max-w-4xl"
+          className="font-serif-premium font-normal text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] tracking-tight leading-[1.05] text-center mb-6 max-w-4xl bg-[linear-gradient(180deg,#FFB04A_0%,#FF9933_30%,#FFFFFF_49%,#FFFFFF_58%,#36C56C_76%,#138808_100%)] bg-clip-text text-transparent [filter:drop-shadow(0_2px_14px_rgba(255,153,51,0.16))_drop-shadow(0_8px_24px_rgba(19,136,8,0.10))]"
         >
           The all-in-one platform for splitting expenses
         </motion.h1>
