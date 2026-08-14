@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import helmet from "helmet";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import connectDB from "./config/db.js";
@@ -9,6 +10,7 @@ import jwt from "jsonwebtoken";
 import User from "./models/userModel.js";
 import Conversation from "./models/conversationModel.js";
 import Group from "./models/groupModel.js";
+import { mongoSanitize } from "./middleware/sanitize.js";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -35,6 +37,16 @@ const app = express();
 const server = createServer(app);
 
 // -----------------------------------------
+//  SECURITY HEADERS (HELMET)
+// -----------------------------------------
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false, // API server: avoid CSP conflicts with frontend static assets
+  })
+);
+
+// -----------------------------------------
 //  CORS — allow every origin (reflects the request's Origin header, which is
 //  required since credentials: true is incompatible with the "*" wildcard).
 //  FRONTEND_URL is still used elsewhere for generating absolute links.
@@ -53,6 +65,11 @@ app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// -----------------------------------------
+//  NOSQL INJECTION SANITIZATION
+// -----------------------------------------
+app.use(mongoSanitize);
 
 // -----------------------------------------
 //  SOCKET.IO INIT

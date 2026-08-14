@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Group from "../models/groupModel.js";
-import { isValidEmail } from "../middleware/validate.js";
+import { isValidEmail, isValidObjectId, escapeRegExp } from "../middleware/validate.js";
 import Expense from "../models/expenseModel.js";
 import GroupMessage from "../models/groupMessageModel.js";
 import Notepad from "../models/notepadModel.js";
@@ -413,16 +413,28 @@ export const removeMember = async (req, res) => {
 export const listAvailableUsers = async (req, res) => {
   try {
     const { groupId } = req.params;
+    if (!isValidObjectId(groupId)) {
+      return res.status(400).json({ message: "Invalid group ID" });
+    }
     const { q = "", limit = 20, page = 1 } = req.query;
 
     // 🟢 Fetch group members to exclude them
     const group = await Group.findById(groupId, "members");
     if (!group) return res.status(404).json({ message: "Group not found." });
 
+    const sanitizedQ = escapeRegExp(q.trim());
+
     // 🔍 Search filter (by name or email)
     const filter = {
       _id: { $nin: group.members },
-      $or: [{ email: new RegExp(q, "i") }, { name: new RegExp(q, "i") }],
+      ...(sanitizedQ
+        ? {
+            $or: [
+              { email: new RegExp(sanitizedQ, "i") },
+              { name: new RegExp(sanitizedQ, "i") },
+            ],
+          }
+        : {}),
     };
 
     // 🧠 Fetch users from User collection

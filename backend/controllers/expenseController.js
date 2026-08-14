@@ -203,6 +203,19 @@ export const addExpense = async (req, res) => {
 export const getExpenses = async (req, res) => {
   try {
     const { groupId } = req.params;
+    const uid = asId(req.user);
+    if (!uid) return res.status(401).json({ message: "Unauthorized" });
+
+    if (!groupId || !isValidObjectId(groupId)) {
+      return res.status(400).json({ message: "Invalid group ID." });
+    }
+
+    const group = await Group.findById(groupId).select("members").lean();
+    if (!group) return res.status(404).json({ message: "Group not found." });
+    if (!ensureMember(group, uid)) {
+      return res.status(403).json({ message: "You are not a member of this group." });
+    }
+
     const expenses = await Expense.find({ groupId })
       .sort({ date: -1 })
       .populate("paidBy", "name email")

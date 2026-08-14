@@ -1,5 +1,6 @@
 import User from "../models/userModel.js";
 import UserProfile from "../models/userProfileModel.js";
+import { escapeRegExp, isValidObjectId } from "../middleware/validate.js";
 /**
  * GET /api/users
  * Query params:
@@ -9,15 +10,16 @@ import UserProfile from "../models/userProfileModel.js";
  */
 export const listUsers = async (req, res) => {
   try {
-    const q = (req.query.q || "").trim();
+    const rawQ = (req.query.q || "").trim();
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || "50", 10), 1), 200);
 
-    const filter = q
+    const sanitizedQ = escapeRegExp(rawQ);
+    const filter = sanitizedQ
       ? {
           $or: [
-            { email: new RegExp(q, "i") },
-            { name: new RegExp(q, "i") },
+            { email: new RegExp(sanitizedQ, "i") },
+            { name: new RegExp(sanitizedQ, "i") },
           ],
         }
       : {};
@@ -94,7 +96,9 @@ export const getMe = async (req, res) => {
  */
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id, "name email createdAt").lean();
+    const { id } = req.params;
+    if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid user ID" });
+    const user = await User.findById(id, "name email createdAt").lean();
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
   } catch (err) {

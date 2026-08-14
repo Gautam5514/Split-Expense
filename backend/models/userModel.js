@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: { type: Date, default: null },
   loginOtp: { type: String, default: null },
   loginOtpExpires: { type: Date, default: null },
+  loginOtpAttempts: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
 
   // -------------------- Referral & coin reward system --------------------

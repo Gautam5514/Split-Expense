@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Expense from "../models/expenseModel.js";
 import Group from "../models/groupModel.js";
+import { isValidObjectId } from "../middleware/validate.js";
 
 export const to2 = (n) => Number(Number(n).toFixed(2));
 
@@ -80,6 +81,19 @@ export const computeGroupBalances = async (groupId) => {
 export const getBalances = async (req, res) => {
   try {
     const { groupId } = req.params;
+    const uid = req.user?.id || req.user?._id?.toString();
+    if (!uid) return res.status(401).json({ message: "Unauthorized" });
+
+    if (!groupId || !isValidObjectId(groupId)) {
+      return res.status(400).json({ message: "Invalid group ID" });
+    }
+
+    const group = await Group.findById(groupId).select("members").lean();
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    const isMember = (group.members || []).some((m) => String(m) === String(uid));
+    if (!isMember) {
+      return res.status(403).json({ message: "You are not a member of this group" });
+    }
 
     const cached = balanceCache.get(groupId);
     if (cached && Date.now() < cached.expiresAt) {

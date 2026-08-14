@@ -170,7 +170,6 @@ export const deleteGroupChats = async (req, res) => {
 
     const allowedGroupIds = groups.map((g) => g._id);
     if (allowedGroupIds.length) {
-      await GroupMessage.deleteMany({ groupId: { $in: allowedGroupIds } });
       await User.findByIdAndUpdate(uid, {
         $addToSet: { hiddenGroupChats: { $each: allowedGroupIds } },
       });
@@ -178,7 +177,7 @@ export const deleteGroupChats = async (req, res) => {
 
     res.json({
       success: true,
-      deleted: allowedGroupIds.length,
+      hidden: allowedGroupIds.length,
       groupIds: allowedGroupIds.map(String),
     });
   } catch (err) {

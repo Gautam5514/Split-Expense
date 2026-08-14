@@ -1,5 +1,9 @@
 import Notepad from "../models/notepadModel.js";
 import Group from "../models/groupModel.js";
+import { isValidObjectId } from "../middleware/validate.js";
+
+const isGroupMember = (group, userId) =>
+  (group?.members || []).some((m) => String(m) === String(userId));
 
 // 📝 Create new notepad for a group
 export const createNotepad = async (req, res) => {
@@ -7,6 +11,8 @@ export const createNotepad = async (req, res) => {
     const { groupId, title } = req.body;
     const userId = req.user.id;
 
+    if (!groupId || !isValidObjectId(groupId))
+      return res.status(400).json({ field: "groupId", message: "A valid group is required." });
     if (!title?.trim())
       return res.status(400).json({ field: "title", message: "Notepad title is required." });
     if (title.trim().length < 2)
@@ -15,8 +21,8 @@ export const createNotepad = async (req, res) => {
       return res.status(400).json({ field: "title", message: "Title must be under 100 characters." });
 
     // check if user is part of group
-    const group = await Group.findById(groupId);
-    if (!group || !group.members.includes(userId)) {
+    const group = await Group.findById(groupId).select("members").lean();
+    if (!group || !isGroupMember(group, userId)) {
       return res.status(403).json({ message: "Not authorized for this group" });
     }
 
@@ -33,8 +39,11 @@ export const getGroupNotepads = async (req, res) => {
     const { groupId } = req.params;
     const userId = req.user.id;
 
-    const group = await Group.findById(groupId);
-    if (!group || !group.members.includes(userId)) {
+    if (!groupId || !isValidObjectId(groupId))
+      return res.status(400).json({ message: "Invalid group ID" });
+
+    const group = await Group.findById(groupId).select("members").lean();
+    if (!group || !isGroupMember(group, userId)) {
       return res.status(403).json({ message: "Not authorized for this group" });
     }
 
@@ -52,6 +61,8 @@ export const addStep = async (req, res) => {
     const { title, notes, date } = req.body;
     const userId = req.user.id;
 
+    if (!notepadId || !isValidObjectId(notepadId))
+      return res.status(400).json({ message: "Invalid notepad ID" });
     if (!title?.trim())
       return res.status(400).json({ field: "title", message: "Step title is required." });
     if (title.trim().length > 200)
@@ -61,9 +72,9 @@ export const addStep = async (req, res) => {
     if (!notepad) return res.status(404).json({ message: "Notepad not found" });
 
     // check access via group
-    const group = await Group.findById(notepad.groupId);
-    if (!group || !group.members.includes(userId)) {
-      return res.status(403).json({ message: "Not authorized" });
+    const group = await Group.findById(notepad.groupId).select("members").lean();
+    if (!group || !isGroupMember(group, userId)) {
+      return res.status(403).json({ message: "Not authorized for this group" });
     }
 
     notepad.steps.push({ title, notes, date, createdBy: userId });
@@ -80,9 +91,20 @@ export const reorderSteps = async (req, res) => {
   try {
     const { notepadId } = req.params;
     const { steps } = req.body; // array of reordered steps
+    const userId = req.user.id;
+
+    if (!notepadId || !isValidObjectId(notepadId))
+      return res.status(400).json({ message: "Invalid notepad ID" });
+    if (!Array.isArray(steps))
+      return res.status(400).json({ message: "Steps must be an array" });
 
     const notepad = await Notepad.findById(notepadId);
     if (!notepad) return res.status(404).json({ message: "Notepad not found" });
+
+    const group = await Group.findById(notepad.groupId).select("members").lean();
+    if (!group || !isGroupMember(group, userId)) {
+      return res.status(403).json({ message: "Not authorized for this group" });
+    }
 
     notepad.steps = steps;
     await notepad.save();

@@ -15,3 +15,7 @@ export const validatePassword = (password) => {
 };
 
 export const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id || ""));
+
+// Escapes special regex characters in user search inputs to prevent ReDoS and regex crashes
+export const escapeRegExp = (string) =>
+  String(string || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

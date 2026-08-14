@@ -370,6 +370,7 @@ export const sendLoginOtp = async (req, res) => {
 
     user.loginOtp = hashedOtp;
     user.loginOtpExpires = Date.now() + 10 * 60 * 1000;
+    user.loginOtpAttempts = 0;
     await user.save();
 
     const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0];
@@ -480,16 +481,29 @@ export const verifyLoginOtp = async (req, res) => {
     if (Date.now() > user.loginOtpExpires) {
       user.loginOtp = null;
       user.loginOtpExpires = null;
+      user.loginOtpAttempts = 0;
       await user.save();
       return res.status(400).json({ message: "OTP has expired. Please request a new one." });
     }
 
+    if ((user.loginOtpAttempts || 0) >= 5) {
+      user.loginOtp = null;
+      user.loginOtpExpires = null;
+      user.loginOtpAttempts = 0;
+      await user.save();
+      return res.status(429).json({ message: "Too many incorrect attempts. Please request a new code." });
+    }
+
     const hashedOtp = crypto.createHash("sha256").update(otp.trim()).digest("hex");
-    if (hashedOtp !== user.loginOtp)
+    if (hashedOtp !== user.loginOtp) {
+      user.loginOtpAttempts = (user.loginOtpAttempts || 0) + 1;
+      await user.save();
       return res.status(400).json({ message: "Incorrect OTP. Please try again." });
+    }
 
     user.loginOtp = null;
     user.loginOtpExpires = null;
+    user.loginOtpAttempts = 0;
     await user.save();
 
     res.status(200).json({ message: "OTP verified. Proceed with login." });

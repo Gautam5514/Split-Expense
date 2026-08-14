@@ -7,6 +7,7 @@ import cloudinary from "../config/cloudinary.js";
 import Group from "../models/groupModel.js";
 import { onlineUsers } from "../index.js";
 import { sendPushToUsers } from "./notificationController.js";
+import { isValidObjectId } from "../middleware/validate.js";
 
 // Recipients whose socket sits in the given room are actively viewing that
 // conversation — they see the message live and shouldn't also get a push.
@@ -122,11 +123,26 @@ export const getConversations = async (req, res) => {
 export const getMessages = async (req, res) => {
   try {
     const { id } = req.params;
+    const me = req.user.id;
     const { before, limit = 40 } = req.query;
+
+    if (!id || !isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid conversation ID" });
+    }
+
+    const convo = await Conversation.findById(id).select("members").lean();
+    if (!convo) return res.status(404).json({ message: "Conversation not found" });
+
+    const isMember = (convo.members || []).some((m) => String(m) === String(me));
+    if (!isMember) {
+      return res.status(403).json({ message: "You are not a participant in this conversation" });
+    }
 
     const query = { conversationId: id };
     // Cursor: fetch messages older than the given message ID
-    if (before) query._id = { $lt: new mongoose.Types.ObjectId(before) };
+    if (before && isValidObjectId(before)) {
+      query._id = { $lt: new mongoose.Types.ObjectId(before) };
+    }
 
     // Fetch newest N messages first, then reverse so UI gets chronological order
     const msgs = await Message.find(query)
@@ -170,6 +186,18 @@ export const sendMessage = async (req, res) => {
     const { conversationId, text, file } = req.body;
     const sender = req.user.id;
 
+    if (!conversationId || !isValidObjectId(conversationId)) {
+      return res.status(400).json({ message: "Invalid conversation ID" });
+    }
+
+    const convo = await Conversation.findById(conversationId);
+    if (!convo) return res.status(404).json({ message: "Conversation not found" });
+
+    const isMember = (convo.members || []).some((m) => String(m) === String(sender));
+    if (!isMember) {
+      return res.status(403).json({ message: "You are not a participant in this conversation" });
+    }
+
     let mediaData = null;
 
     if (file) {
@@ -192,8 +220,6 @@ export const sendMessage = async (req, res) => {
       mediaType: mediaData?.resource_type || null,
       seenBy: [sender],
     });
-
-    const convo = await Conversation.findById(conversationId);
 
     convo.lastMessage = text || (mediaData ? "📎 Media" : "");
     convo.lastMessageAt = new Date();
