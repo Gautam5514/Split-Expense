@@ -92,7 +92,7 @@ export default function JoinGroupPage() {
 
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <img src="/logo-concept-a.svg" alt="SplitEase" className="w-8 h-8 rounded-xl" />
+          <img src="/logo-concept-app.svg" alt="SplitEase" className="w-8 h-8 rounded-xl" />
           <span className="text-xl font-extrabold text-foreground">SplitEase</span>
         </div>
 

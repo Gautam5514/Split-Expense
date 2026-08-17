@@ -101,7 +101,7 @@ function ResetPasswordForm() {
           {/* logo */}
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10" style={{ boxShadow: "0 8px 24px rgba(8,145,178,0.4)" }}>
-              <img src="/logo-concept-a.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
+              <img src="/logo-concept-app.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
             <span className="text-2xl font-black text-white tracking-tight">SplitEase</span>
           </div>
@@ -140,7 +140,7 @@ function ResetPasswordForm() {
           {/* mobile logo */}
           <div className="flex items-center gap-2.5 mb-5 lg:hidden justify-center">
             <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center border border-white/10">
-              <img src="/logo-concept-a.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
+              <img src="/logo-concept-app.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
             <span className="text-xl font-extrabold text-white">SplitEase</span>
           </div>

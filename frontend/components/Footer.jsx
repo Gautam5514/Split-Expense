@@ -45,7 +45,7 @@ export default function Footer() {
             {/* Wordmark Logo */}
             <div className="flex items-center gap-2 mb-5">
               <div className="w-8 h-8 rounded-xl overflow-hidden border border-white/[0.08] flex items-center justify-center bg-white/[0.02] shrink-0">
-                <img src="/logo-concept-a.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
+                <img src="/logo-concept-app.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
               </div>
               <span className="font-extrabold text-xl text-white tracking-tight">
                 splitease

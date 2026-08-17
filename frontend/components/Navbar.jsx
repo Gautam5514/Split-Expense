@@ -153,7 +153,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl overflow-hidden flex items-center justify-center shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-200 bg-zinc-950 shrink-0">
-              <img src="/logo-concept-a.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
+              <img src="/logo-concept-app.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
             <span className={`font-extrabold text-base sm:text-xl tracking-tight transition-all duration-300 ${
               !isLoggedIn 
