@@ -4,6 +4,7 @@ import { WifiOff, Bell, Lock } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 const BUILD_URL = "https://expo.dev/accounts/gautampandit/projects/splitApp/builds/f7aba359-04fc-46bb-86bd-203fe4ab2971";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.kunal.splitapp";
 
 const FEATURES = [
   {
@@ -93,21 +94,16 @@ export default function DownloadAppPage() {
 
             {/* Google Play */}
             <a
-              href={BUILD_URL}
+              href={PLAY_STORE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2.5 bg-slate-900 dark:bg-slate-800 text-white px-4 py-2.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-700 transition cursor-pointer shadow-sm"
+              className="flex items-center overflow-hidden rounded-xl shadow-sm transition hover:opacity-90 cursor-pointer"
             >
-              <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0">
-                <path fill="#4FC3F7" d="M3 20.5v-17c0-.83 1-.83 1.5-.5l15 8.5-15 8.5c-.5.33-1.5.33-1.5-.5z" />
-                <path fill="#4DB6AC" d="M3 3.5l8.5 8.5L3 20.5V3.5z" opacity=".6" />
-                <path fill="#FFB300" d="M19.5 12l-8 4.5 2-4.5-2-4.5 8 4.5z" />
-                <path fill="#F06292" d="M11.5 16.5L3 20.5l8.5-8.5v8.5z" opacity=".8" />
-              </svg>
-              <div className="text-left leading-tight">
-                <p className="text-[9px] font-medium uppercase tracking-wider opacity-80">Get it on</p>
-                <p className="text-sm font-bold">Google Play</p>
-              </div>
+              <img
+                src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+                alt="Get it on Google Play"
+                className="h-[52px] w-auto"
+              />
             </a>
           </div>
 
@@ -116,11 +112,11 @@ export default function DownloadAppPage() {
 
         {/* QR code card */}
         <div className="bg-card border border-border rounded-xl shadow-sm p-6 flex flex-col items-center gap-4 text-center">
-          <p className="text-sm font-semibold text-foreground">Or scan to download</p>
+          <p className="text-sm font-semibold text-foreground">Or scan to download on Google Play</p>
 
           <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-inner">
             <QRCodeSVG
-              value={BUILD_URL}
+              value={PLAY_STORE_URL}
               size={150}
               bgColor="#ffffff"
               fgColor="#0f172a"
