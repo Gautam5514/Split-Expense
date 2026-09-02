@@ -1,292 +1,143 @@
-# Contributing to Split‑Expense 🎉
+# Contributing to Split-Expense
 
-First off — **thank you** for taking the time to contribute! Whether it's a
-bug fix, a new feature, better docs, or just an idea, you're welcome here.
+Thanks for your interest in contributing. This document explains how to propose changes, the local setup, and the conventions this project follows. Please read it before opening a pull request.
 
-This guide walks you through the whole process **step by step**, even if
-you've never opened a pull request before. Don't worry, it's easier than it
-looks. 💪
+If you find the project useful, consider [starring the repository](https://github.com/Gautam5514/Split-Expense) — it helps others discover it.
 
-> ⭐ **If you find this project useful, please [star the repo](https://github.com/Gautam5514/Split-Expense)!**
-> It takes 1 second, helps other people discover the project, and genuinely
-> keeps the maintainers motivated. Starring is the easiest way to contribute.
+## Table of contents
 
----
+- [Ways to contribute](#ways-to-contribute)
+- [Contribution workflow](#contribution-workflow)
+- [Local development setup](#local-development-setup)
+- [Environment variables and secrets](#environment-variables-and-secrets)
+- [Commit and branch naming](#commit-and-branch-naming)
+- [Pull request guidelines](#pull-request-guidelines)
+- [Code review](#code-review)
+- [Getting help](#getting-help)
 
-## 📚 Table of contents
+## Ways to contribute
 
-1. [Ways you can contribute](#-ways-you-can-contribute)
-2. [The big picture (how contributing works)](#-the-big-picture)
-3. [Working from an issue (start here!)](#-working-from-an-issue-start-here)
-4. [Step‑by‑step: your first pull request](#-step-by-step-your-first-pull-request)
-5. [Setting up the project locally](#-setting-up-the-project-locally)
-6. [🔒 Keeping secrets safe (READ THIS)](#-keeping-secrets-safe-read-this)
-7. [Commit & branch naming](#-commit--branch-naming)
-8. [Opening the pull request](#-opening-the-pull-request)
-9. [After you open the PR](#-after-you-open-the-pr)
-10. [Need help?](#-need-help)
+You don't need to write code to help:
 
----
+- **Report a bug** by opening an [issue](https://github.com/Gautam5514/Split-Expense/issues).
+- **Propose a feature** by opening an issue describing the use case.
+- **Improve documentation** — fix a typo, clarify a step, add a missing example.
+- **Fix a bug or implement a feature** — see the workflow below.
 
-## 🌟 Ways you can contribute
+New to open source? Look for issues labeled [`good first issue`](https://github.com/Gautam5514/Split-Expense/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) — they're scoped to be approachable for first-time contributors.
 
-You don't have to write code to help:
+## Contribution workflow
 
-- 🐛 **Report a bug** — open an [issue](https://github.com/Gautam5514/Split-Expense/issues).
-- 💡 **Suggest an idea/feature** — open an issue and describe it.
-- 📝 **Improve docs** — fix a typo, clarify a step, add an example.
-- 🔧 **Fix a bug or build a feature** — follow the steps below.
-- ⭐ **Star the repo** — seriously, it helps.
-
-**New to open source?** Look for issues labelled `good first issue` — they're
-picked specifically for first‑timers.
-
----
-
-## 🗺 The big picture
-
-You **cannot** push directly to the main project. Instead, everyone uses the
-standard "fork & pull request" flow. Here's the whole journey in one picture:
+This project uses the standard fork-and-pull-request model. You cannot push directly to `main`.
 
 ```
-  Gautam5514/Split-Expense   ← the original repo (you can't push here)
-          │
-          │  1. Fork (make your own copy on GitHub)
-          ▼
-  YOU/Split-Expense          ← your fork (you CAN push here)
-          │
-          │  2. Clone to your computer
-          ▼
-  your laptop                ← you write code here
-          │
-          │  3. Create a branch, commit, push to YOUR fork
-          ▼
-  YOU/Split-Expense
-          │
-          │  4. Open a Pull Request back to the original repo
-          ▼
-  Gautam5514/Split-Expense   ← maintainer reviews & merges 🎉
+Gautam5514/Split-Expense (upstream)  →  your fork  →  your branch  →  pull request  →  review  →  merge
 ```
 
-Don't memorise it — the commands below do each step for you.
+**1. Find or open an issue**
 
----
+Most changes start from an issue on the [Issues tab](https://github.com/Gautam5514/Split-Expense/issues). Read it fully — it should describe the problem and the acceptance criteria for a fix. If no issue exists for what you want to work on, open one first so the approach can be discussed before you invest time.
 
-## 🎯 Working from an issue (start here!)
+**2. Claim the issue**
 
-Most contributions start from an **issue** — a bug or feature request listed on
-the [Issues tab](https://github.com/Gautam5514/Split-Expense/issues). Instead of
-guessing what to work on, pick an issue and turn it into a pull request. Here's
-how. 👇
+Comment on the issue to say you're picking it up, and wait for a maintainer to confirm or assign it. This avoids duplicate work.
 
-### 1. Find an issue to work on
-Browse the [open issues](https://github.com/Gautam5514/Split-Expense/issues).
-- 🟢 New here? Filter by the **`good first issue`** label — those are beginner‑friendly.
-- 🙋 Want a bigger challenge? Look for **`help wanted`**.
-- Read the issue fully — it usually tells you **which files to look at** and the
-  **acceptance criteria** (what "done" looks like).
+**3. Fork and clone**
 
-### 2. Claim the issue (so no two people do the same work)
-Leave a comment on the issue like:
+```bash
+git clone https://github.com/YOUR-USERNAME/Split-Expense.git
+cd Split-Expense
+git remote add upstream https://github.com/Gautam5514/Split-Expense.git
+```
 
-> "Hi! I'd like to work on this. 🙌"
+`origin` points to your fork, `upstream` to the original repository.
 
-Wait for a maintainer to assign it to you (or give a 👍). This avoids two people
-building the same thing.
+**4. Create a branch**
 
-### 3. Create a branch named after the issue
-Include the issue **number** so it's easy to track. For example, for issue **#2**
-about the Careers page:
+Never commit directly to `main`. Name the branch after the issue, e.g. `fix/2-careers-page-ui` for issue #2 (see [naming conventions](#commit-and-branch-naming)).
 
 ```bash
 git checkout -b fix/2-careers-page-ui
 ```
 
-> Tip: `type/<issue-number>-short-description`, e.g. `fix/5-slow-api-query`.
+**5. Make your changes**
 
-### 4. Make your changes
-Fix the problem described in the issue. Check off each item in the issue's
-**acceptance criteria** as you go — that's your to‑do list. ✅
+Address the issue's acceptance criteria. Keep the change focused — avoid unrelated edits in the same branch.
 
-### 5. Commit, referencing the issue
-Mention the issue number in your commit so GitHub links them:
+**6. Commit and push**
 
 ```bash
 git add .
-git commit -m "Fix #2: correct spacing and mobile layout on Careers page"
+git commit -m "Fix: correct spacing and mobile layout on Careers page"
+git push origin fix/2-careers-page-ui
 ```
 
-### 6. Push and open a PR that **closes the issue**
-Push your branch (see the full steps below), then in your **PR description**
-write one of these magic phrases:
+**7. Open a pull request**
 
-```
-Closes #2
-```
+Push prints a link to open the PR directly, or use the "Compare & pull request" button on your fork. In the description, include `Closes #<issue-number>` so the issue closes automatically when the PR merges.
 
-> Using **`Closes #<number>`** (or `Fixes #`, `Resolves #`) means GitHub will
-> **automatically close the issue** when your PR is merged. This is the key link
-> between an issue and its fix — always add it! 🔗
-
-**That's the whole loop:** find issue → claim it → branch → fix → PR with
-`Closes #N` → maintainer merges → issue closes automatically. 🎉
-
-> 💡 No open issue for your idea? **Open one first**, describe it, and then follow
-> the same steps. It lets maintainers give feedback before you spend time coding.
-
----
-
-## 🚀 Step‑by‑step: your first pull request
-
-### 1. Fork the repo
-Go to **https://github.com/Gautam5514/Split-Expense** and click the
-**"Fork"** button (top‑right). This creates your own copy under your account.
-
-### 2. Clone YOUR fork to your computer
-Replace `YOUR-USERNAME` with your GitHub username:
-
-```bash
-git clone https://github.com/YOUR-USERNAME/Split-Expense.git
-cd Split-Expense
-```
-
-### 3. Connect to the original repo (so you can stay up to date)
-This adds the original project as a remote called `upstream`:
-
-```bash
-git remote add upstream https://github.com/Gautam5514/Split-Expense.git
-```
-
-Now `origin` = your fork, `upstream` = the original. Check with `git remote -v`.
-
-### 4. Create a new branch for your work
-Never work on `main` directly. Give the branch a short, descriptive name:
-
-```bash
-git checkout -b fix/login-button-color
-```
-
-### 5. Make your changes
-Edit the code, save your files. (See [local setup](#-setting-up-the-project-locally)
-to actually run the app.)
-
-### 6. Stage and commit your changes
-
-```bash
-git add .
-git commit -m "Fix: correct login button color on mobile"
-```
-
-> ⚠️ Before committing, make sure you are **not** adding any `.env` file or
-> secrets — see [🔒 Keeping secrets safe](#-keeping-secrets-safe-read-this).
-
-### 7. Push your branch to YOUR fork
-
-```bash
-git push origin fix/login-button-color
-```
-
-### 8. Open the Pull Request
-GitHub will print a link right after you push — click it. Or go to your fork
-on GitHub and press the **"Compare & pull request"** button. Fill in the
-template, describe what you changed, and submit. **That's it!** ✅
-
-### Keeping your fork up to date (do this before starting new work)
+**Keeping your fork up to date**, run before starting new work:
 
 ```bash
 git checkout main
-git pull upstream main      # get the latest changes from the original repo
-git push origin main        # update your fork
+git pull upstream main
+git push origin main
 ```
 
----
+## Local development setup
 
-## 🛠 Setting up the project locally
+The project has two parts: a **backend** (Node/Express + MongoDB) and a **frontend** (Next.js + React). You'll typically run both.
 
-Split‑Expense has two parts: a **backend** (Node/Express + MongoDB) and a
-**frontend** (Next.js + React). You'll usually need both running.
+**Prerequisites:** Node.js 18+, npm, and a MongoDB connection string (a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster works).
 
-**Prerequisites:** [Node.js](https://nodejs.org) 18+ and npm, plus a
-MongoDB connection string (a free [MongoDB Atlas](https://www.mongodb.com/atlas)
-cluster works great).
-
-### Backend
+**Backend** — runs on `http://localhost:5000`:
 
 ```bash
 cd backend
 npm install
-cp .env.example .env      # then open .env and fill in your values
-npm run dev               # starts the API on http://localhost:5000
+cp .env.example .env    # fill in your values
+npm run dev
 ```
 
-### Frontend
-
-Open a **second terminal**:
+**Frontend** — in a second terminal, runs on `http://localhost:3000`:
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local   # then open .env.local and fill in your values
-npm run dev                  # starts the app on http://localhost:3000
+cp .env.example .env.local    # fill in your values
+npm run dev
 ```
 
-Open **http://localhost:3000** in your browser and you're up and running. 🎈
+Some features (AI, push notifications, email) require additional API keys. If you're not working on those, leave the related variables blank — the rest of the app runs without them.
 
-> Some features (AI, push notifications, email) need extra keys. If you're not
-> touching those features, you can leave those variables blank — the rest of
-> the app will still run.
+## Environment variables and secrets
 
----
+**Never commit secrets or `.env` files.** A leaked API key, database credential, or private key can compromise real accounts and services.
 
-## 🔒 Keeping secrets safe (READ THIS)
+- Real secrets belong only in `.env` / `.env.local`, which are already git-ignored.
+- Use `.env.example` as a template — it should contain placeholder values only.
+- Never paste a real credential into code, comments, commit messages, screenshots, or PR descriptions — including `.env.example`.
 
-This is the **most important rule**: **never commit secrets or `.env` files.**
-
-Leaking an API key, database password, or private key can let attackers into
-real accounts and services. To keep everyone safe:
-
-- ✅ **Real secrets go in `.env` / `.env.local`** — these are already listed in
-  [`.gitignore`](.gitignore), so git will not track them.
-- ✅ **Use the `.env.example` files** as your template — they contain only
-  placeholder values, never real ones.
-- ❌ **Never** paste a real key, password, or token into any file you commit —
-  including `.env.example`, code comments, screenshots, or PR descriptions.
-- ❌ **Never** run `git add .env` or force‑add an ignored file.
-
-**Quick self‑check before every commit** — run this and make sure no `.env`
-file shows up:
-
-```bash
-git status
-```
-
-If you see something like `backend/.env` in the list, **do not commit**.
-Remove it from staging with:
+Before committing, run `git status` and confirm no `.env` file is staged. If one appears, unstage it:
 
 ```bash
 git restore --staged backend/.env
 ```
 
-**Accidentally committed a secret?** Don't just delete it in a new commit — it
-stays in git history. Tell the maintainer immediately (open an issue or
-comment) and **rotate/regenerate that key** so it can no longer be used.
+If a secret is committed by mistake, do not simply delete it in a follow-up commit — it remains in git history. Notify a maintainer immediately and rotate the exposed credential.
 
----
+## Commit and branch naming
 
-## 🌿 Commit & branch naming
+**Branch names** use `type/short-description`, optionally prefixed with the issue number:
 
-Keep it simple and readable so reviewers understand your change at a glance.
+| Type        | Use for                        | Example                      |
+|-------------|---------------------------------|-------------------------------|
+| `feat/`     | a new feature                  | `feat/split-by-percentage`    |
+| `fix/`      | a bug fix                      | `fix/2-careers-page-ui`       |
+| `docs/`     | documentation only              | `docs/update-readme`          |
+| `refactor/` | code change with no behavior change | `refactor/group-service` |
 
-**Branch names** — `type/short-description`:
-
-| Type       | Use for                    | Example                        |
-|------------|----------------------------|--------------------------------|
-| `feat/`    | a new feature              | `feat/split-by-percentage`     |
-| `fix/`     | a bug fix                  | `fix/duplicate-notification`   |
-| `docs/`    | documentation only         | `docs/update-readme`           |
-| `refactor/`| code cleanup, no new feature | `refactor/group-service`     |
-
-**Commit messages** — write a short sentence describing what you did:
+**Commit messages** should be short, imperative, and describe the change:
 
 ```
 Fix: prevent crash when group has no members
@@ -294,49 +145,30 @@ Add: export expenses to CSV
 Docs: clarify backend setup steps
 ```
 
-Small, focused commits are easier to review than one giant commit. 🙌
+Prefer small, focused commits over one large commit — they're easier to review and revert if needed.
 
----
+## Pull request guidelines
 
-## 📬 Opening the pull request
+- Give the PR a clear, descriptive title.
+- Fill in the PR template.
+- Explain what changed and why — the problem being solved, not just the diff.
+- Reference the issue with `Closes #<number>` so it closes automatically on merge.
+- Include screenshots or a short clip for any UI change.
+- Confirm the change contains no secrets or unrelated files.
+- Keep the PR scoped to one concern; open follow-up PRs for unrelated changes.
 
-When you open your PR, please:
+## Code review
 
-- **Give it a clear title** describing the change.
-- **Fill in the PR template** (it appears automatically).
-- **Explain what and why** — what problem does this solve?
-- **Link the issue you're fixing** by writing **`Closes #<number>`** in the
-  description (e.g. `Closes #2`). GitHub then auto‑closes that issue when your PR
-  is merged. ← don't skip this!
-- **Add screenshots** for any visual/UI change.
-- **Confirm no secrets** are included.
+A maintainer will review your PR and may request changes — this is a normal part of the process. To update a PR, push additional commits to the same branch:
 
-Then submit. A maintainer will review it — you may be asked to make small
-changes, which is a normal and healthy part of the process. 😊
+```bash
+git add .
+git commit -m "Address review feedback"
+git push origin your-branch-name
+```
 
----
+The PR updates automatically. Once approved, it will be merged and the linked issue closed.
 
-## 🔄 After you open the PR
+## Getting help
 
-- If a reviewer requests changes, just make more commits on the **same branch**
-  and push again — the PR updates automatically:
-  ```bash
-  git add .
-  git commit -m "Address review feedback"
-  git push origin your-branch-name
-  ```
-- Be patient and kind. Maintainers review in their spare time.
-- Once approved and merged — **congratulations, you're a contributor!** 🎉
-
----
-
-## 🙋 Need help?
-
-- Stuck on setup? Open an [issue](https://github.com/Gautam5514/Split-Expense/issues)
-  and describe what happened (include the error message).
-- Not sure if your idea fits? Open an issue first and ask before coding — it
-  saves everyone time.
-
-And once more — if this project helped you, please
-**[⭐ star the repo](https://github.com/Gautam5514/Split-Expense)**. Thank you
-for making Split‑Expense better! ❤️
+If you're stuck on setup or unsure whether an idea fits the project, open an [issue](https://github.com/Gautam5514/Split-Expense/issues) and describe what you've tried, including any error messages. Asking before you start saves time for everyone.
