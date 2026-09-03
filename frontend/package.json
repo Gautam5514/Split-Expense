@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.8",
+    "@react-three/fiber": "^9.7.0",
     "@xyflow/react": "^12.11.0",
     "axios": "^1.12.2",
     "firebase": "^12.5.0",
@@ -21,7 +23,8 @@
     "react-dom": "19.2.0",
     "react-hot-toast": "^2.6.0",
     "recharts": "^3.3.0",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

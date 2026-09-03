@@ -31,9 +31,49 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.95, ease: "easeOut" }}
-          className="font-serif-premium font-normal text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] tracking-tight leading-[1.05] text-center mb-6 max-w-4xl text-white"
+          className="font-serif-premium font-normal text-[2.65rem] sm:text-6xl md:text-[4.5rem] lg:text-[5.35rem] tracking-tight leading-[1.06] text-center mb-6 max-w-7xl text-white"
         >
-          The all-in-one platform for splitting expenses
+          <span className="lg:block lg:whitespace-nowrap">
+            <span className="inline">Split </span>
+            <span
+              className="group relative mx-[0.08em] inline-flex h-[0.78em] w-[1.78em] translate-y-[0.08em] overflow-hidden rounded-[999px] border border-white/20 bg-white/10 align-baseline shadow-[0_8px_30px_rgba(0,0,0,0.28)]"
+              aria-hidden="true"
+            >
+              <img
+                src="/hero-friends-expense.png"
+                alt=""
+                decoding="async"
+                className="h-full w-full scale-[1.38] object-cover transition-transform duration-700 group-hover:scale-[1.46]"
+              />
+              <span className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/15" />
+            </span>{" "}
+            <span className="inline">with friends.</span>
+          </span>
+          <span className="lg:block lg:whitespace-nowrap">
+            <span className="inline">Settle </span>
+            <span
+              className="group relative mx-[0.08em] inline-flex h-[0.72em] w-[1.55em] translate-y-[0.06em] overflow-hidden rounded-[999px] border border-white/20 bg-[#181818] align-baseline shadow-[0_8px_30px_rgba(0,0,0,0.28)]"
+              aria-hidden="true"
+            >
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                poster="/hero-friends-expense.png"
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+              >
+                <source
+                  src="/hero_video.webm"
+                  type="video/webm"
+                />
+              </video>
+              <span className="absolute inset-0 bg-gradient-to-tr from-black/25 via-transparent to-cyan-200/10" />
+              <span className="absolute right-[0.12em] top-[0.12em] size-[0.09em] rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]" />
+            </span>{" "}
+            <span className="inline">with ease.</span>
+          </span>
         </motion.h1>
 
         {/* Subtext */}
@@ -43,7 +83,7 @@ export default function HeroSection() {
           transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
           className="text-white/60 text-sm sm:text-base md:text-lg max-w-2xl text-center leading-relaxed mb-8 sm:mb-10 font-medium px-4"
         >
-          Split expenses with your groups and settle up with smart settlement suggestions, available now - with AI-powered receipt scanning coming soon.
+          Split expenses with your groups and settle up with smart settlement suggestions, available now with AI-powered receipt scanning coming soon.
         </motion.p>
 
         {/* CTA Button */}
