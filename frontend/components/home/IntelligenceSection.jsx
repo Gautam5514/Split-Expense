@@ -23,12 +23,12 @@ const STEP_MS = 900;
 const ROW = "clamp(44px, 6.5vw, 92px)";
 
 const WORDS = [
-  { label: "INSTANT SPLIT", info: "EQUAL, SHARES OR EXACT. SETTLED IN ONE TAP" },
-  { label: "RECEIPT VISION", info: "ATTACH BILL PHOTOS NOW - AI ITEMIZATION COMING SOON" },
-  { label: "SETTLE CHAT", info: "EVERY PAYMENT LIVES INSIDE THE CONVERSATION" },
-  { label: "DEBT GRAPH", info: "BALANCES ROUTED THROUGH MINIMAL TRANSFERS" },
-  { label: "LIVE LEDGER", info: "REAL-TIME SYNC ACROSS EVERY DEVICE" },
-  { label: "SETTLE CONFIRM", info: "TWO-PARTY CONFIRMATION BEFORE ANY BALANCE MOVES" },
+  { label: "INSTANT SPLIT", info: "EQUAL, SHARES OR EXACT. SETTLED IN ONE TAP", image: "/intelligence/instant-split.jpg" },
+  { label: "RECEIPT VISION", info: "ATTACH BILL PHOTOS NOW - AI ITEMIZATION COMING SOON", image: "/intelligence/receipt-vision.jpg" },
+  { label: "SETTLE CHAT", info: "EVERY PAYMENT LIVES INSIDE THE CONVERSATION", image: "/intelligence/settle-chat.jpg" },
+  { label: "DEBT GRAPH", info: "BALANCES ROUTED THROUGH MINIMAL TRANSFERS", image: "/intelligence/debt-graph.jpg" },
+  { label: "LIVE LEDGER", info: "REAL-TIME SYNC ACROSS EVERY DEVICE", image: "/intelligence/live-ledger.jpg" },
+  { label: "SETTLE CONFIRM", info: "TWO-PARTY CONFIRMATION BEFORE ANY BALANCE MOVES", image: "/intelligence/settle-confirm.jpg" },
 ];
 
 // Active index grows forever; content repeats so the scroll never jumps back up.
@@ -73,11 +73,19 @@ export default function IntelligenceSection() {
     return () => window.removeEventListener("resize", measure);
   }, []);
 
-  // Keep rotating even while hovered, just a touch slower so the chip stays readable.
+  // Hold a hovered feature for four seconds, then resume the automatic sequence.
   useEffect(() => {
     if (!inView) return;
-    const delay = hovered !== null ? 1000 : STEP_MS;
-    const id = setInterval(() => setActive((i) => i + 1), delay);
+
+    if (hovered !== null) {
+      const hold = setTimeout(() => {
+        setHovered(null);
+        setActive((i) => i + 1);
+      }, 4000);
+      return () => clearTimeout(hold);
+    }
+
+    const id = setInterval(() => setActive((i) => i + 1), STEP_MS);
     return () => clearInterval(id);
   }, [inView, hovered]);
 
@@ -97,12 +105,12 @@ export default function IntelligenceSection() {
     <section
       ref={sectionRef}
       onMouseMove={onMouseMove}
-      className="relative flex sm:min-h-[100dvh] flex-col overflow-hidden bg-[#030303] text-white"
+      className="relative flex min-h-[780px] flex-col overflow-hidden bg-[#030303] text-white sm:min-h-[112dvh] lg:min-h-[820px]"
     >
       {/* Ambient glow, same language as the rest of the landing page */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[680px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-900/10 blur-[130px]" />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 py-7 sm:py-12">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-6 py-9 sm:px-8 sm:py-14">
         {/* Header block */}
         <div className="max-w-md font-mono text-[10px] font-bold uppercase leading-relaxed tracking-[0.12em] sm:text-[11px]">
           <p className="text-cyan-400">Splitease</p>
@@ -113,6 +121,61 @@ export default function IntelligenceSection() {
             skill, working in unison.
           </p>
         </div>
+
+        {/* A visual explanation appears on the right without changing the word interaction. */}
+        <AnimatePresence mode="wait">
+          {hovered !== null && (
+            <motion.aside
+              key={wordAt(hovered).label}
+              initial={{ opacity: 0, x: -220, scaleX: 0.025, scaleY: 1, rotateY: -86, filter: "blur(5px)" }}
+              animate={{
+                opacity: [0, 1, 1],
+                x: [-220, -90, 0],
+                scaleX: [0.025, 0.035, 1],
+                scaleY: 1,
+                rotateY: [-86, -78, 0],
+                filter: ["blur(5px)", "blur(2px)", "blur(0px)"],
+              }}
+              exit={{
+                opacity: [1, 1, 0],
+                x: [0, -90, -190],
+                scaleX: [1, 0.035, 0.02],
+                scaleY: 1,
+                rotateY: [0, -78, -88],
+                filter: ["blur(0px)", "blur(2px)", "blur(5px)"],
+              }}
+              transition={{ duration: 0.78, times: [0, 0.28, 1], ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-none absolute right-6 top-1/2 z-30 hidden h-[clamp(460px,56dvh,540px)] w-[26%] max-w-[380px] -translate-y-1/2 lg:block xl:right-10"
+              style={{ transformOrigin: "left center", perspective: 1200 }}
+            >
+              <div className="relative h-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.035] p-1 shadow-[0_35px_100px_rgba(0,0,0,0.72),0_0_45px_rgba(34,211,238,0.1),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.06] via-transparent to-cyan-400/[0.035]" />
+                <img
+                  src={wordAt(hovered).image}
+                  alt={`${wordAt(hovered).label.toLowerCase()} feature preview`}
+                  className="relative h-full w-full rounded-[1.5rem] object-cover opacity-95"
+                />
+                <div className="absolute inset-1 rounded-[1.5rem] border border-white/[0.06] bg-gradient-to-t from-black via-black/10 to-white/[0.025]" />
+                <div className="absolute inset-x-6 bottom-6">
+                  <div className="mb-3 flex items-center gap-2 font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-300">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 shadow-[0_0_12px_#22d3ee]" />
+                    Visual preview
+                  </div>
+                  <p className={`${condensed.className} text-2xl uppercase leading-none tracking-wide text-white`}>
+                    {wordAt(hovered).label}
+                  </p>
+                </div>
+              </div>
+              <motion.span
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                exit={{ scaleX: 0, opacity: 0 }}
+                transition={{ delay: 0.12, duration: 0.35, ease: "easeOut" }}
+                className="absolute -left-20 top-1/2 h-px w-20 origin-left bg-gradient-to-r from-transparent via-cyan-300/30 to-cyan-300/80 shadow-[0_0_12px_rgba(34,211,238,0.5)]"
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
 
         {/* Rotating word stack, vertically centered in the leftover space */}
         <div className="my-8 py-2 sm:my-auto sm:py-6">
@@ -177,9 +240,12 @@ export default function IntelligenceSection() {
 
           {/* Touch devices get the info inline instead of a cursor chip */}
           <div className="mt-5 flex justify-center md:hidden">
-            <p className="rounded-lg border border-cyan-400/40 bg-black/80 px-4 py-2 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-white/85">
-              &middot; {wordAt(active).info}
-            </p>
+            <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2">
+              <img src={wordAt(active).image} alt="" className="aspect-[16/8] w-full rounded-xl object-cover" />
+              <p className="px-2 pb-2 pt-3 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-white/85">
+                &middot; {wordAt(active).info}
+              </p>
+            </div>
           </div>
         </div>
 

@@ -45,6 +45,30 @@ function TimelineDot({ scrollYProgress, index, total, color }) {
   );
 }
 
+function TrackTrainIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 34 112" className="h-[104px] w-8 overflow-visible">
+      <path
+        d="M17 2C9 2 5 8 5 16v76c0 10 5 17 12 18 7-1 12-8 12-18V16C29 8 25 2 17 2Z"
+        fill="#041115"
+        stroke="#a5f3fc"
+        strokeWidth="1.25"
+      />
+      <path d="M6 38h22M6 68h22" stroke="#22d3ee" strokeOpacity=".55" />
+      <rect x="9" y="10" width="16" height="20" rx="6" fill="#0b2931" stroke="#67e8f9" strokeOpacity=".65" />
+      <rect x="9" y="42" width="16" height="20" rx="5" fill="#082129" stroke="#67e8f9" strokeOpacity=".48" />
+      <rect x="9" y="72" width="16" height="20" rx="5" fill="#082129" stroke="#67e8f9" strokeOpacity=".48" />
+      <circle cx="14" cy="49" r="2" fill="#cffafe" />
+      <circle cx="20" cy="49" r="2" fill="#cffafe" />
+      <circle cx="14" cy="79" r="2" fill="#cffafe" />
+      <circle cx="20" cy="79" r="2" fill="#cffafe" />
+      <path d="M9 96c2.5 7 13.5 7 16 0v5c-3 8-13 8-16 0Z" fill="#cffafe" />
+      <path d="M12 16h10v8H12z" fill="#67e8f9" fillOpacity=".35" />
+      <circle cx="17" cy="106" r="1.8" fill="#fff" className="drop-shadow-[0_0_5px_#22d3ee]" />
+    </svg>
+  );
+}
+
 export default function FeaturesSection() {
   const containerRef = useRef(null);
 
@@ -60,6 +84,22 @@ export default function FeaturesSection() {
   });
 
   const scaleProgress = useTransform(smoothProgress, [0, 1], ["0%", "100%"]);
+
+  // Give every feature dot a "station" dwell zone, then ease the train onward.
+  const trainProgress = useTransform(smoothProgress, (value) => {
+    const lastStation = 5;
+    const scaled = Math.min(value * lastStation, lastStation - 0.0001);
+    const station = Math.floor(scaled);
+    const local = scaled - station;
+
+    if (local <= 0.14) return station / lastStation;
+    if (local >= 0.86) return (station + 1) / lastStation;
+
+    const travel = (local - 0.14) / 0.72;
+    const eased = travel * travel * (3 - 2 * travel);
+    return (station + eased) / lastStation;
+  });
+  const trainY = useTransform(trainProgress, [0, 1], ["0%", "100%"]);
 
   const features = [
     {
@@ -225,6 +265,17 @@ export default function FeaturesSection() {
                   strokeLinecap="round"
                 />
               </svg>
+            </motion.div>
+
+            {/* Scroll follower — a tiny train that pauses at every feature station. */}
+            <motion.div
+              className="absolute left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
+              style={{ top: trainY }}
+            >
+              <span className="absolute bottom-2 h-12 w-12 animate-pulse rounded-full bg-cyan-400/15 blur-lg" />
+              <span className="absolute bottom-0 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">
+                <TrackTrainIcon />
+              </span>
             </motion.div>
 
           </div>
