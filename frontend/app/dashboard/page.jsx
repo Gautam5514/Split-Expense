@@ -284,20 +284,40 @@ const avatarColors = [
 
 function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted, onDeleteTrip }) {
   const hasActions = isCreator && (view === "active" || view === "completed");
+  const isSettled = view === "completed";
 
   return (
     <Link
       href={`/groups/${group._id}`}
-      className="group flex flex-col bg-card border border-border rounded-xl shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 overflow-hidden"
+      className={`group relative flex flex-col bg-card border rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
+        isSettled
+          ? "border-emerald-500/30 hover:border-emerald-500/50"
+          : "border-border hover:border-primary/30"
+      }`}
     >
+      {isSettled && (
+        <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+          <CheckCircle2 size={12} />
+          Settled
+        </span>
+      )}
+
       {/* Card body */}
       <div className="flex-1 p-5 space-y-4">
         {/* Icon + name */}
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <LayoutGrid className="w-4 h-4 text-primary" />
+          <div
+            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+              isSettled ? "bg-emerald-500/10" : "bg-primary/10"
+            }`}
+          >
+            {isSettled ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <LayoutGrid className="w-4 h-4 text-primary" />
+            )}
           </div>
-          <div className="min-w-0 pt-0.5">
+          <div className="min-w-0 pt-0.5 pr-16">
             <h3 className="font-bold text-foreground text-base leading-snug line-clamp-1 group-hover:text-primary transition-colors">
               {group.name}
             </h3>
@@ -353,7 +373,9 @@ function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted,
       {/* Footer actions */}
       {hasActions && (
         <div
-          className="border-t border-border px-5 py-3 flex items-center justify-between"
+          className={`border-t px-5 py-3 flex items-center justify-between ${
+            isSettled ? "border-emerald-500/20 bg-emerald-500/5" : "border-border"
+          }`}
           onClick={(e) => e.preventDefault()}
         >
           {view === "active" ? (
@@ -377,9 +399,9 @@ function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted,
             </>
           ) : (
             <>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-primary">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                 <CheckCircle size={15} />
-                Trip Completed
+                Trip Completed &amp; Settled
               </div>
               <button
                 type="button"
