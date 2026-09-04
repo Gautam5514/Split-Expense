@@ -99,12 +99,14 @@ const sendExpoPushNotifications = async (userIds, payload) => {
       .filter(({ token }) => isValidExpoPushToken(token))
       .map(({ token, platform }) => ({
         to: token,
-        sound: "default",
+        // iOS plays this file directly; Android ignores it and instead uses
+        // the channel's own sound (set client-side in registerForPushNotificationsAsync).
+        sound: "notification.wav",
         title: payload.title,
         body: payload.body,
         data: payload.data,
         ...(platform === "android" && {
-          channelId: "default",
+          channelId: "alerts",
           priority: "high",
         }),
       }))
