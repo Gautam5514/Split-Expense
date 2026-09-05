@@ -7,8 +7,13 @@ import admin from "../config/firebaseAdmin.js";
 
 /**
  * 🔔 Create notifications for multiple users, emit them in real time, and send push
+ *
+ * `meta` lets callers hand over the extra context (group name, amount, expense
+ * category, settlement outcome) needed to build a rich, "production level"
+ * push notification instead of a generic "SplitEase" banner. It's optional —
+ * omitting it just falls back to a plain title.
  */
-export const createNotification = async (userIds, message, link, type = "group") => {
+export const createNotification = async (userIds, message, link, type = "group", meta = {}) => {
   try {
     const recipientIds = userIds.map((userId) => String(userId));
     const notifications = userIds.map((userId) => ({
@@ -29,10 +34,13 @@ export const createNotification = async (userIds, message, link, type = "group")
       }
     });
 
+    const { title, subtitle, channelId } = buildPushContent(type, meta);
     const pushPayload = {
-      title: notificationTitleForType(type),
+      title,
+      subtitle,
       body: message,
-      data: { link, type },
+      data: { link, type, groupId: meta.groupId ? String(meta.groupId) : undefined },
+      channelId,
     };
 
     // 📱 Dispatch Expo push alerts (mobile apps)
@@ -51,12 +59,27 @@ export const createNotification = async (userIds, message, link, type = "group")
  * socket emit — used for chat messages, which have their own unread counters
  * and would flood the notification bell if stored.
  */
+// Types that don't go through createNotification (chat messages) don't carry
+// an explicit channelId - infer one from `data.type` so they still land on a
+// sensible Android channel instead of the catch-all "alerts" one.
+const CHANNEL_BY_TYPE = {
+  chat: "chat",
+  "group-chat": "chat",
+  expense: "expenses",
+  settlement: "settlements",
+  group: "groups",
+};
+
 export const sendPushToUsers = async (userIds, payload) => {
   try {
     const recipientIds = userIds.map((id) => String(id));
     if (!recipientIds.length) return;
-    await sendExpoPushNotifications(recipientIds, payload);
-    await sendFCMWebPushNotifications(recipientIds, payload);
+    const withChannel = {
+      ...payload,
+      channelId: payload.channelId || CHANNEL_BY_TYPE[payload.data?.type] || "alerts",
+    };
+    await sendExpoPushNotifications(recipientIds, withChannel);
+    await sendFCMWebPushNotifications(recipientIds, withChannel);
   } catch (err) {
     console.error("❌ sendPushToUsers:", err.message);
   }
@@ -68,15 +91,64 @@ const isValidExpoPushToken = (token) =>
   typeof token === "string" &&
   /^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]+\]$/.test(token);
 
-const notificationTitleForType = (type) => {
+// Category → emoji so an expense push instantly signals what kind of spend
+// it is, the same way Splitwise/production apps do, without needing to open
+// the app first.
+const CATEGORY_EMOJI = {
+  general: "💳",
+  food: "🍔",
+  travel: "✈️",
+  stay: "🏨",
+  shopping: "🛍️",
+  bills: "🧾",
+};
+
+// Settlement notifications share one `type` but mean very different things
+// (a claim vs. a confirmation vs. a dispute) - `meta.kind` disambiguates so
+// the push can lead with the right verb/emoji instead of a generic banner.
+const SETTLEMENT_COPY = {
+  requested: { emoji: "💸", label: "Payment claim" },
+  confirmed: { emoji: "✅", label: "Settlement confirmed" },
+  rejected: { emoji: "⚠️", label: "Settlement disputed" },
+  cancelled: { emoji: "🚫", label: "Settlement cancelled" },
+};
+
+/**
+ * Build a rich, contextual { title, subtitle, channelId } for a push
+ * notification from its `type` + optional `meta` (groupName, amount,
+ * category, kind). Falls back gracefully when meta is missing so every
+ * existing call site keeps working unchanged.
+ */
+const buildPushContent = (type, meta = {}) => {
+  const { groupName, amount, category, kind } = meta;
+  const amountLabel = amount != null && !Number.isNaN(Number(amount))
+    ? `₹${Number(amount).toFixed(0)}`
+    : undefined;
+
   switch (type) {
-    case "expense":
-      return "New expense";
-    case "settlement":
-      return "Settlement update";
+    case "expense": {
+      const emoji = CATEGORY_EMOJI[category] || "💳";
+      return {
+        title: groupName ? `${emoji} New expense · ${groupName}` : `${emoji} New expense`,
+        subtitle: amountLabel,
+        channelId: "expenses",
+      };
+    }
+    case "settlement": {
+      const { emoji, label } = SETTLEMENT_COPY[kind] || { emoji: "💰", label: "Settlement update" };
+      return {
+        title: groupName ? `${emoji} ${label} · ${groupName}` : `${emoji} ${label}`,
+        subtitle: amountLabel,
+        channelId: "settlements",
+      };
+    }
     case "group":
     default:
-      return "SplitEase";
+      return {
+        title: groupName ? `👥 ${groupName}` : "SplitEase",
+        subtitle: undefined,
+        channelId: "groups",
+      };
   }
 };
 
@@ -88,14 +160,36 @@ const chunk = (items, size) => {
   return chunks;
 };
 
+// Real-time badge count per recipient - so the app icon shows the correct
+// unread number the instant a push lands, even if the app has been backgrounded
+// for days and never had a chance to recompute it locally.
+const getUnreadCounts = async (userIds) => {
+  const objectIds = userIds
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (!objectIds.length) return new Map();
+
+  const rows = await Notification.aggregate([
+    { $match: { userId: { $in: objectIds }, isRead: false } },
+    { $group: { _id: "$userId", count: { $sum: 1 } } },
+  ]);
+
+  const map = new Map();
+  rows.forEach((r) => map.set(String(r._id), r.count));
+  return map;
+};
+
 const sendExpoPushNotifications = async (userIds, payload) => {
   const users = await User.find(
     { _id: { $in: userIds } },
     "expoPushTokens"
   ).lean();
 
-  const messages = users.flatMap((user) =>
-    (user.expoPushTokens || [])
+  const badgeByUser = await getUnreadCounts(userIds);
+
+  const messages = users.flatMap((user) => {
+    const badge = badgeByUser.get(String(user._id)) ?? 0;
+    return (user.expoPushTokens || [])
       .filter(({ token }) => isValidExpoPushToken(token))
       .map(({ token, platform }) => ({
         to: token,
@@ -103,14 +197,19 @@ const sendExpoPushNotifications = async (userIds, payload) => {
         // the channel's own sound (set client-side in registerForPushNotificationsAsync).
         sound: "notification.wav",
         title: payload.title,
+        ...(payload.subtitle && { subtitle: payload.subtitle }),
         body: payload.body,
         data: payload.data,
+        badge,
         ...(platform === "android" && {
-          channelId: "alerts",
+          // Route each notification type to its own channel (created client-side
+          // in lib/pushNotifications.js) so users can mute e.g. chat pushes
+          // without losing expense/settlement alerts - a real production pattern.
+          channelId: payload.channelId || "alerts",
           priority: "high",
         }),
-      }))
-  );
+      }));
+  });
 
   if (!messages.length) return;
 
@@ -278,6 +377,7 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
       body:  payload.body,
       link:  relLink,
       type,
+      ...(payload.data?.groupId && { groupId: String(payload.data.groupId) }),
     },
     webpush: {
       ...(absLink && { fcmOptions: { link: absLink } }),
@@ -411,5 +511,4 @@ export const cleanupOldNotifications = async () => {
     console.error("Cleanup failed:", err.message);
   }
 };
-
 
