@@ -7,7 +7,7 @@ const groupSchema = new mongoose.Schema(
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     isCompleted: { type: Boolean, default: false},
     inviteCode: { type: String, unique: true, sparse: true },
-    groupType: { type: String, enum: ["trip", "roommate", "general"], default: "trip" },
+    groupType: { type: String, enum: ["trip", "roommate", "general"], default: "general" },
   },
   { timestamps: true }
 );

@@ -47,7 +47,7 @@ beforeEach(() => {
 });
 
 describe("createGroup", () => {
-  test("defaults groupType to 'trip' when the client omits it (legacy web/app callers)", async () => {
+  test("defaults groupType to 'general' when the client omits it (the simple, no-picker create flow)", async () => {
     const uid = oid();
     const req = makeReq({ user: { id: uid, name: "Alice" }, body: { name: "My Group" } });
     const res = makeRes();
@@ -55,12 +55,12 @@ describe("createGroup", () => {
     await createGroup(req, res);
 
     expect(res.statusCode).toBe(201);
-    expect(res.body.groupType).toBe("trip");
+    expect(res.body.groupType).toBe("general");
     expect(res.body.name).toBe("My Group");
     expect(res.body.members.map(String)).toEqual([String(uid)]);
   });
 
-  test("stores 'roommate' groupType when the client sends it (web's new picker, task #6)", async () => {
+  test("stores 'roommate' groupType when the client sends it explicitly", async () => {
     const uid = oid();
     const req = makeReq({ user: { id: uid, name: "Bob" }, body: { name: "Flat 304", groupType: "roommate" } });
     const res = makeRes();

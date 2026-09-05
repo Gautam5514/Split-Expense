@@ -14,11 +14,10 @@ import {
 import {
   Plus, ArrowRight, Users, Calendar,
   CheckCircle, Trash2, ShieldCheck, PieChart as PieIcon, Coins, Landmark,
-  ArrowUpRight
+  ArrowUpRight, Loader2
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Loader3D from "@/components/Loader3D";
-import CreateGroupModal from "@/components/CreateGroupModal";
 
 const COLORS = ["#0891B2", "#0E7490", "#22D3EE", "#14b8a6", "#f59e0b", "#0284C7"];
 
@@ -51,7 +50,8 @@ export default function UserDashboardPage() {
   const [meId, setMeId]                     = useState(null);
   const [oweSummary, setOweSummary]         = useState({ totalOwed: 0, totalOwe: 0 });
   const [loading, setLoading]               = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [groupName, setGroupName]           = useState("");
+  const [creating, setCreating]             = useState(false);
   const [activePieIndex, setActivePieIndex] = useState(-1);
   const [mounted, setMounted]               = useState(false);
 
@@ -107,9 +107,22 @@ export default function UserDashboardPage() {
     }
   };
 
-  const handleGroupCreated = (created) => {
-    fetchData();
-    router.push(`/groups/${created._id}`);
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
+    const trimmed = groupName.trim();
+    if (!trimmed) return toast.error("Enter a group name");
+    try {
+      setCreating(true);
+      const res = await api.post("/groups", { name: trimmed });
+      toast.success("Group created! 🗺️");
+      setGroupName("");
+      fetchData();
+      router.push(`/groups/${res.data._id}`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Error creating group");
+    } finally {
+      setCreating(false);
+    }
   };
 
   const markCompleted = async (e, groupId) => {
@@ -170,21 +183,31 @@ export default function UserDashboardPage() {
             </h1>
           </motion.div>
 
-          <motion.div
+          <motion.form
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            onSubmit={handleCreateGroup}
             className="w-full sm:w-auto relative group"
           >
             <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-teal-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300" />
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="relative flex items-center gap-1.5 px-4 py-3 rounded-xl text-white font-semibold text-sm shadow-md transition-all hover:opacity-90 active:scale-95 cursor-pointer w-full sm:w-auto justify-center"
-              style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}
-            >
-              <Plus className="w-4 h-4" />
-              New Group / Trip
-            </button>
-          </motion.div>
+            <div className="relative flex items-center bg-card border border-border rounded p-1.5 shadow-md gap-1">
+              <input
+                type="text"
+                placeholder="New group name..."
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                className="bg-transparent outline-none px-3 py-2 text-foreground placeholder:text-muted-foreground w-full text-sm"
+              />
+              <button
+                type="submit"
+                disabled={creating}
+                className="flex items-center gap-1.5 px-4 py-2 rounded text-white font-semibold text-sm shadow disabled:opacity-50 transition-all hover:opacity-90 active:scale-95 cursor-pointer shrink-0"
+                style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}
+              >
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Create
+              </button>
+            </div>
+          </motion.form>
         </div>
 
         {/* ── 4 STAT CARDS ── */}
@@ -536,19 +559,13 @@ export default function UserDashboardPage() {
               </div>
               <h3 className="font-bold text-foreground text-base">No active trips yet</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
-                Use the &quot;Add Trip&quot; button above to create a group and start splitting expenses.
+                Use the group name box above to create a group and start splitting expenses.
               </p>
             </div>
           )}
         </motion.div>
 
       </div>
-
-      <CreateGroupModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreated={handleGroupCreated}
-      />
     </div>
   );
 }

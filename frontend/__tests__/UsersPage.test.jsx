@@ -27,32 +27,39 @@ beforeEach(() => {
   });
 });
 
-describe("UsersPage - group creation wiring (task #6)", () => {
-  test("clicking 'New Group / Trip' opens the CreateGroupModal", async () => {
-    const user = userEvent.setup();
+describe("UsersPage - group creation wiring", () => {
+  test("renders an inline name field with a Create button, no modal", async () => {
     render(<UserDashboardPage />);
-    const newGroupButton = await screen.findByRole("button", { name: /new group \/ trip/i });
-
-    await user.click(newGroupButton);
-    expect(screen.getByText("Create New Group")).toBeInTheDocument();
+    expect(await screen.findByPlaceholderText("New group name...")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /create/i })).toBeInTheDocument();
+    expect(screen.queryByText("Create New Group")).not.toBeInTheDocument();
   });
 
-  test("creating a group posts groupType, refetches dashboard data, and navigates into the new group", async () => {
-    api.post.mockResolvedValueOnce({ data: { _id: "grp-9", name: "Flat 304", groupType: "roommate" } });
+  test("creating a group posts just the name, refetches dashboard data, and navigates directly into the new group", async () => {
+    api.post.mockResolvedValueOnce({ data: { _id: "grp-9", name: "Flat 304", groupType: "trip" } });
     const user = userEvent.setup();
     render(<UserDashboardPage />);
-    const newGroupButton = await screen.findByRole("button", { name: /new group \/ trip/i });
+    const nameInput = await screen.findByPlaceholderText("New group name...");
     const callsBefore = api.get.mock.calls.length;
 
-    await user.click(newGroupButton);
-    await user.click(screen.getByText("Roommate Split"));
-    await user.type(screen.getByPlaceholderText("e.g. Flat 304"), "Flat 304");
-    await user.click(screen.getByRole("button", { name: /create roommate split/i }));
+    await user.type(nameInput, "Flat 304");
+    await user.click(screen.getByRole("button", { name: /create/i }));
 
     await waitFor(() =>
-      expect(api.post).toHaveBeenCalledWith("/groups", { name: "Flat 304", groupType: "roommate" })
+      expect(api.post).toHaveBeenCalledWith("/groups", { name: "Flat 304" })
     );
     await waitFor(() => expect(api.get.mock.calls.length).toBeGreaterThan(callsBefore));
     expect(pushMock).toHaveBeenCalledWith("/groups/grp-9");
+  });
+
+  test("shows an error toast and does not call the API when the name is empty", async () => {
+    const toast = require("@/lib/toast").default;
+    const user = userEvent.setup();
+    render(<UserDashboardPage />);
+
+    await user.click(await screen.findByRole("button", { name: /create/i }));
+
+    expect(toast.error).toHaveBeenCalledWith("Enter a group name");
+    expect(api.post).not.toHaveBeenCalled();
   });
 });

@@ -9,9 +9,11 @@ type RingState = "hidden" | "visible";
 
 function Moon({ onReveal }: { onReveal: () => void }) {
   const moon = useRef<THREE.Mesh>(null);
-  const texture = useTexture(
-    "https://cdn.21st.dev/assets/mirror/fc/fcb0f1f5548e6e18d40063dd55c6aacd3daedf2407b181dab85b61e22bf9fe57.jpg"
-  );
+  // Self-hosted: the original 21st.dev demo-asset mirror this was copied
+  // from doesn't send CORS headers reliably, which crashes WebGL's texture
+  // load (blocked cross-origin fetch) once the browser cache goes cold -
+  // exactly what surfaced only in production, never in a warm local dev cache.
+  const texture = useTexture("/textures/moon.jpg");
 
   useFrame((_, delta) => {
     if (moon.current) moon.current.rotation.y += delta * 0.045;

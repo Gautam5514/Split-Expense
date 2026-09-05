@@ -6,11 +6,36 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import toast from "@/lib/toast";
 import { Users, Loader2, LogIn, CheckCircle2, RefreshCw } from "lucide-react";
 
+const ANDROID_PACKAGE = "com.kunal.splitapp";
+
 export default function JoinGroupPage() {
   const { inviteCode } = useParams();
   const router = useRouter();
   const [status, setStatus] = useState("loading"); // loading | joining | success | error | unauthenticated | already_member
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Send mobile visitors straight into the app: if it's installed, this
+  // hands the invite off to its own /join/[inviteCode] screen instantly; if
+  // not, Android falls back to the Play Store (carrying the invite code as
+  // an install referrer for a future deferred-deep-link). This page still
+  // renders normally underneath as the fallback for desktop, iOS without
+  // the app, or any browser that doesn't support the intent:// syntax.
+  useEffect(() => {
+    if (!inviteCode) return;
+    const ua = window.navigator.userAgent || "";
+    const isAndroid = /Android/i.test(ua);
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+    if (isAndroid) {
+      const playStoreUrl = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}&referrer=${encodeURIComponent(`join_code=${inviteCode}`)}`;
+      window.location.href = `intent://join/${inviteCode}#Intent;scheme=splitapp;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(playStoreUrl)};end`;
+    } else if (isIOS) {
+      // No App Store listing yet, so there's no fallback to redirect to -
+      // if the app isn't installed this just silently fails and the normal
+      // web join flow below takes over.
+      window.location.href = `splitapp://join/${inviteCode}`;
+    }
+  }, [inviteCode]);
 
   useEffect(() => {
     if (!inviteCode) return;

@@ -44,7 +44,7 @@ export const createGroup = async (req, res) => {
       name: name.trim(),
       createdBy: uid,
       members: [uid],
-      groupType: groupType || "trip",
+      groupType: groupType || "general",
     });
 
     const populated = await Group.findById(group._id).populate(

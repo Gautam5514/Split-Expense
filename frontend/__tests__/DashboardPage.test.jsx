@@ -35,7 +35,7 @@ describe("DashboardPage - group creation wiring (task #6)", () => {
     expect(screen.getByText("Create New Group")).toBeInTheDocument();
   });
 
-  test("creating a group posts groupType, refreshes the list, and opens the invite modal", async () => {
+  test("creating a group posts just the name, refreshes the list, and opens the invite modal", async () => {
     api.post.mockResolvedValueOnce({ data: { _id: "new-group-1", name: "Goa Trip", groupType: "trip" } });
     const user = userEvent.setup();
     render(<DashboardPage />);
@@ -43,9 +43,9 @@ describe("DashboardPage - group creation wiring (task #6)", () => {
 
     await user.click(screen.getByRole("button", { name: /new group/i }));
     await user.type(screen.getByPlaceholderText("e.g. Goa Trip"), "Goa Trip");
-    await user.click(screen.getByRole("button", { name: /create trip split/i }));
+    await user.click(screen.getByRole("button", { name: /create group/i }));
 
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/groups", { name: "Goa Trip", groupType: "trip" }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/groups", { name: "Goa Trip" }));
     // Modal closes...
     expect(screen.queryByText("Create New Group")).not.toBeInTheDocument();
     // ...group list is refetched...

@@ -24,34 +24,12 @@ describe("CreateGroupModal", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  test("defaults to the Trip Split type with its own suggestions and placeholder", () => {
+  test("renders just a simple name field, no type picker or suggestions", () => {
     render(<CreateGroupModal isOpen onClose={jest.fn()} onCreated={jest.fn()} />);
-    // "Trip Split" appears twice by design: once in the live gradient preview
-    // badge, once as the selector card's title.
-    expect(screen.getAllByText("Trip Split").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Roommate Split")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("e.g. Goa Trip")).toBeInTheDocument();
-    expect(screen.getByText("Goa Trip", { selector: "button" })).toBeInTheDocument();
-  });
-
-  test("switching to Roommate updates the placeholder and suggestion chips", async () => {
-    const user = userEvent.setup();
-    render(<CreateGroupModal isOpen onClose={jest.fn()} onCreated={jest.fn()} />);
-
-    await user.click(screen.getByText("Roommate Split"));
-
-    expect(screen.getByPlaceholderText("e.g. Flat 304")).toBeInTheDocument();
-    expect(screen.getByText("Flat 304", { selector: "button" })).toBeInTheDocument();
+    expect(screen.queryByText("Trip Split")).not.toBeInTheDocument();
+    expect(screen.queryByText("Roommate Split")).not.toBeInTheDocument();
     expect(screen.queryByText("Goa Trip", { selector: "button" })).not.toBeInTheDocument();
-  });
-
-  test("clicking a suggestion chip fills the name input", async () => {
-    const user = userEvent.setup();
-    render(<CreateGroupModal isOpen onClose={jest.fn()} onCreated={jest.fn()} />);
-
-    await user.click(screen.getByText("Weekend Getaway"));
-
-    expect(screen.getByPlaceholderText("e.g. Goa Trip")).toHaveValue("Weekend Getaway");
   });
 
   test("rejects a name shorter than 2 characters without calling the API", async () => {
@@ -59,7 +37,7 @@ describe("CreateGroupModal", () => {
     render(<CreateGroupModal isOpen onClose={jest.fn()} onCreated={jest.fn()} />);
 
     await user.type(screen.getByPlaceholderText("e.g. Goa Trip"), "A");
-    await user.click(screen.getByRole("button", { name: /create trip split/i }));
+    await user.click(screen.getByRole("button", { name: /create group/i }));
 
     expect(await screen.findByText("Must be at least 2 characters.")).toBeInTheDocument();
     expect(api.post).not.toHaveBeenCalled();
@@ -69,13 +47,13 @@ describe("CreateGroupModal", () => {
     const user = userEvent.setup();
     render(<CreateGroupModal isOpen onClose={jest.fn()} onCreated={jest.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: /create trip split/i }));
+    await user.click(screen.getByRole("button", { name: /create group/i }));
 
     expect(await screen.findByText("Group name is required.")).toBeInTheDocument();
     expect(api.post).not.toHaveBeenCalled();
   });
 
-  test("submits { name, groupType: 'trip' } by default and reports success", async () => {
+  test("submits { name } without a groupType and reports success", async () => {
     api.post.mockResolvedValueOnce({ data: { _id: "g1", name: "Goa Trip", groupType: "trip" } });
     const onCreated = jest.fn();
     const onClose = jest.fn();
@@ -83,26 +61,12 @@ describe("CreateGroupModal", () => {
     render(<CreateGroupModal isOpen onClose={onClose} onCreated={onCreated} />);
 
     await user.type(screen.getByPlaceholderText("e.g. Goa Trip"), "Goa Trip");
-    await user.click(screen.getByRole("button", { name: /create trip split/i }));
+    await user.click(screen.getByRole("button", { name: /create group/i }));
 
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/groups", { name: "Goa Trip", groupType: "trip" }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/groups", { name: "Goa Trip" }));
     expect(toast.success).toHaveBeenCalledWith("Group created successfully!");
     expect(onCreated).toHaveBeenCalledWith({ _id: "g1", name: "Goa Trip", groupType: "trip" });
     expect(onClose).toHaveBeenCalled();
-  });
-
-  test("submits groupType: 'roommate' after switching the type selector (task #6 - matches the app)", async () => {
-    api.post.mockResolvedValueOnce({ data: { _id: "g2", name: "Flat 304", groupType: "roommate" } });
-    const user = userEvent.setup();
-    render(<CreateGroupModal isOpen onClose={jest.fn()} onCreated={jest.fn()} />);
-
-    await user.click(screen.getByText("Roommate Split"));
-    await user.type(screen.getByPlaceholderText("e.g. Flat 304"), "Flat 304");
-    await user.click(screen.getByRole("button", { name: /create roommate split/i }));
-
-    await waitFor(() =>
-      expect(api.post).toHaveBeenCalledWith("/groups", { name: "Flat 304", groupType: "roommate" })
-    );
   });
 
   test("surfaces a field-specific error from the API under the name input", async () => {
@@ -111,7 +75,7 @@ describe("CreateGroupModal", () => {
     render(<CreateGroupModal isOpen onClose={jest.fn()} onCreated={jest.fn()} />);
 
     await user.type(screen.getByPlaceholderText("e.g. Goa Trip"), "Duplicate");
-    await user.click(screen.getByRole("button", { name: /create trip split/i }));
+    await user.click(screen.getByRole("button", { name: /create group/i }));
 
     expect(await screen.findByText("Name already taken")).toBeInTheDocument();
   });
@@ -123,7 +87,7 @@ describe("CreateGroupModal", () => {
     render(<CreateGroupModal isOpen onClose={onClose} onCreated={jest.fn()} />);
 
     await user.type(screen.getByPlaceholderText("e.g. Goa Trip"), "Valid Name");
-    await user.click(screen.getByRole("button", { name: /create trip split/i }));
+    await user.click(screen.getByRole("button", { name: /create group/i }));
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Server exploded"));
     expect(onClose).not.toHaveBeenCalled();
