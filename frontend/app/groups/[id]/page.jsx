@@ -46,6 +46,7 @@ import NotepadSection from "@/components/Notepad/NotepadSection";
 import OcrViewModal from "@/components/OcrViewModal";
 import Loader3D from "@/components/Loader3D";
 import socket, { connectSocket } from "@/lib/socket";
+import { formatCurrency, formatSignedCurrency } from "@/lib/formatCurrency";
 
 const categoryIcons = {
   food: Utensils,
@@ -59,12 +60,6 @@ const categoryIcons = {
   misc: FileText,
   general: FileText,
 };
-
-const INR = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
 
 const fmtDate = new Intl.DateTimeFormat("en-IN", {
   day: "2-digit",
@@ -407,7 +402,7 @@ export default function GroupDetailPage() {
           {/* Total Spend */}
           <div className="col-span-2 sm:col-span-1 bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Group Spend</p>
-            <p className="text-2xl font-black text-foreground mt-2">{INR.format(expenseSummary.total)}</p>
+            <p className="text-2xl font-black text-foreground mt-2">{formatCurrency(expenseSummary.total)}</p>
             <p className="text-[11px] text-muted-foreground mt-1.5">
               Across {expenseSummary.count} logged expense{expenseSummary.count !== 1 ? "s" : ""}
             </p>
@@ -419,7 +414,7 @@ export default function GroupDetailPage() {
             {currentUserBalance > 0.01 ? (
               <>
                 <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
-                  +{INR.format(Math.abs(currentUserBalance))}
+                  +{formatCurrency(Math.abs(currentUserBalance))}
                 </p>
                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1.5 flex items-center gap-1">
                   <ArrowUpRight size={11} /> You are owed by this group
@@ -428,7 +423,7 @@ export default function GroupDetailPage() {
             ) : currentUserBalance < -0.01 ? (
               <>
                 <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2">
-                  -{INR.format(Math.abs(currentUserBalance))}
+                  -{formatCurrency(Math.abs(currentUserBalance))}
                 </p>
                 <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1.5 flex items-center gap-1">
                   <ArrowDownLeft size={11} /> You owe others in this group
@@ -577,7 +572,7 @@ export default function GroupDetailPage() {
                                   style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
                                   Settlement
                                 </span>
-                                <span className="font-bold text-sm text-emerald-500">{INR.format(exp.amount)}</span>
+                                <span className="font-bold text-sm text-emerald-500">{formatCurrency(exp.amount)}</span>
                               </div>
                             </div>
                           );
@@ -611,7 +606,7 @@ export default function GroupDetailPage() {
                                   <Eye size={13} />
                                 </button>
                               )}
-                              <span className="font-bold text-sm text-foreground">{INR.format(exp.amount)}</span>
+                              <span className="font-bold text-sm text-foreground">{formatCurrency(exp.amount)}</span>
                             </div>
                           </div>
                         );
@@ -658,7 +653,7 @@ export default function GroupDetailPage() {
                                   {payer.items.length} expense{payer.items.length !== 1 ? "s" : ""}
                                 </p>
                               </div>
-                              <span className="font-bold text-foreground text-sm shrink-0">{INR.format(payer.total)}</span>
+                              <span className="font-bold text-foreground text-sm shrink-0">{formatCurrency(payer.total)}</span>
                               <ChevronDown size={16}
                                 className={`text-muted-foreground transition-transform shrink-0 ${isOpen ? "rotate-180 text-primary" : ""}`} />
                             </button>
@@ -680,7 +675,7 @@ export default function GroupDetailPage() {
                                             <p className="text-xs font-semibold text-foreground truncate">{exp.description}</p>
                                             <p className="text-[10px] text-muted-foreground">{fmtDate.format(new Date(exp.date))}</p>
                                           </div>
-                                          <span className="text-xs font-bold text-foreground shrink-0">{INR.format(exp.amount)}</span>
+                                          <span className="text-xs font-bold text-foreground shrink-0">{formatCurrency(exp.amount)}</span>
                                         </div>
                                       );
                                     })}
@@ -862,7 +857,7 @@ function BalancesCard({ balances, pendingSettlements, meId, onRequestSettlement,
                   : isDown ? "text-rose-600 dark:text-rose-400"
                   : "text-muted-foreground"
                 }`}>
-                  {isUp ? `+₹${Math.abs(bal).toFixed(0)}` : isDown ? `-₹${Math.abs(bal).toFixed(0)}` : "Settled"}
+                  {isUp || isDown ? formatSignedCurrency(bal) : "Settled"}
                 </span>
               </div>
             );
@@ -888,7 +883,7 @@ function BalancesCard({ balances, pendingSettlements, meId, onRequestSettlement,
                     {isDebtor ? "You" : s.from.name}
                   </span>
                   <span className="text-muted-foreground"> owe </span>
-                  <span className="font-bold text-foreground">₹{s.amount.toFixed(0)}</span>
+                  <span className="font-bold text-foreground">{formatCurrency(s.amount)}</span>
                   <span className="text-muted-foreground"> to </span>
                   <span className={`font-bold ${isCreditor ? "text-emerald-600 dark:text-emerald-400 underline decoration-dotted" : "text-emerald-600 dark:text-emerald-400"}`}>
                     {isCreditor ? "You" : s.to.name}
@@ -917,14 +912,14 @@ function BalancesCard({ balances, pendingSettlements, meId, onRequestSettlement,
                     onClick={() => openForm(i)}
                     className="w-full flex items-center justify-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
                   >
-                    <CheckCircle size={13} /> I&apos;ve Paid ₹{s.amount.toFixed(0)}
+                    <CheckCircle size={13} /> I&apos;ve Paid {formatCurrency(s.amount)}
                   </button>
                 ) : isCreditor ? (
                   <button
                     onClick={() => openForm(i)}
                     className="w-full flex items-center justify-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
                   >
-                    <CheckCircle size={13} /> Mark ₹{s.amount.toFixed(0)} as Received
+                    <CheckCircle size={13} /> Mark {formatCurrency(s.amount)} as Received
                   </button>
                 ) : (
                   <p className="text-[10px] text-muted-foreground text-center py-0.5">
@@ -969,7 +964,7 @@ function PendingSettlementRow({ pending, meId, onConfirm, onReject, onCancel }) 
       <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium leading-snug">
         <span className="font-bold">{pending.initiatedBy.name}</span> says{" "}
         {initiatorPaid ? "they paid you" : "they received"}{" "}
-        <span className="font-bold">₹{Number(pending.amount).toFixed(0)}</span> {methodLabel}. Confirm?
+        <span className="font-bold">{formatCurrency(pending.amount)}</span> {methodLabel}. Confirm?
       </p>
       {pending.note && (
         <p className="text-[10px] text-amber-700/80 dark:text-amber-400/70 italic truncate">&ldquo;{pending.note}&rdquo;</p>

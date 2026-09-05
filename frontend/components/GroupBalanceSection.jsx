@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Wallet2, Coins, ArrowDownCircle, ArrowUpCircle, SmilePlus } from "lucide-react";
+import { formatCurrency, formatSignedCurrency } from "@/lib/formatCurrency";
 
 export default function GroupBalanceSection({ balances }) {
   const hasBalances = balances?.balances?.length > 0;
@@ -62,11 +63,7 @@ export default function GroupBalanceSection({ balances }) {
                       : "text-muted-foreground"
                   }`}
               >
-                {b.balance > 0
-                  ? `+₹${b.balance}`
-                  : b.balance < 0
-                    ? `-₹${Math.abs(b.balance)}`
-                    : "Settled"}
+                {b.balance !== 0 ? formatSignedCurrency(b.balance) : "Settled"}
               </span>
             </motion.div>
           ))}
@@ -92,7 +89,7 @@ export default function GroupBalanceSection({ balances }) {
                 <div>
                   <b className="text-red-600">{s.from.name}</b>{" "}
                   <span className="text-muted-foreground">should pay</span>{" "}
-                  <b className="text-green-600">₹{s.amount}</b>{" "}
+                  <b className="text-green-600">{formatCurrency(s.amount)}</b>{" "}
                   <span className="text-muted-foreground">to</span>{" "}
                   <b className="text-primary">{s.to.name}</b>
                 </div>
