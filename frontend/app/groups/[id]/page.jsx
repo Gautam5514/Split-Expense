@@ -90,6 +90,7 @@ export default function GroupDetailPage() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null); // { id, name } | null
   const [selectedOcr, setSelectedOcr] = useState(null);
   const [expandedPayerId, setExpandedPayerId] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -205,6 +206,13 @@ export default function GroupDetailPage() {
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to remove member");
     }
+  };
+
+  const requestRemoveMember = (id, name) => setMemberToRemove({ id, name });
+  const confirmRemoveMember = async () => {
+    if (!memberToRemove) return;
+    await handleRemove(memberToRemove.id);
+    setMemberToRemove(null);
   };
 
   const handleExpenseAdded = () => {
@@ -723,7 +731,7 @@ export default function GroupDetailPage() {
             <MembersCard group={group} isCreator={isCreator}
               onAdd={() => setShowAddMember(true)}
               onInvite={() => setShowInviteModal(true)}
-              onRemove={handleRemove}
+              onRemove={requestRemoveMember}
               onViewAll={() => setShowMembersModal(true)} />
           </div>
         </div>
@@ -736,6 +744,13 @@ export default function GroupDetailPage() {
         onConfirm={handleDeleteTrip}
         title={`Delete "${group.name}"?`}
         description={`You're about to permanently delete this trip. All expenses, notes, group messages, and member data will be removed forever.`}
+      />
+      <ConfirmDeleteModal
+        isOpen={!!memberToRemove}
+        onCancel={() => setMemberToRemove(null)}
+        onConfirm={confirmRemoveMember}
+        title={`Remove ${memberToRemove?.name || "this member"}?`}
+        description="They'll lose access to this group and its expenses right away. This can't be undone."
       />
       <AnimatePresence>
         {showExpenseModal && (
@@ -1073,7 +1088,7 @@ function MembersCard({ group, isCreator, onAdd, onInvite, onRemove, onViewAll })
                     OWNER
                   </span>
                 ) : isCreator ? (
-                  <button type="button" onClick={() => onRemove(m._id)}
+                  <button type="button" onClick={() => onRemove(m._id, m.name)}
                     className="text-muted-foreground hover:text-destructive hover:bg-destructive/8 p-1.5 rounded-lg transition cursor-pointer opacity-0 group-hover:opacity-100"
                     title={`Remove ${m.name}`}>
                     <X size={13} />
