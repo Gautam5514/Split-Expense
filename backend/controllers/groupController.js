@@ -233,7 +233,8 @@ export const addMembersByEmail = async (req, res) => {
         userIds,
         `You were added to group "${group.name}" by ${req.user.name}`,
         `/groups/${group._id}`,
-        "group"
+        "group",
+        { groupName: group.name, groupId: group._id }
       );
 
       const existingMemberIds = group.members
@@ -245,7 +246,8 @@ export const addMembersByEmail = async (req, res) => {
           existingMemberIds,
           `${req.user.name} added ${addedNames} to "${group.name}"`,
           `/groups/${group._id}`,
-          "group"
+          "group",
+          { groupName: group.name, groupId: group._id }
         );
       }
     }
@@ -492,7 +494,8 @@ export const markGroupCompleted = async (req, res) => {
         otherMembers,
         `"${group.name}" has been marked as completed by ${req.user.name}`,
         `/groups/${group._id}`,
-        "group"
+        "group",
+        { groupName: group.name, groupId: group._id }
       );
     }
 
@@ -543,7 +546,7 @@ export const generateInviteLink = async (req, res) => {
     if (!isCreator(group, req.user))
       return res.status(403).json({ message: "Only creator can generate invite" });
 
-    // If inviteCode doesn’t exist, generate one
+    // If inviteCode doesn't exist, generate one
     if (!group.inviteCode) {
       group.inviteCode = crypto.randomBytes(4).toString("hex");
       await group.save();
@@ -588,7 +591,8 @@ export const joinGroupByInvite = async (req, res) => {
           otherMembers,
           `${req.user.name} joined "${group.name}" using an invite link`,
           `/groups/${group._id}`,
-          "group"
+          "group",
+          { groupName: group.name, groupId: group._id }
         );
       }
     }
