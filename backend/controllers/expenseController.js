@@ -188,7 +188,8 @@ export const addExpense = async (req, res) => {
         recipients,
         notificationMessage,
         `/groups/${groupId}`,
-        isSettlement ? "group" : "expense"
+        isSettlement ? "group" : "expense",
+        { groupName: group.name, groupId, amount: amt, category }
       );
     }
 
@@ -342,7 +343,12 @@ export const requestSettlement = async (req, res) => {
       ? `${req.user.name} says they paid you ₹${amt.toFixed(0)} in "${group.name}". Tap to confirm.`
       : `${req.user.name} says they received ₹${amt.toFixed(0)} from you in "${group.name}". Tap to confirm.`;
 
-    await createNotification([counterpartyId], message, `/groups/${groupId}`, "settlement");
+    await createNotification([counterpartyId], message, `/groups/${groupId}`, "settlement", {
+      groupName: group.name,
+      groupId,
+      amount: amt,
+      kind: "requested",
+    });
     io.to(`group:${groupId}`).emit("settlementUpdate", { groupId, kind: "requested" });
 
     res.status(201).json(populated);
@@ -401,7 +407,8 @@ export const confirmSettlementRequest = async (req, res) => {
       [request.initiatedBy],
       `${req.user.name} confirmed the ₹${Number(request.amount).toFixed(0)} settlement in "${group.name}".`,
       `/groups/${request.groupId}`,
-      "settlement"
+      "settlement",
+      { groupName: group.name, groupId: request.groupId, amount: request.amount, kind: "confirmed" }
     );
     io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "confirmed" });
 
@@ -441,7 +448,8 @@ export const rejectSettlementRequest = async (req, res) => {
       [request.initiatedBy],
       `${req.user.name} said this ₹${Number(request.amount).toFixed(0)} settlement wasn't confirmed in "${group?.name || "your group"}". Check the details and try again.`,
       `/groups/${request.groupId}`,
-      "settlement"
+      "settlement",
+      { groupName: group?.name, groupId: request.groupId, amount: request.amount, kind: "rejected" }
     );
     io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "rejected" });
 
