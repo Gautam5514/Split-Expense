@@ -7,7 +7,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "seed:user": "node scripts/seed-password-user.js",
-    "user:otp-bypass": "node scripts/set-user-otp-bypass.js"
+    "user:otp-bypass": "node scripts/set-user-otp-bypass.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -28,6 +29,7 @@
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
+    "jest": "^30.5.1",
     "nodemon": "^3.0.3"
   }
 }

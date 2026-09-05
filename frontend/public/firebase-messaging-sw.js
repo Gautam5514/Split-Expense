@@ -38,7 +38,9 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const networkFetch = fetch(event.request).then((response) => {
-        if (response.ok) {
+        // The Cache API rejects partial (206) responses - e.g. range-requested
+        // media/fonts - so only cache full 200 responses.
+        if (response.ok && response.status !== 206) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }

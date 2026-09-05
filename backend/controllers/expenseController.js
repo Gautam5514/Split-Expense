@@ -16,7 +16,7 @@ const sameId = (a, b) => String(a) === String(b);
 const ensureMember = (group, userId) =>
   (group.members || []).some((m) => sameId(m, userId));
 
-const buildSplits = ({
+export const buildSplits = ({
   splitType,
   amount,
   participants,
@@ -260,7 +260,7 @@ const createSettlementExpense = async ({ groupId, fromUserId, toUserId, amount, 
 // balance sheet - never trust a client-supplied amount against a stale
 // balance. Returns null if either user has no live group balance (e.g. not
 // a member, or the group vanished).
-const maxSettleableBetween = (balances, fromUserId, toUserId) => {
+export const maxSettleableBetween = (balances, fromUserId, toUserId) => {
   const fromBal = balances[String(fromUserId)];
   const toBal = balances[String(toUserId)];
   if (fromBal === undefined || toBal === undefined) return null;

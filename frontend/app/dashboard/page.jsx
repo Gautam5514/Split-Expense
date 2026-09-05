@@ -17,15 +17,14 @@ import {
 } from "lucide-react";
 import InviteModal from "@/components/InviteModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import CreateGroupModal from "@/components/CreateGroupModal";
 
 export default function DashboardPage() {
   const { token } = useAuth();
   const [groups, setGroups] = useState([]);
   const [view, setView] = useState("active");
-  const [name, setName] = useState("");
-  const [nameError, setNameError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [inviteGroupId, setInviteGroupId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, name }
 
@@ -70,27 +69,9 @@ export default function DashboardPage() {
     }
   };
 
-  const createGroup = async (e) => {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) { setNameError("Group name is required."); return; }
-    if (trimmed.length < 2) { setNameError("Must be at least 2 characters."); return; }
-    if (trimmed.length > 100) { setNameError("Must be under 100 characters."); return; }
-    setNameError("");
-    try {
-      setCreating(true);
-      const res = await api.post("/groups", { name: trimmed });
-      toast.success("Group created successfully!");
-      setInviteGroupId(res.data._id);
-      fetchGroups();
-      setName("");
-    } catch (err) {
-      const data = err?.response?.data;
-      if (data?.field === "name") setNameError(data.message);
-      else toast.error(data?.message || "Error creating group");
-    } finally {
-      setCreating(false);
-    }
+  const handleGroupCreated = (created) => {
+    setInviteGroupId(created._id);
+    fetchGroups();
   };
 
   // Backend sets status="active" for groups the user created,
@@ -118,27 +99,14 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <form onSubmit={createGroup} className="flex flex-col gap-1 w-full">
-            <div className="flex items-center gap-2">
-              <input
-                placeholder="Enter new group name"
-                className={`flex-grow rounded-xl bg-card text-foreground border p-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-                  nameError ? "border-destructive focus:ring-destructive" : "border-border"
-                }`}
-                value={name}
-                onChange={(e) => { setName(e.target.value); if (nameError) setNameError(""); }}
-              />
-              <button
-                type="submit"
-                disabled={creating}
-                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-3 rounded-xl text-sm font-semibold transition disabled:opacity-60 shrink-0"
-              >
-                {creating ? <Loader2 className="animate-spin w-4 h-4" /> : <Plus size={16} />}
-                {creating ? "Creating…" : "Create"}
-              </button>
-            </div>
-            {nameError && <p className="text-destructive text-xs mt-0.5">{nameError}</p>}
-          </form>
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-3 rounded-xl text-sm font-semibold transition shrink-0 w-fit"
+          >
+            <Plus size={16} />
+            New Group
+          </button>
         </div>
 
         {/* Underline Tabs */}
@@ -252,6 +220,12 @@ export default function DashboardPage() {
           </section>
         )}
       </div>
+
+      <CreateGroupModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={handleGroupCreated}
+      />
 
       {inviteGroupId && (
         <InviteModal

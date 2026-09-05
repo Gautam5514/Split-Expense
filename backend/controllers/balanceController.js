@@ -11,7 +11,7 @@ const CACHE_TTL_MS = 30_000;
 
 export const invalidateBalanceCache = (groupId) => balanceCache.delete(String(groupId));
 
-const buildSettlement = (balancesObj) => {
+export const buildSettlement = (balancesObj) => {
   const entries = Object.entries(balancesObj).map(([userId, bal]) => ({ userId, bal: to2(bal) }));
   const creditors = entries.filter((e) => e.bal > 0).sort((a, b) => b.bal - a.bal);
   const debtors   = entries.filter((e) => e.bal < 0).sort((a, b) => a.bal - b.bal);

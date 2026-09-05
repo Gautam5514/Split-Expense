@@ -12,12 +12,13 @@ import {
   PieChart, Pie, Cell
 } from "recharts";
 import {
-  Loader2, Plus, ArrowRight, Users, Calendar,
+  Plus, ArrowRight, Users, Calendar,
   CheckCircle, Trash2, ShieldCheck, PieChart as PieIcon, Coins, Landmark,
   ArrowUpRight
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Loader3D from "@/components/Loader3D";
+import CreateGroupModal from "@/components/CreateGroupModal";
 
 const COLORS = ["#0891B2", "#0E7490", "#22D3EE", "#14b8a6", "#f59e0b", "#0284C7"];
 
@@ -50,8 +51,7 @@ export default function UserDashboardPage() {
   const [meId, setMeId]                     = useState(null);
   const [oweSummary, setOweSummary]         = useState({ totalOwed: 0, totalOwe: 0 });
   const [loading, setLoading]               = useState(true);
-  const [groupName, setGroupName]           = useState("");
-  const [creating, setCreating]             = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [activePieIndex, setActivePieIndex] = useState(-1);
   const [mounted, setMounted]               = useState(false);
 
@@ -107,21 +107,9 @@ export default function UserDashboardPage() {
     }
   };
 
-  const handleCreateGroup = async (e) => {
-    e.preventDefault();
-    if (!groupName.trim()) return toast.error("Enter a group name");
-    try {
-      setCreating(true);
-      const res = await api.post("/groups", { name: groupName.trim() });
-      toast.success("Group created! 🗺️");
-      setGroupName("");
-      fetchData();
-      router.push(`/groups/${res.data._id}`);
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Error creating group");
-    } finally {
-      setCreating(false);
-    }
+  const handleGroupCreated = (created) => {
+    fetchData();
+    router.push(`/groups/${created._id}`);
   };
 
   const markCompleted = async (e, groupId) => {
@@ -182,31 +170,21 @@ export default function UserDashboardPage() {
             </h1>
           </motion.div>
 
-          <motion.form
+          <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-            onSubmit={handleCreateGroup}
             className="w-full sm:w-auto relative group"
           >
             <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-teal-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300" />
-            <div className="relative flex items-center bg-card border border-border rounded-xl p-1.5 shadow-md gap-1">
-              <input
-                type="text"
-                placeholder="New group / trip name..."
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                className="bg-transparent outline-none px-3 py-2 text-foreground placeholder:text-muted-foreground w-full text-sm"
-              />
-              <button
-                type="submit"
-                disabled={creating}
-                className="flex items-center gap-1.5 px-4 py-2 rounded text-white font-semibold text-sm shadow disabled:opacity-50 transition-all hover:opacity-90 active:scale-95 cursor-pointer shrink-0"
-                style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}
-              >
-                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                 Add Group
-              </button>
-            </div>
-          </motion.form>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="relative flex items-center gap-1.5 px-4 py-3 rounded-xl text-white font-semibold text-sm shadow-md transition-all hover:opacity-90 active:scale-95 cursor-pointer w-full sm:w-auto justify-center"
+              style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}
+            >
+              <Plus className="w-4 h-4" />
+              New Group / Trip
+            </button>
+          </motion.div>
         </div>
 
         {/* ── 4 STAT CARDS ── */}
@@ -565,6 +543,12 @@ export default function UserDashboardPage() {
         </motion.div>
 
       </div>
+
+      <CreateGroupModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={handleGroupCreated}
+      />
     </div>
   );
 }

@@ -138,13 +138,36 @@ export default function LunarGravityCard({ className = "" }: LunarGravityCardPro
   const [ringState, setRingState] = useState<RingState>("hidden");
   const visible = ringState === "visible";
 
+  // The scene's useFrame loops (moon rotation, orbit reveal, marker spin) must
+  // not keep running once this card scrolls out of view - this section is
+  // mounted permanently by its lazy-loader, so an unconditional frameloop
+  // would render forever in the background for the rest of the session.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
+      rootMargin: "200px 0px",
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   useEffect(() => {
     const revealTimer = window.setTimeout(() => setRingState("visible"), 650);
     return () => window.clearTimeout(revealTimer);
   }, []);
 
   return (
-    <div className={`relative flex min-h-[680px] w-full max-w-[1120px] overflow-hidden rounded-[2rem] bg-[#030303] shadow-[0_40px_120px_rgba(0,0,0,0.55)] md:min-h-0 md:h-[580px] ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative flex min-h-[680px] w-full max-w-[1120px] overflow-hidden rounded-[2rem] bg-[#030303] shadow-[0_40px_120px_rgba(0,0,0,0.55)] md:min-h-0 md:h-[580px] ${className}`}
+    >
       <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-black via-black/75 to-transparent md:bg-gradient-to-r md:from-black md:via-black/80 md:to-transparent" />
       <div className="pointer-events-none absolute inset-0 z-10 opacity-50 [background-image:radial-gradient(circle_at_15%_20%,rgba(34,211,238,0.16),transparent_28%)]" />
 
@@ -166,7 +189,7 @@ export default function LunarGravityCard({ className = "" }: LunarGravityCardPro
       </div>
 
       <div className="absolute inset-x-0 bottom-0 h-[62%] md:inset-y-0 md:left-auto md:right-[-3%] md:h-full md:w-[67%]">
-        <Canvas shadows camera={{ position: [0, 4.2, 10], fov: 46 }} dpr={[1, 1.6]}>
+        <Canvas shadows frameloop={inView ? "always" : "never"} camera={{ position: [0, 4.2, 10], fov: 46 }} dpr={[1, 1.6]}>
           <ambientLight intensity={0.04} />
           <directionalLight position={[7, 6, 6]} intensity={1.8} color="#ffffff" castShadow />
           <directionalLight position={[-4, -2, -4]} intensity={0.45} color="#22d3ee" />

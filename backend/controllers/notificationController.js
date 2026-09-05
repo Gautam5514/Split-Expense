@@ -34,20 +34,26 @@ export const createNotification = async (userIds, message, link, type = "group",
       }
     });
 
-    const { title, subtitle, channelId } = buildPushContent(type, meta);
-    const pushPayload = {
-      title,
+    const data = { link, type, groupId: meta.groupId ? String(meta.groupId) : undefined };
+
+    // 📱 Dispatch Expo push alerts (mobile app only) - rich, emoji/context-aware
+    // title + subtitle + per-type channel. Scoped to the app on purpose: web
+    // push already works fine and isn't part of this change.
+    const { title: mobileTitle, subtitle, channelId } = buildPushContent(type, meta);
+    await sendExpoPushNotifications(recipientIds, {
+      title: mobileTitle,
       subtitle,
       body: message,
-      data: { link, type, groupId: meta.groupId ? String(meta.groupId) : undefined },
+      data,
       channelId,
-    };
+    });
 
-    // 📱 Dispatch Expo push alerts (mobile apps)
-    await sendExpoPushNotifications(recipientIds, pushPayload);
-
-    // 🌐 Dispatch FCM web push (browser / PWA)
-    await sendFCMWebPushNotifications(recipientIds, pushPayload);
+    // 🌐 Dispatch FCM web push (browser / PWA) - unchanged, plain title as before.
+    await sendFCMWebPushNotifications(recipientIds, {
+      title: notificationTitleForType(type),
+      body: message,
+      data,
+    });
 
   } catch (err) {
     console.error("❌ Error sending notification:", err.message);
@@ -91,6 +97,21 @@ const isValidExpoPushToken = (token) =>
   typeof token === "string" &&
   /^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]+\]$/.test(token);
 
+// Plain title used for the web/FCM push only - kept exactly as it was before
+// the app-side notification redesign, since web notifications weren't part
+// of this change and should stay untouched.
+export const notificationTitleForType = (type) => {
+  switch (type) {
+    case "expense":
+      return "New expense";
+    case "settlement":
+      return "Settlement update";
+    case "group":
+    default:
+      return "SplitEase";
+  }
+};
+
 // Category → emoji so an expense push instantly signals what kind of spend
 // it is, the same way Splitwise/production apps do, without needing to open
 // the app first.
@@ -119,7 +140,7 @@ const SETTLEMENT_COPY = {
  * category, kind). Falls back gracefully when meta is missing so every
  * existing call site keeps working unchanged.
  */
-const buildPushContent = (type, meta = {}) => {
+export const buildPushContent = (type, meta = {}) => {
   const { groupName, amount, category, kind } = meta;
   const amountLabel = amount != null && !Number.isNaN(Number(amount))
     ? `₹${Number(amount).toFixed(0)}`
@@ -511,4 +532,5 @@ export const cleanupOldNotifications = async () => {
     console.error("Cleanup failed:", err.message);
   }
 };
+
 
