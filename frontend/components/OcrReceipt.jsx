@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 // Helper component for a consistent section layout
 const Section = ({ title, children, className = "" }) => (
@@ -179,8 +180,8 @@ export default function OcrReceipt({ text }) {
             {items.map((item, index) => (
               <tr key={index} className="border-b border-border">
                 <td className="py-2 pr-2">{item.description}</td>
-                <td className="text-right">{item.rate.toFixed(2)}</td>
-                <td className="text-right">{item.amount.toFixed(2)}</td>
+                <td className="text-right">{formatCurrency(item.rate)}</td>
+                <td className="text-right">{formatCurrency(item.amount)}</td>
               </tr>
             ))}
           </tbody>
@@ -192,17 +193,17 @@ export default function OcrReceipt({ text }) {
         <div className="w-full max-w-sm space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Subtotal:</span>
-            <span className="text-foreground">{totals.subtotal?.toFixed(2) || '0.00'}</span>
+            <span className="text-foreground">{formatCurrency(totals.subtotal)}</span>
           </div>
           {totals.igst && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">IGST ({totals.igst.percentage}%):</span>
-              <span className="text-foreground">{totals.igst.amount.toFixed(2)}</span>
+              <span className="text-foreground">{formatCurrency(totals.igst.amount)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-foreground text-base border-t-2 border-border pt-2 mt-2">
             <span>Total:</span>
-            <span>₹{totals.finalTotal?.toFixed(2) || '0.00'}</span>
+            <span>{formatCurrency(totals.finalTotal)}</span>
           </div>
         </div>
       </div>

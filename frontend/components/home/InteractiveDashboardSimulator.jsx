@@ -10,6 +10,7 @@ import {
   UtensilsCrossed, BedDouble, ShoppingBag, Handshake, Sparkles, Sun
 } from "lucide-react";
 import toast from "@/lib/toast";
+import { formatCurrency, formatSignedCurrency } from "@/lib/formatCurrency";
 
 // Maps semantic keys to icon components (used for groups & expenses)
 const ICON_MAP = {
@@ -31,13 +32,6 @@ const renderIcon = (key, className = "w-4 h-4") => {
   const Icon = ICON_MAP[key] || Sparkles;
   return <Icon className={className} />;
 };
-
-// Helper for currency formatting
-const INR = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
 
 // Initial Mock Data
 const INITIAL_GROUPS = [
@@ -276,7 +270,7 @@ export default function InteractiveDashboardSimulator() {
 
     setExpenses([newE, ...expenses]);
     setShowSettleModal(false);
-    toast.success(`Settlement of ${INR.format(amt)} recorded!`);
+    toast.success(`Settlement of ${formatCurrency(amt)} recorded!`);
   };
 
   // Chat message send
@@ -616,9 +610,9 @@ export default function InteractiveDashboardSimulator() {
         {/* Spend Overview KPIs */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: "Expenses", value: INR.format(62400), color: "text-white", bg: "bg-white/5" },
-            { label: "You Owe", value: INR.format(data.youOwe), color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
-            { label: "Owed", value: INR.format(data.owed), color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" }
+            { label: "Expenses", value: formatCurrency(62400), color: "text-white", bg: "bg-white/5" },
+            { label: "You Owe", value: formatCurrency(data.youOwe), color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+            { label: "Owed", value: formatCurrency(data.owed), color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" }
           ].map(({ label, value, color, bg }) => (
             <div key={label} className={`p-2 rounded-xl border border-white/5 ${bg}`}>
               <p className="text-[8px] uppercase tracking-wider text-white/40 font-bold truncate">{label}</p>
@@ -651,7 +645,7 @@ export default function InteractiveDashboardSimulator() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-white truncate leading-tight">{g.name}</p>
-                  <p className="text-[8px] text-white/35 mt-0.5 truncate">{g.members.length} members · {INR.format(g.total)}</p>
+                  <p className="text-[8px] text-white/35 mt-0.5 truncate">{g.members.length} members · {formatCurrency(g.total)}</p>
                 </div>
               </div>
             ))}
@@ -681,7 +675,7 @@ export default function InteractiveDashboardSimulator() {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className={`text-[9.5px] font-black ${e.settled ? "text-emerald-400" : "text-white"}`}>
-                      {INR.format(e.amount)}
+                      {formatCurrency(e.amount)}
                     </span>
                   </div>
                 </div>
@@ -706,7 +700,7 @@ export default function InteractiveDashboardSimulator() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[9px] font-extrabold text-emerald-400">{INR.format(u.amount)}</p>
+                      <p className="text-[9px] font-extrabold text-emerald-400">{formatCurrency(u.amount)}</p>
                       <button onClick={() => triggerReminder(u.name)} className="text-[8px] text-cyan-400 hover:text-cyan-300 font-bold hover:underline cursor-pointer">
                         Remind
                       </button>
@@ -762,7 +756,7 @@ export default function InteractiveDashboardSimulator() {
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xs font-black text-white leading-tight">{INR.format(g.total)}</p>
+                <p className="text-xs font-black text-white leading-tight">{formatCurrency(g.total)}</p>
                 <span className="inline-block text-[8px] font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded-md mt-1 border border-cyan-500/10">
                   {g.members.length} Members
                 </span>
@@ -829,11 +823,11 @@ export default function InteractiveDashboardSimulator() {
           <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-white/5">
             <div>
               <p className="text-[8px] uppercase tracking-wide text-white/35 font-bold">Total Group Spends</p>
-              <p className="text-sm font-black text-white mt-0.5">{INR.format(groupTotal)}</p>
+              <p className="text-sm font-black text-white mt-0.5">{formatCurrency(groupTotal)}</p>
             </div>
             <div>
               <p className="text-[8px] uppercase tracking-wide text-white/35 font-bold">Your Share</p>
-              <p className="text-sm font-black text-cyan-400 mt-0.5">{INR.format(share)}</p>
+              <p className="text-sm font-black text-cyan-400 mt-0.5">{formatCurrency(share)}</p>
             </div>
           </div>
         </div>
@@ -865,7 +859,7 @@ export default function InteractiveDashboardSimulator() {
                     <span className="text-[10px] font-bold text-white">{b.name} {isMe && "(You)"}</span>
                   </div>
                   <span className={`text-[10px] font-black ${b.balance === 0 ? "text-white/40" : owes ? "text-red-400" : "text-emerald-400"}`}>
-                    {b.balance === 0 ? "Settled" : `${owes ? "-" : "+"}${INR.format(Math.abs(b.balance))}`}
+                    {b.balance === 0 ? "Settled" : formatSignedCurrency(owes ? -Math.abs(b.balance) : Math.abs(b.balance))}
                   </span>
                 </div>
               );
@@ -941,7 +935,7 @@ export default function InteractiveDashboardSimulator() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className={`text-[10px] font-black ${e.settled ? "text-emerald-400" : "text-white"}`}>
-                    {INR.format(e.amount)}
+                    {formatCurrency(e.amount)}
                   </p>
                   <span className="text-[7.5px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-white/40 block mt-1 font-extrabold text-center">
                     {e.category}
