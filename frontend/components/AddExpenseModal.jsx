@@ -1,22 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import toast from "@/lib/toast";
 import { X, Wallet2, Loader2, Image as ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const memberId = (m) => String(m?._id || m?.id || "");
+
+const equalShares = (total, ids) => {
+  if (!ids.length || !Number.isFinite(total)) return {};
+  const share = Number((total / ids.length).toFixed(2));
+  const next = {};
+  ids.forEach((id) => {
+    next[id] = share;
+  });
+  const sum = Number((share * ids.length).toFixed(2));
+  const last = ids[ids.length - 1];
+  next[last] = Number((next[last] + (total - sum)).toFixed(2));
+  return next;
+};
+
+const mapServerFieldErrors = (data) => {
+  const fieldMap = {};
+  if (!data || typeof data !== "object") return fieldMap;
+  if (data.field && data.message) fieldMap[data.field] = data.message;
+  if (data.errors && typeof data.errors === "object" && !Array.isArray(data.errors)) {
+    Object.entries(data.errors).forEach(([key, val]) => {
+      fieldMap[key] = typeof val === "string" ? val : val?.message || String(val);
+    });
+  }
+  if (Array.isArray(data.errors)) {
+    data.errors.forEach((item) => {
+      if (item?.field) fieldMap[item.field] = item.message || "Invalid value.";
+    });
+  }
+  if (fieldMap.payer && !fieldMap.paidBy) fieldMap.paidBy = fieldMap.payer;
+  if (fieldMap.participant && !fieldMap.participants) fieldMap.participants = fieldMap.participant;
+  return fieldMap;
+};
+
 export default function AddExpenseModal({ group, onClose, onSuccess }) {
+  const members = group?.members || [];
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("general");
+  const [paidBy, setPaidBy] = useState("");
+  const [participantIds, setParticipantIds] = useState([]);
+  const [shares, setShares] = useState({});
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  useEffect(() => {
+    const ids = members.map(memberId).filter(Boolean);
+    setParticipantIds(ids);
+    setPaidBy((prev) => (prev && ids.includes(prev) ? prev : ids[0] || ""));
+  }, [group]);
+
+  useEffect(() => {
+    const total = parseFloat(amount);
+    setShares(equalShares(Number.isFinite(total) ? total : 0, participantIds));
+  }, [amount, participantIds]);
+
   const clearError = (field) =>
     setErrors((prev) => ({ ...prev, [field]: "" }));
+
+  const toggleParticipant = (id) => {
+    setParticipantIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+    clearError("participants");
+    clearError("splits");
+  };
 
   const validate = () => {
     const e = {};
@@ -25,6 +82,15 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
     if (!amount && amount !== 0) e.amount = "Amount is required.";
     else if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) e.amount = "Amount must be a positive number.";
     else if (parseFloat(amount) > 9999999) e.amount = "Amount exceeds the maximum limit of ₹99,99,999.";
+    if (!paidBy) e.paidBy = "Select who paid.";
+    if (!participantIds.length) e.participants = "Select at least one participant.";
+    const total = parseFloat(amount);
+    if (!e.amount && participantIds.length) {
+      const splitSum = participantIds.reduce((s, id) => s + Number(shares[id] || 0), 0);
+      if (Math.abs(splitSum - total) > 0.01) {
+        e.splits = `Split amounts must sum to ${total.toFixed(2)} (currently ${splitSum.toFixed(2)}).`;
+      }
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -70,11 +136,19 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
         if (!fileUrl) throw new Error("Upload failed");
       }
 
+      const exactSplits = participantIds.map((id) => ({
+        userId: id,
+        share: Number(shares[id] || 0),
+      }));
+
       await api.post("/expenses", {
         groupId: group._id,
         description: description.trim(),
         amount: parseFloat(amount),
-        splitType: "equal",
+        paidBy,
+        participants: participantIds,
+        splitType: "exact",
+        exactSplits,
         category,
         fileUrl,
       });
@@ -83,9 +157,14 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
       onSuccess();
       onClose();
     } catch (err) {
+      const status = err?.response?.status;
       const data = err?.response?.data;
-      if (data?.field) setErrors((prev) => ({ ...prev, [data.field]: data.message }));
-      else toast.error(data?.message || "Failed to add expense");
+      const fieldErrors = mapServerFieldErrors(data);
+      if (status >= 400 && status < 500 && Object.keys(fieldErrors).length) {
+        setErrors((prev) => ({ ...prev, ...fieldErrors }));
+      } else {
+        toast.error(data?.message || err?.message || "Failed to add expense");
+      }
     } finally {
       setLoading(false);
     }
@@ -131,7 +210,7 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Split equally among members of{" "}
+              Split among members of{" "}
               <span className="font-medium text-primary">{group?.name}</span>.
             </p>
           </div>
@@ -163,10 +242,74 @@ export default function AddExpenseModal({ group, onClose, onSuccess }) {
                   placeholder="Enter amount"
                   className={`w-full bg-input border rounded-lg p-3 text-foreground shadow-sm focus:outline-none focus:ring-2 ${errors.amount ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"}`}
                   value={amount}
-                  onChange={(e) => { setAmount(e.target.value); clearError("amount"); }}
+                  onChange={(e) => { setAmount(e.target.value); clearError("amount"); clearError("splits"); }}
                 />
                 {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount}</p>}
               </div>
+            </div>
+
+            {/* Payer */}
+            <div>
+              <label className="text-sm text-muted-foreground mb-1 block">
+                Paid by
+              </label>
+              <select
+                className={`w-full bg-input border rounded-lg p-3 text-foreground shadow-sm focus:outline-none focus:ring-2 ${errors.paidBy ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"}`}
+                value={paidBy}
+                onChange={(e) => { setPaidBy(e.target.value); clearError("paidBy"); }}
+              >
+                <option value="">Select payer</option>
+                {members.map((m) => (
+                  <option key={memberId(m)} value={memberId(m)}>
+                    {m.name || m.email || "Member"}
+                  </option>
+                ))}
+              </select>
+              {errors.paidBy && <p className="text-red-500 text-xs mt-1">{errors.paidBy}</p>}
+            </div>
+
+            {/* Participants + split amounts */}
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">
+                Split between
+              </label>
+              <div className={`space-y-2 rounded-lg border p-3 ${errors.participants || errors.splits ? "border-red-500" : "border-input"}`}>
+                {members.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No members in this group.</p>
+                ) : (
+                  members.map((m) => {
+                    const id = memberId(m);
+                    const checked = participantIds.includes(id);
+                    return (
+                      <div key={id} className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 flex-1 min-w-0 text-sm text-foreground">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleParticipant(id)}
+                          />
+                          <span className="truncate">{m.name || m.email || "Member"}</span>
+                        </label>
+                        {checked && (
+                          <input
+                            type="number"
+                            step="0.01"
+                            aria-label={`Split amount for ${m.name || m.email || "member"}`}
+                            className="w-28 bg-input border border-input rounded-lg p-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                            value={shares[id] ?? ""}
+                            onChange={(e) => {
+                              setShares((prev) => ({ ...prev, [id]: e.target.value }));
+                              clearError("splits");
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              {errors.participants && <p className="text-red-500 text-xs mt-1">{errors.participants}</p>}
+              {errors.splits && <p className="text-red-500 text-xs mt-1">{errors.splits}</p>}
             </div>
 
             {/* Row 2 - Category + File Upload */}
