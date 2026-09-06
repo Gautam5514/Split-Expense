@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Loader3D from "@/components/Loader3D";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 const COLORS = ["#0891B2", "#0E7490", "#22D3EE", "#14b8a6", "#f59e0b", "#0284C7"];
 
@@ -227,7 +228,7 @@ export default function UserDashboardPage() {
 
   <StatCard
     label="This Month"
-    value={analytics ? `₹${analytics.monthlySummary?.totalSpent?.toLocaleString("en-IN") || 0}` : "₹0"}
+    value={formatCurrency(analytics?.monthlySummary?.totalSpent || 0)}
     subtext={
       analytics?.monthlySummary?.topCategory
         ? `Top: ${getCategoryLabel(analytics.monthlySummary.topCategory)}`
@@ -239,7 +240,7 @@ export default function UserDashboardPage() {
 
   <StatCard
     label="You Have to Pay"
-    value={totalOwe > 0 ? `₹${Number(totalOwe).toLocaleString("en-IN")}` : "₹0"}
+    value={formatCurrency(totalOwe)}
     subtext={totalOwe > 0 ? "Pending across groups" : "Nothing to pay"}
     icon={<ArrowUpRight className="w-4 h-4" />}
     iconBg="bg-rose-500/10 text-rose-600 dark:text-rose-300"
@@ -248,7 +249,7 @@ export default function UserDashboardPage() {
 
   <StatCard
     label="You're Owed"
-    value={totalOwed > 0 ? `₹${Number(totalOwed).toLocaleString("en-IN")}` : "₹0"}
+    value={formatCurrency(totalOwed)}
     subtext={totalOwed > 0 ? "Pending from others" : "Nothing owed to you"}
     icon={<Landmark className="w-4 h-4" />}
     iconBg="bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
@@ -330,7 +331,7 @@ export default function UserDashboardPage() {
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Spent</span>
                       <span className="text-sm font-extrabold text-foreground">
-                        ₹{totalCategorySpend.toLocaleString("en-IN")}
+                        {formatCurrency(totalCategorySpend)}
                       </span>
                     </div>
                   </div>
@@ -652,7 +653,7 @@ function CustomTooltip({ active, payload }) {
         {payload[0].payload.month}
       </p>
       <p className="text-sm font-bold text-foreground mt-0.5">
-        ₹{payload[0].value?.toLocaleString("en-IN")}
+        {formatCurrency(payload[0].value)}
       </p>
     </div>
   );
