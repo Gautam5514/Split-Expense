@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import Footer from "@/components/Footer";
+import { PlayStoreButton } from "@/components/PlayStoreLink";
 
 /* Shared shell for every standalone feature page (AI Expense Splitter,
    Smart Settlements, OCR Receipt Scan, Group Chat Hub, QR & Link Invites,
@@ -85,13 +86,16 @@ export default function FeaturePageLayout({
                 ))}
               </ul>
 
-              <Link
-                href="/register"
-                className="clickable mt-9 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-bold text-black transition-transform duration-200 hover:scale-[1.03]"
-              >
-                Get started for free
-                <ArrowRight size={16} />
-              </Link>
+              <div className="mt-9 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/register"
+                  className="clickable inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-bold text-black transition-transform duration-200 hover:scale-[1.03]"
+                >
+                  Get started for free
+                  <ArrowRight size={16} />
+                </Link>
+                <PlayStoreButton />
+              </div>
             </div>
 
             {/* Real feature render, same treatment as the homepage timeline */}

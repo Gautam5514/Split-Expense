@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { PlayStoreButton } from "@/components/PlayStoreLink";
 
 // Heaviest component on the page (1.3k lines). It renders BELOW the headline
 // and floats in with a delay, so we code-split it out of the initial bundle
@@ -91,7 +92,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.85, delay: 0.25, ease: "easeOut" }}
-          className="mb-16 sm:mb-24"
+          className="mb-16 flex flex-wrap items-center justify-center gap-3 sm:mb-24"
         >
           <button
             onClick={() => router.push("/register")}
@@ -99,6 +100,7 @@ export default function HeroSection() {
           >
             Get Started For Free
           </button>
+          <PlayStoreButton />
         </motion.div>
 
         {/* Floating Glassmorphic App Preview Simulator */}

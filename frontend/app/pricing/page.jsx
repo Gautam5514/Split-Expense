@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, ChevronDown, Minus } from "lucide-react";
 import Footer from "@/components/Footer";
 import SmoothScroll from "@/components/SmoothScroll";
+import { PlayStoreButton } from "@/components/PlayStoreLink";
 
 /* Pricing page: statement hero, two plan cards, a grouped feature
    comparison table, and an FAQ accordion. Cell values in FEATURE_GROUPS
@@ -275,13 +276,16 @@ export default function PricingPage() {
         <h2 className="font-serif-premium mx-auto max-w-2xl text-3xl font-normal leading-[1.15] tracking-tight sm:text-4xl md:text-5xl">
           Ready to get started?
         </h2>
-        <button
-          onClick={() => router.push("/register")}
-          className="clickable mt-8 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-bold text-black transition-transform duration-200 hover:scale-[1.03]"
-        >
-          Get started
-          <ArrowRight size={16} />
-        </button>
+        <div className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => router.push("/register")}
+            className="clickable inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-bold text-black transition-transform duration-200 hover:scale-[1.03]"
+          >
+            Get started
+            <ArrowRight size={16} />
+          </button>
+          <PlayStoreButton />
+        </div>
       </section>
 
       <Footer />

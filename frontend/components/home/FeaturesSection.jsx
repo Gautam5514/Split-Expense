@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { useRef, useState } from "react";
+import { motion, useMotionValueEvent, useScroll, useTransform, useSpring } from "framer-motion";
 import { Check } from "lucide-react";
+
+const FEATURE_COUNT = 6;
 
 // Interactive scroll-linked timeline dot component
 function TimelineDot({ scrollYProgress, index, total, color }) {
@@ -71,6 +73,8 @@ function TrackTrainIcon() {
 
 export default function FeaturesSection() {
   const containerRef = useRef(null);
+  const previousScrollRef = useRef(0);
+  const [trainDirection, setTrainDirection] = useState("down");
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -83,11 +87,36 @@ export default function FeaturesSection() {
     restDelta: 0.001
   });
 
-  const scaleProgress = useTransform(smoothProgress, [0, 1], ["0%", "100%"]);
+  // Point the engine in the direction in which the visitor is travelling.
+  // A small threshold prevents trackpad noise from rapidly flipping the train.
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    const previous = previousScrollRef.current;
+    const delta = latest - previous;
+
+    if (Math.abs(delta) > 0.00015) {
+      setTrainDirection(delta > 0 ? "down" : "up");
+      previousScrollRef.current = latest;
+    }
+  });
+
+  // The stations sit at the centre of six equally-sized timeline rows. Scroll
+  // progress, however, starts at the container edge. Remap it to the actual
+  // first/last station so the train and glowing track share one coordinate
+  // system instead of drifting apart as the page gets taller.
+  const firstStationProgress = 1 / (FEATURE_COUNT * 2);
+  const lastStationProgress = 1 - firstStationProgress;
+  const routeProgress = useTransform(
+    smoothProgress,
+    [firstStationProgress, lastStationProgress],
+    [0, 1],
+    { clamp: true }
+  );
+
+  const scaleProgress = useTransform(routeProgress, [0, 1], ["0%", "100%"]);
 
   // Give every feature dot a "station" dwell zone, then ease the train onward.
-  const trainProgress = useTransform(smoothProgress, (value) => {
-    const lastStation = 5;
+  const trainProgress = useTransform(routeProgress, (value) => {
+    const lastStation = FEATURE_COUNT - 1;
     const scaled = Math.min(value * lastStation, lastStation - 0.0001);
     const station = Math.floor(scaled);
     const local = scaled - station;
@@ -192,20 +221,27 @@ export default function FeaturesSection() {
         <div ref={containerRef} className="relative space-y-0">
 
           {/* Central Scroll-Linked Timeline Progress Line */}
-          <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-[120px] bottom-[120px] w-4 h-[calc(100%-240px)] z-0 pointer-events-none">
+          <div
+            className="hidden md:block absolute left-1/2 -translate-x-1/2 w-7 z-0 pointer-events-none"
+            style={{
+              top: `calc(100% / ${FEATURE_COUNT * 2})`,
+              bottom: `calc(100% / ${FEATURE_COUNT * 2})`,
+            }}
+          >
 
-            {/* Inactive Track — ultra-fine barely-visible dotted line */}
+            {/* Inactive railway — twin rails with evenly spaced sleepers. */}
             <svg className="absolute inset-0 w-full h-full overflow-visible">
-              <line
-                x1="8"
-                y1="0"
-                x2="8"
-                y2="100%"
-                stroke="rgba(255, 255, 255, 0.12)"
-                strokeWidth="1"
-                strokeDasharray="2 6"
-                strokeLinecap="round"
-              />
+              <defs>
+                <pattern id="railway-sleepers" width="28" height="15" patternUnits="userSpaceOnUse">
+                  <line x1="3" y1="7.5" x2="25" y2="7.5" stroke="rgba(255,255,255,.2)" strokeWidth="2.2" strokeLinecap="round" />
+                  <line x1="5" y1="9.5" x2="23" y2="9.5" stroke="rgba(0,0,0,.7)" strokeWidth="1" strokeLinecap="round" />
+                </pattern>
+              </defs>
+              <rect width="28" height="100%" fill="url(#railway-sleepers)" />
+              <line x1="8" y1="0" x2="8" y2="100%" stroke="rgba(207,250,254,.35)" strokeWidth="2" />
+              <line x1="20" y1="0" x2="20" y2="100%" stroke="rgba(207,250,254,.35)" strokeWidth="2" />
+              <line x1="9.5" y1="0" x2="9.5" y2="100%" stroke="rgba(0,0,0,.75)" strokeWidth="1" />
+              <line x1="18.5" y1="0" x2="18.5" y2="100%" stroke="rgba(0,0,0,.75)" strokeWidth="1" />
             </svg>
 
             {/* Active Glowing Gradient Line — revealed from top as scroll progresses */}
@@ -225,45 +261,15 @@ export default function FeaturesSection() {
                     <stop offset="75%" stopColor="#a78bfa" />
                     <stop offset="100%" stopColor="#fbbf24" />
                   </linearGradient>
+                  <pattern id="active-railway-sleepers" width="28" height="15" patternUnits="userSpaceOnUse">
+                    <line x1="3" y1="7.5" x2="25" y2="7.5" stroke="#67e8f9" strokeOpacity=".75" strokeWidth="2.2" strokeLinecap="round" />
+                  </pattern>
                 </defs>
-
-                {/* Wide blurred glow underlay */}
-                <line
-                  x1="8"
-                  y1="0"
-                  x2="8"
-                  y2="100%"
-                  stroke="url(#timeline-gradient)"
-                  strokeWidth="6"
-                  strokeDasharray="2 6"
-                  strokeLinecap="round"
-                  opacity="0.25"
-                  style={{ filter: "blur(4px)" }}
-                />
-                {/* Medium glow mid-layer */}
-                <line
-                  x1="8"
-                  y1="0"
-                  x2="8"
-                  y2="100%"
-                  stroke="url(#timeline-gradient)"
-                  strokeWidth="3"
-                  strokeDasharray="2 6"
-                  strokeLinecap="round"
-                  opacity="0.5"
-                  style={{ filter: "blur(1px)" }}
-                />
-                {/* Crisp thin top layer */}
-                <line
-                  x1="8"
-                  y1="0"
-                  x2="8"
-                  y2="100%"
-                  stroke="url(#timeline-gradient)"
-                  strokeWidth="1.5"
-                  strokeDasharray="2 6"
-                  strokeLinecap="round"
-                />
+                <rect width="28" height="100%" fill="url(#active-railway-sleepers)" opacity=".75" />
+                <g style={{ filter: "drop-shadow(0 0 4px rgba(34,211,238,.8))" }}>
+                  <line x1="8" y1="0" x2="8" y2="100%" stroke="url(#timeline-gradient)" strokeWidth="2.5" />
+                  <line x1="20" y1="0" x2="20" y2="100%" stroke="url(#timeline-gradient)" strokeWidth="2.5" />
+                </g>
               </svg>
             </motion.div>
 
@@ -273,9 +279,14 @@ export default function FeaturesSection() {
               style={{ top: trainY }}
             >
               <span className="absolute bottom-2 h-12 w-12 animate-pulse rounded-full bg-cyan-400/15 blur-lg" />
-              <span className="absolute bottom-0 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">
+              <motion.span
+                className="absolute bottom-0 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                animate={{ rotate: trainDirection === "down" ? 0 : 180 }}
+                transition={{ type: "spring", stiffness: 320, damping: 28 }}
+                style={{ transformOrigin: "50% 100%" }}
+              >
                 <TrackTrainIcon />
-              </span>
+              </motion.span>
             </motion.div>
 
           </div>
@@ -293,7 +304,7 @@ export default function FeaturesSection() {
 
                 {/* Glowing Dot on the Center Line (Desktop only) */}
                 <TimelineDot
-                  scrollYProgress={smoothProgress}
+                  scrollYProgress={routeProgress}
                   index={index}
                   total={features.length}
                   color={feature.color}

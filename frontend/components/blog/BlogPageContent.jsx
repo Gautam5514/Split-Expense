@@ -12,6 +12,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Plus, ArrowUpRight, Zap, Shield, Smartphone, Star } from "lucide-react";
 import BlogCover from "@/components/blog/BlogCover";
+import { PlayStoreButton } from "@/components/PlayStoreLink";
 
 // Same surface recipe as HowItWorksSection: inline styles so the cards always
 // paint with clear contrast against the black field.
@@ -323,12 +324,15 @@ export default function BlogPageContent({ featured, posts }) {
               settlements — everything the guides describe, free.
             </p>
 
-            <Link
-              href="/register"
-              className="mt-10 inline-block rounded-full bg-white px-9 py-3.5 text-sm sm:text-base font-bold text-black shadow-[0_4px_25px_rgba(255,255,255,0.18)] transition-all hover:scale-105 hover:bg-white/95 active:scale-95"
-            >
-              Get Started For Free
-            </Link>
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/register"
+                className="inline-block rounded-full bg-white px-9 py-3.5 text-sm sm:text-base font-bold text-black shadow-[0_4px_25px_rgba(255,255,255,0.18)] transition-all hover:scale-105 hover:bg-white/95 active:scale-95"
+              >
+                Get Started For Free
+              </Link>
+              <PlayStoreButton />
+            </div>
 
             <div className="mx-auto mt-10 flex max-w-lg flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-white/[0.08] pt-6">
               {PERKS.map(({ icon: Icon, text }) => (

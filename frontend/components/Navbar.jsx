@@ -19,6 +19,7 @@ import HideOnScrollNav from "@/components/HideOnScrollNav";
 import CoinBadge from "@/components/CoinBadge";
 import ThemeToggle from "@/components/ThemeToggle";
 import useCoins from "@/hooks/useCoins";
+import { PlayStoreNavLink } from "@/components/PlayStoreLink";
 
 const NAV_LINKS = [
   { href: "/users",      icon: Home,             label: "Home" },
@@ -222,6 +223,7 @@ export default function Navbar() {
               >
                 Get started
               </Link>
+              <PlayStoreNavLink className="hidden lg:inline-flex" />
             </div>
           )}
 

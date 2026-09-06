@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PlayStoreIconLink } from "@/components/PlayStoreLink";
 
 const GithubIcon = () => (
   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
@@ -87,6 +88,7 @@ export default function Footer() {
                   {social.icon}
                 </a>
               ))}
+              <PlayStoreIconLink />
             </div>
 
             {/* Copyright block */}
@@ -133,6 +135,7 @@ export default function Footer() {
                 {[
                   { label: "Blog", href: "/blog" },
                   { label: "About Us", href: "/about" },
+                  { label: "Mobile App", href: "/mobile-app" },
                   { label: "Careers", href: "/careers" },
                   { label: "Contact Us", href: "/contact" }
                 ].map((link) => (

@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Coffee, HeartHandshake, PiggyBank, ShieldCheck, Github, Linkedin, Twitter, Instagram, Code, UserCheck } from "lucide-react";
 import Footer from "@/components/Footer";
 import SmoothScroll from "@/components/SmoothScroll";
+import { PlayStoreButton } from "@/components/PlayStoreLink";
 
 const VALUES = [
   {
@@ -204,13 +205,16 @@ export default function AboutPageClient() {
         <p className="mx-auto mt-4 max-w-md text-sm font-medium text-white/50 sm:text-base">
           Free to join, free to use, live at split.elitecrew.online.
         </p>
-        <button
-          onClick={() => router.push("/register")}
-          className="clickable mt-8 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-bold text-black transition-transform duration-200 hover:scale-[1.03]"
-        >
-          Get started for free
-          <ArrowRight size={16} />
-        </button>
+        <div className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => router.push("/register")}
+            className="clickable inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-bold text-black transition-transform duration-200 hover:scale-[1.03]"
+          >
+            Get started for free
+            <ArrowRight size={16} />
+          </button>
+          <PlayStoreButton />
+        </div>
       </section>
 
       <Footer />
