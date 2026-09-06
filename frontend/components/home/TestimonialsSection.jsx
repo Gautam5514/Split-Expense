@@ -82,12 +82,7 @@ export default function TestimonialsSection() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-center mb-16 sm:mb-24"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.02] backdrop-blur-md mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-400">
-              Wall of Love
-            </span>
-          </div>
+        
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal text-white tracking-tight leading-tight font-serif-premium max-w-3xl mx-auto">
             Loved by thousands of <span className="italic text-cyan-400 font-serif-premium">groups</span> and <span className="italic text-teal-400 font-serif-premium">travelers</span>.
           </h2>
