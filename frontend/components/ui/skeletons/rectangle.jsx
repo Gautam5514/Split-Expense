@@ -1,6 +1,6 @@
 export const SkeletonUi = ({ className, isChild, children }) => (
   <div
-    className={`${isChild ? "bg-black/70" : "bg-muted/80"} ${!isChild && "animate-pulse"} rounded ${className}`}
+    className={`${isChild ? "bg-zinc-800" : "bg-muted/80"} ${!isChild && "animate-pulse"} rounded ${className}`}
   >
     {children}
   </div>
