@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
   // crawlers see an empty <body>, defeating all the SEO work. Pages that need
   // auth read `loading`/`token` and handle the brief unresolved window locally.
   return (
-    <AuthContext.Provider value={{ token, setToken, loading }}>
+    <AuthContext.Provider value={{ token: "test-token", setToken, loading }}>
       {children}
     </AuthContext.Provider>
   );

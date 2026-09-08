@@ -2,7 +2,15 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import socket, { connectSocket } from "@/lib/socket";
-import { Search, MoreVertical, MessageSquarePlus, Users, Trash2, X, Check } from "lucide-react";
+import {
+  Search,
+  MoreVertical,
+  MessageSquarePlus,
+  Users,
+  Trash2,
+  X,
+  Check,
+} from "lucide-react";
 import toast from "@/lib/toast";
 import AddContactModal from "@/components/chat/AddContactModal";
 
@@ -23,67 +31,83 @@ export default function ChatList({ onSelect, activeFriend }) {
       return [newContact, ...prev];
     });
     onSelect(newContact);
-    
-    api.get("/chat/my-contacts").then((res) => {
-      const sorted = (res.data.items || []).sort(
-        (a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0)
-      );
-      setFriends(sorted);
-    }).catch(() => {});
+
+    api
+      .get("/chat/my-contacts")
+      .then((res) => {
+        const sorted = (res.data.items || []).sort(
+          (a, b) =>
+            new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0),
+        );
+        setFriends(sorted);
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const userRes = await api.get("/users/me");
-        setMe(userRes.data);
+      setFriends([
+        {
+          _id: "1",
+          name: "John Doe",
+          email: "johndoe@gmail.com",
+          imageUrl: null,
+          isOnline: true,
+          lastActive: new Date(),
+          lastMessage: "Hey, how are you?",
+          lastMessageAt: new Date(),
+          unread: 2,
+        },
+      ]);
+      // try {
+      //   const userRes = await api.get("/users/me");
+      //   setMe(userRes.data);
 
-        const contactsRes = await api.get("/chat/my-contacts");
+      //   const contactsRes = await api.get("/chat/my-contacts");
 
-        // Sort by lastMessageAt desc
-        const sorted = (contactsRes.data.items || []).sort(
-          (a, b) =>
-            new Date(b.lastMessageAt || 0) -
-            new Date(a.lastMessageAt || 0)
-        );
+      //   // Sort by lastMessageAt desc
+      //   const sorted = (contactsRes.data.items || []).sort(
+      //     (a, b) =>
+      //       new Date(b.lastMessageAt || 0) -
+      //       new Date(a.lastMessageAt || 0)
+      //   );
 
-        setFriends(sorted);
-      } catch (err) {
-        console.error("Error loading users:", err);
-      }
+      //   setFriends(sorted);
+      // } catch (err) {
+      //   console.error("Error loading users:", err);
+      // }
     };
 
     load();
 
-    connectSocket();
+    // connectSocket();
 
-    socket.on("userStatus", ({ userId, online: isOnline }) => {
-      setOnline((prev) => {
-        if (isOnline) return [...new Set([...prev, userId])];
-        return prev.filter((id) => id !== userId);
-      });
-    });
+    // socket.on("userStatus", ({ userId, online: isOnline }) => {
+    //   setOnline((prev) => {
+    //     if (isOnline) return [...new Set([...prev, userId])];
+    //     return prev.filter((id) => id !== userId);
+    //   });
+    // });
 
-    socket.on("newMessage", (msg) => {
-      setFriends((prev) => {
-        const updated = prev.map((u) =>
-          u._id === msg.sender || u._id === msg.receiver
-            ? {
-              ...u,
-              lastMessage: msg.text || "📎 Media",
-              lastMessageAt: msg.createdAt,
-              unread: (u.unread || 0) + 1,
-            }
-            : u
-        );
+    // socket.on("newMessage", (msg) => {
+    //   setFriends((prev) => {
+    //     const updated = prev.map((u) =>
+    //       u._id === msg.sender || u._id === msg.receiver
+    //         ? {
+    //             ...u,
+    //             lastMessage: msg.text || "📎 Media",
+    //             lastMessageAt: msg.createdAt,
+    //             unread: (u.unread || 0) + 1,
+    //           }
+    //         : u,
+    //     );
 
-        return updated.sort(
-          (a, b) =>
-            new Date(b.lastMessageAt || 0) -
-            new Date(a.lastMessageAt || 0)
-        );
-      });
-    });
+    //     return updated.sort(
+    //       (a, b) =>
+    //         new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0),
+    //     );
+    //   });
+    // });
 
     return () => {
       socket.off("userStatus");
@@ -93,7 +117,7 @@ export default function ChatList({ onSelect, activeFriend }) {
 
   // Filter friends based on search
   const filteredFriends = friends.filter((user) =>
-    user.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const getColorForName = (name) => {
@@ -114,11 +138,9 @@ export default function ChatList({ onSelect, activeFriend }) {
       await api.post("/chat/reset-unread", { otherUserId: userId });
 
       setFriends((prev) =>
-        prev.map((f) =>
-          f._id === userId ? { ...f, unread: 0 } : f
-        )
+        prev.map((f) => (f._id === userId ? { ...f, unread: 0 } : f)),
       );
-    } catch { }
+    } catch {}
   };
 
   const toggleSelect = (userId) => {
@@ -133,7 +155,9 @@ export default function ChatList({ onSelect, activeFriend }) {
 
   const startSelect = (userId) => {
     setSelectMode(true);
-    setSelectedIds((prev) => (prev.includes(userId) ? prev : [...prev, userId]));
+    setSelectedIds((prev) =>
+      prev.includes(userId) ? prev : [...prev, userId],
+    );
   };
 
   const cancelSelect = () => {
@@ -146,12 +170,14 @@ export default function ChatList({ onSelect, activeFriend }) {
 
     try {
       await api.post("/chat/delete-conversations", { userIds: selectedIds });
-      setFriends((prev) => prev.filter((user) => !selectedIds.includes(user._id)));
+      setFriends((prev) =>
+        prev.filter((user) => !selectedIds.includes(user._id)),
+      );
       if (activeFriend && selectedIds.includes(activeFriend._id)) {
         onSelect(null);
       }
       toast.success(
-        `Deleted ${selectedIds.length} chat${selectedIds.length > 1 ? "s" : ""}`
+        `Deleted ${selectedIds.length} chat${selectedIds.length > 1 ? "s" : ""}`,
       );
       cancelSelect();
     } catch (e) {
@@ -193,7 +219,9 @@ export default function ChatList({ onSelect, activeFriend }) {
               {selectMode ? `${selectedIds.length} selected` : "Messages"}
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              {selectMode ? "Tap more chats to select" : `${friends.length} contacts`}
+              {selectMode
+                ? "Tap more chats to select"
+                : `${friends.length} contacts`}
             </p>
           </div>
         </div>
@@ -217,21 +245,24 @@ export default function ChatList({ onSelect, activeFriend }) {
           </div>
         ) : (
           <div className="flex gap-2 text-muted-foreground">
-            <button 
+            <button
               onClick={() => setShowAddContact(true)}
-              className="rounded-lg p-2 transition hover:bg-background hover:text-foreground cursor-pointer" 
+              className="rounded-lg p-2 transition hover:bg-background hover:text-foreground cursor-pointer"
               title="Add Contact"
             >
               <Users className="w-4 h-4" />
             </button>
-            <button 
+            <button
               onClick={() => setShowAddContact(true)}
-              className="rounded-lg p-2 transition hover:bg-background hover:text-foreground cursor-pointer" 
+              className="rounded-lg p-2 transition hover:bg-background hover:text-foreground cursor-pointer"
               title="New Chat"
             >
               <MessageSquarePlus className="w-4 h-4" />
             </button>
-            <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground cursor-pointer" title="More">
+            <button
+              className="rounded-lg p-2 transition hover:bg-background hover:text-foreground cursor-pointer"
+              title="More"
+            >
               <MoreVertical className="w-4 h-4" />
             </button>
           </div>
@@ -305,7 +336,7 @@ export default function ChatList({ onSelect, activeFriend }) {
               ) : (
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg ${getColorForName(
-                    user.name
+                    user.name,
                   )}`}
                 >
                   {user.name?.charAt(0)}
