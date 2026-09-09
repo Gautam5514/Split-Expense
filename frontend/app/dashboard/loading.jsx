@@ -1,6 +1,6 @@
-import { SkeletonText } from "@/components/ui/skeletons/rectangle";
-import { SkeletonUi } from "@/components/ui/skeletons/rectangle";
-import { SkeletonAvatar } from "../../components/ui/skeletons/rectangle";
+import { SkeletonText } from "@/components/ui/Skeletons";
+import { SkeletonUi } from "@/components/ui/Skeletons";
+import { SkeletonAvatar } from "@/components/ui/Skeletons";
 
 const CardSkeleton = () => (
   <SkeletonUi className="w-full h-45 rounded-lg">

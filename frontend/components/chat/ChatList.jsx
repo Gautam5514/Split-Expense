@@ -46,68 +46,54 @@ export default function ChatList({ onSelect, activeFriend }) {
 
   useEffect(() => {
     const load = async () => {
-      setFriends([
-        {
-          _id: "1",
-          name: "John Doe",
-          email: "johndoe@gmail.com",
-          imageUrl: null,
-          isOnline: true,
-          lastActive: new Date(),
-          lastMessage: "Hey, how are you?",
-          lastMessageAt: new Date(),
-          unread: 2,
-        },
-      ]);
-      // try {
-      //   const userRes = await api.get("/users/me");
-      //   setMe(userRes.data);
+      try {
+        const userRes = await api.get("/users/me");
+        setMe(userRes.data);
 
-      //   const contactsRes = await api.get("/chat/my-contacts");
+        const contactsRes = await api.get("/chat/my-contacts");
 
-      //   // Sort by lastMessageAt desc
-      //   const sorted = (contactsRes.data.items || []).sort(
-      //     (a, b) =>
-      //       new Date(b.lastMessageAt || 0) -
-      //       new Date(a.lastMessageAt || 0)
-      //   );
+        // Sort by lastMessageAt desc
+        const sorted = (contactsRes.data.items || []).sort(
+          (a, b) =>
+            new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0),
+        );
 
-      //   setFriends(sorted);
-      // } catch (err) {
-      //   console.error("Error loading users:", err);
-      // }
+        setFriends(sorted);
+      } catch (err) {
+        console.error("Error loading users:", err);
+      }
     };
 
     load();
 
-    // connectSocket();
+    connectSocket();
 
-    // socket.on("userStatus", ({ userId, online: isOnline }) => {
-    //   setOnline((prev) => {
-    //     if (isOnline) return [...new Set([...prev, userId])];
-    //     return prev.filter((id) => id !== userId);
-    //   });
-    // });
+    socket.on("userStatus", ({ userId, online: isOnline }) => {
+      setOnline((prev) => {
+        if (isOnline) return [...new Set([...prev, userId])];
+        return prev.filter((id) => id !== userId);
+      });
+    });
 
-    // socket.on("newMessage", (msg) => {
-    //   setFriends((prev) => {
-    //     const updated = prev.map((u) =>
-    //       u._id === msg.sender || u._id === msg.receiver
-    //         ? {
-    //             ...u,
-    //             lastMessage: msg.text || "📎 Media",
-    //             lastMessageAt: msg.createdAt,
-    //             unread: (u.unread || 0) + 1,
-    //           }
-    //         : u,
-    //     );
+    socket.on("newMessage", (msg) => {
+      setFriends((prev) => {
+        const updated = prev.map((u) =>
+          u._id === msg.sender || u._id === msg.receiver
+            ? {
+                ...u,
+                lastMessage: msg.text || "📎 Media",
+                lastMessageAt: msg.createdAt,
+                unread: (u.unread || 0) + 1,
+              }
+            : u,
+        );
 
-    //     return updated.sort(
-    //       (a, b) =>
-    //         new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0),
-    //     );
-    //   });
-    // });
+        return updated.sort(
+          (a, b) =>
+            new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0),
+        );
+      });
+    });
 
     return () => {
       socket.off("userStatus");
