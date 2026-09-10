@@ -100,76 +100,21 @@ export default function GroupDetailPage() {
   const [showAllExpenses, setShowAllExpenses] = useState(false);
 
   const fetchGroup = async () => {
-    setLoading(true);
-
-    setGroup({
-      _id: "64a1f2e5c3b9a2b1d4e5f6a0",
-      name: "Trip to Hawaii",
-      createdBy: "64a1f2e5c3b9a2b1d4e5f6a7",
-      members: [
-        "64a1f2e5c3b9a2b1d4e5f6a7",
-        "64a1f2e5c3b9a2b1d4e5f6a8",
-        "64a1f2e5c3b9a2b1d4e5f6a9",
-      ],
-      isCompleted: false,
-      inviteCode: "HAWAIITRIP123",
-      groupType: "trip",
-      status: "active",
-    });
-
-    setLoading(false);
-
-    // try {
-    //   setLoading(true);
-    //   const res = await api.get(`/groups/${groupId}`);
-    //   setGroup(res.data);
-    // } catch {
-    //   toast.error("Failed to load group details");
-    // } finally {
-    //   setLoading(false);
-    // }
+    try {
+      setLoading(true);
+      const res = await api.get(`/groups/${groupId}`);
+      setGroup(res.data);
+    } catch {
+      toast.error("Failed to load group details");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchExpenses = async () => {
     try {
-      // const res = await api.get(`/expenses/${groupId}`);
-      setExpenses([
-        {
-          _id: "64a1f2e5c3b9a2b1d4e5f6b0",
-          description: "Dinner at Luau",
-          amount: 120.5,
-          category: "food",
-          date: "2024-06-15T19:30:00Z",
-        },
-        {
-          _id: "64a1f2e5c3b9a2b1d4e5f6b0",
-          description: "Dinner at Luau",
-          amount: 120.5,
-          category: "food",
-          date: "2024-06-15T19:30:00Z",
-        },
-        {
-          _id: "64a1f2e5c3b9a2b1d4e5f6b0",
-          description: "Dinner at Luau",
-          amount: 120.5,
-          category: "food",
-          date: "2024-06-15T19:30:00Z",
-        },
-        {
-          _id: "64a1f2e5c3b9a2b1d4e5f6b0",
-          description: "Dinner at Luau",
-          amount: 120.5,
-          category: "food",
-          date: "2024-06-15T19:30:00Z",
-        },
-        {
-          _id: "64a1f2e5c3b9a2b1d4e5f6b0",
-          description: "Dinner at Luau",
-          amount: 120.5,
-          category: "food",
-          date: "2024-06-15T19:30:00Z",
-        },
-      ]);
+      const res = await api.get(`/expenses/${groupId}`);
+      setExpenses(res.data);
     } catch {
       toast.error("Failed to fetch expenses");
     }
@@ -177,34 +122,8 @@ export default function GroupDetailPage() {
 
   const fetchBalances = async () => {
     try {
-      // const res = await api.get(`/balances/${groupId}`);
-      setBalances({
-        balances: [
-          {
-            userId: "64a1f2e5c3b9a2b1d4e5f6a7",
-            balance: 50.75,
-            name: "Joan Doe",
-          },
-          {
-            userId: "64a1f2e5c3b9a2b1d4e5f6a7",
-            balance: 50.75,
-            name: "Joan Doe",
-          },
-        ],
-        suggestions: [
-          {
-            from: {
-              userId: "64a1f2e5c3b9a2b1d4e5f6a7",
-              name: "John Doe",
-            },
-            to: {
-              userId: "64a1f2e5c3b9a2b1d4e5f6a8",
-              name: "Jane Smith",
-            },
-            amount: 50.75,
-          },
-        ],
-      });
+      const res = await api.get(`/balances/${groupId}`);
+      setBalances(res.data);
     } catch {
       toast.error("Failed to fetch balances");
     }
