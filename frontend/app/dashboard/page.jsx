@@ -34,13 +34,32 @@ export default function DashboardPage() {
   }, [token]);
 
   const fetchGroups = () => {
-    api
-      .get("/groups")
-      .then((res) => {
-        setGroups(res.data || []);
-      })
-      .catch(() => toast.error("Failed to fetch groups"))
-      .finally(() => setLoading(false));
+    // api
+    //   .get("/groups")
+    //   .then((res) => {
+    //     setGroups(res.data || []);
+    //   })
+    //   .catch(() => toast.error("Failed to fetch groups"))
+    //   .finally(() => setLoading(false));
+
+    setGroups([
+      {
+        _id: "64a1f2e5c3b9a2b1d4e5f6a0",
+        name: "Trip to Hawaii",
+        createdBy: "64a1f2e5c3b9a2b1d4e5f6a7",
+        members: [
+          "64a1f2e5c3b9a2b1d4e5f6a7",
+          "64a1f2e5c3b9a2b1d4e5f6a8",
+          "64a1f2e5c3b9a2b1d4e5f6a9",
+        ],
+        isCompleted: false,
+        inviteCode: "HAWAIITRIP123",
+        groupType: "trip",
+        status: "active",
+      },
+    ]);
+
+    setLoading(false);
   };
 
   const markCompleted = async (e, groupId) => {
