@@ -31,7 +31,7 @@
   "devDependencies": {
     "fast-check": "^4.10.0",
     "jest": "^30.5.1",
-    "nodemon": "^3.0.3"
+    "nodemon": "^3.1.14"
   },
   "overrides": {
     "qs": "^6.16.0",
