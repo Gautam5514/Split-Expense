@@ -13,6 +13,7 @@ If you find the project useful, consider [starring the repository](https://githu
 - [Commit and branch naming](#commit-and-branch-naming)
 - [Pull request guidelines](#pull-request-guidelines)
 - [Code review](#code-review)
+- [Testing and security requirements](#testing-and-security-requirements)
 - [Getting help](#getting-help)
 
 ## Ways to contribute
@@ -168,6 +169,17 @@ git push origin your-branch-name
 ```
 
 The PR updates automatically. Once approved, it will be merged and the linked issue closed.
+
+## Testing and security requirements
+
+Every major new feature must add automated tests to the appropriate Jest suite.
+Tests must cover normal behavior, invalid and boundary inputs, authorization
+failures, and any bug being fixed. Pull requests must keep all CI checks green;
+do not merge with test, lint, audit, or CodeQL findings outstanding.
+
+Follow the [secure-development guide](docs/SECURE_DEVELOPMENT.md). Report a
+suspected vulnerability privately as described in [SECURITY.md](SECURITY.md),
+not in a public issue.
 
 ## Getting help
 

@@ -70,6 +70,30 @@ export default function Footer() {
               {" "}for details.
             </p>
 
+            {/* Live verification badge: the image is served by OpenSSF, so its
+                displayed status always matches the public project record. */}
+            <a
+              href="https://www.bestpractices.dev/projects/14650"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Verify Split-Expense on OpenSSF Best Practices"
+              className="group mt-5 mb-5 inline-flex w-fit items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 py-2.5 transition-all duration-300 hover:border-cyan-400/30 hover:bg-cyan-400/[0.05]"
+            >
+              <img
+                src="https://www.bestpractices.dev/projects/14650/badge"
+                alt="OpenSSF Best Practices badge status for Split-Expense"
+                width="130"
+                height="26"
+                loading="lazy"
+                className="h-[26px] w-auto"
+              />
+              <span className="text-[10px] leading-tight text-[#718096] transition-colors group-hover:text-[#A0AEC0]">
+                Click to verify
+                <br />
+                our public status
+              </span>
+            </a>
+
             {/* Social Icons Row */}
             <div className="flex items-center gap-3.5 mb-5">
               {[

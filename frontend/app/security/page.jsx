@@ -1,6 +1,36 @@
 import InfoPageLayout from "@/components/InfoPageLayout";
 
+const OpenSSFBadge = () => (
+  <a
+    href="https://www.bestpractices.dev/projects/14650"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Verify Split-Expense on OpenSSF Best Practices"
+    className="group mt-1 inline-flex w-fit items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3 py-2.5 transition-all duration-300 hover:border-cyan-400/30 hover:bg-cyan-400/[0.05]"
+  >
+    <img
+      src="https://www.bestpractices.dev/projects/14650/badge"
+      alt="OpenSSF Best Practices badge status for Split-Expense"
+      width="130"
+      height="26"
+      loading="lazy"
+      className="h-[26px] w-auto"
+    />
+    <span className="text-xs leading-tight text-white/50 transition-colors group-hover:text-white/70">
+      Live status, verified by OpenSSF - click to view our public checklist
+    </span>
+  </a>
+);
+
 const sections = [
+  {
+    title: "Testing & verification",
+    body: [
+      "We run our backend against the OWASP Top 10 categories (access control, injection, SSRF, cryptographic handling, security misconfiguration, and authentication) and remediate what we find - most recently a September 2026 review that fixed a server-side request forgery gap in receipt/image handling, tightened CORS to an explicit origin allow-list, hardened real-time chat authorization, and increased invite-link entropy.",
+      "This is our own internal testing, not a third-party audit - we're not claiming a certification that doesn't exist. What is independently verifiable is our OpenSSF Best Practices status below: it's a public, self-reported checklist hosted by the Open Source Security Foundation, and the badge always reflects our current, live status - not a fixed claim.",
+      <OpenSSFBadge key="openssf-badge" />,
+    ],
+  },
   {
     title: "Encryption",
     body: [

@@ -138,7 +138,6 @@ export default function BlogPostForm({ initialPost, onSaved }) {
       <FormSection icon={ImageIcon} title="Cover image" description="Shown on the blog index card and article header.">
         <div className="flex flex-wrap items-center gap-3">
           {fields.coverImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={fields.coverImage} alt="" className="h-16 w-28 rounded-lg border border-white/[0.08] object-cover" />
           ) : (
             <span className="flex h-16 w-28 items-center justify-center rounded-lg border border-dashed border-white/[0.1] text-white/20">

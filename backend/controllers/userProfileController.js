@@ -4,6 +4,7 @@ import User from "../models/userModel.js";
 import Group from "../models/groupModel.js";
 import admin from "../config/firebaseAdmin.js";
 import { checkAndQualifyMilestones, cancelPendingReferralFor } from "../utils/referralService.js";
+import { isSafeUploadPayload } from "../utils/uploadSecurity.js";
 
 // ✅ GET /api/profile
 export const getProfile = async (req, res) => {
@@ -74,6 +75,9 @@ export const uploadProfileImage = async (req, res) => {
     const { file } = req.body; // base64 string from frontend
     if (!file) {
       return res.status(400).json({ message: "No file received" });
+    }
+    if (!isSafeUploadPayload(file)) {
+      return res.status(400).json({ message: "Invalid file payload" });
     }
 
     // find existing profile

@@ -8,6 +8,7 @@ import Group from "../models/groupModel.js";
 import { onlineUsers } from "../index.js";
 import { sendPushToUsers } from "./notificationController.js";
 import { isValidObjectId } from "../middleware/validate.js";
+import { isSafeUploadPayload } from "../utils/uploadSecurity.js";
 
 // Recipients whose socket sits in the given room are actively viewing that
 // conversation — they see the message live and shouldn't also get a push.
@@ -201,6 +202,9 @@ export const sendMessage = async (req, res) => {
     let mediaData = null;
 
     if (file) {
+      if (!isSafeUploadPayload(file)) {
+        return res.status(400).json({ message: "Invalid file payload" });
+      }
       const uploaded = await cloudinary.uploader.upload(file, {
         folder: "splitwise_chat_media",
         resource_type: "auto",

@@ -1,5 +1,10 @@
 # 💸 Split‑Expense
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14650/badge)](https://www.bestpractices.dev/projects/14650) [Click to verify our public status →](https://www.bestpractices.dev/projects/14650)
+[![CI](https://github.com/Gautam5514/Split-Expense/actions/workflows/ci.yml/badge.svg)](https://github.com/Gautam5514/Split-Expense/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Gautam5514/Split-Expense/actions/workflows/codeql.yml/badge.svg)](https://github.com/Gautam5514/Split-Expense/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Split bills with friends, groups, and roommates — track who paid, who owes
 what, and settle up. Frontend is **Next.js**, backend is **Node/Express +
 MongoDB**.
@@ -117,6 +122,13 @@ cd backend && npm test     # backend tests
 cd frontend && npm test    # frontend tests
 ```
 
+Continuous integration runs both suites (including fast-check property-based
+security tests), frontend linting and production
+dependency audits on every pull request and push to `main`. Security-focused
+static analysis is run by CodeQL. See the [API reference](docs/API.md),
+[security policy](SECURITY.md), [secure-development guide](docs/SECURE_DEVELOPMENT.md),
+and [release process](docs/RELEASING.md).
+
 ---
 
 ## 🤝 Contributing
@@ -140,3 +152,7 @@ Look for issues labeled [`good first issue`](https://github.com/Gautam5514/Split
 ## ⭐ Support the project
 
 If Split-Expense helped you, please **[star the repo](https://github.com/Gautam5514/Split-Expense)** — it's the easiest way to say thanks. ❤️
+
+## 📄 License
+
+Released under the [MIT License](LICENSE). Copyright © 2026 Gautam Pandit.

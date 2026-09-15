@@ -80,9 +80,13 @@ export default function InfoPageLayout({
                 {section.title}
               </h2>
               <div className="mt-3 space-y-3 pl-7 text-sm leading-relaxed text-white/55 sm:pl-8 sm:text-[15px]">
-                {section.body.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
+                {section.body.map((paragraph, i) =>
+                  typeof paragraph === "string" ? (
+                    <p key={paragraph}>{paragraph}</p>
+                  ) : (
+                    <div key={i}>{paragraph}</div>
+                  )
+                )}
               </div>
             </section>
           ))}

@@ -141,7 +141,7 @@ export const sendSignupOtp = async (req, res) => {
       });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -384,7 +384,7 @@ export const sendLoginOtp = async (req, res) => {
     if (user.loginOtpExpires && user.loginOtpExpires - Date.now() > 9 * 60 * 1000)
       return res.status(429).json({ message: "An OTP was just sent. Please wait a moment before requesting another." });
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
 
     user.loginOtp = hashedOtp;

@@ -11,6 +11,9 @@ import User from "./models/userModel.js";
 import Conversation from "./models/conversationModel.js";
 import Group from "./models/groupModel.js";
 import { mongoSanitize } from "./middleware/sanitize.js";
+import { buildAllowedOrigins, makeCorsOriginCallback } from "./utils/corsConfig.js";
+import { canRelayToRoom } from "./utils/socketGuards.js";
+import { assertSecurityConfiguration } from "./utils/securityConfig.js";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -31,6 +34,7 @@ import careerRoutes from "./routes/careerRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
+assertSecurityConfiguration();
 connectDB();
 
 const app = express();
@@ -47,12 +51,14 @@ app.use(
 );
 
 // -----------------------------------------
-//  CORS — allow every origin (reflects the request's Origin header, which is
-//  required since credentials: true is incompatible with the "*" wildcard).
-//  FRONTEND_URL is still used elsewhere for generating absolute links.
+//  CORS — explicit allow-list built from FRONTEND_URL (comma-separated).
+//  credentials: true means we must not reflect an arbitrary Origin back -
+//  only origins we actually control get access with credentials attached.
 // -----------------------------------------
+const allowedOrigins = buildAllowedOrigins(process.env.FRONTEND_URL);
+
 const corsOptions = {
-  origin: (origin, callback) => callback(null, true),
+  origin: makeCorsOriginCallback(allowedOrigins),
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"],
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
@@ -156,13 +162,16 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Typing
+  // Typing - only relay into rooms this socket has already been verified
+  // into via joinConversation (which checks Conversation membership).
   socket.on("typing", ({ conversationId, userId }) => {
+    if (!canRelayToRoom(socket, conversationId)) return;
     socket.to(conversationId).emit("typing", userId);
   });
 
-  // Messages
+  // Messages - same membership guard as above.
   socket.on("sendMessage", (data) => {
+    if (!canRelayToRoom(socket, data?.conversationId)) return;
     io.to(data.conversationId).emit("newMessage", data);
   });
 
@@ -186,6 +195,7 @@ io.on("connection", (socket) => {
   socket.on("leaveGroup", (groupId) => socket.leave(`group:${groupId}`));
 
   socket.on("groupTyping", ({ groupId, userId }) => {
+    if (!canRelayToRoom(socket, groupId ? `group:${groupId}` : null)) return;
     socket.to(`group:${groupId}`).emit("groupTyping", userId);
   });
 

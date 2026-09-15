@@ -5,6 +5,7 @@ import UserProfile from "../models/userProfileModel.js";
 import User from "../models/userModel.js";
 import { sendPushToUsers } from "./notificationController.js";
 import { chatPushBody, usersViewingRoom } from "./chatController.js";
+import { isSafeUploadPayload } from "../utils/uploadSecurity.js";
 
 /**
  * ✅ GET /api/groups/:groupId/messages
@@ -85,6 +86,9 @@ export const sendGroupMessage = async (req, res) => {
     let mediaData = null;
 
     if (file) {
+      if (!isSafeUploadPayload(file)) {
+        return res.status(400).json({ message: "Invalid file payload" });
+      }
       const uploaded = await cloudinary.uploader.upload(file, {
         folder: "splitwise_group_chat",
         resource_type: "auto",

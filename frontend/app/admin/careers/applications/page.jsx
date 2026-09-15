@@ -34,7 +34,6 @@ function ApplicationsContent() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId]);
 
   const updateStatus = async (id, status) => {

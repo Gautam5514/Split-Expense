@@ -21,7 +21,7 @@ export const adminLogin = async (req, res) => {
     const token = jwt.sign(
       { adminId: admin._id.toString(), email: admin.email, role: "admin" },
       process.env.JWT_SECRET,
-      { expiresIn: "12h" }
+      { algorithm: "HS256", expiresIn: "12h" }
     );
 
     res.status(200).json({ token, email: admin.email });

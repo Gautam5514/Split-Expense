@@ -1,4 +1,5 @@
 import cloudinary from "../config/cloudinary.js";
+import { isSafeUploadPayload } from "../utils/uploadSecurity.js";
 
 export const uploadMedia = async (req, res) => {
   try {
@@ -6,6 +7,9 @@ export const uploadMedia = async (req, res) => {
 
     if (!file) {
       return res.status(400).json({ message: "No file provided" });
+    }
+    if (!isSafeUploadPayload(file)) {
+      return res.status(400).json({ message: "Invalid file payload" });
     }
 
     // Upload to Cloudinary

@@ -261,7 +261,7 @@ export const addMembersByEmail = async (req, res) => {
     if (unregisteredEmails.length > 0) {
       // Ensure group has an invite code
       if (!group.inviteCode) {
-        group.inviteCode = crypto.randomBytes(4).toString("hex");
+        group.inviteCode = crypto.randomBytes(16).toString("hex");
         await group.save();
       }
 
@@ -553,7 +553,7 @@ export const generateInviteLink = async (req, res) => {
 
     // If inviteCode doesn't exist, generate one
     if (!group.inviteCode) {
-      group.inviteCode = crypto.randomBytes(4).toString("hex");
+      group.inviteCode = crypto.randomBytes(16).toString("hex");
       await group.save();
     }
 

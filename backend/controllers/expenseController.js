@@ -8,6 +8,7 @@ import { runOcr } from "../utils/ocrService.js";
 import { isValidObjectId } from "../middleware/validate.js";
 import { incrementExpenseCount } from "../utils/referralService.js";
 import { io } from "../index.js";
+import { isTrustedCloudinaryUrl } from "../utils/uploadSecurity.js";
 
 const VALID_CATEGORIES = ["general", "food", "travel", "stay", "shopping", "bills"];
 
@@ -126,8 +127,15 @@ export const addExpense = async (req, res) => {
       return res.status(403).json({ message: "You are not a member of this group." });
 
     // 🔹 OCR - uses persistent worker, no per-request init overhead
+    // Only run OCR against our own Cloudinary-hosted assets - fileUrl is
+    // client-supplied, and the OCR engine fetches it server-side, so an
+    // unvalidated URL would let a client make the server fetch arbitrary
+    // internal/external hosts (SSRF).
     let ocrText = null;
     if (fileUrl) {
+      if (!isTrustedCloudinaryUrl(fileUrl)) {
+        return res.status(400).json({ field: "fileUrl", message: "Invalid receipt image URL." });
+      }
       ocrText = await runOcr(fileUrl);
     }
 

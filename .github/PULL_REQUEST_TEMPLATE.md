@@ -26,6 +26,8 @@
 
 ## ✅ Checklist
 - [ ] I tested my changes locally and the app runs.
+- [ ] I added or updated automated tests for major new functionality and bug fixes.
+- [ ] Lint, tests, dependency audit, and CodeQL checks pass.
 - [ ] **I did NOT commit any `.env` file, secret, API key, or password.**
 - [ ] My branch is up to date with `upstream/main`.
 - [ ] I described what I changed and why.
