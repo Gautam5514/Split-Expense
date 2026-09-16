@@ -1,5 +1,4 @@
-// Tests for the remaining three hardening fixes:
-//   #3 CORS allow-list (utils/corsConfig.js, wired into index.js)
+// Tests for the remaining hardening fixes:
 //   #4 invite-code entropy (crypto.randomBytes(16) in groupController)
 //   #5 Socket.IO relay guard (utils/socketGuards.js, wired into index.js)
 import crypto from "crypto";
@@ -13,47 +12,22 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.resolve(__dirname, "..");
 
 // ---------------------------------------------------------------------------
-// FIX #3 — CORS explicit allow-list (no reflect-any-origin)
+// CORS — allow-all (restored 2026-09-16 after the allow-list variant caused a
+// production outage: a stale FRONTEND_URL on the deploy server CORS-blocked
+// every real user out of their own data). This app authenticates via a
+// Firebase bearer token, not cookies, so reflecting the origin back is safe.
 // ---------------------------------------------------------------------------
-describe("CORS allow-list", () => {
-  describe("buildAllowedOrigins", () => {
-    const ALWAYS_ALLOWED = [
-      "http://localhost:3000",
-      "https://split.elitecrew.online",
-      "https://split-expense-vert.vercel.app",
-    ];
-
-    test("falls back to the known production origins when FRONTEND_URL is unset", () => {
-      expect(buildAllowedOrigins(undefined)).toEqual(ALWAYS_ALLOWED);
-      expect(buildAllowedOrigins("")).toEqual(ALWAYS_ALLOWED);
-    });
-
-    test("splits comma-separated origins, trims whitespace, and keeps the known production origins", () => {
-      expect(buildAllowedOrigins("https://a.com, https://b.com ,https://c.com"))
-        .toEqual([...ALWAYS_ALLOWED, "https://a.com", "https://b.com", "https://c.com"]);
-    });
-
-    test("drops empty entries from trailing/double commas", () => {
-      expect(buildAllowedOrigins("https://a.com,,")).toEqual([...ALWAYS_ALLOWED, "https://a.com"]);
-    });
-
-    test("never duplicates a known production origin already present in FRONTEND_URL", () => {
-      expect(buildAllowedOrigins("https://split.elitecrew.online")).toEqual(ALWAYS_ALLOWED);
-    });
+describe("CORS (allow-all)", () => {
+  test("buildAllowedOrigins still parses FRONTEND_URL for logging purposes", () => {
+    expect(buildAllowedOrigins(undefined)).toEqual(["http://localhost:3000"]);
+    expect(buildAllowedOrigins("https://a.com, https://b.com"))
+      .toEqual(["https://a.com", "https://b.com"]);
   });
 
   describe("makeCorsOriginCallback", () => {
-    const allowed = ["https://app.split.com", "http://localhost:3000"];
-    const cb = makeCorsOriginCallback(allowed);
-
+    const cb = makeCorsOriginCallback();
     const call = (origin) =>
       new Promise((resolve) => cb(origin, (err, ok) => resolve({ err, ok })));
-
-    test("allows an origin that is on the list", async () => {
-      const { err, ok } = await call("https://app.split.com");
-      expect(err).toBeNull();
-      expect(ok).toBe(true);
-    });
 
     test("allows requests with no Origin header (curl / server-to-server)", async () => {
       const { err, ok } = await call(undefined);
@@ -61,31 +35,13 @@ describe("CORS allow-list", () => {
       expect(ok).toBe(true);
     });
 
-    test("REJECTS an arbitrary origin (no reflect-any-origin)", async () => {
-      const { err } = await call("https://evil.com");
-      expect(err).toBeInstanceOf(Error);
-      expect(err.message).toMatch(/not allowed by cors/i);
-    });
-
-    test("rejects look-alike / substring origins", async () => {
-      for (const bad of [
-        "https://app.split.com.evil.com",
-        "https://evilapp.split.com",
-        "http://app.split.com",          // wrong scheme
-        "https://app.split.com:8443",    // wrong port
-      ]) {
-        const { err } = await call(bad);
-        expect(err).toBeInstanceOf(Error);
+    test("allows any origin", async () => {
+      for (const origin of ["https://split.elitecrew.online", "https://anything-else.example.com"]) {
+        const { err, ok } = await call(origin);
+        expect(err).toBeNull();
+        expect(ok).toBe(true);
       }
     });
-  });
-
-  test("index.js uses the allow-list helpers and no longer reflects origin", () => {
-    const src = fs.readFileSync(path.join(backendRoot, "index.js"), "utf8");
-    expect(src).toMatch(/makeCorsOriginCallback\(allowedOrigins\)/);
-    // The old vulnerable pattern (reflecting the request Origin back) must be gone.
-    expect(src).not.toMatch(/callback\(null,\s*origin\)/);
-    expect(src).not.toMatch(/origin:\s*true/);
   });
 });
 
