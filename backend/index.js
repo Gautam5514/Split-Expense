@@ -56,6 +56,7 @@ app.use(
 //  only origins we actually control get access with credentials attached.
 // -----------------------------------------
 const allowedOrigins = buildAllowedOrigins(process.env.FRONTEND_URL);
+console.log("CORS allowed origins:", allowedOrigins.join(", "));
 
 const corsOptions = {
   origin: makeCorsOriginCallback(allowedOrigins),

@@ -17,18 +17,28 @@ const backendRoot = path.resolve(__dirname, "..");
 // ---------------------------------------------------------------------------
 describe("CORS allow-list", () => {
   describe("buildAllowedOrigins", () => {
-    test("defaults to localhost:3000 when FRONTEND_URL is unset", () => {
-      expect(buildAllowedOrigins(undefined)).toEqual(["http://localhost:3000"]);
-      expect(buildAllowedOrigins("")).toEqual(["http://localhost:3000"]);
+    const ALWAYS_ALLOWED = [
+      "http://localhost:3000",
+      "https://split.elitecrew.online",
+      "https://split-expense-vert.vercel.app",
+    ];
+
+    test("falls back to the known production origins when FRONTEND_URL is unset", () => {
+      expect(buildAllowedOrigins(undefined)).toEqual(ALWAYS_ALLOWED);
+      expect(buildAllowedOrigins("")).toEqual(ALWAYS_ALLOWED);
     });
 
-    test("splits comma-separated origins and trims whitespace", () => {
+    test("splits comma-separated origins, trims whitespace, and keeps the known production origins", () => {
       expect(buildAllowedOrigins("https://a.com, https://b.com ,https://c.com"))
-        .toEqual(["https://a.com", "https://b.com", "https://c.com"]);
+        .toEqual([...ALWAYS_ALLOWED, "https://a.com", "https://b.com", "https://c.com"]);
     });
 
     test("drops empty entries from trailing/double commas", () => {
-      expect(buildAllowedOrigins("https://a.com,,")).toEqual(["https://a.com"]);
+      expect(buildAllowedOrigins("https://a.com,,")).toEqual([...ALWAYS_ALLOWED, "https://a.com"]);
+    });
+
+    test("never duplicates a known production origin already present in FRONTEND_URL", () => {
+      expect(buildAllowedOrigins("https://split.elitecrew.online")).toEqual(ALWAYS_ALLOWED);
     });
   });
 
