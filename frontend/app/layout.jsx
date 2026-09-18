@@ -11,6 +11,7 @@ import CustomCursor from "@/components/CustomCursor";
 import InstallPrompt from "@/components/InstallPrompt";
 import GlassThemeGate from "@/components/GlassThemeGate";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import ChromeGate from "@/components/ChromeGate";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -182,7 +183,9 @@ export default function RootLayout({ children }) {
             <AuthProvider>
               <NotificationProvider>
                 <GlassThemeGate />
-                <Navbar />
+                <ChromeGate>
+                  <Navbar />
+                </ChromeGate>
                 <Toaster
                   position="top-right"
                   gutter={10}
@@ -206,9 +209,11 @@ export default function RootLayout({ children }) {
                 <MainWrapper>
                   {children}
                 </MainWrapper>
-                <AppFooter />
-                <CustomCursor />
-                <InstallPrompt />
+                <ChromeGate>
+                  <AppFooter />
+                  <CustomCursor />
+                  <InstallPrompt />
+                </ChromeGate>
               </NotificationProvider>
             </AuthProvider>
           </ThemeProvider>

@@ -210,7 +210,13 @@ const sendExpoPushNotifications = async (userIds, payload) => {
 
   const messages = users.flatMap((user) => {
     const badge = badgeByUser.get(String(user._id)) ?? 0;
-    return (user.expoPushTokens || [])
+    // De-dupe by token so an already-duplicated DB entry (pre-existing from
+    // before the registerPushToken race fix, or any future edge case) can
+    // never result in the same device getting the same push twice.
+    const uniqueTokens = Array.from(
+      new Map((user.expoPushTokens || []).map((t) => [t.token, t])).values()
+    );
+    return uniqueTokens
       .filter(({ token }) => isValidExpoPushToken(token))
       .map(({ token, platform }) => ({
         to: token,
@@ -269,20 +275,37 @@ export const registerPushToken = async (req, res) => {
       return res.status(400).json({ message: "Invalid platform" });
     }
 
+    // Strip this token from any other user who previously held it (device
+    // reassigned after logging out and into a different account).
     await User.updateMany(
-      { "expoPushTokens.token": expoPushToken },
+      { _id: { $ne: uid }, "expoPushTokens.token": expoPushToken },
       { $pull: { expoPushTokens: { token: expoPushToken } } }
     );
 
-    await User.findByIdAndUpdate(uid, {
-      $push: {
-        expoPushTokens: {
-          token: expoPushToken,
-          platform,
-          updatedAt: new Date(),
+    // Single atomic pipeline update: drop any existing entry for this token on
+    // this user, then append the fresh one, in one document-level write. Two
+    // near-simultaneous registrations for the same device (a real race on
+    // cold start, when multiple components sync the token at once) can no
+    // longer both survive as duplicate entries — each write is serialized
+    // against the latest document state, so the second call sees the first's
+    // result and replaces rather than duplicates it.
+    await User.updateOne({ _id: uid }, [
+      {
+        $set: {
+          expoPushTokens: {
+            $concatArrays: [
+              {
+                $filter: {
+                  input: { $ifNull: ["$expoPushTokens", []] },
+                  cond: { $ne: ["$$this.token", expoPushToken] },
+                },
+              },
+              [{ token: expoPushToken, platform, updatedAt: new Date() }],
+            ],
+          },
         },
       },
-    });
+    ]);
 
     res.json({ success: true });
   } catch (err) {

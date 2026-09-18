@@ -32,6 +32,7 @@ import contactRoutes from "./routes/contactRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import careerRoutes from "./routes/careerRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import mcpRoutes from "./routes/mcpRoutes.js";
 
 dotenv.config();
 assertSecurityConfiguration();
@@ -61,8 +62,16 @@ console.log("CORS allowed origins:", allowedOrigins.join(", "));
 const corsOptions = {
   origin: makeCorsOriginCallback(allowedOrigins),
   credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-SplitEase-Token",
+    "Mcp-Session-Id",
+    "Mcp-Protocol-Version",
+    "Accept",
+  ],
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  exposedHeaders: ["Mcp-Session-Id"],
 };
 
 // Handle preflight OPTIONS requests for all routes (required for DELETE/PUT from browsers)
@@ -249,6 +258,10 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/careers", careerRoutes);
 app.use("/api/admin", adminRoutes);
+
+// Remote MCP endpoint (Streamable HTTP). Mounted at the top level so the URL is
+// simply <origin>/mcp — the address users paste into ChatGPT / Claude.
+app.use("/mcp", mcpRoutes);
 
 // -----------------------------------------
 //  GLOBAL ERROR HANDLER
