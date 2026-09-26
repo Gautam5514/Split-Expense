@@ -48,10 +48,10 @@ export default function Loading() {
   return (
     <div>
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-3">
+        <div className="space-y-5">
           <SkeletonText width="w-20" />
-          <SkeletonUi className="h-9 w-48" />
-          <SkeletonText width="w-80" />
+          <SkeletonUi className="h-6 w-32 mb-4" />
+          <SkeletonText width="w-105" />
         </div>
         <SkeletonUi className="h-10 w-29 rounded-lg" />
       </div>
