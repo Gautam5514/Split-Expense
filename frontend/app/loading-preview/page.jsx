@@ -1,4 +1,4 @@
-import Loading from "../admin/careers/loading";
+import Loading from "../invite/[code]/loading";
 
 export default function AdminLoadingPreviewPage() {
   return <Loading />;

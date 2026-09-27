@@ -78,8 +78,7 @@ export default function Navbar() {
     cleanPath.startsWith("/login") ||
     cleanPath.startsWith("/register") ||
     cleanPath.startsWith("/reset-password") ||
-    cleanPath.startsWith("/admin") ||
-    cleanPath.includes("preview");
+    cleanPath.startsWith("/admin");
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);

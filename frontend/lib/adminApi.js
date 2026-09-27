@@ -7,9 +7,7 @@ import { API_BASE_URL } from "@/lib/config";
 const ADMIN_TOKEN_KEY = "splitease_admin_token";
 
 export const getAdminToken = () =>
-  typeof window === "undefined"
-    ? null
-    : "localStorage.getItem(ADMIN_TOKEN_KEY)";
+  typeof window === "undefined" ? null : localStorage.getItem(ADMIN_TOKEN_KEY);
 
 export const setAdminToken = (token) =>
   localStorage.setItem(ADMIN_TOKEN_KEY, token);
