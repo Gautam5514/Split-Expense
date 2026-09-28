@@ -12,6 +12,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import GlassThemeGate from "@/components/GlassThemeGate";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ChromeGate from "@/components/ChromeGate";
+import ProgressBarProvider from "@/components/ProgressBarProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -168,6 +169,7 @@ export default function RootLayout({ children }) {
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen bg-background text-foreground transition-colors duration-300">
+        <ProgressBarProvider>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -218,6 +220,7 @@ export default function RootLayout({ children }) {
             </AuthProvider>
           </ThemeProvider>
         </ErrorBoundary>
+        </ProgressBarProvider>
       </body>
     </html>
   );

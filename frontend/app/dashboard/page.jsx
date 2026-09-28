@@ -43,7 +43,6 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   };
 
-
   const markCompleted = async (e, groupId) => {
     e.preventDefault();
     e.stopPropagation();
@@ -77,23 +76,25 @@ export default function DashboardPage() {
   // Backend sets status="active" for groups the user created,
   // status="inactive" for groups the user was added to.
   const activeCreatedGroups = groups.filter(
-    (g) => g.status === "active" && !g.isCompleted
+    (g) => g.status === "active" && !g.isCompleted,
   );
   const activeJoinedGroups = groups.filter(
-    (g) => g.status === "inactive" && !g.isCompleted
+    (g) => g.status === "inactive" && !g.isCompleted,
   );
   const completedGroups = groups.filter((g) => g.isCompleted);
 
-  const hasActiveGroups = activeCreatedGroups.length > 0 || activeJoinedGroups.length > 0;
+  const hasActiveGroups =
+    activeCreatedGroups.length > 0 || activeJoinedGroups.length > 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground pt-8 pb-32 sm:pb-12 px-3 sm:px-6">
       <div className="max-w-5xl mx-auto space-y-6">
-
         {/* Header */}
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-primary">Groups</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-primary">
+              Groups
+            </h1>
             <p className="text-muted-foreground text-sm mt-1">
               Manage your trips, groups &amp; expenses effortlessly.
             </p>
@@ -146,7 +147,9 @@ export default function DashboardPage() {
         {!loading && groups.length === 0 && (
           <div className="bg-card border border-border rounded-xl p-8 sm:p-12 text-center shadow-sm">
             <Users className="mx-auto mb-4 text-primary" size={36} />
-            <h2 className="text-lg font-semibold text-foreground mb-1">No groups yet</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-1">
+              No groups yet
+            </h2>
             <p className="text-muted-foreground text-sm">
               Create your first group above and start splitting expenses.
             </p>
@@ -158,7 +161,9 @@ export default function DashboardPage() {
           <div className="space-y-8">
             {activeCreatedGroups.length > 0 && (
               <section>
-                <h2 className="text-base font-bold text-primary mb-4">Your Groups</h2>
+                <h2 className="text-base font-bold text-primary mb-4">
+                  Your Groups
+                </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {activeCreatedGroups.map((g) => (
                     <GroupCard
@@ -167,7 +172,11 @@ export default function DashboardPage() {
                       isCreator
                       view="active"
                       onMarkCompleted={markCompleted}
-                      onDeleteTrip={(e, id, name) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget({ id, name }); }}
+                      onDeleteTrip={(e, id, name) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDeleteTarget({ id, name });
+                      }}
                     />
                   ))}
                 </div>
@@ -176,7 +185,9 @@ export default function DashboardPage() {
 
             {activeJoinedGroups.length > 0 && (
               <section>
-                <h2 className="text-base font-bold text-primary mb-4">Groups You&apos;re Added To</h2>
+                <h2 className="text-base font-bold text-primary mb-4">
+                  Groups You&apos;re Added To
+                </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {activeJoinedGroups.map((g) => (
                     <GroupCard
@@ -191,7 +202,9 @@ export default function DashboardPage() {
             )}
 
             {!hasActiveGroups && groups.length > 0 && (
-              <p className="text-center text-muted-foreground py-12 text-sm">No active trips found.</p>
+              <p className="text-center text-muted-foreground py-12 text-sm">
+                No active trips found.
+              </p>
             )}
           </div>
         )}
@@ -201,21 +214,29 @@ export default function DashboardPage() {
           <section>
             {completedGroups.length > 0 ? (
               <>
-                <h2 className="text-base font-bold text-primary mb-4">Completed Trips</h2>
+                <h2 className="text-base font-bold text-primary mb-4">
+                  Completed Trips
+                </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {completedGroups.map((g) => (
                     <GroupCard
                       key={g._id}
                       group={g}
                       isCreator={g.status === "active"}
-                      onDeleteTrip={(e, id, name) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget({ id, name }); }}
+                      onDeleteTrip={(e, id, name) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDeleteTarget({ id, name });
+                      }}
                       view="completed"
                     />
                   ))}
                 </div>
               </>
             ) : (
-              <p className="text-center text-muted-foreground py-12 text-sm">No completed trips yet.</p>
+              <p className="text-center text-muted-foreground py-12 text-sm">
+                No completed trips yet.
+              </p>
             )}
           </section>
         )}
@@ -256,7 +277,13 @@ const avatarColors = [
   "bg-violet-500 text-white",
 ];
 
-function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted, onDeleteTrip }) {
+function GroupCard({
+  group,
+  isCreator = false,
+  view = "active",
+  onMarkCompleted,
+  onDeleteTrip,
+}) {
   const hasActions = isCreator && (view === "active" || view === "completed");
   const isSettled = view === "completed";
 
@@ -296,7 +323,8 @@ function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted,
               {group.name}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {group.members?.length || 0} Member{group.members?.length !== 1 ? "s" : ""}
+              {group.members?.length || 0} Member
+              {group.members?.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
@@ -307,7 +335,9 @@ function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted,
             <div className="flex -space-x-2.5">
               {group.members.slice(0, 3).map((m, i) => {
                 const photo = m.photoURL || m.profileImage?.url;
-                const label = (m.name || m.email || "?").charAt(0).toUpperCase();
+                const label = (m.name || m.email || "?")
+                  .charAt(0)
+                  .toUpperCase();
                 return photo ? (
                   <Image
                     key={m._id || i}
@@ -348,7 +378,9 @@ function GroupCard({ group, isCreator = false, view = "active", onMarkCompleted,
       {hasActions && (
         <div
           className={`border-t px-5 py-3 flex items-center justify-between ${
-            isSettled ? "border-emerald-500/20 bg-emerald-500/5" : "border-border"
+            isSettled
+              ? "border-emerald-500/20 bg-emerald-500/5"
+              : "border-border"
           }`}
           onClick={(e) => e.preventDefault()}
         >
