@@ -2,6 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DashboardPage from "@/app/dashboard/page";
 
+const pushMock = jest.fn();
+jest.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock }) }));
 jest.mock("@/context/AuthContext", () => ({ useAuth: () => ({ token: "test-token" }) }));
 jest.mock("@/lib/api", () => ({ api: { get: jest.fn(), post: jest.fn(), put: jest.fn(), delete: jest.fn() } }));
 jest.mock("@/lib/toast", () => ({
@@ -24,33 +26,42 @@ beforeEach(() => {
   api.get.mockResolvedValue({ data: [] });
 });
 
-describe("DashboardPage - group creation wiring (task #6)", () => {
-  test("clicking 'New Group' opens the CreateGroupModal", async () => {
+describe("DashboardPage - group creation wiring", () => {
+  test("clicking 'New Group' opens the create-group wizard", async () => {
     const user = userEvent.setup();
     render(<DashboardPage />);
     await waitFor(() => expect(api.get).toHaveBeenCalledWith("/groups"));
 
-    expect(screen.queryByText("Create New Group")).not.toBeInTheDocument();
+    expect(screen.queryByText("What's this group for?")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /new group/i }));
-    expect(screen.getByText("Create New Group")).toBeInTheDocument();
+    expect(screen.getByText("What's this group for?")).toBeInTheDocument();
   });
 
-  test("creating a group posts just the name, refreshes the list, and opens the invite modal", async () => {
-    api.post.mockResolvedValueOnce({ data: { _id: "new-group-1", name: "Goa Trip", groupType: "trip" } });
+  test("finishing the wizard creates the group, refreshes the list, and opens the group", async () => {
+    api.post.mockImplementation((url) =>
+      Promise.resolve(url === "/groups"
+        ? { data: { _id: "new-group-1", name: "Goa Trip", groupType: "roommate" } }
+        : { data: { joinLink: "https://x.test/join/abc" } })
+    );
     const user = userEvent.setup();
     render(<DashboardPage />);
-    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith("/groups"));
+    const callsBefore = api.get.mock.calls.length;
 
     await user.click(screen.getByRole("button", { name: /new group/i }));
-    await user.type(screen.getByPlaceholderText("e.g. Goa Trip"), "Goa Trip");
-    await user.click(screen.getByRole("button", { name: /create group/i }));
+    await user.click(screen.getByRole("button", { name: /continue with roommates/i }));
+    const input = await screen.findByLabelText("Group name");
+    await user.clear(input);
+    await user.type(input, "Goa Trip");
+    await user.click(screen.getByRole("button", { name: /^next/i }));
+    await user.click(await screen.findByRole("button", { name: /create group/i }));
 
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/groups", { name: "Goa Trip" }));
-    // Modal closes...
-    expect(screen.queryByText("Create New Group")).not.toBeInTheDocument();
-    // ...group list is refetched...
-    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
-    // ...and the invite modal opens for the newly created group.
-    expect(await screen.findByTestId("invite-modal")).toHaveAttribute("data-group-id", "new-group-1");
+    await waitFor(() =>
+      expect(api.post).toHaveBeenCalledWith("/groups", expect.objectContaining({ name: "Goa Trip", groupType: "roommate" }))
+    );
+    await user.click(await screen.findByRole("button", { name: /open group/i }));
+
+    await waitFor(() => expect(api.get.mock.calls.length).toBeGreaterThan(callsBefore));
+    expect(pushMock).toHaveBeenCalledWith("/groups/new-group-1");
   });
 });
