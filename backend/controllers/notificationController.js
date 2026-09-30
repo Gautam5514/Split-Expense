@@ -341,7 +341,7 @@ export const registerWebPushToken = async (req, res) => {
     const uid = req.user.id;
     const { fcmToken } = req.body;
 
-    if (!fcmToken || typeof fcmToken !== "string") {
+    if (!fcmToken || typeof fcmToken !== "string" || fcmToken.length > 4096) {
       return res.status(400).json({ message: "Invalid FCM token" });
     }
 

@@ -1,5 +1,8 @@
 import admin from "../config/firebaseAdmin.js";
 import { findOrCreateUser, recordActiveDay } from "../utils/referralService.js";
+import { authCache, AUTH_CACHE_TTL_MS, AUTH_CACHE_MAX } from "../utils/authCache.js";
+
+export { invalidateAuthCache } from "../utils/authCache.js";
 
 export const authMiddleware = async (req, res, next) => {
   try {
@@ -9,6 +12,17 @@ export const authMiddleware = async (req, res, next) => {
 
     if (!token)
       return res.status(401).json({ message: "No token provided" });
+
+    const hit = authCache.get(token);
+    if (hit) {
+      if (Date.now() < hit.expiresAt) {
+        authCache.delete(token);
+        authCache.set(token, hit);
+        req.user = { ...hit.user };
+        return next();
+      }
+      authCache.delete(token);
+    }
 
     let decoded;
     try {
@@ -62,6 +76,13 @@ export const authMiddleware = async (req, res, next) => {
       email:       user.email,
       name:        user.name,
     };
+    // Never outlive the token itself.
+    const tokenExpiry = decoded.exp ? decoded.exp * 1000 : Date.now() + AUTH_CACHE_TTL_MS;
+    authCache.set(token, {
+      user: { ...req.user },
+      expiresAt: Math.min(tokenExpiry, Date.now() + AUTH_CACHE_TTL_MS),
+    });
+    if (authCache.size > AUTH_CACHE_MAX) authCache.delete(authCache.keys().next().value);
     next();
   } catch (err) {
     console.error("❌ authMiddleware:", err.message);

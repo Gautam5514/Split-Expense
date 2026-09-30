@@ -5,7 +5,10 @@ import UserProfile from "../models/userProfileModel.js";
 import User from "../models/userModel.js";
 import { sendPushToUsers } from "./notificationController.js";
 import { chatPushBody, usersViewingRoom } from "./chatController.js";
-import { isSafeUploadPayload } from "../utils/uploadSecurity.js";
+import { uploadRejectionReason, CHAT_MIME_TYPES } from "../utils/uploadSecurity.js";
+import { isValidObjectId } from "../middleware/validate.js";
+
+const MAX_MESSAGE_LENGTH = 20000;
 
 /**
  * ✅ GET /api/groups/:groupId/messages
@@ -14,6 +17,7 @@ export const getGroupMessages = async (req, res) => {
   try {
     const { groupId } = req.params;
     const uid = req.user.id;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
 
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
@@ -60,7 +64,7 @@ export const getGroupMessages = async (req, res) => {
     res.json(finalMsgs);
   } catch (err) {
     console.error("getGroupMessages error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", expose: true });
   }
 };
 
@@ -71,8 +75,16 @@ export const getGroupMessages = async (req, res) => {
 export const sendGroupMessage = async (req, res) => {
   try {
     const { groupId } = req.params;
-    const { text, file } = req.body;
+    const { file } = req.body;
     const uid = req.user.id;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+    if (req.body.text !== undefined && req.body.text !== null && typeof req.body.text !== "string")
+      return res.status(400).json({ message: "Message text must be a string." });
+    const text = (req.body.text || "").trim() ? req.body.text : "";
+    if (text.length > MAX_MESSAGE_LENGTH)
+      return res.status(400).json({ message: `Messages must be under ${MAX_MESSAGE_LENGTH} characters.` });
+    if (!text && !file)
+      return res.status(400).json({ message: "Message is empty." });
 
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
@@ -86,9 +98,8 @@ export const sendGroupMessage = async (req, res) => {
     let mediaData = null;
 
     if (file) {
-      if (!isSafeUploadPayload(file)) {
-        return res.status(400).json({ message: "Invalid file payload" });
-      }
+      const rejection = uploadRejectionReason(file, CHAT_MIME_TYPES);
+      if (rejection) return res.status(400).json({ message: rejection });
       const uploaded = await cloudinary.uploader.upload(file, {
         folder: "splitwise_group_chat",
         resource_type: "auto",
@@ -153,7 +164,7 @@ export const sendGroupMessage = async (req, res) => {
     }
   } catch (err) {
     console.error("sendGroupMessage error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", expose: true });
   }
 };
 
@@ -161,8 +172,10 @@ export const deleteGroupChats = async (req, res) => {
   try {
     const uid = req.user.id;
     const { groupIds = [] } = req.body;
+    if (!Array.isArray(groupIds) || groupIds.length > 100)
+      return res.status(400).json({ message: "Invalid selection" });
 
-    const ids = [...new Set(groupIds.map(String).filter(Boolean))];
+    const ids = [...new Set(groupIds.map(String).filter(isValidObjectId))];
     if (!ids.length) {
       return res.status(400).json({ message: "No group chats selected" });
     }
@@ -186,7 +199,7 @@ export const deleteGroupChats = async (req, res) => {
     });
   } catch (err) {
     console.error("deleteGroupChats error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", expose: true });
   }
 };
 
@@ -197,6 +210,7 @@ export const markGroupMessagesSeen = async (req, res) => {
   try {
     const { groupId } = req.params;
     const uid = req.user.id;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
 
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
@@ -217,7 +231,7 @@ export const markGroupMessagesSeen = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error("markGroupMessagesSeen error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", expose: true });
   }
 };
 

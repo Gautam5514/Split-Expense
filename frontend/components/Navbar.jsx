@@ -147,7 +147,7 @@ export default function Navbar() {
             : scrolled
               ? "bg-background/90 backdrop-blur-2xl border-foreground/10 shadow-[0_4px_24px_rgba(8,145,178,0.06)]"
               : "bg-background/70 backdrop-blur-xl border-foreground/[0.06]"
-        }`}
+        } ${isLoggedIn ? "md:hidden" : ""}`}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between w-full px-4 sm:px-6 py-3 sm:py-3.5">
 

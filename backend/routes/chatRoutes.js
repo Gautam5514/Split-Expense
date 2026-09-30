@@ -6,6 +6,8 @@ import {
   getMessages,
   sendMessage,
   getMyContacts,
+  getContactProfile,
+  getConversationSummary,
   resetUnreadCount,
   deleteConversations
 } from "../controllers/chatController.js";
@@ -25,6 +27,11 @@ router.get("/messages/:id", authMiddleware, getMessages);
 router.post("/message", authMiddleware, sendMessage);
 
 router.get("/my-contacts", authMiddleware, getMyContacts);
+
+router.get("/contact/:userId", authMiddleware, getContactProfile);
+
+// Contact info page: message/media counts, shared media, groups in common
+router.get("/conversation/:id/summary", authMiddleware, getConversationSummary);
 
 router.post("/reset-unread", authMiddleware, resetUnreadCount);
 

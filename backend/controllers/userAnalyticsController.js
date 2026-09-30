@@ -12,12 +12,56 @@ export const getUserAnalytics = async (req, res) => {
     const userId = new mongoose.Types.ObjectId(req.user.id);
 
     // 1️⃣ Find all real expenses (exclude settlements) where user paid or participated
-    const expenses = await Expense.find({
-      $or: [{ paidBy: userId }, { participants: userId }],
-      isSettlement: { $ne: true },
-      // Legacy guard: skip expenses whose description starts with "Settlement"
-      description: { $not: /^Settlement/i },
-    }).lean();
+    // Expenses and recent groups are independent - fetch them together, and
+    // only the fields used below (indexed on paidBy / participants).
+    const [expenses, groups, latestExpenses] = await Promise.all([
+      Expense.find({
+        $or: [{ paidBy: userId }, { participants: userId }],
+        isSettlement: { $ne: true },
+        // Legacy guard: skip expenses whose description starts with "Settlement"
+        description: { $not: /^Settlement/i },
+      }).select("amount category date").lean(),
+      // 🟢 Latest 5 active groups for the dashboard shortcut
+      Group.find({ members: userId })
+        .sort({ updatedAt: -1 })
+        .limit(5)
+        .populate("createdBy", "name email")
+        .select("name createdAt updatedAt createdBy isCompleted")
+        .lean(),
+      // 🟣 Latest 5 real expenses across the user's groups — powers the
+      // "Recent Activity" card on the home page (web + app).
+      Expense.find({
+        $or: [{ paidBy: userId }, { participants: userId }],
+        isSettlement: { $ne: true },
+        description: { $not: /^Settlement/i },
+      })
+        .sort({ date: -1, createdAt: -1 })
+        .limit(5)
+        .populate("groupId", "name icon photo")
+        .populate("paidBy", "name email")
+        .select("description amount currency category date createdAt groupId paidBy")
+        .lean(),
+    ]);
+
+    // Enrich recent expenses with the group + payer context the UI needs, and
+    // flag whether the current user is the payer (so the card can say "You").
+    const recentExpenses = latestExpenses.map((e) => {
+      const paidById = String(e.paidBy?._id || e.paidBy || "");
+      return {
+        id: String(e._id),
+        description: e.description,
+        amount: e.amount,
+        currency: e.currency || null,
+        category: e.category || "misc",
+        date: e.date || e.createdAt,
+        groupId: e.groupId?._id ? String(e.groupId._id) : null,
+        groupName: e.groupId?.name || "Group",
+        groupIcon: e.groupId?.icon || null,
+        groupPhotoUrl: e.groupId?.photo?.url || null,
+        paidByName: e.paidBy?.name || "Someone",
+        paidByMe: paidById === String(userId),
+      };
+    });
 
     // 🧩 If no expenses, still send empty summary + groups
     const baseResponse = {
@@ -30,15 +74,8 @@ export const getUserAnalytics = async (req, res) => {
         message: "No expenses recorded yet. Add one to start tracking!",
       },
       recentGroups: [],
+      recentExpenses: [],
     };
-
-    // 🟢 Fetch latest 5 active groups for dashboard shortcut
-    const groups = await Group.find({ members: userId })
-      .sort({ updatedAt: -1 })
-      .limit(5)
-      .populate("createdBy", "name email")
-      .select("name createdAt updatedAt createdBy isCompleted")
-      .lean();
 
     const recentGroups = groups.map((g) => ({
       id: g._id,
@@ -50,7 +87,7 @@ export const getUserAnalytics = async (req, res) => {
 
     // If no expenses → return only groups
     if (!expenses.length) {
-      return res.json({ ...baseResponse, recentGroups });
+      return res.json({ ...baseResponse, recentGroups, recentExpenses });
     }
 
     // 2️⃣ Category Breakdown (Pie Chart)
@@ -154,6 +191,7 @@ export const getUserAnalytics = async (req, res) => {
       trends,
       insight,
       recentGroups,
+      recentExpenses,
     });
   } catch (err) {
     console.error("getUserAnalytics error:", err.message);

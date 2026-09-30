@@ -80,8 +80,13 @@ export const queryAI = async (req, res) => {
   const { prompt, provider } = req.body;
   const userId = req.user.id;
 
-  if (!prompt) {
+  if (typeof prompt !== "string" || !prompt.trim()) {
     return res.status(400).json({ message: "Prompt cannot be empty." });
+  }
+  // Every character is paid LLM input - cap it so a single request can't
+  // burn through the AI budget.
+  if (prompt.length > 8000) {
+    return res.status(400).json({ message: "Prompt is too long (max 8000 characters)." });
   }
 
   const history = sanitizeHistory(req.body.history);
@@ -136,6 +141,7 @@ You are **SplitEase AI**, the built-in assistant of SplitEase, an expense-splitt
 - Breakdown or comparison → a small Markdown table with bold key amounts.
 - Multi-part answer → short ### headings and bullet points.
 - End a complex answer with one friendly takeaway line (e.g. "Bottom line: you're owed ₹450.00 overall 🎉").
+- Replies are read on a phone: keep tables to at most 3 short columns, prefer bullet points over wide tables, and keep paragraphs to 2-3 lines.
 
 ## Conversation so far
 ${historyBlock}

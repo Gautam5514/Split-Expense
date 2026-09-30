@@ -4,16 +4,23 @@ import { api } from "@/lib/api";
 import socket, { connectSocket } from "@/lib/socket";
 import ChatInput from "./ChatInput";
 import VoicePlayer from "../chat/VoicePlayer";
-import { Search, MoreVertical, X, AlertCircle, Loader2, RotateCw, Info, ArrowLeft } from "lucide-react";
+import MediaLightbox from "../chat/MediaLightbox";
+import { Search, MoreVertical, X, AlertCircle, Loader2, RotateCw, Info, ArrowLeft, EyeOff, MessageSquare } from "lucide-react";
+import GroupAvatar from "./GroupAvatar";
+import toast from "@/lib/toast";
 
-export default function GroupChatWindow({ activeGroup, onBack }) {
+export default function GroupChatWindow({ activeGroup, onBack, detailsOpen, onToggleDetails, onRemoved }) {
   const [messages, setMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [me, setMe] = useState(null);
   const bottomRef = useRef(null);
+  const moreRef = useRef(null);
 
   // Search states
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
 
   // Message Info Modal states
   const [infoMessage, setInfoMessage] = useState(null);
@@ -48,24 +55,37 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
       reader.onerror = (error) => reject(error);
     });
 
-  // Load profile and messages
+  // "Me" never changes while this window is mounted - fetching it again on
+  // every group switch was pure wasted latency before messages could load.
   useEffect(() => {
-    const init = async () => {
-      if (!activeGroup) return;
-      try {
-        const userRes = await api.get("/users/me");
-        setMe(userRes.data);
-        const res = await api.get(`/groups/${activeGroup._id}/messages`);
-        setMessages(res.data || []);
+    api.get("/users/me").then((res) => setMe(res.data)).catch((err) => console.error("Error loading me:", err));
+  }, []);
 
-        // Reset search states on active group switch
-        setShowSearch(false);
-        setSearchQuery("");
-      } catch (err) {
-        console.error("Error loading group chat:", err);
-      }
+  // Load messages for the active group
+  useEffect(() => {
+    if (!activeGroup) return;
+    let cancelled = false;
+    // Drop the previous group's messages immediately instead of leaving
+    // them on screen (looking stuck) until the new ones land.
+    setMessages([]);
+    setLoadingMessages(true);
+    setShowSearch(false);
+    setSearchQuery("");
+
+    api
+      .get(`/groups/${activeGroup._id}/messages`)
+      .then((res) => {
+        if (cancelled) return;
+        setMessages(res.data || []);
+      })
+      .catch((err) => console.error("Error loading group chat:", err))
+      .finally(() => {
+        if (!cancelled) setLoadingMessages(false);
+      });
+
+    return () => {
+      cancelled = true;
     };
-    init();
   }, [activeGroup]);
 
   // Connect socket and mark seen on active group join
@@ -128,6 +148,26 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
       bottomRef.current?.scrollIntoView({ behavior: "auto" });
     }
   }, [messages, searchQuery]);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onPointerDown = (event) => {
+      if (!moreRef.current?.contains(event.target)) setMoreOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [moreOpen]);
+
+  const handleRemoveGroupChat = async () => {
+    if (!activeGroup) return;
+    try {
+      await api.post("/groups/messages/delete", { groupIds: [activeGroup._id] });
+      toast.success("Group chat removed");
+      onRemoved?.();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to remove group chat");
+    }
+  };
 
   const isMine = (msg) => me && (msg.sender === me._id || msg.sender?._id === me._id);
 
@@ -208,15 +248,21 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
 
   if (!activeGroup)
     return (
-      <div className="flex-1 hidden md:flex flex-col items-center justify-center bg-muted/40 border-l border-border h-full">
-        <div className="max-w-sm text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Search size={26} />
+      <div className="flex-1 hidden lg:flex flex-col items-center justify-center bg-gradient-to-b from-muted/30 to-muted/50 border-l border-border h-full relative overflow-hidden">
+        {/* Soft ambient glow */}
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative max-w-sm text-center px-6">
+          <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center">
+            <span className="absolute inset-0 rounded-3xl bg-primary/15 blur-md" />
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-cyan-600 text-white shadow-xl shadow-primary/25">
+              <MessageSquare size={30} strokeWidth={2} />
+            </div>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground mb-3">Select a group</h1>
-          <p className="text-muted-foreground text-sm">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-2.5">Select a group</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed">
             Choose a group from the left panel to read messages and continue chatting.
           </p>
+         
         </div>
       </div>
     );
@@ -229,31 +275,24 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
       <div className="absolute inset-0 w-full h-full wa-bg-pattern z-0 pointer-events-none opacity-40"></div>
 
       {/* HEADER */}
-      <div className="h-16 bg-muted/90 px-4 flex items-center justify-between border-b border-border shrink-0 z-10">
+      <div className="relative isolate z-20 h-16 bg-muted/80 backdrop-blur-xl px-4 flex items-center justify-between border-b border-border shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           {/* Back Arrow for Mobile/Tablet */}
           <button
             onClick={onBack}
-            className="md:hidden p-1.5 hover:bg-background rounded-full transition mr-1 cursor-pointer shrink-0"
+            className="lg:hidden p-1.5 hover:bg-background rounded-full transition mr-1 cursor-pointer shrink-0 active:scale-90"
             title="Back to list"
           >
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
 
-          <div className="flex items-center gap-3 cursor-pointer min-w-0">
-            {activeGroup.members?.[0]?.photoURL ? (
-              <img
-                src={activeGroup.members[0].photoURL}
-                alt={activeGroup.name}
-                className="w-10 h-10 rounded-full object-cover shrink-0"
-              />
-            ) : (
-              <div className={`w-10 h-10 flex items-center justify-center rounded-full text-white font-bold shrink-0 ${getAvatarColor(activeGroup.name)}`}>
-                {activeGroup.name?.charAt(0)}
-              </div>
-            )}
+          <div
+            className={`flex items-center gap-3 min-w-0 rounded-2xl -mx-1.5 px-1.5 py-1 transition-colors ${onToggleDetails ? "cursor-pointer hover:bg-foreground/[0.04]" : ""}`}
+            onClick={onToggleDetails}
+          >
+            <GroupAvatar group={activeGroup} size={40} />
             <div className="flex min-w-0 flex-col justify-center">
-              <span className="truncate text-foreground text-base font-semibold leading-tight">
+              <span className="truncate text-foreground text-base font-bold leading-tight tracking-tight">
                 {activeGroup.name}
               </span>
               <span className="text-[13px] text-muted-foreground leading-tight truncate max-w-[300px]">
@@ -268,16 +307,52 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
               setShowSearch(!showSearch);
               if (showSearch) setSearchQuery("");
             }}
-            className={`rounded-lg p-2 transition ${
-              showSearch ? "bg-primary/10 text-primary animate-in" : "hover:bg-background hover:text-foreground"
+            className={`rounded-xl p-2 transition-all active:scale-90 ${
+              showSearch ? "bg-primary/10 text-primary" : "hover:bg-primary/10 hover:text-primary"
             }`}
             title="Search logs"
           >
             <Search className="w-4 h-4" />
           </button>
-          <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground" title="More">
-            <MoreVertical className="w-4 h-4" />
-          </button>
+          <div className="relative" ref={moreRef}>
+            <button
+              onClick={() => setMoreOpen((o) => !o)}
+              className={`rounded-xl p-2 transition-all active:scale-90 ${
+                moreOpen ? "bg-primary/10 text-primary" : "hover:bg-primary/10 hover:text-primary"
+              }`}
+              title="More"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            {moreOpen && (
+              <div className="absolute right-0 top-[42px] z-30 w-52 overflow-hidden rounded-xl border border-border bg-menu-solid p-1.5 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.4)]">
+                {onToggleDetails && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMoreOpen(false);
+                      onToggleDetails();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-foreground transition hover:bg-cyan-500/[0.07] hover:text-cyan-600 dark:hover:text-cyan-400"
+                  >
+                    <Info size={15} className="text-muted-foreground" />
+                    {detailsOpen ? "Hide details" : "Details"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    handleRemoveGroupChat();
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-destructive transition hover:bg-destructive/10"
+                >
+                  <EyeOff size={15} />
+                  Remove from chat
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -313,7 +388,14 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
 
       {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-8 z-10 custom-scrollbar flex flex-col gap-3">
-        {filteredMessages.map((m, index) => {
+        {loadingMessages && (
+          <div className="flex flex-col gap-3 animate-pulse">
+            <div className="h-10 w-2/5 rounded-xl bg-muted/60 self-start" />
+            <div className="h-14 w-1/2 rounded-xl bg-muted/60 self-end" />
+            <div className="h-10 w-1/3 rounded-xl bg-muted/60 self-start" />
+          </div>
+        )}
+        {!loadingMessages && filteredMessages.map((m, index) => {
           const mine = isMine(m);
           const isOptimistic = m._id.toString().startsWith("temp-");
           const isFailed = m.status === "failed";
@@ -393,7 +475,8 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
                         <img
                           src={m.mediaUrl}
                           alt="attached media"
-                          className="w-full max-h-[300px] object-cover hover:scale-[1.02] transition-transform duration-200"
+                          onClick={() => !isSending && setLightboxUrl(m.mediaUrl)}
+                          className={`w-full max-w-[230px] max-h-[220px] object-cover transition-transform duration-200 ${isSending ? "" : "cursor-pointer hover:scale-[1.02]"}`}
                         />
                       ) : (
                         <video
@@ -417,8 +500,11 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
                 {m.text !== "[Voice Message]" && (
                   <div className="flex flex-col gap-1 min-w-0">
                     {m.text && (
-                      <span className="whitespace-pre-wrap break-words text-[14.2px] pb-1 pr-10">
+                      <span className="whitespace-pre-wrap break-words text-[14.2px] pb-1">
                         {highlightText(m.text, searchQuery)}
+                        {/* Invisible spacer as wide as the time (+ ticks) stamp, so the
+                            absolutely-positioned stamp never covers the last line */}
+                        <span aria-hidden className={`inline-block ${mine ? "w-[4.5rem]" : "w-14"}`} />
                       </span>
                     )}
                   </div>
@@ -448,8 +534,8 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
                           // Read by some: Gray ticks
                           <span className="text-muted-foreground/80 font-bold font-mono tracking-tighter text-[11px]" title={`Delivered and read by ${m.seenBy.length - 1} other members`}>✓✓</span>
                         ) : (
-                          // Read by sender only (delivered to group): Gray single tick
-                          <span className="text-muted-foreground/60 font-semibold text-[11px]" title="Delivered to group server">✓</span>
+                          // Read by sender only (delivered to group): Gray double tick
+                          <span className="text-muted-foreground/60 font-semibold font-mono tracking-tighter text-[11px]" title="Delivered to group server">✓✓</span>
                         )
                       )}
                     </span>
@@ -620,6 +706,8 @@ export default function GroupChatWindow({ activeGroup, onBack }) {
           </div>
         </div>
       )}
+
+      <MediaLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
     </section>
   );
 }

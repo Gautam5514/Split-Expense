@@ -4,19 +4,25 @@ import { api } from "@/lib/api";
 import socket, { connectSocket } from "@/lib/socket";
 import ChatInput from "./ChatInput";
 import VoicePlayer from "./VoicePlayer";
-import { Search, MoreVertical, X, AlertCircle, Loader2, RotateCw, ArrowLeft } from "lucide-react";
+import MediaLightbox from "./MediaLightbox";
+import { Search, MoreVertical, X, AlertCircle, Loader2, RotateCw, ArrowLeft, Info, UserX } from "lucide-react";
+import toast from "@/lib/toast";
 
-export default function ChatWindow({ activeFriend, onBack }) {
+export default function ChatWindow({ activeFriend, onBack, detailsOpen, onToggleDetails, onRemoved }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [me, setMe] = useState(null);
   const [isOnline, setIsOnline] = useState(false);
   const [lastActive, setLastActive] = useState(null);
   const bottomRef = useRef(null);
+  const moreRef = useRef(null);
 
   // Search states
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
 
   // Avatar color helper
   const getColorForName = (name) => {
@@ -44,33 +50,57 @@ export default function ChatWindow({ activeFriend, onBack }) {
       reader.onerror = (error) => reject(error);
     });
 
+  // "Me" never changes while this window is mounted - fetching it again on
+  // every friend switch was one of two round trips adding to the delay
+  // before a conversation opened.
   useEffect(() => {
+    api.get("/users/me").then((res) => setMe(res.data)).catch((err) => console.error("Error loading me:", err));
+  }, []);
+
+  useEffect(() => {
+    if (!activeFriend) return;
+
+    let cancelled = false;
+    setIsOnline(activeFriend.isOnline || false);
+    setLastActive(activeFriend.lastActive || null);
+    // Drop the previous conversation's messages immediately instead of
+    // leaving them on screen (looking stuck/slow) until the new ones land.
+    setMessages([]);
+    setConversationId(null);
+    setLoadingMessages(true);
+    setShowSearch(false);
+    setSearchQuery("");
+
     const init = async () => {
       try {
-        const userRes = await api.get("/users/me");
-        setMe(userRes.data);
-
-        if (activeFriend) {
-          setIsOnline(activeFriend.isOnline || false);
-          setLastActive(activeFriend.lastActive || null);
-
+        // The contacts list already knows the conversation id for anyone
+        // we've talked to before, so skip the get-or-create round trip
+        // entirely and go straight to loading messages.
+        let convoId = activeFriend.conversationId;
+        if (!convoId) {
           const convo = await api.post("/chat/conversation", {
+            otherUserId: activeFriend._id,
             otherEmail: activeFriend.email,
           });
-          setConversationId(convo.data._id);
-
-          const msgs = await api.get(`/chat/messages/${convo.data._id}`);
-          setMessages(msgs.data || []);
-          
-          // Clear search when switching active friends
-          setShowSearch(false);
-          setSearchQuery("");
+          convoId = convo.data._id;
         }
+        if (cancelled) return;
+        setConversationId(convoId);
+
+        const msgs = await api.get(`/chat/messages/${convoId}`);
+        if (cancelled) return;
+        setMessages(msgs.data || []);
       } catch (err) {
         console.error("Error loading chat:", err);
+      } finally {
+        if (!cancelled) setLoadingMessages(false);
       }
     };
     init();
+
+    return () => {
+      cancelled = true;
+    };
   }, [activeFriend]);
 
   useEffect(() => {
@@ -140,9 +170,29 @@ export default function ChatWindow({ activeFriend, onBack }) {
     }
   }, [messages, searchQuery]);
 
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onPointerDown = (event) => {
+      if (!moreRef.current?.contains(event.target)) setMoreOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [moreOpen]);
+
+  const handleRemoveChat = async () => {
+    if (!activeFriend) return;
+    try {
+      await api.post("/chat/delete-conversations", { userIds: [activeFriend._id] });
+      toast.success("Chat removed");
+      onRemoved?.();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to remove chat");
+    }
+  };
+
   if (!activeFriend)
     return (
-      <div className="relative flex-1 hidden md:flex flex-col items-center justify-center bg-muted/40 border-l border-border h-full">
+      <div className="relative flex-1 hidden lg:flex flex-col items-center justify-center bg-muted/40 border-l border-border h-full">
         <div className="max-w-sm text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Search size={26} />
@@ -235,7 +285,7 @@ export default function ChatWindow({ activeFriend, onBack }) {
       <div className="absolute inset-0 wa-bg-pattern pointer-events-none opacity-40"></div>
 
       {/* HEADER */}
-      <div className="h-16 bg-muted/90 px-4 flex items-center justify-between border-b border-border z-10 flex-shrink-0">
+      <div className="relative isolate z-20 h-16 bg-muted/90 px-4 flex items-center justify-between border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           {onBack && (
             <button
@@ -243,14 +293,17 @@ export default function ChatWindow({ activeFriend, onBack }) {
                 e.stopPropagation();
                 onBack();
               }}
-              className="md:hidden mr-1 p-1.5 hover:bg-background/80 rounded-lg text-muted-foreground hover:text-foreground transition shrink-0 cursor-pointer"
+              className="lg:hidden mr-1 p-1.5 hover:bg-background/80 rounded-lg text-muted-foreground hover:text-foreground transition shrink-0 cursor-pointer"
               title="Back to contacts"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
 
-          <div className="flex items-center gap-3 cursor-pointer min-w-0">
+          <div
+            className={`flex items-center gap-3 min-w-0 ${onToggleDetails ? "cursor-pointer" : ""}`}
+            onClick={onToggleDetails}
+          >
             {activeFriend.imageUrl ? (
               <img
                 src={activeFriend.imageUrl}
@@ -289,9 +342,45 @@ export default function ChatWindow({ activeFriend, onBack }) {
           >
             <Search className="w-4 h-4" />
           </button>
-          <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground" title="More">
-            <MoreVertical className="w-4 h-4" />
-          </button>
+          <div className="relative" ref={moreRef}>
+            <button
+              onClick={() => setMoreOpen((o) => !o)}
+              className={`rounded-lg p-2 transition ${
+                moreOpen ? "bg-primary/10 text-primary" : "hover:bg-background hover:text-foreground"
+              }`}
+              title="More"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            {moreOpen && (
+              <div className="absolute right-0 top-[42px] z-30 w-52 overflow-hidden rounded-xl border border-border bg-menu-solid p-1.5 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.4)]">
+                {onToggleDetails && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMoreOpen(false);
+                      onToggleDetails();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-foreground transition hover:bg-cyan-500/[0.07] hover:text-cyan-600 dark:hover:text-cyan-400"
+                  >
+                    <Info size={15} className="text-muted-foreground" />
+                    {detailsOpen ? "Hide details" : "Details"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    handleRemoveChat();
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-destructive transition hover:bg-destructive/10"
+                >
+                  <UserX size={15} />
+                  Remove from chat
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -327,7 +416,14 @@ export default function ChatWindow({ activeFriend, onBack }) {
 
       {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto px-4 py-3 sm:p-6 z-10 custom-scrollbar flex flex-col gap-3">
-        {filteredMessages.map((m, index) => {
+        {loadingMessages && (
+          <div className="flex flex-col gap-3 animate-pulse">
+            <div className="h-10 w-2/5 rounded-xl bg-muted/60 self-start" />
+            <div className="h-14 w-1/2 rounded-xl bg-muted/60 self-end" />
+            <div className="h-10 w-1/3 rounded-xl bg-muted/60 self-start" />
+          </div>
+        )}
+        {!loadingMessages && filteredMessages.map((m, index) => {
           const mine = isMine(m);
           const isOptimistic = m._id.toString().startsWith("temp-");
           const isFailed = m.status === "failed";
@@ -382,7 +478,8 @@ export default function ChatWindow({ activeFriend, onBack }) {
                         <img
                           src={m.mediaUrl}
                           alt="attached media"
-                          className="w-full max-h-[300px] object-cover hover:scale-[1.02] transition-transform duration-200"
+                          onClick={() => !isSending && setLightboxUrl(m.mediaUrl)}
+                          className={`w-full max-w-[230px] max-h-[220px] object-cover transition-transform duration-200 ${isSending ? "" : "cursor-pointer hover:scale-[1.02]"}`}
                         />
                       ) : (
                         <video
@@ -406,8 +503,11 @@ export default function ChatWindow({ activeFriend, onBack }) {
                 {m.text !== "[Voice Message]" && (
                   <div className="flex flex-col gap-1 min-w-0">
                     {m.text && (
-                      <span className="whitespace-pre-wrap break-words text-[14.2px] pb-1 pr-10">
+                      <span className="whitespace-pre-wrap break-words text-[14.2px] pb-1">
                         {highlightText(m.text, searchQuery)}
+                        {/* Invisible spacer as wide as the time (+ ticks) stamp, so the
+                            absolutely-positioned stamp never covers the last line */}
+                        <span aria-hidden className={`inline-block ${mine ? "w-[4.5rem]" : "w-14"}`} />
                       </span>
                     )}
                   </div>
@@ -432,7 +532,7 @@ export default function ChatWindow({ activeFriend, onBack }) {
                         m.seenBy?.includes(activeFriend._id) || m.seenBy?.length > 1 ? (
                           <span className="text-blue-500 dark:text-blue-400 font-bold font-mono tracking-tighter text-[11px]" title="Seen">✓✓</span>
                         ) : (
-                          <span className="text-muted-foreground font-semibold text-[11px]" title="Delivered">✓</span>
+                          <span className="text-muted-foreground font-semibold font-mono tracking-tighter text-[11px]" title={isOnline ? "Delivered" : "Sent"}>✓✓</span>
                         )
                       )}
                     </span>
@@ -460,6 +560,8 @@ export default function ChatWindow({ activeFriend, onBack }) {
           onSend={handleSend}
         />
       </div>
+
+      <MediaLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
     </section>
   );
 }

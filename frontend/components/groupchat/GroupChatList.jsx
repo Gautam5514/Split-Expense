@@ -2,10 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { connectSocket } from "@/lib/socket";
-import { Search, MoreVertical, Users, MessageSquarePlus, Trash2, X, Check } from "lucide-react";
+import { Search, MessageSquarePlus, Trash2, X, Check } from "lucide-react";
 import toast from "@/lib/toast";
+import GroupAvatar from "./GroupAvatar";
 
-export default function GroupChatList({ onSelect, activeGroup }) {
+export default function GroupChatList({ onSelect, activeGroup, openGroupId }) {
   const [groups, setGroups] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [me, setMe] = useState(null); // To show my avatar in header
@@ -13,6 +14,8 @@ export default function GroupChatList({ onSelect, activeGroup }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const pressTimerRef = useRef(null);
   const longPressTriggeredRef = useRef(false);
+  // Ensures a deep-link (?open=<groupId>) only auto-opens once per navigation.
+  const autoOpenedRef = useRef(null);
 
   useEffect(() => {
     const load = async () => {
@@ -32,14 +35,35 @@ export default function GroupChatList({ onSelect, activeGroup }) {
     connectSocket();
   }, []);
 
-  const getColorForName = (name) => {
-    const colors = ["bg-blue-500", "bg-green-500", "bg-teal-600", "bg-teal-500", "bg-cyan-600"];
-    const index = name ? name.charCodeAt(0) % colors.length : 0;
-    return colors[index];
-  };
+  // Deep-link: when navigated to /groupchat?open=<groupId>, auto-open it.
+  useEffect(() => {
+    if (!openGroupId) return;
+    if (autoOpenedRef.current === openGroupId) return;
+
+    const match = groups.find((g) => String(g._id) === String(openGroupId));
+    if (match) {
+      autoOpenedRef.current = openGroupId;
+      onSelect(match);
+      return;
+    }
+
+    if (groups.length === 0) return; // wait for the first load to settle
+    let cancelled = false;
+    api
+      .get(`/groups/${openGroupId}`)
+      .then((res) => {
+        if (cancelled || !res.data?._id) return;
+        autoOpenedRef.current = openGroupId;
+        onSelect(res.data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [openGroupId, groups]);
 
   // Filter groups
-  const filteredGroups = groups.filter((g) =>
+  const searchedGroups = groups.filter((g) =>
     g.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -94,21 +118,83 @@ export default function GroupChatList({ onSelect, activeGroup }) {
     pressTimerRef.current = null;
   };
 
+  const renderRow = (group) => {
+    return (
+      <div
+        key={group._id}
+        onPointerDown={() => handlePointerDown(group._id)}
+        onPointerUp={clearPressTimer}
+        onPointerLeave={clearPressTimer}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          startSelect(group._id);
+        }}
+        onClick={() => {
+          if (longPressTriggeredRef.current) {
+            longPressTriggeredRef.current = false;
+            return;
+          }
+          if (selectMode) {
+            toggleSelect(group._id);
+            return;
+          }
+          onSelect(group);
+        }}
+        className={`group relative flex items-center gap-2.5 rounded-lg px-2 py-1.5 cursor-pointer transition-all duration-150 ${
+          selectedIds.includes(group._id)
+            ? "bg-gradient-to-r from-primary/15 to-primary/5 ring-1 ring-primary/25"
+            : activeGroup?._id === group._id
+            ? "bg-gradient-to-r from-primary/12 to-transparent"
+            : "hover:bg-muted/60 active:scale-[0.995]"
+        }`}
+      >
+        {selectMode && (
+          <div
+            className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition-all duration-150 ${
+              selectedIds.includes(group._id)
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-transparent"
+            }`}
+          >
+            <Check size={13} />
+          </div>
+        )}
+
+        {/* Avatar */}
+        <div className="relative shrink-0">
+          <GroupAvatar group={group} size={36} />
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <span className={`block truncate text-[13.5px] font-semibold leading-tight transition-colors ${
+            activeGroup?._id === group._id ? "text-primary" : "text-foreground"
+          }`}>
+            {group.name}
+          </span>
+          <p className="mt-0.5 text-[11.5px] text-muted-foreground truncate leading-tight">
+            {group.members?.length || 0} members
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <aside className={`flex h-full w-full flex-col border-r border-border bg-card md:w-[360px] lg:w-[410px] md:shrink-0 ${activeGroup ? "hidden md:flex" : "flex"}`}>
+    <aside className={`flex h-full w-full flex-col border-r border-border bg-card lg:w-[320px] lg:shrink-0`}>
 
       {/* Header */}
-      <div className="h-16 bg-muted/80 px-4 flex items-center justify-between shrink-0 border-b border-border">
+      <div className="h-16 px-4 flex items-center justify-between shrink-0 border-b border-border bg-card/80 backdrop-blur-xl">
         <div className="flex items-center gap-3 min-w-0">
           {me?.imageUrl ? (
-            <img src={me.imageUrl} alt="Me" className="w-10 h-10 rounded-full object-cover" />
+            <img src={me.imageUrl} alt="Me" className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/30 ring-offset-2 ring-offset-card" />
           ) : (
-            <div className="w-10 h-10 bg-muted-foreground/20 rounded-full flex items-center justify-center text-muted-foreground font-bold">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-cyan-600 rounded-full flex items-center justify-center text-white font-bold ring-2 ring-primary/20 ring-offset-2 ring-offset-card">
               {me?.name?.charAt(0) || "ME"}
             </div>
           )}
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">
+            <p className="truncate text-[15px] font-bold text-foreground tracking-tight">
               {selectMode ? `${selectedIds.length} selected` : "Group Chat"}
             </p>
             <p className="truncate text-xs text-muted-foreground">
@@ -116,42 +202,30 @@ export default function GroupChatList({ onSelect, activeGroup }) {
             </p>
           </div>
         </div>
-        {selectMode ? (
+        {selectMode && (
           <div className="flex gap-2">
             <button
               onClick={deleteSelected}
-              className="rounded-lg p-2 text-destructive transition hover:bg-destructive/10"
+              className="rounded-xl p-2 text-destructive transition-all hover:bg-destructive/10 active:scale-90"
               title="Delete selected group chats"
             >
               <Trash2 className="w-4 h-4" />
             </button>
             <button
               onClick={cancelSelect}
-              className="rounded-lg p-2 text-muted-foreground transition hover:bg-background hover:text-foreground"
+              className="rounded-xl p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-90"
               title="Cancel selection"
             >
               <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-2 text-muted-foreground">
-            <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground" title="Groups">
-              <Users className="w-4 h-4" />
-            </button>
-            <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground" title="New group chat">
-              <MessageSquarePlus className="w-4 h-4" />
-            </button>
-            <button className="rounded-lg p-2 transition hover:bg-background hover:text-foreground" title="More">
-              <MoreVertical className="w-4 h-4" />
             </button>
           </div>
         )}
       </div>
 
       {/* Search Bar */}
-      <div className="p-3 bg-card border-b border-border shrink-0">
-        <div className="flex items-center bg-muted rounded-xl px-3 py-2 border border-transparent focus-within:border-primary/40">
-          <Search className="w-4 h-4 text-muted-foreground mr-3" />
+      <div className="px-3 pt-3 shrink-0">
+        <div className="flex items-center bg-muted/80 rounded-2xl px-3.5 py-2.5 border border-transparent transition-all focus-within:border-primary/40 focus-within:bg-muted focus-within:shadow-[0_0_0_3px_rgba(8,145,178,0.08)]">
+          <Search className="w-4 h-4 text-muted-foreground mr-3 shrink-0" />
           <input
             type="text"
             placeholder="Search groups"
@@ -163,81 +237,20 @@ export default function GroupChatList({ onSelect, activeGroup }) {
       </div>
 
       {/* Group List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar bg-card">
-        {filteredGroups.map((group) => (
-          <div
-            key={group._id}
-            onPointerDown={() => handlePointerDown(group._id)}
-            onPointerUp={clearPressTimer}
-            onPointerLeave={clearPressTimer}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              startSelect(group._id);
-            }}
-            onClick={() => {
-              if (longPressTriggeredRef.current) {
-                longPressTriggeredRef.current = false;
-                return;
-              }
-              if (selectMode) {
-                toggleSelect(group._id);
-                return;
-              }
-              onSelect(group);
-            }}
-            className={`group flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-border last:border-none relative transition-colors
-              ${selectedIds.includes(group._id)
-                ? "bg-primary/10 hover:bg-primary/15"
-                : activeGroup?._id === group._id
-                ? "bg-muted"
-                : "hover:bg-muted/50"}`}
-          >
-            {selectMode && (
-              <div
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
-                  selectedIds.includes(group._id)
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border text-transparent"
-                }`}
-              >
-                <Check size={14} />
-              </div>
-            )}
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pt-1.5 pb-2 space-y-px">
+        {searchedGroups.map(renderRow)}
 
-            {/* Avatar */}
-            <div className="relative shrink-0">
-              {group.members?.[0]?.photoURL ? (
-                <img
-                  src={group.members[0].photoURL}
-                  alt={group.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              ) : (
-                <div
-                  className={`w-12 h-12 flex items-center justify-center rounded-full text-white font-bold text-lg ${getColorForName(
-                    group.name
-                  )}`}
-                >
-                  {group.name?.charAt(0)}
-                </div>
-              )}
+        {searchedGroups.length === 0 && (
+          <div className="flex flex-col items-center gap-3 px-5 py-12 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/70 text-muted-foreground/60">
+              <Search className="h-6 w-6" />
             </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <div className="flex justify-between items-baseline">
-                <span className="text-foreground font-semibold text-base truncate">
-                  {group.name}
-                </span>
-                {/* Optional: Add timestamp of last message if available in data */}
-                {/* <span className="text-xs text-muted-foreground">Yesterday</span> */}
-              </div>
-              <p className="text-sm text-muted-foreground truncate">
-                {group.members?.length || 0} members
-              </p>
+            <div>
+              <p className="text-sm font-semibold text-foreground">No groups found</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Try a different search term.</p>
             </div>
           </div>
-        ))}
+        )}
       </div>
     </aside>
   );

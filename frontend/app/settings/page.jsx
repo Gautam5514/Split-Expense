@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import Loader3D from "@/components/Loader3D";
+import PrivacySettings from "@/components/settings/PrivacySettings";
 
 const CURRENCIES = [
   { value: "USD", label: "🇺🇸 USD $" },
@@ -217,6 +218,9 @@ export default function SettingsPage() {
           </SettingsRow>
         </SettingsCard>
 
+        {/* ── Groups & Privacy ── */}
+        <PrivacySettings />
+
         {/* ── Workspace Diagnostics ── */}
         <SettingsCard icon={<Wrench size={16} className="text-slate-500" />} title="Workspace Diagnostics">
           <SettingsRow label="Export My Data">
@@ -275,7 +279,7 @@ export default function SettingsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 cursor-pointer"
             onClick={(e) => { if (e.target === e.currentTarget && !deleting) setShowDeleteModal(false); }}
           >
             <motion.div
@@ -356,7 +360,7 @@ export default function SettingsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 cursor-pointer"
             onClick={(e) => { if (e.target === e.currentTarget) setShowDeactivateModal(false); }}
           >
             <motion.div
@@ -421,9 +425,10 @@ function SettingsCard({ icon, title, children }) {
 
 function SettingsRow({ label, children }) {
   return (
-    <div className="flex items-center justify-between gap-4 px-5 py-4">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-5 py-4">
       <span className="text-sm font-medium text-foreground">{label}</span>
-      <div className="shrink-0">{children}</div>
+      {/* Wide controls drop below the label on narrow phones instead of overflowing */}
+      <div className="ml-auto max-w-full shrink-0">{children}</div>
     </div>
   );
 }

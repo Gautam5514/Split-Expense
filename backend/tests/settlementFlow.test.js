@@ -105,6 +105,45 @@ describe("requestSettlement", () => {
     );
   });
 
+  test("the creditor marking 'I received it' settles immediately, no counter-confirmation", async () => {
+    const { group, debtor, creditor } = seedGroupWithDebt(500);
+    const req = makeReq({
+      user: { id: creditor, name: "Creditor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    });
+    const res = makeRes();
+
+    await requestSettlement(req, res);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body.status).toBe("confirmed");
+    const settlementExpense = fakeExpenseModel._docs.find((e) => e.isSettlement);
+    expect(settlementExpense).toBeDefined();
+    expect(settlementExpense.amount).toBe(500);
+    expect(String(settlementExpense.paidBy)).toBe(String(debtor));
+    expect(fakeCreateNotification).toHaveBeenCalledWith(
+      [String(debtor)],
+      expect.stringContaining("received"),
+      `/groups/${group._id}`,
+      "settlement",
+      expect.objectContaining({ kind: "confirmed", amount: 500 })
+    );
+  });
+
+  test("the creditor still can't settle more than the live outstanding balance", async () => {
+    const { group, debtor, creditor } = seedGroupWithDebt(500);
+    const req = makeReq({
+      user: { id: creditor, name: "Creditor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 900 },
+    });
+    const res = makeRes();
+
+    await requestSettlement(req, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(fakeExpenseModel._docs.filter((e) => e.isSettlement)).toHaveLength(0);
+  });
+
   test("rejects a claim that exceeds the live outstanding balance", async () => {
     const { group, debtor, creditor } = seedGroupWithDebt(500);
     const req = makeReq({

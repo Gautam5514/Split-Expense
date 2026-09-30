@@ -1,72 +1,27 @@
 import User from "../models/userModel.js";
-import UserProfile from "../models/userProfileModel.js";
-import { escapeRegExp, isValidObjectId } from "../middleware/validate.js";
-/**
- * GET /api/users
- * Query params:
- *  - q: search term (matches name or email, case-insensitive)
- *  - page: page number (default 1)
- *  - limit: page size (default 50, max 200)
- */
+import { isValidEmail, isValidObjectId } from "../middleware/validate.js";
+import { searchContacts, lookupUserByEmail } from "./peopleController.js";
+import { getContactIds, maskEmail } from "../utils/contacts.js";
+
+// GET /api/users?q= - used by "new chat". Name search covers known contacts
+// only; a stranger is returned only for an exact email match (masked). It
+// used to regex-match the whole user table, which let anyone harvest emails.
 export const listUsers = async (req, res) => {
   try {
-    const rawQ = (req.query.q || "").trim();
-    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit || "50", 10), 1), 200);
+    const rawQ = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 20);
+    if (rawQ.length < 1) return res.json({ items: [], page: 1, limit, total: 0, totalPages: 0 });
+    if (rawQ.length > 100) return res.status(400).json({ message: "Search term is too long." });
 
-    const sanitizedQ = escapeRegExp(rawQ);
-    const filter = sanitizedQ
-      ? {
-          $or: [
-            { email: new RegExp(sanitizedQ, "i") },
-            { name: new RegExp(sanitizedQ, "i") },
-          ],
-        }
-      : {};
-
-    // 🧩 Fetch base users
-    const users = await User.find(filter, "name email photoURL createdAt")
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean();
-
-    // 🧩 Collect user IDs without Google photoURL
-    const userIds = users
-      .filter(u => !u.photoURL)
-      .map(u => u._id);
-
-    // 🧩 Fetch profile images for those users
-    const profiles = await UserProfile.find(
-      { userId: { $in: userIds } },
-      "userId profileImage.url"
-    ).lean();
-
-    const profileMap = {};
-    profiles.forEach(p => {
-      profileMap[p.userId.toString()] = p.profileImage?.url || null;
-    });
-
-    // 🧩 Merge image URLs
-    const items = users.map(u => ({
-      _id: u._id,
-      name: u.name,
-      email: u.email,
-      createdAt: u.createdAt,
-      imageUrl: u.photoURL || profileMap[u._id.toString()] || null, // ✅ unified image
-    }));
-
-    const total = await User.countDocuments(filter);
-
-    res.json({
-      items,
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    });
+    const uid = req.user?.id;
+    const contacts = await searchContacts(uid, { q: rawQ, limit });
+    const items = contacts.map((u) => ({ _id: u._id, name: u.name, email: u.email, imageUrl: u.photoURL, isContact: true }));
+    if (isValidEmail(rawQ) && !items.some((u) => u.email?.toLowerCase() === rawQ.toLowerCase())) {
+      const found = await lookupUserByEmail(uid, rawQ);
+      if (found) items.unshift({ _id: found._id, name: found.name, email: found.email, imageUrl: found.photoURL, isContact: found.isContact });
+    }
+    res.json({ items, page: 1, limit, total: items.length, totalPages: items.length ? 1 : 0 });
   } catch (err) {
-    console.error("listUsers error:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -100,6 +55,11 @@ export const getUserById = async (req, res) => {
     if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid user ID" });
     const user = await User.findById(id, "name email createdAt").lean();
     if (!user) return res.status(404).json({ message: "User not found" });
+    // Full email only for yourself and people you already know.
+    if (String(id) !== String(req.user?.id)) {
+      const contacts = await getContactIds(req.user?.id);
+      if (!contacts.has(String(id))) user.email = maskEmail(user.email);
+    }
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });

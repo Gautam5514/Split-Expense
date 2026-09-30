@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { buildAllowedOrigins, makeCorsOriginCallback } from "../utils/corsConfig.js";
 import { canRelayToRoom } from "../utils/socketGuards.js";
+import { generateInviteCode, isShortInviteCode, normalizeInviteCode } from "../utils/inviteCode.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.resolve(__dirname, "..");
@@ -46,30 +47,37 @@ describe("CORS (allow-all)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// FIX #4 — invite-code entropy: 128-bit (16 random bytes -> 32 hex chars)
+// FIX #4 — invite codes: short (6 chars) but from a crypto RNG
 // ---------------------------------------------------------------------------
-describe("invite-code entropy", () => {
-  test("crypto.randomBytes(16).toString('hex') yields a 32-char 128-bit code", () => {
-    const code = crypto.randomBytes(16).toString("hex");
-    expect(code).toHaveLength(32);
-    expect(code).toMatch(/^[0-9a-f]{32}$/);
-  });
-
-  test("generated codes are unique across many draws (sanity on randomness)", () => {
-    const seen = new Set();
-    for (let i = 0; i < 10000; i++) seen.add(crypto.randomBytes(16).toString("hex"));
-    expect(seen.size).toBe(10000);
-  });
-
-  test("groupController generates invite codes with randomBytes(16), not the old 4 bytes", () => {
-    const src = fs.readFileSync(path.join(backendRoot, "controllers", "groupController.js"), "utf8");
-    const matches = src.match(/inviteCode\s*=\s*crypto\.randomBytes\((\d+)\)/g) || [];
-    // Both generation spots must be present and both must use 16 bytes.
-    expect(matches.length).toBe(2);
-    for (const m of matches) {
-      expect(m).toMatch(/randomBytes\(16\)/);
-      expect(m).not.toMatch(/randomBytes\(4\)/);
+describe("invite codes", () => {
+  test("6 characters from the look-alike-free alphabet", () => {
+    for (let i = 0; i < 1000; i++) {
+      const code = generateInviteCode();
+      expect(code).toHaveLength(6);
+      expect(isShortInviteCode(code)).toBe(true);
+      expect(code).not.toMatch(/[01ILO]/);
     }
+  });
+
+  test("codes are well spread (no collisions in 10k draws)", () => {
+    const seen = new Set();
+    for (let i = 0; i < 10000; i++) seen.add(generateInviteCode());
+    expect(seen.size).toBeGreaterThan(9990);
+  });
+
+  test("uses crypto.randomInt, never Math.random", () => {
+    const src = fs.readFileSync(path.join(backendRoot, "utils", "inviteCode.js"), "utf8");
+    expect(src).toMatch(/crypto\.randomInt/);
+    expect(src).not.toMatch(/Math\.random/);
+    const ctrl = fs.readFileSync(path.join(backendRoot, "controllers", "groupController.js"), "utf8");
+    expect(ctrl).toMatch(/inviteCode = await uniqueInviteCode\(\)/);
+  });
+
+  test("typed codes are normalised; old long codes pass through", () => {
+    expect(normalizeInviteCode(" k7m-2qx ")).toBe("K7M2QX");
+    expect(normalizeInviteCode("k7m 2qx")).toBe("K7M2QX");
+    const legacy = "7f39dc25c3109b3bc1446ae89ba181e1";
+    expect(normalizeInviteCode(legacy)).toBe(legacy);
   });
 });
 

@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Inter, Satisfy, Bricolage_Grotesque } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
@@ -9,14 +9,35 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import CustomCursor from "@/components/CustomCursor";
 import InstallPrompt from "@/components/InstallPrompt";
-import GlassThemeGate from "@/components/GlassThemeGate";
+import AppThemeGate from "@/components/AppThemeGate";
+import AppFontGate from "@/components/AppFontGate";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ChromeGate from "@/components/ChromeGate";
+import AppSidebar from "@/components/AppSidebar";
+import DesktopAppNavbar from "@/components/DesktopAppNavbar";
+import { SidebarProvider } from "@/context/SidebarContext";
 
 const inter = Inter({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800", "900"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+// Cursive display font used for the user's greeting name.
+const satisfy = Satisfy({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-satisfy",
+  display: "swap",
+});
+
+// Bold/heading font for every logged-in app surface (see .app-shell in
+// globals.css) - kept off the logged-out landing page entirely.
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
+  variable: "--font-bricolage",
   display: "swap",
 });
 
@@ -161,7 +182,7 @@ export default function RootLayout({ children }) {
   };
 
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${satisfy.variable} ${bricolage.variable}`}>
       <head>
         {/* theme-color matches manifest.json theme_color exactly */}
         <meta name="theme-color" content="#0891B2" />
@@ -175,16 +196,20 @@ export default function RootLayout({ children }) {
         {/* Inline script to apply dark/light class before first paint - prevents flash */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&d)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&d)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}if(localStorage.getItem('appMono')==='1'){document.documentElement.classList.add('app-mono');}}catch(e){}})();`,
           }}
         />
         <ErrorBoundary>
           <ThemeProvider>
             <AuthProvider>
               <NotificationProvider>
-                <GlassThemeGate />
+                <SidebarProvider>
+                <AppThemeGate />
+                <AppFontGate />
                 <ChromeGate>
                   <Navbar />
+                  <AppSidebar />
+                  <DesktopAppNavbar />
                 </ChromeGate>
                 <Toaster
                   position="top-right"
@@ -214,6 +239,7 @@ export default function RootLayout({ children }) {
                   <CustomCursor />
                   <InstallPrompt />
                 </ChromeGate>
+                </SidebarProvider>
               </NotificationProvider>
             </AuthProvider>
           </ThemeProvider>

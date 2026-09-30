@@ -30,7 +30,7 @@ export default function PurchaseModal({ item, balance, busy, onConfirm, onCancel
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !busy && onCancel()}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer"
           />
 
           {/* Card */}

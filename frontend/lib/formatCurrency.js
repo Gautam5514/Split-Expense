@@ -29,3 +29,21 @@ export function formatSignedCurrency(amount) {
   const n = Number(amount);
   return signedFormatter.format(Number.isFinite(n) ? n : 0);
 }
+
+// Currency-aware variant for groups that don't use INR (e.g. a Trip kept in
+// THB). Falls back to formatCurrency for INR / unknown codes.
+const moneyFormatters = new Map();
+export function formatMoney(amount, currency = "INR") {
+  if (!currency || currency === "INR") return formatCurrency(amount);
+  let f = moneyFormatters.get(currency);
+  if (!f) {
+    try {
+      f = new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 2 });
+    } catch {
+      return formatCurrency(amount);
+    }
+    moneyFormatters.set(currency, f);
+  }
+  const n = Number(amount);
+  return f.format(Number.isFinite(n) ? n : 0);
+}

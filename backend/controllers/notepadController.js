@@ -1,6 +1,6 @@
 import Notepad from "../models/notepadModel.js";
 import Group from "../models/groupModel.js";
-import { isValidObjectId } from "../middleware/validate.js";
+import { isValidObjectId, optionalString } from "../middleware/validate.js";
 
 const isGroupMember = (group, userId) =>
   (group?.members || []).some((m) => String(m) === String(userId));
@@ -13,7 +13,7 @@ export const createNotepad = async (req, res) => {
 
     if (!groupId || !isValidObjectId(groupId))
       return res.status(400).json({ field: "groupId", message: "A valid group is required." });
-    if (!title?.trim())
+    if (typeof title !== "string" || !title.trim())
       return res.status(400).json({ field: "title", message: "Notepad title is required." });
     if (title.trim().length < 2)
       return res.status(400).json({ field: "title", message: "Title must be at least 2 characters." });
@@ -26,7 +26,7 @@ export const createNotepad = async (req, res) => {
       return res.status(403).json({ message: "Not authorized for this group" });
     }
 
-    const notepad = await Notepad.create({ groupId, title, createdBy: userId });
+    const notepad = await Notepad.create({ groupId, title: title.trim(), createdBy: userId });
     res.status(201).json(notepad);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -63,10 +63,16 @@ export const addStep = async (req, res) => {
 
     if (!notepadId || !isValidObjectId(notepadId))
       return res.status(400).json({ message: "Invalid notepad ID" });
-    if (!title?.trim())
+    if (typeof title !== "string" || !title.trim())
       return res.status(400).json({ field: "title", message: "Step title is required." });
     if (title.trim().length > 200)
       return res.status(400).json({ field: "title", message: "Step title must be under 200 characters." });
+    const notesCheck = optionalString(notes, 20000);
+    if (!notesCheck.ok)
+      return res.status(400).json({ field: "notes", message: "Notes must be under 20000 characters." });
+    const dateCheck = optionalString(date, 100);
+    if (!dateCheck.ok)
+      return res.status(400).json({ field: "date", message: "Invalid date." });
 
     const notepad = await Notepad.findById(notepadId);
     if (!notepad) return res.status(404).json({ message: "Notepad not found" });
@@ -77,7 +83,10 @@ export const addStep = async (req, res) => {
       return res.status(403).json({ message: "Not authorized for this group" });
     }
 
-    notepad.steps.push({ title, notes, date, createdBy: userId });
+    if (notepad.steps.length >= 2000)
+      return res.status(400).json({ message: "This notepad has reached its step limit." });
+
+    notepad.steps.push({ title: title.trim(), notes: notesCheck.value, date: dateCheck.value, createdBy: userId });
     await notepad.save();
 
     res.status(201).json(notepad);
@@ -106,7 +115,22 @@ export const reorderSteps = async (req, res) => {
       return res.status(403).json({ message: "Not authorized for this group" });
     }
 
-    notepad.steps = steps;
+    // Reorder ONLY. The body used to replace the steps array wholesale, so any
+    // member could rewrite other people's steps, forge `createdBy`, or inject
+    // unbounded data. Now the client sends the existing step ids (or step
+    // objects with `_id`) in the new order and must include each exactly once.
+    const orderedIds = steps.map((st) => String(st?._id ?? st));
+    const byId = new Map(notepad.steps.map((st) => [String(st._id), st]));
+    const unique = new Set(orderedIds);
+    if (
+      orderedIds.length !== notepad.steps.length ||
+      unique.size !== orderedIds.length ||
+      !orderedIds.every((id) => byId.has(id))
+    ) {
+      return res.status(400).json({ message: "Steps must be a reordering of the existing steps." });
+    }
+
+    notepad.steps = orderedIds.map((id) => byId.get(id));
     await notepad.save();
 
     res.json({ message: "Reordered successfully", notepad });

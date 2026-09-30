@@ -1,6 +1,6 @@
 import JobPosting from "../models/jobPostingModel.js";
 import JobApplication from "../models/jobApplicationModel.js";
-import { isValidEmail, isValidObjectId } from "../middleware/validate.js";
+import { isValidEmail, isValidObjectId, isHttpUrl, normalizeEmail, optionalString } from "../middleware/validate.js";
 
 // -------------------- PUBLIC --------------------
 export const listOpenJobs = async (req, res) => {
@@ -32,21 +32,38 @@ export const applyToJob = async (req, res) => {
     const job = await JobPosting.findOne({ _id: id, status: "open" });
     if (!job) return res.status(404).json({ message: "This role is no longer accepting applications." });
 
-    const { name, email, phone, resumeLink, coverNote } = req.body;
-    if (!name?.trim() || name.trim().length < 2)
+    const { name, email, resumeLink } = req.body;
+    if (typeof name !== "string" || name.trim().length < 2)
       return res.status(400).json({ field: "name", message: "Name must be at least 2 characters." });
-    if (!isValidEmail(email))
+    if (name.trim().length > 200)
+      return res.status(400).json({ field: "name", message: "Name must be under 200 characters." });
+    const normalizedEmail = normalizeEmail(email);
+    if (!isValidEmail(normalizedEmail) || normalizedEmail.length > 254)
       return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
-    if (!resumeLink?.trim())
+    const phone = optionalString(req.body.phone, 50);
+    if (!phone.ok)
+      return res.status(400).json({ field: "phone", message: "Phone number looks too long." });
+    if (typeof resumeLink !== "string" || !resumeLink.trim())
       return res.status(400).json({ field: "resumeLink", message: "Add a link to your resume or portfolio." });
+    // The admin panel renders this as <a href>. A `javascript:` (or `data:`)
+    // value would execute in the admin's session when clicked - stored XSS
+    // against the most privileged account - so only http(s) links are allowed.
+    // Bare "linkedin.com/in/x" is fine - assume https when no scheme is given.
+    const rawLink = resumeLink.trim();
+    const link = /^[a-z][a-z0-9+.-]*:/i.test(rawLink) ? rawLink : `https://${rawLink}`;
+    if (!isHttpUrl(link))
+      return res.status(400).json({ field: "resumeLink", message: "Please enter a valid http(s) link." });
+    const coverNote = optionalString(req.body.coverNote, 20000);
+    if (!coverNote.ok)
+      return res.status(400).json({ field: "coverNote", message: "Cover note must be under 20000 characters." });
 
     const application = await JobApplication.create({
       job: job._id,
       name: name.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone?.trim() || "",
-      resumeLink: resumeLink.trim(),
-      coverNote: coverNote?.trim() || "",
+      email: normalizedEmail,
+      phone: phone.value,
+      resumeLink: link,
+      coverNote: coverNote.value,
     });
 
     res.status(201).json({ id: application._id });

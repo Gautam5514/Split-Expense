@@ -1,12 +1,54 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import User from "../models/userModel.js";
+import { stripPrivateUserFields } from "../utils/userPrivacy.js";
 import SignupOtp from "../models/signupOtpModel.js";
 import admin from "../config/firebaseAdmin.js";
-import { isValidEmail, validatePassword } from "../middleware/validate.js";
+import { isValidEmail, validatePassword, normalizeEmail, escapeHtml } from "../middleware/validate.js";
 import { sendEmail } from "../utils/emailService.js";
 import { findOrCreateUser, attributeReferral, recordActiveDay } from "../utils/referralService.js";
 import { ATTRIBUTION_WINDOW_HOURS } from "../config/referralConfig.js";
+
+const OTP_MAX_ATTEMPTS = 5;
+const sha256 = (value) => crypto.createHash("sha256").update(String(value)).digest("hex");
+
+// Constant-time comparison of two hex digests, so response timing can't leak
+// how many leading characters of a guessed code/token matched.
+const safeEqualHex = (a, b) => {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"));
+};
+
+// OTP codes must be exactly 6 digits. Anything else (objects, arrays, long
+// strings) is rejected before hashing so it can't crash the handler.
+const normalizeOtp = (otp) => {
+  if (typeof otp !== "string" && typeof otp !== "number") return null;
+  const code = String(otp).trim();
+  return /^\d{6}$/.test(code) ? code : null;
+};
+
+// Used to equalize bcrypt timing when the account doesn't exist, so response
+// latency can't be used to discover which emails are registered.
+const DUMMY_BCRYPT_HASH = bcrypt.hashSync("timing-equalizer-not-a-real-password", 10);
+
+// Emails are stored lower-cased, but a few legacy/seeded accounts may have
+// been saved with their original casing. Match either form so normalizing the
+// input can never lock an existing account out.
+const emailVariants = (raw) => {
+  if (typeof raw !== "string") return [];
+  const trimmed = raw.trim();
+  return [...new Set([trimmed.toLowerCase(), trimmed])].filter(Boolean);
+};
+const emailFilter = (raw) => ({ email: { $in: emailVariants(raw) } });
+
+// Password length caps. bcrypt only reads the first 72 bytes anyway; these
+// just stop absurd payloads. The login cap is generous so no existing
+// password can ever be refused; new passwords get a (still generous) 256.
+const MAX_LOGIN_PASSWORD = 1024;
+const MAX_NEW_PASSWORD = 256;
+
+const frontendOrigin = () =>
+  (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim();
 
 
 // NOTE: the old `register` handler was removed. It created a fully working
@@ -44,7 +86,7 @@ const buildSignupOtpEmail = ({ name, otp, frontendUrl }) => {
         </tr>
         <tr>
           <td style="padding:40px 40px 32px;">
-            <p style="margin:0 0 8px;font-size:15px;color:#94a3b8;">Hi <strong style="color:#e2e8f0;">${name || "there"}</strong>,</p>
+            <p style="margin:0 0 8px;font-size:15px;color:#94a3b8;">Hi <strong style="color:#e2e8f0;">${escapeHtml(name || "there")}</strong>,</p>
             <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.7;">
               Welcome to SplitEase! Enter the code below to verify your email and finish creating your account. This code expires in <strong style="color:#e2e8f0;">10 minutes</strong>.
             </p>
@@ -87,6 +129,10 @@ export const sendSignupOtp = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    if (typeof name !== "string" || typeof email !== "string" || typeof password !== "string")
+      return res.status(400).json({ message: "Name, email and password are required." });
+    if (password.length > MAX_NEW_PASSWORD)
+      return res.status(400).json({ field: "password", message: "Password is too long." });
     if (!name?.trim() || name.trim().length < 2)
       return res.status(400).json({ field: "name", message: "Name must be at least 2 characters." });
     if (name.trim().length > 100)
@@ -98,7 +144,7 @@ export const sendSignupOtp = async (req, res) => {
     const pwErr = validatePassword(password);
     if (pwErr) return res.status(400).json({ field: "password", message: pwErr });
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
 
     // Reject duplicates up front - in Mongo and in Firebase.
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -142,7 +188,7 @@ export const sendSignupOtp = async (req, res) => {
     }
 
     const otp = crypto.randomInt(100000, 1000000).toString();
-    const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+    const otpHash = sha256(otp);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await SignupOtp.findOneAndUpdate(
@@ -151,7 +197,7 @@ export const sendSignupOtp = async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim();
+    const frontendUrl = frontendOrigin();
     await sendEmail({
       to: normalizedEmail,
       subject: "Verify your email for SplitEase",
@@ -175,14 +221,15 @@ export const sendSignupOtp = async (req, res) => {
     if (isQuota) {
       // Roll back the stored code so a later retry (after the limit resets or a
       // new provider is configured) can re-send cleanly.
-      const em = req.body?.email?.trim?.().toLowerCase();
+      const em = normalizeEmail(req.body?.email);
       if (em) await SignupOtp.deleteOne({ email: em }).catch(() => {});
       return res.status(503).json({
         message: "Email service is temporarily unavailable (daily sending limit reached). Please try again later.",
+        expose: true,
       });
     }
 
-    res.status(500).json({ message: "We couldn't send the verification email. Please try again in a moment." });
+    res.status(500).json({ message: "We couldn't send the verification email. Please try again in a moment.", expose: true });
   }
 };
 
@@ -190,31 +237,41 @@ export const sendSignupOtp = async (req, res) => {
 export const verifySignupOtp = async (req, res) => {
   try {
     const { email, otp, password, referralCode } = req.body;
-    if (!email || !otp)
+    const normalizedEmail = normalizeEmail(email);
+    const code = normalizeOtp(otp);
+    if (!normalizedEmail || !otp)
       return res.status(400).json({ message: "Email and code are required." });
+    if (typeof password !== "string" || password.length > MAX_NEW_PASSWORD)
+      return res.status(400).json({ field: "password", message: "Please enter a valid password." });
     const pwErr = validatePassword(password);
     if (pwErr) return res.status(400).json({ field: "password", message: pwErr });
+    if (!code)
+      return res.status(400).json({ message: "Incorrect code. Please try again." });
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const record = await SignupOtp.findOne({ email: normalizedEmail });
+    // Atomically claim one attempt BEFORE comparing. A read-then-save counter
+    // lets N parallel requests all see attempts=0 and each get a free guess,
+    // so the 5-attempt cap could be bypassed by firing guesses concurrently.
+    const record = await SignupOtp.findOneAndUpdate(
+      { email: normalizedEmail, attempts: { $lt: OTP_MAX_ATTEMPTS } },
+      { $inc: { attempts: 1 } },
+      { new: true }
+    );
 
-    if (!record)
+    if (!record) {
+      const exists = await SignupOtp.exists({ email: normalizedEmail });
+      if (exists) {
+        await SignupOtp.deleteOne({ email: normalizedEmail });
+        return res.status(429).json({ message: "Too many incorrect attempts. Please request a new code." });
+      }
       return res.status(400).json({ message: "No code found. Please request a new one." });
+    }
 
     if (Date.now() > record.expiresAt.getTime()) {
       await SignupOtp.deleteOne({ _id: record._id });
       return res.status(400).json({ message: "This code has expired. Please request a new one." });
     }
 
-    if (record.attempts >= 5) {
-      await SignupOtp.deleteOne({ _id: record._id });
-      return res.status(429).json({ message: "Too many incorrect attempts. Please request a new code." });
-    }
-
-    const hashedOtp = crypto.createHash("sha256").update(otp.trim()).digest("hex");
-    if (hashedOtp !== record.otpHash) {
-      record.attempts += 1;
-      await record.save();
+    if (!safeEqualHex(sha256(code), record.otpHash)) {
       return res.status(400).json({ message: "Incorrect code. Please try again." });
     }
 
@@ -269,35 +326,49 @@ export const verifySignupOtp = async (req, res) => {
     // ever having created it itself.
     const customToken = await admin.auth().createCustomToken(fbUser.uid);
 
-    res.status(201).json({ verified: true, customToken, user });
+    res.status(201).json({ verified: true, customToken, user: publicUser(user) });
   } catch (err) {
     console.error("Verify Signup OTP Error:", err);
-    res.status(500).json({ message: "We couldn't finish creating your account. Please try again." });
+    res.status(500).json({ message: "We couldn't finish creating your account. Please try again.", expose: true });
   }
+};
+
+// Same user shape the auth endpoints always returned, minus credential and
+// device fields. (The User schema also strips these in toJSON; this is defense
+// in depth that works for plain/lean objects too.)
+const publicUser = (user) => {
+  if (!user) return null;
+  const obj = typeof user.toJSON === "function" ? user.toJSON() : { ...user };
+  return stripPrivateUserFields(obj);
 };
 
 // -------------------- EMAIL + PASSWORD LOGIN --------------------
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = normalizeEmail(req.body.email);
 
     if (!isValidEmail(email))
       return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
-    if (!password)
+    if (typeof password !== "string" || !password)
       return res.status(400).json({ field: "password", message: "Password is required." });
+    if (password.length > MAX_LOGIN_PASSWORD)
+      return res.status(400).json({ message: "Invalid email or password." });
 
-    const user = await User.findOne({ email });
-    if (!user)
-      return res.status(400).json({ message: "User not found" });
+    const user = await User.findOne(emailFilter(req.body.email));
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid credentials" });
+    // Always run bcrypt (against a dummy hash when there's no account/password)
+    // and return one uniform message - otherwise both the text and the timing
+    // of the response reveal which emails are registered.
+    const isMatch = await bcrypt.compare(password, user?.password || DUMMY_BCRYPT_HASH);
+    if (!user || !user.password || !isMatch)
+      return res.status(400).json({ message: "Invalid email or password." });
 
     // No JWT - client authenticates via Firebase ID token.
-    res.status(200).json({ user });
+    res.status(200).json({ user: publicUser(user) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Login Error:", err.message);
+    res.status(500).json({ message: "Login failed. Please try again.", expose: true });
   }
 };
 
@@ -305,7 +376,17 @@ export const login = async (req, res) => {
 export const googleLogin = async (req, res) => {
   try {
     const { token, referralCode } = req.body;
-    const decoded = await admin.auth().verifyIdToken(token);
+    if (typeof token !== "string" || !token)
+      return res.status(401).json({ message: "Invalid or expired token. Please sign in again." });
+
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(token);
+    } catch {
+      return res.status(401).json({ message: "Invalid or expired token. Please sign in again." });
+    }
+    if (!decoded.email)
+      return res.status(401).json({ message: "Token missing email claim." });
     const { uid, email, name, picture, email_verified: emailVerified } = decoded;
 
     // Atomic upsert - prevents duplicate user creation under concurrent requests.
@@ -341,29 +422,29 @@ export const googleLogin = async (req, res) => {
 
     await recordActiveDay(user);
 
-    res.status(200).json({ user });
+    res.status(200).json({ user: publicUser(user) });
   } catch (err) {
     console.error("Google Login Error:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Sign-in failed. Please try again.", expose: true });
   }
 };
 
 // -------------------- SEND LOGIN OTP --------------------
 export const sendLoginOtp = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = normalizeEmail(req.body.email);
 
     if (!isValidEmail(email))
       return res.status(400).json({ field: "email", message: "Please enter a valid email address." });
-    if (!password)
+    if (typeof password !== "string" || !password)
       return res.status(400).json({ field: "password", message: "Password is required." });
-
-    const user = await User.findOne({ email });
-    if (!user || !user.password)
+    if (password.length > MAX_LOGIN_PASSWORD)
       return res.status(400).json({ message: "Invalid email or password." });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
+    const user = await User.findOne(emailFilter(req.body.email));
+    const isMatch = await bcrypt.compare(password, user?.password || DUMMY_BCRYPT_HASH);
+    if (!user || !user.password || !isMatch)
       return res.status(400).json({ message: "Invalid email or password." });
 
     // This is deliberately a per-user database setting. It lets explicitly
@@ -385,18 +466,18 @@ export const sendLoginOtp = async (req, res) => {
       return res.status(429).json({ message: "An OTP was just sent. Please wait a moment before requesting another." });
 
     const otp = crypto.randomInt(100000, 1000000).toString();
-    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+    const hashedOtp = sha256(otp);
 
     user.loginOtp = hashedOtp;
     user.loginOtpExpires = Date.now() + 10 * 60 * 1000;
     user.loginOtpAttempts = 0;
     await user.save();
 
-    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0];
+    const frontendUrl = frontendOrigin();
     const logoUrl = `${frontendUrl}/logo-icon.png`;
 
     await sendEmail({
-      to: email,
+      to: user.email,
       subject: "Your SplitEase Login Verification Code",
       html: `
 <!DOCTYPE html>
@@ -427,7 +508,7 @@ export const sendLoginOtp = async (req, res) => {
         <!-- Body -->
         <tr>
           <td style="padding:40px 40px 32px;">
-            <p style="margin:0 0 8px;font-size:15px;color:#94a3b8;">Hi <strong style="color:#e2e8f0;">${user.name}</strong>,</p>
+            <p style="margin:0 0 8px;font-size:15px;color:#94a3b8;">Hi <strong style="color:#e2e8f0;">${escapeHtml(user.name)}</strong>,</p>
             <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.7;">
               Use the verification code below to complete your login to SplitEase. This code expires in <strong style="color:#e2e8f0;">10 minutes</strong>.
             </p>
@@ -478,88 +559,103 @@ export const sendLoginOtp = async (req, res) => {
     });
   } catch (err) {
     console.error("Send Login OTP Error:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "We couldn't send the verification code. Please try again.", expose: true });
   }
 };
 
 // -------------------- VERIFY LOGIN OTP --------------------
 export const verifyLoginOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const code = normalizeOtp(req.body.otp);
 
-    if (!email || !otp)
+    if (!email || req.body.otp === undefined || req.body.otp === null || req.body.otp === "")
       return res.status(400).json({ message: "Email and OTP are required." });
 
-    const user = await User.findOne({ email });
-    if (!user)
-      return res.status(400).json({ message: "User not found." });
+    // One generic message for "no such user" and "no pending code" so this
+    // endpoint can't be used to probe which emails are registered.
+    const NO_OTP = "No OTP found. Please start the login process again.";
 
-    if (!user.loginOtp || !user.loginOtpExpires)
-      return res.status(400).json({ message: "No OTP found. Please start the login process again." });
+    // Atomically reserve an attempt before comparing (see verifySignupOtp):
+    // parallel guesses can no longer each read attempts=0 and bypass the cap.
+    const user = await User.findOneAndUpdate(
+      {
+        ...emailFilter(req.body.email),
+        loginOtp: { $ne: null },
+        loginOtpExpires: { $gt: new Date() },
+        loginOtpAttempts: { $lt: OTP_MAX_ATTEMPTS },
+      },
+      { $inc: { loginOtpAttempts: 1 } },
+      { new: true }
+    );
 
-    if (Date.now() > user.loginOtpExpires) {
-      user.loginOtp = null;
-      user.loginOtpExpires = null;
-      user.loginOtpAttempts = 0;
-      await user.save();
+    if (!user) {
+      // Distinguish "locked out"/"expired" for real pending codes, and wipe
+      // them so the user must request a fresh one.
+      const pending = await User.findOne({ ...emailFilter(req.body.email), loginOtp: { $ne: null } })
+        .select("loginOtpExpires loginOtpAttempts");
+      if (!pending) return res.status(400).json({ message: NO_OTP });
+      await User.updateOne(
+        { _id: pending._id },
+        { $set: { loginOtp: null, loginOtpExpires: null, loginOtpAttempts: 0 } }
+      );
+      if ((pending.loginOtpAttempts || 0) >= OTP_MAX_ATTEMPTS)
+        return res.status(429).json({ message: "Too many incorrect attempts. Please request a new code." });
       return res.status(400).json({ message: "OTP has expired. Please request a new one." });
     }
 
-    if ((user.loginOtpAttempts || 0) >= 5) {
-      user.loginOtp = null;
-      user.loginOtpExpires = null;
-      user.loginOtpAttempts = 0;
-      await user.save();
-      return res.status(429).json({ message: "Too many incorrect attempts. Please request a new code." });
-    }
-
-    const hashedOtp = crypto.createHash("sha256").update(otp.trim()).digest("hex");
-    if (hashedOtp !== user.loginOtp) {
-      user.loginOtpAttempts = (user.loginOtpAttempts || 0) + 1;
-      await user.save();
+    if (!code || !safeEqualHex(sha256(code), user.loginOtp)) {
       return res.status(400).json({ message: "Incorrect OTP. Please try again." });
     }
 
-    user.loginOtp = null;
-    user.loginOtpExpires = null;
-    user.loginOtpAttempts = 0;
-    await user.save();
+    // Single-use: clear it only if it's still the code we just matched.
+    await User.updateOne(
+      { _id: user._id, loginOtp: user.loginOtp },
+      { $set: { loginOtp: null, loginOtpExpires: null, loginOtpAttempts: 0 } }
+    );
 
     res.status(200).json({ message: "OTP verified. Proceed with login." });
   } catch (err) {
     console.error("Verify Login OTP Error:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Verification failed. Please try again.", expose: true });
   }
 };
 
 // -------------------- FORGOT PASSWORD --------------------
 export const forgotPassword = async (req, res) => {
+  const GENERIC = { message: "If this email exists, a reset link has been sent." };
   try {
-    const { email } = req.body;
-    if (!email?.trim())
+    const email = normalizeEmail(req.body.email);
+    if (!email)
       return res.status(400).json({ field: "forgotEmail", message: "Email address is required." });
     if (!isValidEmail(email))
       return res.status(400).json({ field: "forgotEmail", message: "Please enter a valid email address." });
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne(emailFilter(req.body.email));
 
     // Always return the same response to avoid leaking whether email exists
-    if (!user) {
-      return res.status(200).json({ message: "If this email exists, a reset link has been sent." });
+    if (!user) return res.status(200).json(GENERIC);
+
+    // Per-account throttle: at most one reset email per minute. IP rate
+    // limits alone don't stop an attacker rotating IPs from flooding a
+    // victim's inbox. Silent - same generic response either way.
+    const RESET_TTL_MS = 15 * 60 * 1000;
+    if (user.resetPasswordExpires && user.resetPasswordExpires.getTime() - Date.now() > RESET_TTL_MS - 60 * 1000) {
+      return res.status(200).json(GENERIC);
     }
 
     const rawToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const hashedToken = sha256(rawToken);
 
     user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+    user.resetPasswordExpires = Date.now() + RESET_TTL_MS; // 15 minutes
     await user.save();
 
-    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0];
+    const frontendUrl = frontendOrigin();
     const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
     await sendEmail({
-      to: email,
+      to: user.email,
       subject: "Reset your SplitEase password",
       html: `
         <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0d0d18;color:#e2e8f0;border-radius:16px;overflow:hidden;">
@@ -568,7 +664,7 @@ export const forgotPassword = async (req, res) => {
             <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.75);">Password Reset Request</p>
           </div>
           <div style="padding:32px;">
-            <p style="margin:0 0 16px;font-size:15px;color:#cbd5e1;">Hi ${user.name},</p>
+            <p style="margin:0 0 16px;font-size:15px;color:#cbd5e1;">Hi ${escapeHtml(user.name)},</p>
             <p style="margin:0 0 24px;font-size:14px;color:#94a3b8;line-height:1.6;">
               We received a request to reset your SplitEase password. Click the button below - this link expires in <strong style="color:#e2e8f0;">15 minutes</strong>.
             </p>
@@ -585,10 +681,10 @@ export const forgotPassword = async (req, res) => {
       `,
     });
 
-    res.status(200).json({ message: "If this email exists, a reset link has been sent." });
+    res.status(200).json(GENERIC);
   } catch (err) {
     console.error("Forgot Password Error:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "We couldn't send the reset email. Please try again in a moment.", expose: true });
   }
 };
 
@@ -596,12 +692,14 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-    if (!token)
-      return res.status(400).json({ message: "Reset token is required." });
+    if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token))
+      return res.status(400).json({ message: "Password reset token is invalid or has expired." });
+    if (typeof password !== "string" || password.length > MAX_NEW_PASSWORD)
+      return res.status(400).json({ field: "password", message: "Please enter a valid password." });
     const pwErr = validatePassword(password);
     if (pwErr) return res.status(400).json({ field: "password", message: pwErr });
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const hashedToken = sha256(token.toLowerCase());
 
     const user = await User.findOne({
       resetPasswordToken: hashedToken,
@@ -617,6 +715,10 @@ export const resetPassword = async (req, res) => {
     user.password = hashedPassword;
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
+    // Any in-flight login OTP belongs to the old credentials.
+    user.loginOtp = null;
+    user.loginOtpExpires = null;
+    user.loginOtpAttempts = 0;
     await user.save();
 
     // Synchronize with Firebase Auth if firebaseUid is present
@@ -625,7 +727,11 @@ export const resetPassword = async (req, res) => {
         await admin.auth().updateUser(user.firebaseUid, {
           password: password,
         });
-        console.log(`✅ Synced password update to Firebase for UID: ${user.firebaseUid}`);
+        // Sign out every existing session. If the reset was triggered because
+        // the account was compromised, the attacker's refresh token must stop
+        // working now, not whenever they next choose to log out.
+        await admin.auth().revokeRefreshTokens(user.firebaseUid);
+        console.log(`✅ Synced password update + revoked sessions for UID: ${user.firebaseUid}`);
       } catch (fbErr) {
         console.error("⚠️ Failed to update password in Firebase Auth:", fbErr.message);
       }
@@ -634,6 +740,6 @@ export const resetPassword = async (req, res) => {
     res.status(200).json({ message: "Password has been successfully reset!" });
   } catch (err) {
     console.error("Reset Password Error:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Something went wrong. Please try again.", expose: true });
   }
 };

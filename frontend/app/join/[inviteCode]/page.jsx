@@ -58,6 +58,11 @@ export default function JoinGroupPage() {
       try {
         const res = await api.post(`/groups/join/${inviteCode}`);
         const groupId = res.data?.group?._id;
+        // Groups with "approve joins" on: a request was filed instead.
+        if (res.status === 202 || res.data?.pending) {
+          setStatus("requested");
+          return;
+        }
         setStatus("success");
         setTimeout(() => router.replace(groupId ? `/groups/${groupId}` : "/dashboard"), 1800);
       } catch (err) {
@@ -84,8 +89,10 @@ export default function JoinGroupPage() {
         }
 
         setErrorMsg(
-          httpStatus === 404
-            ? "This invite link is invalid or has expired."
+          httpStatus === 410
+            ? "This invite link has expired. Ask the group creator to share a new one."
+            : httpStatus === 404
+            ? "This invite link is invalid or has been reset."
             : msg || "Something went wrong. Please try again."
         );
         setStatus("error");
@@ -148,6 +155,27 @@ export default function JoinGroupPage() {
               </div>
               <p className="text-lg font-bold text-foreground">You're in!</p>
               <p className="text-sm text-muted-foreground">Redirecting you to the group…</p>
+            </>
+          )}
+
+          {/* Join request sent (approval-required group) */}
+          {status === "requested" && (
+            <>
+              <div className="flex justify-center">
+                <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                  <Users size={28} className="text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+              <p className="text-lg font-bold text-foreground">Request sent</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                This group needs the creator&apos;s approval. You&apos;ll get a notification as soon as you&apos;re added.
+              </p>
+              <button
+                onClick={() => router.replace("/dashboard")}
+                className="w-full py-2.5 rounded-xl border border-border text-foreground text-sm font-semibold hover:bg-muted transition cursor-pointer"
+              >
+                Go to Dashboard
+              </button>
             </>
           )}
 

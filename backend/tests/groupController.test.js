@@ -13,6 +13,8 @@ const fakeExpenseModel = makeFakeModel([]);
 const fakeGroupMessageModel = makeFakeModel([]);
 const fakeNotepadModel = makeFakeModel([]);
 const fakeNotificationModel = makeFakeModel([]);
+const fakeGroupInviteModel = makeFakeModel([]);
+const fakeConversationModel = makeFakeModel([]);
 
 const fakeCreateNotification = jest.fn(async () => {});
 
@@ -23,6 +25,8 @@ jest.unstable_mockModule("../models/expenseModel.js", () => ({ default: fakeExpe
 jest.unstable_mockModule("../models/groupMessageModel.js", () => ({ default: fakeGroupMessageModel }));
 jest.unstable_mockModule("../models/notepadModel.js", () => ({ default: fakeNotepadModel }));
 jest.unstable_mockModule("../models/notification.model.js", () => ({ default: fakeNotificationModel }));
+jest.unstable_mockModule("../models/groupInviteModel.js", () => ({ default: fakeGroupInviteModel }));
+jest.unstable_mockModule("../models/conversationModel.js", () => ({ default: fakeConversationModel }));
 jest.unstable_mockModule("../controllers/notificationController.js", () => ({
   createNotification: fakeCreateNotification,
 }));
@@ -47,7 +51,7 @@ beforeEach(() => {
 });
 
 describe("createGroup", () => {
-  test("defaults groupType to 'general' when the client omits it (the simple, no-picker create flow)", async () => {
+  test("defaults groupType to 'roommate' when the client omits it", async () => {
     const uid = oid();
     const req = makeReq({ user: { id: uid, name: "Alice" }, body: { name: "My Group" } });
     const res = makeRes();
@@ -55,7 +59,7 @@ describe("createGroup", () => {
     await createGroup(req, res);
 
     expect(res.statusCode).toBe(201);
-    expect(res.body.groupType).toBe("general");
+    expect(res.body.groupType).toBe("roommate");
     expect(res.body.name).toBe("My Group");
     expect(res.body.members.map(String)).toEqual([String(uid)]);
   });

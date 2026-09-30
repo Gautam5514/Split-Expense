@@ -106,7 +106,7 @@ export const getMyReferralData = async (req, res) => {
     });
   } catch (err) {
     console.error("getMyReferralData error:", err.message);
-    res.status(500).json({ message: "Failed to load referral data" });
+    res.status(500).json({ message: "Failed to load referral data", expose: true });
   }
 };
 
@@ -161,6 +161,6 @@ export const purchaseStoreItem = async (req, res) => {
     });
   } catch (err) {
     console.error("purchaseStoreItem error:", err.message);
-    res.status(500).json({ message: "Purchase failed" });
+    res.status(500).json({ message: "Purchase failed", expose: true });
   }
 };

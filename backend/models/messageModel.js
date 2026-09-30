@@ -12,6 +12,10 @@ const messageSchema = new mongoose.Schema(
     mediaUrl: { type: String },
      mediaType: { type: String }, // image / video / raw
     seenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    // Recipients whose device has received the message (double grey tick).
+    // Messages created before this field existed simply have none, so they
+    // show a single tick until seen - no migration needed.
+    deliveredTo: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );

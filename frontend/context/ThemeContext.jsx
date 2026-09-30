@@ -4,265 +4,52 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext();
 
-/* ── Tiny HSL colour helpers ─────────────────────────────────────────── */
-function hexToHsl(hex) {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0;
-  const l = (max + min) / 2;
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-  return [h * 360, s * 100, l * 100];
-}
+// Just two themes: light and dark. Their colours for the logged-in app live
+// in globals.css (.app-mono), matching the mobile app's palette.
 
-function hslToHex(h, s, l) {
-  h /= 360; s /= 100; l /= 100;
-  const hue2rgb = (p, q, t) => {
-    if (t < 0) t += 1; if (t > 1) t -= 1;
-    if (t < 1 / 6) return p + (q - p) * 6 * t;
-    if (t < 1 / 2) return q;
-    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-    return p;
-  };
-  let r, g, b;
-  if (s === 0) { r = g = b = l; }
-  else {
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
-  }
-  const toHex = (x) => Math.round(x * 255).toString(16).padStart(2, "0");
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-}
-
-function lighten(hex, amt) {
-  if (!hex || !hex.startsWith("#") || hex.length < 7) return hex;
-  try {
-    const [h, s, l] = hexToHsl(hex);
-    return hslToHex(h, s, Math.min(100, Math.max(0, l + amt)));
-  } catch { return hex; }
-}
-
-/* ── Derive a full, balanced palette from a single bg hex + primary ── */
-function derivePalette(bg, primary, isDark) {
-  if (isDark) {
-    // bg is a very dark color - lift derived surfaces progressively
-    return {
-      "--background":         bg,
-      "--foreground":         "#E4EAF2",
-      "--card":               lighten(bg, 7),
-      "--card-foreground":    "#E4EAF2",
-      "--popover":            lighten(bg, 7),
-      "--popover-foreground": "#E4EAF2",
-      "--primary":            primary,
-      "--primary-foreground": "#ffffff",
-      "--secondary":          lighten(bg, 12),
-      "--secondary-foreground":"#A8BECF",
-      "--muted":              lighten(bg, 12),
-      "--muted-foreground":   "#8494A6",
-      "--accent":             lighten(bg, 12),
-      "--accent-foreground":  "#E4EAF2",
-      "--border":             lighten(bg, 18),
-      "--input":              lighten(bg, 18),
-      "--ring":               primary,
-    };
-  } else {
-    // bg is a light tinted color - cards are white, muted is slightly darker
-    return {
-      "--background":         bg,
-      "--foreground":         "#1A2332",
-      "--card":               "#ffffff",
-      "--card-foreground":    "#1A2332",
-      "--popover":            "#ffffff",
-      "--popover-foreground": "#1A2332",
-      "--primary":            primary,
-      "--primary-foreground": "#ffffff",
-      "--secondary":          lighten(bg, -4),
-      "--secondary-foreground":"#155E75",
-      "--muted":              lighten(bg, -4),
-      "--muted-foreground":   "#667085",
-      "--accent":             lighten(bg, -4),
-      "--accent-foreground":  "#1A2332",
-      "--border":             lighten(bg, -10),
-      "--input":              lighten(bg, -10),
-      "--ring":               primary,
-    };
-  }
-}
-
-const PALETTE_VARS = [
-  "--background", "--foreground",
-  "--card", "--card-foreground",
-  "--popover", "--popover-foreground",
-  "--primary", "--primary-foreground",
-  "--secondary", "--secondary-foreground",
-  "--muted", "--muted-foreground",
-  "--accent", "--accent-foreground",
-  "--border", "--input", "--ring",
+// Leftovers from the old custom-colour / premium / font themes. Cleared once
+// so a returning user doesn't keep a palette that no longer exists.
+const LEGACY_KEYS = [
+  "customBgLight", "customBgDark", "customPrimary", "customBg",
+  "customText", "customBorder", "glassTheme", "appFont", "textSize",
+];
+const LEGACY_VARS = [
+  "--background", "--foreground", "--card", "--card-foreground",
+  "--popover", "--popover-foreground", "--primary", "--primary-foreground",
+  "--secondary", "--secondary-foreground", "--muted", "--muted-foreground",
+  "--accent", "--accent-foreground", "--border", "--input", "--ring", "--font-sans",
 ];
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme]     = useState("light");
+  const [theme, setTheme] = useState("light");
   const [mounted, setMounted] = useState(false);
-  const [font, setFontState]  = useState("inter");
-
-  // Store one bg per mode + the primary for the active custom preset.
-  // Per-mode bgs keep the palette readable when the user toggles light/dark
-  // from the navbar after applying a preset (a dark bg must never be fed
-  // into the light-mode palette derivation).
-  const [customBgLight, setCustomBgLight] = useState("");
-  const [customBgDark,  setCustomBgDark]  = useState("");
-  const [customPrimary, setCustomPrimary] = useState("");
-
-  // Aurora Glass premium theme. This is a CSS-class theme (.theme-glass in
-  // globals.css), not a derived palette - while enabled, custom palette vars
-  // are kept off the root so the class styling wins. The class itself is
-  // applied by GlassThemeGate only when the user is logged in.
-  const [glassEnabled, setGlassEnabled] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme) {
-      setTheme(storedTheme);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    }
+    const stored = localStorage.getItem("theme");
+    if (stored === "light" || stored === "dark") setTheme(stored);
+    else if (window.matchMedia("(prefers-color-scheme: dark)").matches) setTheme("dark");
 
-    const bgLight = localStorage.getItem("customBgLight") || "";
-    const bgDark  = localStorage.getItem("customBgDark")  || "";
-    const legacy  = localStorage.getItem("customBg");
-    if (legacy && !bgLight && !bgDark) {
-      // Migrate the old single-bg key to the mode it was applied in.
-      const wasDark = (storedTheme || "light") === "dark";
-      if (wasDark) {
-        setCustomBgDark(legacy);
-        localStorage.setItem("customBgDark", legacy);
-      } else {
-        setCustomBgLight(legacy);
-        localStorage.setItem("customBgLight", legacy);
-      }
-      localStorage.removeItem("customBg");
-    } else {
-      setCustomBgLight(bgLight);
-      setCustomBgDark(bgDark);
-    }
-
-    setCustomPrimary(localStorage.getItem("customPrimary") || "");
-    setFontState(localStorage.getItem("appFont") || "inter");
-    setGlassEnabled(localStorage.getItem("glassTheme") === "1");
+    LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
+    const root = document.documentElement;
+    LEGACY_VARS.forEach((v) => root.style.removeProperty(v));
+    root.classList.remove("theme-glass");
+    root.style.removeProperty("font-size");
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
-
-    const root = window.document.documentElement;
-
-    // Apply theme class
+    const root = document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
     localStorage.setItem("theme", theme);
+  }, [theme, mounted]);
 
-    // Apply palette or reset to CSS defaults. While the glass theme is on,
-    // inline palette vars must stay off the root - inline styles would beat
-    // the .theme-glass class rules.
-    const isDark = theme === "dark";
-    const bgForMode = isDark ? customBgDark : customBgLight;
-    if (!glassEnabled && bgForMode && customPrimary) {
-      const palette = derivePalette(bgForMode, customPrimary, isDark);
-      Object.entries(palette).forEach(([k, v]) =>
-        root.style.setProperty(k, v)
-      );
-    } else {
-      // Remove all custom overrides → CSS :root / .dark take over,
-      // but keep the accent if one was chosen (unless glass is active -
-      // glass brings its own accent).
-      PALETTE_VARS.forEach((v) => root.style.removeProperty(v));
-      if (customPrimary && !glassEnabled) {
-        root.style.setProperty("--primary", customPrimary);
-        root.style.setProperty("--ring", customPrimary);
-      }
-    }
-
-    // Font
-    const fontMap = {
-      inter:     '"Inter", ui-sans-serif, system-ui, sans-serif',
-      poppins:   '"Poppins", ui-sans-serif, system-ui, sans-serif',
-      nunito:    '"Nunito", ui-sans-serif, system-ui, sans-serif',
-      "dm-sans": '"DM Sans", ui-sans-serif, system-ui, sans-serif',
-      jakarta:   '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif',
-      outfit:    '"Outfit", ui-sans-serif, system-ui, sans-serif',
-    };
-    root.style.setProperty("--font-sans", fontMap[font] || fontMap.inter);
-    localStorage.setItem("appFont", font);
-
-  }, [theme, mounted, customBgLight, customBgDark, customPrimary, font, glassEnabled]);
-
-  // Glass is a dark-mode theme: enabling it forces dark, and toggling to
-  // light from the navbar switches it off rather than looking broken.
-  const setGlassTheme = (on) => {
-    setGlassEnabled(on);
-    if (on) {
-      setTheme("dark");
-      localStorage.setItem("glassTheme", "1");
-    } else {
-      localStorage.removeItem("glassTheme");
-    }
-  };
-
-  const toggleTheme = () => {
-    if (glassEnabled) setGlassTheme(false);
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
-
-  // Called by the theme page - presets carry a bg for each mode.
-  // Applying any color preset replaces the glass theme.
-  const applyColors = ({ bgLight, bgDark, primary }) => {
-    if (glassEnabled) setGlassTheme(false);
-    const lightVal   = bgLight || "";
-    const darkVal    = bgDark  || "";
-    const primaryVal = primary || "";
-    setCustomBgLight(lightVal);
-    setCustomBgDark(darkVal);
-    setCustomPrimary(primaryVal);
-    const persist = (key, val) =>
-      val ? localStorage.setItem(key, val) : localStorage.removeItem(key);
-    persist("customBgLight", lightVal);
-    persist("customBgDark",  darkVal);
-    persist("customPrimary", primaryVal);
-  };
-
-  const setFont = (f) => setFontState(f);
-
-  const resetColors = () => {
-    setGlassTheme(false);
-    setCustomBgLight("");
-    setCustomBgDark("");
-    setCustomPrimary("");
-    ["customBgLight", "customBgDark", "customPrimary",
-     "customBg", "customText", "customBorder"].forEach((k) => localStorage.removeItem(k));
-  };
+  const toggleTheme = () => setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  const setMode = (mode) => setTheme(mode === "dark" ? "dark" : "light");
 
   return (
-    <ThemeContext.Provider value={{
-      theme, toggleTheme,
-      customBgLight, customBgDark, customPrimary,
-      applyColors, resetColors,
-      font, setFont,
-      glassEnabled, setGlassTheme,
-    }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setMode }}>
       {children}
     </ThemeContext.Provider>
   );

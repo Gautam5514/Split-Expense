@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Home, Plane, Sparkles, Users } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Briefcase, Home, Plane } from "lucide-react";
 import { PlayStoreButton } from "@/components/PlayStoreLink";
 
 export default function SearchIntentSection() {
-  const [settled, setSettled] = useState(false);
-
   return (
     <section
       className="relative overflow-hidden bg-[#030303] px-5 py-24 text-white sm:px-8 sm:py-32"
@@ -77,48 +75,17 @@ export default function SearchIntentSection() {
                 Fly together, stay together, never argue over who booked the Airbnb. Split flights, fuel, food, and activities with automatic multi-currency support.
               </p>
 
-              {/* Visual Travel Ledger Widget */}
-              <div className="mt-6 rounded-2xl border border-cyan-500/20 bg-[#061017]/90 p-4 shadow-inner">
-                <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-cyan-500/20 text-xs">🌴</span>
-                    <span className="font-mono text-xs font-bold text-white/90">Goa Retreat · 6 friends</span>
-                  </div>
-                  <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-cyan-300">
-                    Active
-                  </span>
-                </div>
-
-                <div className="mt-3 space-y-2 font-mono text-xs">
-                  <div className="flex items-center justify-between text-white/70">
-                    <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-                      <span className="text-white/40">✈️</span> Flight Tickets (6)
-                    </span>
-                    <span className="font-semibold text-white/90">₹24,000</span>
-                  </div>
-                  <div className="flex items-center justify-between text-white/70">
-                    <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-                      <span className="text-white/40">🏡</span> Beachfront Villa
-                    </span>
-                    <span className="font-semibold text-white/90">₹36,000</span>
-                  </div>
-                  <div className="flex items-center justify-between text-white/70">
-                    <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-                      <span className="text-white/40">🍹</span> Sunset Shack & Food
-                    </span>
-                    <span className="font-semibold text-white/90">₹4,800</span>
-                  </div>
-                </div>
-
-                {/* Net Settlement Bar */}
-                <div className="mt-3.5 flex items-center justify-between rounded-lg border border-cyan-400/20 bg-cyan-950/40 px-2.5 py-1.5 font-mono text-[10px] text-cyan-300">
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    18 bills simplified
-                  </span>
-                  <span className="font-bold text-white">Just 2 transfers needed</span>
-                </div>
-              </div>
+              <ScenarioImage
+                src="/onboarding-trips.webp"
+                alt="Four friends taking a selfie in the sea at a Goa beach sunset"
+                accent="cyan"
+                badge="🌴 Goa Retreat · 6 friends"
+                status="Active"
+                amountLabel="Trip total"
+                amount="₹64,800"
+                footLeft="18 bills simplified"
+                footRight="Just 2 transfers"
+              />
             </div>
 
             {/* Feature Tags */}
@@ -155,48 +122,17 @@ export default function SearchIntentSection() {
                 Keep home life peaceful. Manage rent, Wi-Fi, electricity, maid/cook, and grocery runs in one shared transparent ledger with custom ratios.
               </p>
 
-              {/* Visual Flatmate Ledger Widget */}
-              <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-[#06140e]/90 p-4 shadow-inner">
-                <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/20 text-xs">🏢</span>
-                    <span className="font-mono text-xs font-bold text-white/90">Flat 402 · 3 flatmates</span>
-                  </div>
-                  <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-300">
-                    Due 1st
-                  </span>
-                </div>
-
-                <div className="mt-3 space-y-2 font-mono text-xs">
-                  <div className="flex items-center justify-between text-white/70">
-                    <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-                      <span className="text-white/40">⚡</span> Power & Water Bill
-                    </span>
-                    <span className="font-semibold text-white/90">₹4,250</span>
-                  </div>
-                  <div className="flex items-center justify-between text-white/70">
-                    <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-                      <span className="text-white/40">📶</span> 300 Mbps Fiber Wi-Fi
-                    </span>
-                    <span className="font-semibold text-white/90">₹1,199</span>
-                  </div>
-                  <div className="flex items-center justify-between text-white/70">
-                    <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-                      <span className="text-white/40">🛒</span> Shared Groceries
-                    </span>
-                    <span className="font-semibold text-white/90">₹6,800</span>
-                  </div>
-                </div>
-
-                {/* Split Status */}
-                <div className="mt-3.5 flex items-center justify-between rounded-lg border border-emerald-400/20 bg-emerald-950/40 px-2.5 py-1.5 font-mono text-[10px] text-emerald-300">
-                  <span className="flex items-center gap-1.5">
-                    <Check className="h-3 w-3 text-emerald-400" />
-                    3-Way Equal 33.3%
-                  </span>
-                  <span className="font-bold text-white">₹4,083 / person</span>
-                </div>
-              </div>
+              <ScenarioImage
+                src="/onboarding-roommates.webp"
+                alt="Flatmates relaxing together at home"
+                accent="emerald"
+                badge="🏢 Flat 402 · 3 flatmates"
+                status="Due 1st"
+                amountLabel="Rent + bills"
+                amount="₹12,249"
+                footLeft="3-way equal"
+                footRight="₹4,083 / person"
+              />
             </div>
 
             {/* Feature Tags */}
@@ -207,7 +143,7 @@ export default function SearchIntentSection() {
             </div>
           </motion.article>
 
-          {/* Card 3: Everyday Hangouts (With Interactive Tap-to-Settle Button!) */}
+          {/* Card 3: Work & Business */}
           <motion.article
             initial={{ opacity: 0, y: 28 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -219,77 +155,38 @@ export default function SearchIntentSection() {
               {/* Card Header & Icon */}
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-purple-400">
-                  03 // Social & Hangouts
+                  03 // Work & Business
                 </span>
                 <div className="grid h-10 w-10 place-items-center rounded-xl border border-purple-400/25 bg-purple-400/10 text-purple-300 transition-colors group-hover:bg-purple-400/20">
-                  <Users className="h-5 w-5" aria-hidden="true" />
+                  <Briefcase className="h-5 w-5" aria-hidden="true" />
                 </div>
               </div>
 
               <h3 className="mt-5 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                Everyday group splitting
+                Business and team expenses
               </h3>
               <p className="mt-2 text-xs leading-relaxed text-white/50 sm:text-sm">
-                Friday night dinners, football turf bookings, and weekend cab rides. Snap the receipt or enter a total — tap once to settle without awkward chats.
+                Client visits, offsites and shared project costs. Snap every receipt, split between partners, and keep clean reports ready for accounts.
               </p>
 
-              {/* Visual Interactive Receipt & Settlement Widget */}
-              <div className="mt-6 rounded-2xl border border-purple-500/20 bg-[#12081a]/90 p-4 shadow-inner">
-                <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/20 text-xs">🍕</span>
-                    <span className="font-mono text-xs font-bold text-white/90">Friday Feast · 4 people</span>
-                  </div>
-                  <span className="rounded-full border border-purple-400/30 bg-purple-400/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-purple-300">
-                    AI Scanned
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between border-b border-white/5 pb-2 font-mono text-xs">
-                  <span className="text-white/60">Total Bill</span>
-                  <span className="text-xs font-bold text-white sm:text-sm">
-                    ₹3,200 <span className="font-normal text-white/40">(₹800/ea)</span>
-                  </span>
-                </div>
-
-                <div className="mt-2.5 flex items-center justify-between text-xs">
-                  <div className="flex items-center -space-x-1.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-500 text-[9px] font-bold text-white ring-1.5 ring-black">KM</span>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white ring-1.5 ring-black">PS</span>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white ring-1.5 ring-black">AK</span>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-1.5 ring-black">SG</span>
-                  </div>
-                  <span className="font-mono text-[10px] text-white/45">
-                    {settled ? "4/4 Settled" : "3/4 Confirmed"}
-                  </span>
-                </div>
-
-                {/* Interactive Tap-to-Settle Button */}
-                <button
-                  type="button"
-                  onClick={() => setSettled(!settled)}
-                  className={`mt-3 flex w-full items-center justify-between rounded-lg border px-3 py-2 font-mono text-xs font-bold transition-all duration-200 cursor-pointer ${
-                    settled
-                      ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.25)]"
-                      : "border-purple-400/40 bg-purple-500/15 text-purple-200 hover:bg-purple-500/25 hover:border-purple-400/60"
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-                    {settled ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Sparkles className="h-3.5 w-3.5 text-purple-400" />}
-                    {settled ? "Your Share Settled via UPI" : "Tap to Settle ₹800"}
-                  </span>
-                  <span className={`text-[9px] font-normal uppercase tracking-wider ${settled ? "text-emerald-400" : "text-purple-300/80"}`}>
-                    {settled ? "Zero Balance ✓" : "1-Tap Settle"}
-                  </span>
-                </button>
-              </div>
+              <ScenarioImage
+                src="/onboarding-business.webp"
+                alt="Colleagues reviewing shared expenses on a tablet at a conference"
+                accent="purple"
+                badge="💼 Delhi Client Visit · 4"
+                status="Receipts ✓"
+                amountLabel="Team spend"
+                amount="₹38,500"
+                footLeft="Report ready"
+                footRight="Export PDF"
+              />
             </div>
 
             {/* Feature Tags */}
             <div className="mt-6 flex flex-wrap gap-1.5 border-t border-white/5 pt-4 font-mono text-[10px] text-white/45">
+              <span className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5">Receipt Proof</span>
+              <span className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5">Clean Reports</span>
               <span className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5">AI OCR Scanner</span>
-              <span className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5">UPI Settlement</span>
-              <span className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5">Chat Alerts</span>
             </div>
           </motion.article>
         </div>
@@ -312,5 +209,57 @@ export default function SearchIntentSection() {
         </motion.div>
       </div>
     </section>
+  );
+}
+
+const ACCENTS = {
+  cyan: { ring: "border-cyan-500/25", chip: "border-cyan-300/40 bg-cyan-400/20 text-cyan-100", dot: "bg-cyan-400", glow: "from-cyan-950/70" },
+  emerald: { ring: "border-emerald-500/25", chip: "border-emerald-300/40 bg-emerald-400/20 text-emerald-100", dot: "bg-emerald-400", glow: "from-emerald-950/70" },
+  purple: { ring: "border-purple-500/25", chip: "border-purple-300/40 bg-purple-400/20 text-purple-100", dot: "bg-purple-400", glow: "from-purple-950/70" },
+};
+
+/* Scenario photo with small glassy labels laid over it: the group name and
+   status up top, the running total and a one-line result along the bottom.
+   The photos are portrait, so we crop to the upper part where the people are. */
+function ScenarioImage({ src, alt, accent, badge, status, amountLabel, amount, footLeft, footRight }) {
+  const a = ACCENTS[accent];
+  return (
+    <div className={`relative mt-6 aspect-[4/3] overflow-hidden rounded-2xl border ${a.ring}`}>
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(min-width: 768px) 30vw, 90vw"
+        className="object-cover object-[50%_30%] transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+      />
+      {/* Shade top and bottom so the labels stay readable on any photo */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/85" />
+      <div className={`pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t ${a.glow} to-transparent opacity-60`} />
+
+      {/* Top labels */}
+      <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+        <span className="rounded-full border border-white/15 bg-black/45 px-2.5 py-1 font-mono text-[10px] font-bold text-white/95 backdrop-blur-md">
+          {badge}
+        </span>
+        <span className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider backdrop-blur-md ${a.chip}`}>
+          {status}
+        </span>
+      </div>
+
+      {/* Bottom labels */}
+      <div className="absolute inset-x-3 bottom-3 space-y-2">
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/60">{amountLabel}</p>
+          <p className="text-xl font-bold tracking-tight text-white drop-shadow">{amount}</p>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/45 px-2.5 py-1.5 font-mono text-[10px] backdrop-blur-md">
+          <span className="flex items-center gap-1.5 text-white/75">
+            <span className={`h-1.5 w-1.5 rounded-full ${a.dot} animate-pulse`} />
+            {footLeft}
+          </span>
+          <span className="font-bold text-white">{footRight}</span>
+        </div>
+      </div>
+    </div>
   );
 }

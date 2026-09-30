@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Caveat:wght@500;600;700&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -23,6 +23,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-menu-solid: var(--menu-solid);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -30,6 +31,8 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-serif-premium: 'Instrument Serif', 'Playfair Display', Georgia, serif;
+  --font-handwritten: 'Caveat', cursive;
+  --font-brand: 'Josefin Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ── Light Mode - SplitEase Default ──
@@ -64,6 +67,11 @@
   --input: #E5E5E5;
   --ring: #0891B2;
   --radius: 0.625rem;
+
+  /* Always fully opaque, unlike --card/--popover which the Aurora Glass
+     theme deliberately makes translucent - dropdown/context menus need to
+     stay readable no matter what theme is active, so they use this instead. */
+  --menu-solid: #FFFFFF;
 }
 
 /* ── Dark Mode - SplitEase Default ──
@@ -98,6 +106,8 @@
   --border: #232323;
   --input: #232323;
   --ring: #0891B2;
+
+  --menu-solid: #171717;
 }
 
 body {
@@ -111,6 +121,46 @@ body {
 
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ── Pointer cursor on interactive elements ──
+   Browsers do NOT show a pointer cursor on <button> by default (only on
+   <a href>) - every button in the app was silently using the plain arrow
+   cursor unless it happened to carry an explicit `cursor-pointer` class.
+   One base-layer rule fixes every button/toggle app-wide instead of
+   hunting down individual className strings, and stays overridable by any
+   more specific `cursor-*` utility a component already sets. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  select,
+  label[for] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+/* ── App-wide bold/heading font ──
+   One font for every bold element across the logged-in app, so the whole
+   product reads as one consistent, premium typeface instead of whatever
+   each page's default happened to be. Scoped to .app-shell (toggled on
+   <html> only while logged in, by AppFontGate) so the logged-out landing
+   page - which has its own separate typographic identity - is never
+   touched. Targets Tailwind's literal bold-weight utility classes plus
+   semantic heading tags, so it reaches every "bold place" without needing
+   per-component edits. */
+.app-shell .font-bold,
+.app-shell .font-extrabold,
+.app-shell .font-black,
+.app-shell h1,
+.app-shell h2,
+.app-shell h3 {
+  font-family: var(--font-bricolage), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ── Scrollbar Styling ── */
@@ -153,8 +203,7 @@ html {
   color: #7C3AED;
 }
 
-.dark .brand-text,
-.theme-glass .brand-text {
+.dark .brand-text {
   color: #A78BFA;
 }
 
@@ -180,6 +229,17 @@ html {
   animation-play-state: paused;
 }
 
+/* A light that continuously travels around a pill button's border - the
+   button sits on top with 2px of padding exposed, so only that thin ring
+   shows the rotating conic-gradient underneath. */
+@keyframes border-orbit {
+  to { transform: rotate(360deg); }
+}
+
+.animate-border-orbit {
+  animation: border-orbit 2.8s linear infinite;
+}
+
 /* Eliminate global top header padding for isolated full-screen auth pages */
 main:has(.auth-page-wrapper),
 main:has(.h-screen) {
@@ -187,65 +247,96 @@ main:has(.h-screen) {
 }
 
 /* ── App Toasts ──────────────────────────────────────────────────────────
-   Flat, opaque, crisp. No glass/blur. Small 6px radius (not rounded-xl).
-   The status color is carried by the icon plus a faint tinted glow in the
-   shadow - a green-lit success, a red-lit error - on an otherwise neutral
-   card. Class name kept (`glass-toast-premium`) so JS references don't break. */
+   Premium, well-rounded pill card. Soft frosted surface, a crisp status
+   accent bar down the left edge, a tinted ambient glow in the shadow, and a
+   subtle 1px ring. Class name kept (`glass-toast-premium`) so JS references
+   don't break. */
 .glass-toast-premium {
-  --toast-glow: rgba(11, 25, 41, 0.10);
-  background: #FFFFFF !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 1px solid #E4E9F0 !important;
+  --toast-accent: #0891B2;
+  --toast-glow: rgba(11, 25, 41, 0.12);
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.82)),
+    #FFFFFF !important;
+  backdrop-filter: blur(14px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
   box-shadow:
-    0 1px 2px rgba(11, 25, 41, 0.06),
-    0 8px 22px -10px var(--toast-glow) !important;
+    0 1px 1px rgba(11, 25, 41, 0.04),
+    0 10px 24px -8px rgba(11, 25, 41, 0.14),
+    0 22px 48px -18px var(--toast-glow) !important;
   color: #0B1929 !important;
-  border-radius: 6px !important;
-  padding: 11px 15px !important;
-  gap: 10px !important;
+  border-radius: 18px !important;
+  padding: 13px 17px 13px 18px !important;
+  gap: 11px !important;
   font-weight: 600 !important;
-  font-size: 0.8125rem !important;
-  line-height: 1.35 !important;
-  letter-spacing: -0.005em !important;
+  font-size: 0.84rem !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.006em !important;
   font-family: 'Inter', sans-serif !important;
-  max-width: 380px !important;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  max-width: 400px !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.3s ease !important;
+}
+
+/* Status accent bar down the left edge. */
+.glass-toast-premium::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--toast-accent);
+  box-shadow: 0 0 12px -1px var(--toast-accent);
 }
 
 .dark .glass-toast-premium {
-  --toast-glow: rgba(0, 0, 0, 0.55);
-  background: #0E1A2B !important;
-  border: 1px solid #20334B !important;
+  --toast-glow: rgba(0, 0, 0, 0.6);
+  background:
+    linear-gradient(180deg, rgba(20, 33, 52, 0.94), rgba(14, 26, 43, 0.9)),
+    #0E1A2B !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #E9F1FB !important;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.3),
+    0 12px 28px -8px rgba(0, 0, 0, 0.5),
+    0 24px 50px -18px var(--toast-glow) !important;
 }
 
-/* Per-type: colored border edge + a matching soft glow. */
+/* Per-type: accent color drives the left bar, the icon glow and the shadow. */
 .glass-toast-premium.success {
-  --toast-glow: rgba(16, 185, 129, 0.28);
-  border-color: rgba(16, 185, 129, 0.45) !important;
+  --toast-accent: #10B981;
+  --toast-glow: rgba(16, 185, 129, 0.3);
 }
 .dark .glass-toast-premium.success {
-  --toast-glow: rgba(16, 185, 129, 0.22);
-  border-color: rgba(52, 211, 153, 0.38) !important;
+  --toast-accent: #34D399;
+  --toast-glow: rgba(16, 185, 129, 0.26);
 }
 
 .glass-toast-premium.error {
-  --toast-glow: rgba(229, 72, 77, 0.28);
-  border-color: rgba(229, 72, 77, 0.45) !important;
+  --toast-accent: #E5484D;
+  --toast-glow: rgba(229, 72, 77, 0.3);
 }
 .dark .glass-toast-premium.error {
-  --toast-glow: rgba(248, 113, 113, 0.22);
-  border-color: rgba(248, 113, 113, 0.38) !important;
+  --toast-accent: #F87171;
+  --toast-glow: rgba(248, 113, 113, 0.26);
 }
 
 .glass-toast-premium.loading {
-  --toast-glow: rgba(8, 145, 178, 0.26);
-  border-color: rgba(8, 145, 178, 0.45) !important;
+  --toast-accent: #0891B2;
+  --toast-glow: rgba(8, 145, 178, 0.28);
 }
 .dark .glass-toast-premium.loading {
-  --toast-glow: rgba(34, 211, 238, 0.20);
-  border-color: rgba(34, 211, 238, 0.36) !important;
+  --toast-accent: #22D3EE;
+  --toast-glow: rgba(34, 211, 238, 0.24);
+}
+
+/* Give the icon a soft rounded halo in its accent colour. */
+.glass-toast-premium > div:first-child {
+  border-radius: 9px !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -269,110 +360,67 @@ main:has(.h-screen) {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
-    padding: 11px 15px !important;
-    font-size: 0.8125rem !important;
+    padding: 13px 16px !important;
+    font-size: 0.84rem !important;
+    border-radius: 16px !important;
   }
 }
+
+
+
 
 
 
 /* ════════════════════════════════════════════════════════════════════
-   Aurora Glass - 1000-coin premium theme (.theme-glass on <html>).
-   Applied by GlassThemeGate only after login; the landing and auth
-   pages are never glassed. Declared after .dark so it wins the cascade.
+   App theme after login (.app-mono on <html>, set by AppThemeGate).
+   Same monochrome "ink" palette as the mobile app (splitApp/constants/
+   theme.ts): light = white cards, black accent; dark = true black, white
+   accent. Declared after :root/.dark so it wins the cascade.
    ════════════════════════════════════════════════════════════════════ */
-.theme-glass {
-  --background: #060a14;
-  --foreground: #EEF3FB;
+.app-mono {
+  --background: #F9FAFB;
+  --foreground: #11181C;
+  --card: #FFFFFF;
+  --card-foreground: #11181C;
+  --popover: #FFFFFF;
+  --popover-foreground: #11181C;
+  --primary: #141414;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F3F4F6;
+  --secondary-foreground: #141414;
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280;
+  --accent: #F3F4F6;
+  --accent-foreground: #11181C;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #141414;
+  --menu-solid: #FFFFFF;
+}
 
-  --card: rgba(255, 255, 255, 0.055);
-  --card-foreground: #EEF3FB;
-
-  --popover: rgba(10, 16, 32, 0.88);
-  --popover-foreground: #EEF3FB;
-
-  --primary: #38BDF8;
-  --primary-foreground: #051120;
-
-  --secondary: rgba(255, 255, 255, 0.08);
-  --secondary-foreground: #C5D5EA;
-
-  --muted: rgba(255, 255, 255, 0.07);
-  --muted-foreground: #94A7C2;
-
-  --accent: rgba(255, 255, 255, 0.09);
-  --accent-foreground: #EEF3FB;
-
+.dark.app-mono {
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --card: #121214;
+  --card-foreground: #FFFFFF;
+  --popover: #121214;
+  --popover-foreground: #FFFFFF;
+  --primary: #FFFFFF;
+  --primary-foreground: #141414;
+  --secondary: #1C1C1F;
+  --secondary-foreground: #FFFFFF;
+  --muted: #1C1C1F;
+  --muted-foreground: #A1A1AA;
+  --accent: #1C1C1F;
+  --accent-foreground: #FFFFFF;
   --destructive: #F87171;
   --destructive-foreground: #FFFFFF;
-
-  --border: rgba(255, 255, 255, 0.12);
-  --input: rgba(255, 255, 255, 0.14);
-  --ring: #38BDF8;
-}
-
-/* Fixed aurora backdrop - lives behind everything, never scrolls. */
-.theme-glass body {
-  background: #060a14;
-}
-
-.theme-glass body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(46% 52% at 12% 6%,  rgba(56, 189, 248, 0.17), transparent 70%),
-    radial-gradient(40% 46% at 90% 10%, rgba(167, 139, 250, 0.15), transparent 70%),
-    radial-gradient(36% 42% at 78% 72%, rgba(45, 212, 191, 0.10), transparent 70%),
-    radial-gradient(52% 58% at 22% 96%, rgba(14, 116, 144, 0.20), transparent 72%),
-    #060a14;
-}
-
-/* Frosted surfaces: every card/popover becomes real glass - blur what's
-   behind, a hairline top highlight, and deep soft shadow. */
-.theme-glass .bg-card,
-.theme-glass .bg-popover {
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  background-image: linear-gradient(166deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.015) 48%, rgba(255, 255, 255, 0.04) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.02),
-    0 18px 44px -18px rgba(1, 6, 18, 0.65);
-}
-
-/* Solid-on-translucent helpers keep their readability. */
-.theme-glass .bg-background {
-  background: transparent;
-}
-
-/* Inputs read as etched glass. */
-.theme-glass input,
-.theme-glass textarea,
-.theme-glass select {
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-/* Scrollbar tinted to the aurora accent. */
-.theme-glass .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.22);
-}
-
-.theme-glass .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 189, 248, 0.4);
-}
-
-/* Respect users who can't have heavy blur animating around. */
-@media (prefers-reduced-transparency: reduce) {
-  .theme-glass .bg-card,
-  .theme-glass .bg-popover {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background-color: rgba(13, 20, 36, 0.96);
-  }
+  --border: #1F1F22;
+  --input: #1F1F22;
+  --ring: #FFFFFF;
+  --menu-solid: #121214;
 }
 
 /* ── Premium coin wallet shine sweep ── */
@@ -424,4 +472,10 @@ main:has(.h-screen) {
 .animate-spin-3d {
   transform-style: preserve-3d;
   animation: spin-3d 12s linear infinite;
+}
+
+/* Arrow that gently zooms in and out (and nudges right) while its button is hovered. */
+@keyframes arrow-pulse {
+  0%, 100% { transform: translateX(0) scale(1); }
+  50% { transform: translateX(3px) scale(1.3); }
 }

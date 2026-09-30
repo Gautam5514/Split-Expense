@@ -42,7 +42,8 @@ export default function AddContactModal({ onClose, onSelectContact }) {
       setAddingConvoId(user._id);
       
       // Call getOrCreateConversation in the backend
-      await api.post("/chat", { otherEmail: user.email });
+      // By id: strangers only come back with a masked email.
+      await api.post("/chat/conversation", { otherUserId: user._id });
       
       toast.success(`Chat started with ${user.name}! 💬`);
       
@@ -72,7 +73,7 @@ export default function AddContactModal({ onClose, onSelectContact }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 cursor-pointer"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
@@ -93,7 +94,7 @@ export default function AddContactModal({ onClose, onSelectContact }) {
                 <MessageSquarePlus className="text-cyan-600 dark:text-cyan-400" size={20} />
                 Start new conversation
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Find anyone on SplitEase to start chatting</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Search people you know, or type someone&apos;s full email</p>
             </div>
             <button
               onClick={onClose}
@@ -109,7 +110,7 @@ export default function AddContactModal({ onClose, onSelectContact }) {
               <Search className="absolute left-3.5 top-3.5 text-muted-foreground/60" size={16} />
               <input
                 type="text"
-                placeholder="Search name or email..."
+                placeholder="Friend's name, or a full email"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full bg-muted/60 text-foreground text-sm rounded-xl pl-10 pr-4 py-3 border border-border focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all outline-none"
@@ -130,7 +131,7 @@ export default function AddContactModal({ onClose, onSelectContact }) {
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-xs">
                   <Loader2 size={24} className="animate-spin text-primary mb-2" />
-                  Searching global database...
+                  Searching…
                 </div>
               ) : results.length > 0 ? (
                 <div className="divide-y divide-border/60">
@@ -173,13 +174,13 @@ export default function AddContactModal({ onClose, onSelectContact }) {
                 </div>
               ) : query.trim() ? (
                 <div className="text-center py-16 text-xs text-muted-foreground italic">
-                  No users found matching &quot;{query}&quot;
+                  No one you know matches &quot;{query}&quot;. For someone new, type their full email.
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-xs text-center px-4">
                   <MessageSquarePlus className="text-muted-foreground/30 mb-2" size={32} />
                   <p className="font-semibold text-foreground/75">Find friends to chat</p>
-                  <p className="mt-1 text-muted-foreground/60">Type a name or email address in the search box above.</p>
+                  <p className="mt-1 text-muted-foreground/60">Names search people you share a group or chat with. Anyone else: their full email.</p>
                 </div>
               )}
             </div>

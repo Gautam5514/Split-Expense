@@ -9,11 +9,14 @@ import admin from "./config/firebaseAdmin.js";
 import jwt from "jsonwebtoken";
 import User from "./models/userModel.js";
 import Conversation from "./models/conversationModel.js";
+import Message from "./models/messageModel.js";
 import Group from "./models/groupModel.js";
 import { mongoSanitize } from "./middleware/sanitize.js";
 import { buildAllowedOrigins, makeCorsOriginCallback } from "./utils/corsConfig.js";
 import { canRelayToRoom } from "./utils/socketGuards.js";
 import { assertSecurityConfiguration } from "./utils/securityConfig.js";
+import { isValidObjectId } from "./middleware/validate.js";
+import { sanitizeServerErrors } from "./middleware/errorSanitizer.js";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -33,6 +36,10 @@ import blogRoutes from "./routes/blogRoutes.js";
 import careerRoutes from "./routes/careerRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import mcpRoutes from "./routes/mcpRoutes.js";
+import inviteRoutes from "./routes/inviteRoutes.js";
+import fxRoutes from "./routes/fxRoutes.js";
+import quickSplitRoutes from "./routes/quickSplitRoutes.js";
+import { startRecurringRunner } from "./utils/recurringRunner.js";
 
 dotenv.config();
 assertSecurityConfiguration();
@@ -40,6 +47,22 @@ connectDB();
 
 const app = express();
 const server = createServer(app);
+
+// -----------------------------------------
+//  TRUST PROXY
+//  Rate limiters key on req.ip. Behind a load balancer (Render, Railway,
+//  Nginx, Cloudflare...) req.ip is the proxy's address unless Express is told
+//  how many proxy hops to trust - then EVERY user shares one rate-limit
+//  bucket (one attacker can lock everyone out of login). Trusting too many
+//  hops is the opposite bug: clients can spoof X-Forwarded-For and dodge the
+//  limits entirely. So this is explicit: TRUST_PROXY = number of proxy hops
+//  in front of the app (usually 1). Unset = trust none (direct exposure).
+// -----------------------------------------
+const trustProxyHops = Number.parseInt(process.env.TRUST_PROXY ?? "", 10);
+if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
+  app.set("trust proxy", trustProxyHops);
+}
+app.disable("x-powered-by");
 
 // -----------------------------------------
 //  SECURITY HEADERS (HELMET)
@@ -79,6 +102,8 @@ app.options("*", cors(corsOptions));
 
 app.use(cors(corsOptions));
 
+app.use(sanitizeServerErrors);
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -104,6 +129,22 @@ app.set("io", io);
 // Track online users
 export const onlineUsers = new Map();
 
+const markPendingDelivered = async (userId) => {
+  const convoIds = await Conversation.find({ members: userId }).distinct("_id");
+  if (!convoIds.length) return;
+  const pending = {
+    conversationId: { $in: convoIds },
+    sender: { $ne: userId },
+    deliveredTo: { $ne: userId },
+  };
+  const affected = await Message.distinct("conversationId", pending);
+  if (!affected.length) return;
+  await Message.updateMany(pending, { $addToSet: { deliveredTo: userId } });
+  for (const cid of affected) {
+    io.to(String(cid)).emit("messagesDelivered", { conversationId: String(cid), deliveredTo: String(userId) });
+  }
+};
+
 // -----------------------------------------
 //  SOCKET.IO LOGIC
 // -----------------------------------------
@@ -113,7 +154,7 @@ io.on("connection", (socket) => {
   // When client sends token
   socket.on("register", async (token) => {
     try {
-      if (!token) return;
+      if (typeof token !== "string" || !token || token.length > 4096) return;
 
       let userId = null;
 
@@ -151,6 +192,14 @@ io.on("connection", (socket) => {
       });
 
       console.log(`🟢 User ${userId} is ONLINE`);
+
+      // Delivery receipts: everything sent to this user while they were offline
+      // has now reached their device. Mark it and tell the senders (who are in
+      // the conversation room if they have that chat open) so their single
+      // grey tick becomes a double grey tick.
+      markPendingDelivered(userId).catch((err) =>
+        console.error("❌ delivery receipts error:", err.message)
+      );
     } catch (err) {
       console.error("❌ register error:", err.message);
     }
@@ -160,7 +209,7 @@ io.on("connection", (socket) => {
   // Join conversation - verify membership before allowing
   // -----------------------------------------
   socket.on("joinConversation", async (conversationId) => {
-    if (!socket.userId) return;
+    if (!socket.userId || !isValidObjectId(conversationId)) return;
     try {
       const convo = await Conversation.findOne({
         _id: conversationId,
@@ -173,16 +222,25 @@ io.on("connection", (socket) => {
   });
 
   // Typing - only relay into rooms this socket has already been verified
-  // into via joinConversation (which checks Conversation membership).
-  socket.on("typing", ({ conversationId, userId }) => {
+  // into via joinConversation (which checks Conversation membership). The
+  // identity broadcast is ALWAYS the authenticated socket.userId - a
+  // client-supplied userId in the payload is ignored, so nobody can make it
+  // look like someone else is typing.
+  socket.on("typing", (payload) => {
+    const conversationId = typeof payload?.conversationId === "string" ? payload.conversationId : null;
     if (!canRelayToRoom(socket, conversationId)) return;
-    socket.to(conversationId).emit("typing", userId);
+    socket.to(conversationId).emit("typing", socket.userId);
   });
 
-  // Messages - same membership guard as above.
+  // sendMessage - the REST endpoint (POST /api/chat/message) already persists
+  // the message and broadcasts the authoritative DB copy as "newMessage" to
+  // the room. This event used to re-broadcast whatever object the client
+  // sent, which let any room member forge messages (fake sender, text, media
+  // URL) that other clients rendered as real. It is now a verified no-op kept
+  // for backward compatibility with older clients that still emit it.
   socket.on("sendMessage", (data) => {
-    if (!canRelayToRoom(socket, data?.conversationId)) return;
-    io.to(data.conversationId).emit("newMessage", data);
+    if (!canRelayToRoom(socket, typeof data?.conversationId === "string" ? data.conversationId : null)) return;
+    // Intentionally not re-broadcast: see comment above.
   });
 
   // -----------------------------------------
@@ -190,7 +248,7 @@ io.on("connection", (socket) => {
   // -----------------------------------------
   // joinGroup - verify membership before allowing
   socket.on("joinGroup", async (groupId) => {
-    if (!socket.userId) return;
+    if (!socket.userId || !isValidObjectId(groupId)) return;
     try {
       const group = await Group.findOne({
         _id: groupId,
@@ -202,11 +260,14 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("leaveGroup", (groupId) => socket.leave(`group:${groupId}`));
+  socket.on("leaveGroup", (groupId) => {
+    if (isValidObjectId(groupId)) socket.leave(`group:${groupId}`);
+  });
 
-  socket.on("groupTyping", ({ groupId, userId }) => {
+  socket.on("groupTyping", (payload) => {
+    const groupId = isValidObjectId(payload?.groupId) ? String(payload.groupId) : null;
     if (!canRelayToRoom(socket, groupId ? `group:${groupId}` : null)) return;
-    socket.to(`group:${groupId}`).emit("groupTyping", userId);
+    socket.to(`group:${groupId}`).emit("groupTyping", socket.userId);
   });
 
   // -----------------------------------------
@@ -244,7 +305,10 @@ io.on("connection", (socket) => {
 // -----------------------------------------
 app.use("/api/auth", authRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/invites", inviteRoutes);
+app.use("/api/fx", fxRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/quick-splits", quickSplitRoutes);
 app.use("/api/balances", balanceRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notifications", notificationRoutes);
@@ -281,6 +345,8 @@ app.use((err, req, res, next) => {
 //  START SERVER
 // -----------------------------------------
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  // Monthly bills (Roommates groups). Skipped under tests.
+  if (process.env.NODE_ENV !== "test") startRecurringRunner();
+});

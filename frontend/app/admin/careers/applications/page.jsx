@@ -92,9 +92,16 @@ function ApplicationsContent() {
                     <Phone size={12} /> {a.phone}
                   </span>
                 )}
-                <a href={a.resumeLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-cyan-300">
-                  <ExternalLink size={12} /> Resume / portfolio
-                </a>
+                {/^https?:\/\//i.test(a.resumeLink || "") ? (
+                  <a href={a.resumeLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-cyan-300">
+                    <ExternalLink size={12} /> Resume / portfolio
+                  </a>
+                ) : (
+                  // Legacy rows may hold non-http(s) values (e.g. javascript:) - show as text, never as a link.
+                  <span className="flex items-center gap-1.5 break-all">
+                    <ExternalLink size={12} /> {a.resumeLink}
+                  </span>
+                )}
               </div>
 
               {a.coverNote && (

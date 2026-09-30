@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, Trash2, X } from "lucide-react";
 
-export default function ConfirmDeleteModal({ isOpen, onConfirm, onCancel, title, description }) {
+export default function ConfirmDeleteModal({ isOpen, onConfirm, onCancel, title, description, confirmLabel = "Yes, Delete" }) {
   if (!isOpen) return null;
 
   return (
@@ -16,7 +16,7 @@ export default function ConfirmDeleteModal({ isOpen, onConfirm, onCancel, title,
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onCancel}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer"
           />
 
           {/* Modal */}
@@ -72,7 +72,7 @@ export default function ConfirmDeleteModal({ isOpen, onConfirm, onCancel, title,
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-destructive hover:bg-destructive/90 text-white font-semibold text-sm shadow transition cursor-pointer"
               >
                 <Trash2 size={14} />
-                Yes, Delete
+                {confirmLabel}
               </button>
             </div>
           </motion.div>

@@ -367,37 +367,34 @@ export default function ChatInput({ conversationId, onSend, me }) {
         </div>
       ) : (
         /* Regular Input strip */
-        <div className="flex items-end gap-3 w-full animate-in fade-in duration-150">
-          {/* Left Controls */}
-          <div className="flex items-center gap-1 pb-1 text-muted-foreground">
+        <div className="flex items-end gap-2 w-full animate-in fade-in duration-150">
+          {/* Unified pill: emoji + attach + textarea all in one surface */}
+          <div className="flex flex-1 items-end gap-0.5 rounded-[26px] border border-border bg-card pl-1.5 pr-2 py-1.5 shadow-sm transition-all focus-within:border-primary/40 focus-within:shadow-[0_0_0_3px_rgba(8,145,178,0.08)]">
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className={`p-2 hover:bg-background rounded-full transition ${
-                showEmojiPicker ? "text-primary bg-background shadow-inner" : ""
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${
+                showEmojiPicker ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
               }`}
               title="Emoji Picker"
             >
-              <Smile className="w-5 h-5" />
+              <Smile className="w-[19px] h-[19px]" />
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 hover:bg-background rounded-full transition"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-foreground/[0.06] hover:text-foreground"
               title="Attach File"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-[19px] h-[19px]" />
             </button>
-          </div>
 
-          <input
-            type="file"
-            hidden
-            ref={fileInputRef}
-            accept="image/*,video/*"
-            onChange={handleFileSelect}
-          />
+            <input
+              type="file"
+              hidden
+              ref={fileInputRef}
+              accept="image/*,video/*"
+              onChange={handleFileSelect}
+            />
 
-          {/* Text Area */}
-          <div className="flex-1 bg-input rounded-xl px-4 py-2 border border-input focus-within:border-primary/40 shadow-sm transition-colors">
             <textarea
               rows={1}
               ref={textareaRef}
@@ -405,36 +402,34 @@ export default function ChatInput({ conversationId, onSend, me }) {
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a message"
-              className="w-full resize-none bg-transparent text-foreground focus:outline-none text-[15px] placeholder:text-muted-foreground max-h-[100px] py-1 custom-scrollbar"
+              className="flex-1 min-w-0 resize-none bg-transparent text-foreground focus:outline-none text-[14.5px] placeholder:text-muted-foreground/70 max-h-[100px] py-2 custom-scrollbar"
               style={{ minHeight: "24px" }}
             />
           </div>
 
-          {/* Right Action Icons (Mic or Send) */}
-          <div className="flex items-center pb-1">
-            {text.trim() || file ? (
-              <button
-                onClick={sendMessage}
-                disabled={loading}
-                className="p-2 text-white bg-primary hover:bg-primary/95 rounded-full transition shadow-md hover:scale-105 active:scale-95 disabled:opacity-60"
-                title="Send message"
-              >
-                {loading ? (
-                  <Loader2 className="animate-spin w-5 h-5" />
-                ) : (
-                  <Send className="w-5 h-5 translate-x-[-0.5px]" />
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={startRecording}
-                className="p-2 text-muted-foreground hover:bg-background hover:text-emerald-500 rounded-full transition hover:scale-105"
-                title="Record voice message"
-              >
-                <Mic className="w-5 h-5" />
-              </button>
-            )}
-          </div>
+          {/* Send / Mic - a distinct circular accent button, not tucked inside the pill */}
+          {text.trim() || file ? (
+            <button
+              onClick={sendMessage}
+              disabled={loading}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition hover:brightness-110 hover:scale-105 active:scale-95 disabled:opacity-60"
+              title="Send message"
+            >
+              {loading ? (
+                <Loader2 className="animate-spin w-[19px] h-[19px]" />
+              ) : (
+                <Send className="w-[19px] h-[19px] translate-x-[-1px]" />
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={startRecording}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-emerald-500/40 hover:text-emerald-500 hover:scale-105 active:scale-95"
+              title="Record voice message"
+            >
+              <Mic className="w-[19px] h-[19px]" />
+            </button>
+          )}
         </div>
       )}
     </div>

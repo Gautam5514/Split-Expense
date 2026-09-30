@@ -37,7 +37,7 @@ export default function MembersModal({ group, isCreator, onClose, onAdd, onInvit
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center cursor-pointer"
         style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >

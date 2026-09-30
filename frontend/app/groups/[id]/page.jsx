@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, createElement } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import toast from "@/lib/toast";
 import { useAuth } from "@/context/AuthContext";
-import MemberPicker from "@/components/MemberPicker";
+import AddPeopleModal from "@/components/people/AddPeopleModal";
+import PendingMembers from "@/components/group/PendingMembers";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import InviteModal from "@/components/InviteModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
@@ -36,30 +37,36 @@ import {
   TrendingUp,
   BookOpen,
   CheckCircle,
+  CheckCircle2,
   UserPlus,
   Zap,
   Wallet2,
   Clock,
+  Copy,
+  Download,
+  Check,
+  Plus,
+  Repeat,
+  Settings2,
+  Smartphone,
+  LogOut,
+  Camera,
+  MoreHorizontal,
+  Users,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import NotepadSection from "@/components/Notepad/NotepadSection";
 import OcrViewModal from "@/components/OcrViewModal";
 import Loader3D from "@/components/Loader3D";
 import socket, { connectSocket } from "@/lib/socket";
-import { formatCurrency, formatSignedCurrency } from "@/lib/formatCurrency";
-
-const categoryIcons = {
-  food: Utensils,
-  travel: Bus,
-  shopping: ShoppingBag,
-  gift: Gift,
-  bills: CreditCard,
-  rent: Home,
-  stay: Home,
-  coffee: Coffee,
-  misc: FileText,
-  general: FileText,
-};
+import { formatMoney } from "@/lib/formatCurrency";
+import GroupAvatarEditor from "@/components/group/GroupAvatarEditor";
+import { getGroupIcon } from "@/lib/groupIcons";
+import { groupTypeMeta, categoryMeta } from "@/lib/groupPresets";
+import GroupTypeCard from "@/components/group/GroupTypeCard";
+import GroupSettingsModal from "@/components/group/GroupSettingsModal";
+import RecurringBills from "@/components/group/RecurringBills";
+import CategoryBreakdown from "@/components/group/CategoryBreakdown";
 
 const fmtDate = new Intl.DateTimeFormat("en-IN", {
   day: "2-digit",
@@ -75,7 +82,6 @@ export default function GroupDetailPage() {
   const [group, setGroup] = useState(null);
   const [meId, setMeId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
   const [expenses, setExpenses] = useState([]);
   const [balances, setBalances] = useState(null);
   const [pendingSettlements, setPendingSettlements] = useState([]);
@@ -85,6 +91,7 @@ export default function GroupDetailPage() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState(null); // { id, name } | null
   const [selectedOcr, setSelectedOcr] = useState(null);
   const [expandedPayerId, setExpandedPayerId] = useState(null);
@@ -94,6 +101,11 @@ export default function GroupDetailPage() {
     typeof window !== "undefined" && window.innerWidth < 1024 ? "balances" : "feed"
   );
   const [showAllExpenses, setShowAllExpenses] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [pendingMembers, setPendingMembers] = useState(null);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const fetchGroup = async () => {
     try {
@@ -125,6 +137,38 @@ export default function GroupDetailPage() {
     }
   };
 
+  // Type card data (budget, month totals, bills, missing receipts...)
+  const fetchSummary = async () => {
+    try {
+      const res = await api.get(`/groups/${groupId}/summary`);
+      setSummary(res.data);
+    } catch {
+      // Non-critical - the type card just stays in its loading state.
+    }
+  };
+
+  // Creator-only list of invites waiting to be accepted + join requests.
+  const fetchPendingMembers = async () => {
+    try {
+      const res = await api.get(`/groups/${groupId}/invites`);
+      setPendingMembers(res.data);
+    } catch {
+      setPendingMembers(null);
+    }
+  };
+
+  const handleLeave = async () => {
+    try {
+      await api.post(`/groups/${groupId}/leave`);
+      toast.success("You left the group");
+      router.push("/dashboard");
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Couldn't leave the group");
+    } finally {
+      setShowLeaveConfirm(false);
+    }
+  };
+
   const fetchPendingSettlements = async () => {
     try {
       const res = await api.get(`/expenses/settle/pending/${groupId}`);
@@ -145,6 +189,8 @@ export default function GroupDetailPage() {
     fetchExpenses();
     fetchBalances();
     fetchPendingSettlements();
+    fetchSummary();
+    fetchPendingMembers();
   }, [groupId, token, authLoading]);
 
   // Live refresh: any confirm/reject/cancel from the other party (or from
@@ -159,6 +205,7 @@ export default function GroupDetailPage() {
       fetchBalances();
       fetchExpenses();
       fetchPendingSettlements();
+      fetchSummary();
     };
     socket.on("settlementUpdate", onSettlementUpdate);
     return () => {
@@ -166,31 +213,6 @@ export default function GroupDetailPage() {
       socket.emit("leaveGroup", groupId);
     };
   }, [groupId, token]);
-
-  const handleAddMembers = async (emails) => {
-    if (!emails?.length) return;
-    try {
-      setAdding(true);
-      const res = await api.post(`/groups/${groupId}/members`, { emails });
-      const { added = 0, invited = 0, group: updatedGroup } = res.data;
-
-      if (updatedGroup) setGroup(updatedGroup);
-
-      if (added > 0 && invited > 0) {
-        toast.success(`${added} member${added !== 1 ? "s" : ""} added, invitation email${invited !== 1 ? "s" : ""} sent to ${invited} unregistered address${invited !== 1 ? "es" : ""}`);
-      } else if (added > 0) {
-        toast.success(`${added} member${added !== 1 ? "s" : ""} added successfully!`);
-      } else if (invited > 0) {
-        toast.success(`Invitation email${invited !== 1 ? "s" : ""} sent to ${invited} address${invited !== 1 ? "es" : ""}! They'll join automatically after signing up.`);
-      }
-
-      fetchGroup();
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to add members");
-    } finally {
-      setAdding(false);
-    }
-  };
 
   const handleRemove = async (userId) => {
     try {
@@ -211,19 +233,19 @@ export default function GroupDetailPage() {
   };
 
   const handleExpenseAdded = () => {
-    toast.success("Expense added successfully!");
+    toast.success("Expense added!");
     setShowExpenseModal(false);
     fetchExpenses();
     fetchBalances();
+    fetchSummary();
   };
 
-  // Settlements are two-party: this only files a claim. It never moves a
-  // balance by itself - only the counterparty's confirm does (see
-  // handleConfirmSettlement below). Prevents either side from unilaterally
-  // marking a debt paid.
+  // A debtor's "I paid" only files a claim - the creditor has to confirm it
+  // (see handleConfirmSettlement below), so nobody can mark their own debt
+  // paid. A creditor's "I received it" settles right away.
   const handleRequestSettlement = async (fromUser, toUser, amount, method, note) => {
     try {
-      await api.post("/expenses/settle/request", {
+      const { data } = await api.post("/expenses/settle/request", {
         groupId,
         fromUserId: fromUser.userId,
         toUserId: toUser.userId,
@@ -231,7 +253,15 @@ export default function GroupDetailPage() {
         method,
         note,
       });
-      toast.success("Settlement request sent - waiting for their confirmation.");
+      if (data?.status === "confirmed") {
+        // Creditor recorded "I received it" - the server settles it straight away.
+        toast.success("Marked as received. Balances updated.");
+        fetchExpenses();
+        fetchBalances();
+        fetchSummary();
+      } else {
+        toast.success("Settlement request sent - waiting for their confirmation.");
+      }
       fetchPendingSettlements();
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to send settlement request");
@@ -244,6 +274,7 @@ export default function GroupDetailPage() {
       toast.success("Settlement confirmed. Balances updated.");
       fetchExpenses();
       fetchBalances();
+      fetchSummary();
       fetchPendingSettlements();
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to confirm settlement");
@@ -304,35 +335,76 @@ export default function GroupDetailPage() {
   const handleDeleteTrip = async () => {
     try {
       await api.delete(`/groups/${groupId}`);
-      toast.success("Trip deleted");
+      toast.success("Group deleted");
       router.push("/dashboard");
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to delete trip");
+      toast.error(e?.response?.data?.message || "Failed to delete group");
     } finally {
       setShowDeleteConfirm(false);
     }
   };
 
+
+  const handleMarkCompleted = async () => {
+    try {
+      await api.put(`/groups/${groupId}/complete`, {});
+      toast.success("Marked as completed!");
+      fetchGroup();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to mark as completed");
+    }
+  };
+
   if (loading) {
-    return <Loader3D message="Entering trip room..." />;
+    return <Loader3D message="Opening group..." />;
   }
 
   if (!group) {
     return (
       <div className="max-w-md mx-auto p-8 text-center">
         <p className="text-muted-foreground mb-4">Group not found.</p>
-        <button onClick={() => router.push("/dashboard")} className="text-primary underline text-sm">
+        <button onClick={() => router.push("/dashboard")} className="text-primary underline text-sm cursor-pointer">
           Back to Dashboard
         </button>
       </div>
     );
   }
 
+  const typeMeta = groupTypeMeta(group.groupType);
+  const currency = group.settings?.currency || "INR";
+  const money = (v) => formatMoney(v, currency);
+  const fmtRange = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" });
+  const typeSubline = [
+    typeMeta.label,
+    group.groupType === "trip" && group.trip?.startDate
+      ? `${fmtRange.format(new Date(group.trip.startDate))}${group.trip?.endDate ? ` – ${fmtRange.format(new Date(group.trip.endDate))}` : ""}`
+      : null,
+    group.groupType === "roommate" && group.roommate?.billDay ? `Bills due on day ${group.roommate.billDay}` : null,
+  ].filter(Boolean).join(" · ");
+
   const tabs = [
-    { key: "feed", label: "Expenses Log", icon: Receipt },
-    { key: "breakdown", label: "Spend Owners", icon: TrendingUp },
+    { key: "feed", label: "Expenses", icon: Receipt },
+    { key: "breakdown", label: "Insights", icon: TrendingUp },
+    ...(group.groupType === "roommate" ? [{ key: "bills", label: "Bills", icon: Repeat }] : []),
     // { key: "notes", label: "Shared Notes", icon: BookOpen },
   ];
+
+  // What an expense means for me: "you owe ₹x" / "you lent ₹x".
+  const myImpact = (exp) => {
+    if (!meId) return null;
+    const myShare = (exp.splits || []).reduce(
+      (a, s) => a + (String(s.userId?._id || s.userId) === String(meId) ? Number(s.share) || 0 : 0), 0);
+    const myPaid = exp.payers?.length
+      ? exp.payers.reduce((a, p) => a + (String(p.userId?._id || p.userId) === String(meId) ? Number(p.amount) || 0 : 0), 0)
+      : String(exp.paidBy?._id) === String(meId) ? Number(exp.amount) || 0 : 0;
+    const net = myPaid - myShare;
+    if (Math.abs(net) < 0.01) return myShare > 0 ? { text: "settled", tone: "muted" } : { text: "not involved", tone: "muted" };
+    return net > 0 ? { text: `you lent ${money(net)}`, tone: "up" } : { text: `you owe ${money(-net)}`, tone: "down" };
+  };
+  const payerLabel = (exp) =>
+    exp.payers?.length > 1
+      ? `${exp.payers.length} people paid`
+      : `${String(exp.paidBy?._id) === String(meId) ? "You" : exp.paidBy?.name || "Someone"} paid`;
 
   const displayedExpenses = expenses.length > 10 && !showAllExpenses ? expenses.slice(0, 9) : expenses;
 
@@ -341,162 +413,178 @@ export default function GroupDetailPage() {
       <div className="max-w-6xl mx-auto space-y-5">
 
         {/* ── HEADER ── */}
-        <div className={`bg-card border border-border rounded-xl px-4 py-3 sm:px-6 sm:py-4 shadow-sm ${group.isCompleted ? "opacity-80" : ""}`}>
-          <div className="flex items-center justify-between gap-4">
+        <div className={`bg-card border border-border rounded-2xl px-3 py-3 sm:px-5 sm:py-4 shadow-sm ${group.isCompleted ? "opacity-80" : ""}`}>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => router.push("/dashboard")}
+              aria-label="Back to groups"
+              className="shrink-0 w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+            >
+              <ArrowLeft size={18} />
+            </button>
 
-            {/* Left: name + meta */}
-            <div className="min-w-0 flex items-center gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-foreground leading-tight truncate">
-                    {group.name}
-                  </h1>
-                  {group.isCompleted && (
-                    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border shrink-0">
-                      Completed
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  by <span className="font-medium text-foreground/70">{group.createdBy?.name || "You"}</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Right: action buttons */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => router.push("/dashboard")}
-                title="Back to dashboard"
-                className="flex items-center gap-1.5 h-8 px-2.5 rounded  border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition cursor-pointer"
-              >
-                <ArrowLeft size={13} />
-                <span className="hidden sm:inline">Back</span>
-              </button>
-
-              {isCreator && (
+            {(() => {
+              const GroupIcon = getGroupIcon(group.icon) || typeMeta.Icon;
+              return (
                 <button
                   type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  title="Delete group"
-                  className="flex items-center justify-center w-8 h-8 rounded border border-destructive/20 text-destructive/60 hover:text-destructive hover:border-destructive/40 hover:bg-destructive/5 transition cursor-pointer"
+                  onClick={() => isCreator && setShowIconPicker(true)}
+                  title={isCreator ? "Change group photo or icon" : undefined}
+                  aria-label={isCreator ? "Change group photo or icon" : undefined}
+                  className={`relative shrink-0 w-11 h-11 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden ${
+                    isCreator ? "cursor-pointer group/avatar" : "cursor-default"
+                  }`}
+                  style={group.photo?.url ? undefined : { background: `linear-gradient(135deg, ${typeMeta.accent[0]}, ${typeMeta.accent[1]})` }}
                 >
-                  <Trash2 size={13} />
+                  {group.photo?.url ? (
+                    <Image src={group.photo.url} alt="" width={56} height={56} className="w-full h-full object-cover" />
+                  ) : (
+                    createElement(GroupIcon, { className: "w-5 h-5 sm:w-6 sm:h-6 text-white", strokeWidth: 2.2 })
+                  )}
+                  {isCreator && (
+                    <span className="absolute inset-0 bg-black/45 opacity-0 group-hover/avatar:opacity-100 transition flex items-center justify-center">
+                      <Camera size={16} className="text-white" />
+                    </span>
+                  )}
                 </button>
-              )}
+              );
+            })()}
 
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <h1 className="text-lg sm:text-2xl font-extrabold text-foreground leading-tight truncate">
+                  {group.name}
+                </h1>
+                {group.isCompleted && (
+                  <span className="hidden sm:inline-flex items-center text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
+                    Completed
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 min-w-0">
+                <span className="inline-flex items-center gap-1 font-semibold text-primary truncate">
+                  {createElement(typeMeta.Icon, { size: 11, className: "shrink-0" })}
+                  <span className="truncate">{typeSubline}</span>
+                </span>
+                <span className="shrink-0">·</span>
+                <button type="button" onClick={() => setShowMembersModal(true)} className="shrink-0 hover:text-foreground transition cursor-pointer">
+                  {group.members?.length || 0} member{group.members?.length !== 1 ? "s" : ""}
+                </button>
+              </p>
+            </div>
+
+            {/* Actions: Chat + everything else in one menu */}
+            <div className="shrink-0 flex items-center gap-1.5">
               <button
                 onClick={() => router.push(`/groupchat?groupId=${groupId}`)}
-                className="flex items-center gap-1.5 text-xs font-bold text-white px-3 h-8 rounded transition cursor-pointer"
-                style={{ background: "linear-gradient(135deg,#0891B2,#0E7490)", boxShadow: "0 2px 8px rgba(8,145,178,0.25)" }}
+                aria-label="Group chat"
+                className="flex items-center justify-center gap-1.5 h-10 w-10 sm:h-9 sm:w-auto sm:px-3.5 rounded-full text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition cursor-pointer"
               >
-                <MessageCircleMore size={13} />
-                <span>Chat</span>
+                <MessageCircleMore size={16} />
+                <span className="hidden sm:inline">Chat</span>
               </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowMenu((v) => !v)}
+                  aria-label="More options"
+                  aria-expanded={showMenu}
+                  className="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+                >
+                  <MoreHorizontal size={18} />
+                </button>
+                {showMenu && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
+                    <div className="absolute right-0 top-full mt-2 z-40 w-56 rounded-2xl border border-border bg-card shadow-xl p-1.5" role="menu">
+                      {[
+                        isCreator && { label: "Group settings", Icon: Settings2, onClick: () => setShowSettings(true) },
+                        isCreator && { label: "Photo & icon", Icon: Camera, onClick: () => setShowIconPicker(true) },
+                        { label: "Members", Icon: Users, onClick: () => setShowMembersModal(true) },
+                        isCreator && !group.isCompleted && { label: "Mark as completed", Icon: CheckCircle2, onClick: handleMarkCompleted },
+                        !isCreator && meId && { label: "Leave group", Icon: LogOut, onClick: () => setShowLeaveConfirm(true), danger: true },
+                        isCreator && { label: "Delete group", Icon: Trash2, onClick: () => setShowDeleteConfirm(true), danger: true },
+                      ].filter(Boolean).map(({ label, Icon, onClick, danger }) => (
+                        <button key={label} type="button" role="menuitem"
+                          onClick={() => { setShowMenu(false); onClick(); }}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-left transition cursor-pointer ${
+                            danger ? "text-destructive hover:bg-destructive/10" : "text-foreground hover:bg-muted"}`}>
+                          <Icon size={15} className={danger ? "" : "text-muted-foreground"} /> {label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ── STAT CARDS ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-          {/* Total Spend */}
-          <div className="col-span-2 sm:col-span-1 bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Group Spend</p>
-            <p className="text-2xl font-black text-foreground mt-2">{formatCurrency(expenseSummary.total)}</p>
-            <p className="text-[11px] text-muted-foreground mt-1.5">
-              Across {expenseSummary.count} logged expense{expenseSummary.count !== 1 ? "s" : ""}
-            </p>
-          </div>
-
-          {/* Balance Position */}
-          <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Your Balance Position</p>
-            {currentUserBalance > 0.01 ? (
-              <>
-                <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
-                  +{formatCurrency(Math.abs(currentUserBalance))}
-                </p>
-                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1.5 flex items-center gap-1">
-                  <ArrowUpRight size={11} /> You are owed by this group
-                </p>
-              </>
-            ) : currentUserBalance < -0.01 ? (
-              <>
-                <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2">
-                  -{formatCurrency(Math.abs(currentUserBalance))}
-                </p>
-                <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1.5 flex items-center gap-1">
-                  <ArrowDownLeft size={11} /> You owe others in this group
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-2xl font-black text-muted-foreground mt-2">Settled Up</p>
-                <p className="text-[11px] text-primary mt-1.5 flex items-center gap-1">
-                  <CheckCircle size={11} /> All balances are settled
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* Members - tap anywhere to open the full searchable roster */}
-          <button
-            type="button"
-            onClick={() => setShowMembersModal(true)}
-            className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm text-left hover:border-primary/40 hover:bg-muted/20 transition cursor-pointer"
-          >
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Active Group Size</p>
-            <p className="text-2xl font-black text-foreground mt-2">
-              {group.members?.length || 0} Members
-            </p>
-            <div className="flex items-center justify-between mt-2">
-              <div className="flex -space-x-2">
-                {group.members?.slice(0, 4).map((m, i) =>
-                  m.photoURL ? (
-                    <Image key={m._id || i} src={m.photoURL} alt={m.name || ""} width={22} height={22}
-                      className="w-5.5 h-5.5 rounded-full ring-2 ring-card object-cover" />
-                  ) : (
-                    <div key={m._id || i} className="w-5.5 h-5.5 rounded-full ring-2 ring-card bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
-                      {m.name?.charAt(0) || "U"}
-                    </div>
-                  )
-                )}
-                {group.members?.length > 4 && (
-                  <div className="w-5.5 h-5.5 rounded-full ring-2 ring-card bg-muted flex items-center justify-center text-[9px] font-bold text-muted-foreground">
-                    +{group.members.length - 4}
-                  </div>
+        {/* ── MY BALANCE + TYPE CARD ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          {(() => {
+            const canSettle = balances?.suggestions?.some((s) => String(s.from.userId) === String(meId) || String(s.to.userId) === String(meId));
+            const up = currentUserBalance > 0.01;
+            const down = currentUserBalance < -0.01;
+            return (
+              <div className="bg-card border border-border rounded-2xl p-4 md:p-5 shadow-sm flex items-center justify-between gap-3 md:flex-col md:items-start md:justify-start">
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Your balance</p>
+                  <p className={`text-2xl font-black mt-1 md:mt-2 truncate ${
+                    up ? "text-emerald-600 dark:text-emerald-400" : down ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"}`}>
+                    {up ? `+${money(Math.abs(currentUserBalance))}` : down ? `-${money(Math.abs(currentUserBalance))}` : "Settled up"}
+                  </p>
+                  <p className={`text-[11px] mt-1 md:mt-1.5 flex items-center gap-1 ${
+                    up ? "text-emerald-600 dark:text-emerald-400" : down ? "text-rose-600 dark:text-rose-400" : "text-primary"}`}>
+                    {up ? <><ArrowUpRight size={11} /> You get back</> : down ? <><ArrowDownLeft size={11} /> You owe</> : <><CheckCircle size={11} /> Nothing pending</>}
+                  </p>
+                </div>
+                {canSettle && (
+                  <button type="button"
+                    onClick={() => { if (isMobile) setActiveTab("balances"); else document.getElementById("group-balances")?.scrollIntoView({ behavior: "smooth" }); }}
+                    className="shrink-0 h-9 px-4 rounded-full bg-primary/10 text-primary text-xs font-bold hover:bg-primary/15 transition cursor-pointer md:mt-3">
+                    Settle up
+                  </button>
                 )}
               </div>
-              <span className="text-[11px] font-semibold text-primary">Manage</span>
-            </div>
-          </button>
+            );
+          })()}
+          <div className="md:col-span-2">
+            <GroupTypeCard
+              group={group}
+              summary={summary}
+              isCreator={isCreator}
+              onOpenSettings={() => setShowSettings(true)}
+              onOpenBills={() => setActiveTab("bills")}
+            />
+          </div>
         </div>
 
         {/* ── TWO-COLUMN LAYOUT ── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-5">
 
           {/* LEFT: TABS + CONTENT */}
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
 
             {/* Tab bar */}
             <div className="overflow-x-auto scrollbar-hide">
-              <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1 shadow-sm w-max min-w-full sm:w-fit">
+              <div className="flex items-center gap-1 bg-card border border-border rounded-2xl p-1 shadow-sm w-max min-w-full lg:min-w-0 lg:w-fit">
 
                 {/* Group Balance - mobile only, FIRST position */}
                 <button onClick={() => setActiveTab("balances")}
-                  className={`lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  className={`lg:hidden flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === "balances"
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}>
                   <Wallet2 size={13} />
-                  <span>Group Balance</span>
+                  <span>Balances</span>
                 </button>
 
                 {/* Expenses Log + Spend Owners - always shown */}
                 {tabs.filter(t => t.key !== "notes").map(({ key, label, icon: Icon }) => (
                   <button key={key} onClick={() => setActiveTab(key)}
-                    className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 lg:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === key
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -528,10 +616,10 @@ export default function GroupDetailPage() {
                 <motion.div key="feed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
                   className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-                  <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border">
-                    <h3 className="font-bold text-base text-foreground">Chronological Log</h3>
+                  <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border">
+                    <h3 className="font-bold text-base text-foreground">Expenses</h3>
                     <button onClick={() => setShowExpenseModal(true)}
-                      className="flex items-center gap-1.5 bg-primary text-primary-foreground font-semibold px-3 py-1.5 rounded-lg text-sm hover:opacity-90 transition cursor-pointer">
+                      className="hidden lg:flex items-center gap-1.5 bg-primary text-primary-foreground font-semibold px-3 py-1.5 rounded-lg text-sm hover:opacity-90 transition cursor-pointer">
                       <PlusCircle size={14} /> Add Expense
                     </button>
                   </div>
@@ -542,7 +630,11 @@ export default function GroupDetailPage() {
                         <Receipt className="text-primary/50" size={22} />
                       </div>
                       <p className="font-semibold text-foreground text-sm">No expenses recorded</p>
-                      <p className="text-xs text-muted-foreground mt-1">Add an expense to start splitting costs.</p>
+                      <p className="text-xs text-muted-foreground mt-1">Add your first expense - just the amount and what it was for.</p>
+                      <button onClick={() => setShowExpenseModal(true)}
+                        className="mt-4 inline-flex items-center gap-1.5 bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition cursor-pointer">
+                        <Plus size={14} /> Add expense
+                      </button>
                     </div>
                   ) : (
                     <>
@@ -551,7 +643,7 @@ export default function GroupDetailPage() {
                         if (isSettlementRow) {
                           return (
                             <div key={exp._id}
-                              className={`flex items-center gap-3 px-5 sm:px-6 py-3 transition ${
+                              className={`flex items-center gap-3 px-4 sm:px-6 py-3 transition ${
                                 idx < displayedExpenses.length - 1 ? "border-b border-border" : ""
                               }`}
                               style={{ background: "rgba(16,185,129,0.04)" }}>
@@ -572,16 +664,16 @@ export default function GroupDetailPage() {
                                   style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
                                   Settlement
                                 </span>
-                                <span className="font-bold text-sm text-emerald-500">{formatCurrency(exp.amount)}</span>
+                                <span className="font-bold text-sm text-emerald-500">{money(exp.amount)}</span>
                               </div>
                             </div>
                           );
                         }
-                        const catKey = exp.category?.toLowerCase() || "misc";
-                        const Icon = categoryIcons[catKey] || FileText;
+                        const Icon = categoryMeta(exp.category?.toLowerCase()).Icon || FileText;
+                        const impact = myImpact(exp);
                         return (
                           <div key={exp._id}
-                            className={`flex items-center gap-3 px-5 sm:px-6 py-3.5 hover:bg-muted/25 transition ${
+                            className={`flex items-center gap-3 px-4 sm:px-6 py-3.5 hover:bg-muted/25 transition ${
                               idx < displayedExpenses.length - 1 ? "border-b border-border" : ""
                             }`}>
                             <div className="w-9 h-9 rounded-xl bg-primary/8 border border-primary/10 flex items-center justify-center shrink-0 text-primary">
@@ -589,14 +681,16 @@ export default function GroupDetailPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-foreground text-sm truncate">{exp.description}</p>
-                              <p className="text-[11px] text-muted-foreground mt-0.5">
-                                Paid by {exp.paidBy?.name || "Someone"} · {fmtDate.format(new Date(exp.date))}
+                              <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                {payerLabel(exp)} · {fmtDate.format(new Date(exp.date))}
+                                {exp.currency && ` · ${formatMoney(exp.originalAmount, exp.currency)}`}
+                                {exp.recurringId && " · monthly"}
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              {exp.category && exp.category !== "general" && (
-                                <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded bg-primary/8 text-primary border border-primary/10">
-                                  {exp.category}
+                              {exp.notes && (
+                                <span title={exp.notes} className="hidden sm:inline text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground max-w-[120px] truncate">
+                                  {exp.notes}
                                 </span>
                               )}
                               {exp.ocrText && (
@@ -606,7 +700,16 @@ export default function GroupDetailPage() {
                                   <Eye size={13} />
                                 </button>
                               )}
-                              <span className="font-bold text-sm text-foreground">{formatCurrency(exp.amount)}</span>
+                              <div className="text-right">
+                                <span className="block font-bold text-sm text-foreground">{money(exp.amount)}</span>
+                                {impact && (
+                                  <span className={`block text-[10px] font-semibold ${
+                                    impact.tone === "up" ? "text-emerald-600 dark:text-emerald-400"
+                                    : impact.tone === "down" ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"}`}>
+                                    {impact.text}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -629,9 +732,20 @@ export default function GroupDetailPage() {
                 <motion.div key="breakdown" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
                   className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-5 sm:px-6 py-4 border-b border-border">
-                    <h3 className="font-bold text-base text-foreground">Spend Owners</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Breakdown by payer - tap to expand</p>
+                  {summary?.byCategory?.length > 0 && (
+                    <div className="border-b border-border">
+                      <div className="px-4 sm:px-6 pt-4">
+                        <h3 className="font-bold text-base text-foreground">Where the money went</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {money(summary.total)} across {summary.count} expense{summary.count !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <CategoryBreakdown rows={summary.byCategory} currency={currency} />
+                    </div>
+                  )}
+                  <div className="px-4 sm:px-6 py-4 border-b border-border">
+                    <h3 className="font-bold text-base text-foreground">Who paid</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">By payer - tap to expand</p>
                   </div>
                   {expenses.length === 0 ? (
                     <div className="text-center py-14 text-muted-foreground text-sm">No records to break down.</div>
@@ -643,7 +757,7 @@ export default function GroupDetailPage() {
                           <div key={payer.id}>
                             <button type="button"
                               onClick={() => setExpandedPayerId(isOpen ? null : payer.id)}
-                              className="w-full flex items-center gap-3 px-5 sm:px-6 py-4 text-left hover:bg-muted/25 transition cursor-pointer">
+                              className="w-full flex items-center gap-3 px-4 sm:px-6 py-4 text-left hover:bg-muted/25 transition cursor-pointer">
                               <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                                 {payer.name.charAt(0).toUpperCase()}
                               </div>
@@ -653,7 +767,7 @@ export default function GroupDetailPage() {
                                   {payer.items.length} expense{payer.items.length !== 1 ? "s" : ""}
                                 </p>
                               </div>
-                              <span className="font-bold text-foreground text-sm shrink-0">{formatCurrency(payer.total)}</span>
+                              <span className="font-bold text-foreground text-sm shrink-0">{money(payer.total)}</span>
                               <ChevronDown size={16}
                                 className={`text-muted-foreground transition-transform shrink-0 ${isOpen ? "rotate-180 text-primary" : ""}`} />
                             </button>
@@ -661,13 +775,13 @@ export default function GroupDetailPage() {
                               {isOpen && (
                                 <motion.div initial={{ height: 0 }} animate={{ height: "auto" }}
                                   exit={{ height: 0 }} transition={{ duration: 0.2 }}
-                                  className="overflow-hidden bg-muted/20 border-t border-border">
-                                  <div className="px-5 sm:px-6 py-3 space-y-2">
+                                  className="overflow-hidden border-t border-border">
+                                  <div className="pl-4 sm:pl-6 pr-4 sm:pr-6 divide-y divide-border">
                                     {payer.items.map((exp) => {
-                                      const Icon = categoryIcons[exp.category?.toLowerCase()] || FileText;
+                                      const Icon = categoryMeta(exp.category?.toLowerCase()).Icon || FileText;
                                       return (
                                         <div key={exp._id}
-                                          className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-2.5 shadow-sm">
+                                          className="flex items-center gap-3 py-3 pl-12">
                                           <div className="w-7 h-7 rounded-lg bg-primary/8 flex items-center justify-center text-primary shrink-0">
                                             <Icon size={13} />
                                           </div>
@@ -675,7 +789,7 @@ export default function GroupDetailPage() {
                                             <p className="text-xs font-semibold text-foreground truncate">{exp.description}</p>
                                             <p className="text-[10px] text-muted-foreground">{fmtDate.format(new Date(exp.date))}</p>
                                           </div>
-                                          <span className="text-xs font-bold text-foreground shrink-0">{formatCurrency(exp.amount)}</span>
+                                          <span className="text-xs font-bold text-foreground shrink-0">{money(exp.amount)}</span>
                                         </div>
                                       );
                                     })}
@@ -691,6 +805,14 @@ export default function GroupDetailPage() {
                 </motion.div>
               )}
 
+              {/* Monthly bills (Roommates) */}
+              {activeTab === "bills" && (
+                <motion.div key="bills" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
+                  <RecurringBills group={group} meId={meId} onChanged={fetchSummary} />
+                </motion.div>
+              )}
+
               {/* Notes */}
               {activeTab === "notes" && (
                 <motion.div key="notes" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -703,13 +825,20 @@ export default function GroupDetailPage() {
               {activeTab === "balances" && (
                 <motion.div key="balances" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}
-                  className="lg:hidden space-y-3">
-                  <BalancesCard balances={balances} pendingSettlements={pendingSettlements} meId={meId}
+                  className="lg:hidden grid gap-3 md:grid-cols-2 md:items-start">
+                  <BalancesCard balances={balances} pendingSettlements={pendingSettlements} meId={meId} currency={currency} groupName={group.name}
                     onRequestSettlement={handleRequestSettlement}
                     onConfirmSettlement={handleConfirmSettlement}
                     onRejectSettlement={handleRejectSettlement}
-                    onCancelSettlement={handleCancelSettlement}
-                    onAddExpense={() => setShowExpenseModal(true)} />
+                    onCancelSettlement={handleCancelSettlement} />
+                  <div className="grid gap-3">
+                    <MembersCard group={group} isCreator={isCreator}
+                      onAdd={() => setShowAddMember(true)}
+                      onInvite={() => setShowInviteModal(true)}
+                      onRemove={requestRemoveMember}
+                      onViewAll={() => setShowMembersModal(true)} />
+                    {isCreator && <PendingMembers groupId={groupId} pending={pendingMembers} onChanged={() => { fetchPendingMembers(); fetchGroup(); fetchBalances(); }} />}
+                  </div>
                 </motion.div>
               )}
 
@@ -717,8 +846,8 @@ export default function GroupDetailPage() {
           </div>
 
           {/* RIGHT SIDEBAR */}
-          <div className="hidden lg:flex flex-col gap-5">
-            <BalancesCard balances={balances} pendingSettlements={pendingSettlements} meId={meId}
+          <div id="group-balances" className="hidden lg:flex flex-col gap-5">
+            <BalancesCard balances={balances} pendingSettlements={pendingSettlements} meId={meId} currency={currency} groupName={group.name}
               onRequestSettlement={handleRequestSettlement}
               onConfirmSettlement={handleConfirmSettlement}
               onRejectSettlement={handleRejectSettlement}
@@ -728,6 +857,7 @@ export default function GroupDetailPage() {
               onInvite={() => setShowInviteModal(true)}
               onRemove={requestRemoveMember}
               onViewAll={() => setShowMembersModal(true)} />
+            {isCreator && <PendingMembers groupId={groupId} pending={pendingMembers} onChanged={() => { fetchPendingMembers(); fetchGroup(); fetchBalances(); }} />}
           </div>
         </div>
       </div>
@@ -738,7 +868,15 @@ export default function GroupDetailPage() {
         onCancel={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteTrip}
         title={`Delete "${group.name}"?`}
-        description={`You're about to permanently delete this trip. All expenses, notes, group messages, and member data will be removed forever.`}
+        description={`You're about to permanently delete this group. All expenses, notes, group messages, and member data will be removed forever.`}
+      />
+      <ConfirmDeleteModal
+        isOpen={showLeaveConfirm}
+        onCancel={() => setShowLeaveConfirm(false)}
+        onConfirm={handleLeave}
+        title={`Leave "${group.name}"?`}
+        description="You can only leave once you're settled up. You'll need a new invite to come back."
+        confirmLabel="Yes, Leave"
       />
       <ConfirmDeleteModal
         isOpen={!!memberToRemove}
@@ -749,9 +887,32 @@ export default function GroupDetailPage() {
       />
       <AnimatePresence>
         {showExpenseModal && (
-          <AddExpenseModal group={group} onClose={() => setShowExpenseModal(false)} onSuccess={handleExpenseAdded} />
+          <AddExpenseModal group={group} meId={meId} onClose={() => setShowExpenseModal(false)} onSuccess={handleExpenseAdded} />
         )}
       </AnimatePresence>
+      {showIconPicker && (
+        <GroupAvatarEditor
+          group={{ ...group, groupType: group.groupType }}
+          onClose={() => setShowIconPicker(false)}
+          onChange={(patch) => setGroup((g) => ({ ...g, ...patch }))}
+        />
+      )}
+      {showSettings && (
+        <GroupSettingsModal
+          group={group}
+          hasExpenses={expenses.length > 0}
+          onClose={() => setShowSettings(false)}
+          onSaved={(updated) => { setGroup((g) => ({ ...g, ...updated, members: g.members })); fetchSummary(); }}
+        />
+      )}
+      {/* Mobile: one obvious primary action */}
+      {!showExpenseModal && !group.isCompleted && (
+        <button type="button" onClick={() => setShowExpenseModal(true)}
+          className="lg:hidden fixed right-4 z-40 flex items-center gap-2 pl-4 pr-5 h-12 rounded-full bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/30 cursor-pointer"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
+          <Plus size={18} /> Add expense
+        </button>
+      )}
       <AnimatePresence>
         {showInviteModal && (
           <InviteModal groupId={groupId} token={token} onClose={() => setShowInviteModal(false)} />
@@ -764,11 +925,11 @@ export default function GroupDetailPage() {
       </AnimatePresence>
       <AnimatePresence>
         {showAddMember && (
-          <MemberPicker
+          <AddPeopleModal
             groupId={groupId}
-            exclude={group.members.map((m) => m.email)}
             onClose={() => setShowAddMember(false)}
-            onSubmit={(emails) => { handleAddMembers(emails); setShowAddMember(false); }}
+            onShareLink={isCreator ? () => { setShowAddMember(false); setShowInviteModal(true); } : undefined}
+            onDone={() => { fetchGroup(); fetchPendingMembers(); fetchBalances(); }}
           />
         )}
       </AnimatePresence>
@@ -789,12 +950,20 @@ export default function GroupDetailPage() {
 }
 
 /* ── Group Balances sidebar card ── */
-function BalancesCard({ balances, pendingSettlements, meId, onRequestSettlement, onConfirmSettlement, onRejectSettlement, onCancelSettlement, onAddExpense }) {
+function BalancesCard({ balances, pendingSettlements, meId, currency = "INR", groupName = "", onRequestSettlement, onConfirmSettlement, onRejectSettlement, onCancelSettlement, onAddExpense }) {
+  // Group-currency aware versions of the shared formatters.
+  const formatCurrency = (v) => formatMoney(v, currency);
+  const formatSignedCurrency = (v) => `${Number(v) >= 0 ? "+" : "-"}${formatMoney(Math.abs(Number(v) || 0), currency)}`;
+  // upi:// deep link - opens GPay/PhonePe/Paytm with payee + amount filled in.
+  const upiLink = (s) =>
+    `upi://pay?pa=${encodeURIComponent(s.to.upiId)}&pn=${encodeURIComponent(s.to.name || "")}&am=${Number(s.amount).toFixed(2)}&cu=INR&tn=${encodeURIComponent(`SplitEase: ${groupName}`.slice(0, 50))}`;
   // activeForm holds the suggestion index whose payment-method picker is open
   const [activeForm, setActiveForm] = useState(null);
   const [method, setMethod] = useState("cash");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  // The suggestion whose payment panel (UPI + QR) is open, or null.
+  const [payPanel, setPayPanel] = useState(null);
 
   const findPendingFor = (s) =>
     pendingSettlements?.find(
@@ -894,6 +1063,7 @@ function BalancesCard({ balances, pendingSettlements, meId, onRequestSettlement,
                   <PendingSettlementRow
                     pending={pending}
                     meId={meId}
+                    formatCurrency={formatCurrency}
                     onConfirm={onConfirmSettlement}
                     onReject={onRejectSettlement}
                     onCancel={onCancelSettlement}
@@ -906,14 +1076,30 @@ function BalancesCard({ balances, pendingSettlements, meId, onRequestSettlement,
                     onSubmit={() => submitRequest(s)}
                     onCancel={closeForm}
                     verb={isDebtor ? "pay" : "receive"}
+                    receiving={isCreditor}
+                    amountLabel={formatCurrency(s.amount)}
                   />
                 ) : isDebtor ? (
-                  <button
-                    onClick={() => openForm(i)}
-                    className="w-full flex items-center justify-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
-                  >
-                    <CheckCircle size={13} /> I&apos;ve Paid {formatCurrency(s.amount)}
-                  </button>
+                  <div className="space-y-2">
+                    {(s.to.upiId || s.to.upiQrUrl) && currency === "INR" && (
+                      <button
+                        type="button"
+                        onClick={() => setPayPanel(s)}
+                        className="w-full flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 rounded-lg text-xs transition cursor-pointer"
+                      >
+                        <Smartphone size={13} /> Pay {formatCurrency(s.amount)} to {s.to.name}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => openForm(i)}
+                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
+                    >
+                      <CheckCircle size={13} /> I&apos;ve Paid {formatCurrency(s.amount)}
+                    </button>
+                    {(s.to.upiId || s.to.upiQrUrl) && currency === "INR" && (
+                      <p className="text-[10px] text-muted-foreground text-center">After paying, tap &quot;I&apos;ve Paid&quot; so {s.to.name} can confirm.</p>
+                    )}
+                  </div>
                 ) : isCreditor ? (
                   <button
                     onClick={() => openForm(i)}
@@ -931,13 +1117,184 @@ function BalancesCard({ balances, pendingSettlements, meId, onRequestSettlement,
           })}
         </div>
       )}
+
+      <AnimatePresence>
+        {payPanel && (
+          <PaymentPanel
+            suggestion={payPanel}
+            groupName={groupName}
+            formatCurrency={formatCurrency}
+            upiLink={upiLink}
+            onClose={() => setPayPanel(null)}
+            onMarkPaid={() => {
+              const idx = balances.suggestions.findIndex(
+                (x) => String(x.to.userId) === String(payPanel.to.userId) && String(x.from.userId) === String(payPanel.from.userId)
+              );
+              setPayPanel(null);
+              if (idx >= 0) openForm(idx);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+/* ── Payment panel: right-slide drawer showing the payee's UPI ID (copy) and
+   QR scanner (download), plus a UPI-app deep link. Opened from a debtor's
+   "Pay" button. The actual settlement still goes through "I've Paid". ── */
+function PaymentPanel({ suggestion: s, groupName, formatCurrency, upiLink, onClose, onMarkPaid }) {
+  const [copied, setCopied] = useState(false);
+  const hasUpiId = !!s.to.upiId;
+  const hasQr = !!s.to.upiQrUrl;
+
+  const copyUpi = async () => {
+    try {
+      await navigator.clipboard.writeText(s.to.upiId);
+      setCopied(true);
+      toast.success("UPI ID copied");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy — long-press to copy manually");
+    }
+  };
+
+  const downloadQr = async () => {
+    try {
+      const res = await fetch(s.to.upiQrUrl, { mode: "cors" });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(s.to.name || "payee").replace(/\s+/g, "-")}-upi-qr.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Fallback: open in a new tab so the user can long-press / right-click save.
+      window.open(s.to.upiQrUrl, "_blank", "noopener");
+    }
+  };
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+        transition={{ type: "spring", stiffness: 340, damping: 34 }}
+        className="fixed inset-y-0 right-0 z-[81] flex w-full max-w-sm flex-col bg-card shadow-2xl"
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300">Pay</p>
+            <h2 className="mt-0.5 text-lg font-black tracking-[-0.02em] text-foreground">Send {formatCurrency(s.amount)}</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-5 space-y-5">
+          {/* Payee summary */}
+          <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
+            <p className="text-xs text-muted-foreground">Paying</p>
+            <p className="mt-0.5 text-lg font-black text-foreground">{s.to.name}</p>
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
+              {formatCurrency(s.amount)}
+            </p>
+          </div>
+
+          {/* QR scanner */}
+          {hasQr && (
+            <div className="space-y-2.5">
+              <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                <QrCode size={13} className="text-cyan-600 dark:text-cyan-400" /> Scan to pay
+              </p>
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-white p-4">
+                <img src={s.to.upiQrUrl} alt={`${s.to.name} UPI QR`} className="h-52 w-52 rounded-lg object-contain" />
+                <button
+                  type="button"
+                  onClick={downloadQr}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-card py-2 text-xs font-bold text-foreground transition hover:border-cyan-500 hover:text-cyan-600 dark:hover:text-cyan-400"
+                >
+                  <Download size={13} /> Download QR
+                </button>
+              </div>
+              <p className="text-center text-[10px] text-muted-foreground">
+                Open any UPI app → Scan → point at this code (or the downloaded image).
+              </p>
+            </div>
+          )}
+
+          {/* UPI ID with copy */}
+          {hasUpiId && (
+            <div className="space-y-2.5">
+              <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                <Wallet2 size={13} className="text-cyan-600 dark:text-cyan-400" /> UPI ID
+              </p>
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 p-2 pl-3.5">
+                <span className="flex-1 truncate font-mono text-sm font-semibold text-foreground">{s.to.upiId}</span>
+                <button
+                  type="button"
+                  onClick={copyUpi}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition ${
+                    copied ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  }`}
+                >
+                  {copied ? <Check size={13} /> : <Copy size={13} />}
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* One-tap deep link on mobile browsers */}
+          {hasUpiId && (
+            <a
+              href={upiLink(s)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-cyan-600 to-teal-700 py-3 text-sm font-bold text-white shadow-[0_8px_20px_-10px_rgba(8,145,178,0.9)] transition hover:-translate-y-0.5"
+            >
+              <Smartphone size={15} /> Open UPI app
+            </a>
+          )}
+
+          {!hasUpiId && !hasQr && (
+            <p className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+              {s.to.name} hasn&apos;t added a UPI ID or QR yet. Ask them to add one in their profile, or settle in cash.
+            </p>
+          )}
+        </div>
+
+        {/* Footer: confirm they paid → existing settlement request flow */}
+        <div className="shrink-0 border-t border-border px-5 py-4">
+          <button
+            type="button"
+            onClick={onMarkPaid}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-500 py-3 text-sm font-bold text-white transition hover:bg-emerald-600"
+          >
+            <CheckCircle size={15} /> I&apos;ve Paid {formatCurrency(s.amount)}
+          </button>
+          <p className="mt-2 text-center text-[10px] text-muted-foreground">
+            {s.to.name} will get a request to confirm before it&apos;s settled.
+          </p>
+        </div>
+      </motion.div>
+    </>
   );
 }
 
 /* ── A pending settlement claim on a suggestion row: either "waiting on the
    other party" (if I initiated it) or "confirm/reject" (if I need to act) ── */
-function PendingSettlementRow({ pending, meId, onConfirm, onReject, onCancel }) {
+function PendingSettlementRow({ pending, meId, formatCurrency, onConfirm, onReject, onCancel }) {
   const isInitiator = String(pending.initiatedBy._id) === String(meId);
   const initiatorPaid = String(pending.initiatedBy._id) === String(pending.fromUserId._id);
   const counterpartyName = initiatorPaid ? pending.toUserId.name : pending.fromUserId.name;
@@ -988,9 +1345,14 @@ function PendingSettlementRow({ pending, meId, onConfirm, onReject, onCancel }) 
 }
 
 /* ── Payment-method picker shown before a settlement claim is sent ── */
-function SettlementRequestForm({ method, setMethod, note, setNote, submitting, onSubmit, onCancel, verb }) {
+function SettlementRequestForm({ method, setMethod, note, setNote, submitting, onSubmit, onCancel, verb, receiving = false, amountLabel = "" }) {
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3 space-y-2.5">
+      {receiving && (
+        <p className="text-[12px] text-foreground font-semibold leading-snug">
+          Are you sure you received {amountLabel}? This will mark it as settled.
+        </p>
+      )}
       <p className="text-[11px] text-muted-foreground font-medium">How did you {verb}?</p>
       <div className="flex gap-2">
         {[
@@ -1026,7 +1388,7 @@ function SettlementRequestForm({ method, setMethod, note, setNote, submitting, o
           onClick={onSubmit}
           className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-bold py-1.5 rounded-lg text-xs transition cursor-pointer"
         >
-          {submitting ? "Sending…" : "Send Request"}
+          {submitting ? (receiving ? "Settling…" : "Sending…") : receiving ? "Yes, I Received It" : "Send Request"}
         </button>
         <button
           type="button"
@@ -1084,7 +1446,7 @@ function MembersCard({ group, isCreator, onAdd, onInvite, onRemove, onViewAll })
                   </span>
                 ) : isCreator ? (
                   <button type="button" onClick={() => onRemove(m._id, m.name)}
-                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/8 p-1.5 rounded-lg transition cursor-pointer opacity-0 group-hover:opacity-100"
+                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/8 p-2 rounded-lg transition cursor-pointer lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100"
                     title={`Remove ${m.name}`}>
                     <X size={13} />
                   </button>

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Group from "../models/groupModel.js";
-import { isValidEmail, isValidObjectId, escapeRegExp } from "../middleware/validate.js";
+import { isValidEmail, isValidObjectId, escapeRegExp, escapeHtml, normalizeEmail } from "../middleware/validate.js";
 import Expense from "../models/expenseModel.js";
 import GroupMessage from "../models/groupMessageModel.js";
 import Notepad from "../models/notepadModel.js";
@@ -8,8 +8,16 @@ import Notification from "../models/notification.model.js";
 import User from "../models/userModel.js";
 import { createNotification } from "../controllers/notificationController.js";
 import UserProfile from "../models/userProfileModel.js";
-import crypto from "crypto";
 import { sendEmail, sendEmailsSafely } from "../utils/emailService.js";
+import { isValidGroupIcon } from "../utils/groupIcons.js";
+import { GROUP_TYPES, presetFor } from "../utils/groupPresets.js";
+import { buildGroupSettingsUpdate, unflatten } from "../utils/groupSettings.js";
+import GroupInvite from "../models/groupInviteModel.js";
+import { generateInviteCode, isShortInviteCode, normalizeInviteCode } from "../utils/inviteCode.js";
+import { searchContacts, lookupUserByEmail } from "./peopleController.js";
+import { getContactIds, isBlockedBetween, inviteLinkExpiry, INVITE_TTL_MS } from "../utils/contacts.js";
+import cloudinary from "../config/cloudinary.js";
+import { uploadRejectionReason, IMAGE_MIME_TYPES } from "../utils/uploadSecurity.js";
 
 // Helper utilities
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
@@ -29,23 +37,43 @@ const isCreator = (group, reqUser) => {
 
 export const createGroup = async (req, res) => {
   try {
-    const { name, groupType } = req.body;
-    if (!name?.trim())
+    const { name, groupType, icon } = req.body;
+    if (typeof name !== "string" || !name.trim())
       return res.status(400).json({ field: "name", message: "Group name is required." });
     if (name.trim().length < 2)
       return res.status(400).json({ field: "name", message: "Group name must be at least 2 characters." });
     if (name.trim().length > 100)
       return res.status(400).json({ field: "name", message: "Group name must be under 100 characters." });
+    if (icon && !isValidGroupIcon(icon))
+      return res.status(400).json({ field: "icon", message: "Invalid icon selection." });
+    if (groupType && !GROUP_TYPES.includes(groupType))
+      return res.status(400).json({ field: "groupType", message: "Invalid group type." });
 
     const uid = asId(req.user);
     if (!uid) return res.status(401).json({ message: "Unauthorized" });
 
-    const group = await Group.create({
+    // Type-specific setup (currency, budget, dates, bill day...) chosen in the
+    // create wizard. Members are added afterwards through the normal
+    // add-members endpoint, so a new group can only weight its creator.
+    const { update: extras, error, field } = buildGroupSettingsUpdate(
+      { settings: req.body.settings, trip: req.body.trip, roommate: req.body.roommate },
+      { memberIds: [uid] }
+    );
+    if (error) return res.status(400).json({ field, message: error });
+
+    // New groups default to Roommates (the most common use). The schema
+    // default stays "general" so older groups saved without a type keep it.
+    const type = groupType || "roommate";
+    const preset = presetFor(type);
+    const group = await Group.create(unflatten({
       name: name.trim(),
       createdBy: uid,
       members: [uid],
-      groupType: groupType || "general",
-    });
+      groupType: type,
+      icon: icon || preset.icon || null,
+      "settings.categories": preset.categories,
+      ...extras,
+    }));
 
     const populated = await Group.findById(group._id).populate(
       "members",
@@ -138,6 +166,7 @@ export const getGroupById = async (req, res) => {
   try {
     const uid = req.user?.id;
     if (!uid) return res.status(401).json({ message: "Unauthorized" });
+    if (!isValidObjectId(req.params.groupId)) return res.status(400).json({ message: "Invalid group ID" });
 
     const group = await Group.findById(req.params.groupId)
       .populate("members", "name email")
@@ -184,58 +213,83 @@ export const getGroupById = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/groups/:groupId/members  { emails?: string[], userIds?: string[] }
+ *
+ * Nobody is put into a group they didn't agree to:
+ *  - known contacts (shared group/chat) whose privacy allows it -> added directly
+ *  - every other registered user -> a GroupInvite they accept or decline
+ *  - unregistered emails -> an email with the join link (as before)
+ * Blocked pairs are silently skipped (reported like an invite, so a block
+ * can't be detected from the response).
+ */
 export const addMembersByEmail = async (req, res) => {
   try {
-    const { emails } = req.body;
+    const emails = req.body.emails ?? [];
+    const userIds = req.body.userIds ?? [];
     const { groupId } = req.params;
     const uid = req.user?.id || req.user?._id?.toString();
 
-    if (!Array.isArray(emails) || emails.length === 0)
+    if (!Array.isArray(emails) || !Array.isArray(userIds))
+      return res.status(400).json({ field: "emails", message: "Invalid member list." });
+    if (emails.length + userIds.length === 0)
       return res.status(400).json({ field: "emails", message: "Please provide at least one email address." });
-    if (emails.length > 20)
+    if (emails.length + userIds.length > 20)
       return res.status(400).json({ field: "emails", message: "You can add at most 20 members at a time." });
-    const invalidEmails = emails.filter((e) => !isValidEmail(e));
+    const invalidEmails = emails.filter((e) => typeof e !== "string" || !isValidEmail(e));
     if (invalidEmails.length)
       return res.status(400).json({
         field: "emails",
         message: `Invalid email format: ${invalidEmails.slice(0, 3).join(", ")}`,
       });
+    if (userIds.some((id) => !isValidObjectId(id)))
+      return res.status(400).json({ field: "userIds", message: "Invalid member." });
 
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found." });
 
     if (!isCreator(group, req.user))
       return res.status(403).json({ message: "Only the group creator can add members." });
 
-    const normalizedEmails = emails.map((e) => e.toLowerCase().trim());
-
-    // Split into registered vs unregistered
-    const registeredUsers = await User.find(
-      { email: { $in: normalizedEmails } },
-      "_id email name"
-    );
+    const normalizedEmails = [...new Set(emails.map(normalizeEmail))];
+    const [registeredUsers, inviter, contactIds] = await Promise.all([
+      User.find(
+        { $or: [{ email: { $in: normalizedEmails } }, { _id: { $in: userIds.map((id) => new mongoose.Types.ObjectId(id)) } }] },
+        "_id email name privacy blockedUsers"
+      ),
+      User.findById(uid).select("blockedUsers").lean(),
+      getContactIds(uid),
+    ]);
     const registeredEmails = new Set(registeredUsers.map((u) => u.email));
     const unregisteredEmails = normalizedEmails.filter((e) => !registeredEmails.has(e));
+    const memberSet = new Set(group.members.map(String));
 
-    // Add registered users to group
+    const direct = [];
+    const toInvite = [];
+    let skipped = 0;
+    for (const u of registeredUsers) {
+      const id = String(u._id);
+      if (id === String(uid) || memberSet.has(id)) continue;
+      if (isBlockedBetween(inviter, u)) { skipped++; continue; }
+      if (contactIds.has(id) && u.privacy?.addPolicy !== "invite") direct.push(u);
+      else toInvite.push(u);
+    }
+
+    // Direct adds
     let updated = null;
-    if (registeredUsers.length > 0) {
-      const userIds = registeredUsers.map((u) => new mongoose.Types.ObjectId(u._id));
-
-      if (!group.members.map(String).includes(String(group.createdBy))) {
-        group.members.push(group.createdBy);
-      }
-      group.members = Array.from(
-        new Set([...group.members.map(String), ...userIds.map(String)])
-      ).map((id) => new mongoose.Types.ObjectId(id));
-      await group.save();
-
+    if (direct.length > 0) {
+      const userIdsToAdd = direct.map((u) => new mongoose.Types.ObjectId(u._id));
+      await Group.updateOne(
+        { _id: group._id },
+        { $addToSet: { members: { $each: [group.createdBy, ...userIdsToAdd].filter((x) => mongoose.Types.ObjectId.isValid(String(x))) } } }
+      );
       updated = await Group.findById(groupId)
         .populate("members", "name email")
         .populate("createdBy", "name email");
 
-      await createNotification(
-        userIds,
+      void createNotification(
+        userIdsToAdd,
         `You were added to group "${group.name}" by ${req.user.name}`,
         `/groups/${group._id}`,
         "group",
@@ -244,10 +298,10 @@ export const addMembersByEmail = async (req, res) => {
 
       const existingMemberIds = group.members
         .map(String)
-        .filter((id) => !userIds.map(String).includes(id) && id !== String(uid));
+        .filter((id) => !userIdsToAdd.map(String).includes(id) && id !== String(uid));
       if (existingMemberIds.length > 0) {
-        const addedNames = registeredUsers.map((u) => u.name || u.email).join(", ");
-        await createNotification(
+        const addedNames = direct.map((u) => u.name || u.email).join(", ");
+        void createNotification(
           existingMemberIds,
           `${req.user.name} added ${addedNames} to "${group.name}"`,
           `/groups/${group._id}`,
@@ -257,24 +311,36 @@ export const addMembersByEmail = async (req, res) => {
       }
     }
 
+    // Invites (accept / decline)
+    if (toInvite.length > 0) {
+      const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
+      await Promise.all(toInvite.map((u) =>
+        GroupInvite.findOneAndUpdate(
+          { groupId: group._id, userId: u._id, status: "pending" },
+          { $set: { kind: "invite", invitedBy: uid, expiresAt } },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        )
+      ));
+      void createNotification(
+        toInvite.map((u) => u._id),
+        `${req.user.name} invited you to join "${group.name}"`,
+        "/invites",
+        "group",
+        { groupName: group.name, groupId: group._id }
+      );
+    }
+
     // Send invitation emails to unregistered addresses
     if (unregisteredEmails.length > 0) {
-      // Ensure group has an invite code
-      if (!group.inviteCode) {
-        group.inviteCode = crypto.randomBytes(16).toString("hex");
-        await group.save();
-      }
-
-      const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000").split(",")[0].trim();
-      const joinLink = `${frontendUrl}/join/${group.inviteCode}`;
+      const joinLink = await ensureInviteLink(group);
       const inviterName = req.user.name || "A friend";
 
       // Send sequentially through the pooled transporter so a batch of invites
       // never opens a burst of parallel SMTP connections (which Gmail rejects).
-      await sendEmailsSafely(
+      void sendEmailsSafely(
         unregisteredEmails.map((email) => ({
           to: email,
-          subject: `${inviterName} invited you to split expenses on SplitEase`,
+          subject: `${String(inviterName).replace(/[\r\n]+/g, " ").slice(0, 80)} invited you to split expenses on SplitEase`,
           html: buildInviteEmailHtml({ inviterName, groupName: group.name, joinLink, email }),
         }))
       );
@@ -287,7 +353,8 @@ export const addMembersByEmail = async (req, res) => {
 
     res.json({
       group: finalGroup,
-      added: registeredUsers.length,
+      added: direct.length,
+      pending: toInvite.length + skipped,
       invited: unregisteredEmails.length,
       invitedEmails: unregisteredEmails,
     });
@@ -297,7 +364,42 @@ export const addMembersByEmail = async (req, res) => {
   }
 };
 
-function buildInviteEmailHtml({ inviterName, groupName, joinLink, email }) {
+// A fresh short code no other group is using (collisions are ~1 in 887M,
+// so the retry loop is only a safety net).
+const uniqueInviteCode = async () => {
+  for (let i = 0; i < 8; i++) {
+    const code = generateInviteCode();
+    if (!(await Group.exists({ inviteCode: code }))) return code;
+  }
+  throw new Error("Could not create an invite code. Please try again.");
+};
+
+// Makes sure the group has a live (non-expired) invite code and returns the
+// join URL. Legacy links without an expiry get one the next time they're shared.
+const ensureInviteLink = async (group, { reset = false } = {}) => {
+  const expired = group.inviteExpiresAt && group.inviteExpiresAt < new Date();
+  // Old 32-character codes are swapped for a short one the next time the
+  // link is shared, so everyone moves to the typeable 6-character format.
+  if (!group.inviteCode || expired || reset || !isShortInviteCode(group.inviteCode)) {
+    group.inviteCode = await uniqueInviteCode();
+    group.inviteExpiresAt = inviteLinkExpiry(group.groupType);
+    await group.save();
+  } else if (!group.inviteExpiresAt) {
+    group.inviteExpiresAt = inviteLinkExpiry(group.groupType);
+    await group.save();
+  }
+  const frontendUrl = (process.env.FRONTEND_URL || "https://splitease.app").split(",")[0].trim();
+  return `${frontendUrl}/join/${group.inviteCode}`;
+};
+
+function buildInviteEmailHtml(params) {
+  // Every interpolated value is user-controlled (display name, group name,
+  // invitee address), so escape all of them - this email goes to arbitrary
+  // addresses from our domain and must not be usable to inject links/HTML.
+  const inviterName = escapeHtml(params.inviterName);
+  const groupName = escapeHtml(params.groupName);
+  const joinLink = escapeHtml(params.joinLink);
+  const email = escapeHtml(params.email);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -396,6 +498,8 @@ function buildInviteEmailHtml({ inviterName, groupName, joinLink, email }) {
 export const removeMember = async (req, res) => {
   try {
     const { groupId, userId } = req.params;
+    if (!isValidObjectId(groupId) || !isValidObjectId(userId))
+      return res.status(400).json({ message: "Invalid group or user ID" });
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found." });
 
@@ -417,60 +521,34 @@ export const removeMember = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/groups/:groupId/available-users?q=
+ * People you can add: known contacts matching q (name/email), plus - only for
+ * an exact email - that one person with a masked email. It used to search the
+ * whole user table, which leaked everyone's name + email to any member.
+ */
 export const listAvailableUsers = async (req, res) => {
   try {
     const { groupId } = req.params;
     if (!isValidObjectId(groupId)) {
       return res.status(400).json({ message: "Invalid group ID" });
     }
-    const { q = "", limit = 20, page = 1 } = req.query;
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 20);
 
-    // 🟢 Fetch group members to exclude them
-    const group = await Group.findById(groupId, "members");
+    const group = await Group.findById(groupId, "members createdBy");
     if (!group) return res.status(404).json({ message: "Group not found." });
+    if (!isMember(group, req.user.id) && !isCreator(group, req.user))
+      return res.status(403).json({ message: "Not a member of this group." });
+    if (q.length > 100) return res.status(400).json({ message: "Search term is too long." });
 
-    const sanitizedQ = escapeRegExp(q.trim());
-
-    // 🔍 Search filter (by name or email)
-    const filter = {
-      _id: { $nin: group.members },
-      ...(sanitizedQ
-        ? {
-            $or: [
-              { email: new RegExp(sanitizedQ, "i") },
-              { name: new RegExp(sanitizedQ, "i") },
-            ],
-          }
-        : {}),
-    };
-
-    // 🧠 Fetch users from User collection
-    const users = await User.find(filter, "name email photoURL createdAt")
-      .sort({ createdAt: -1 })
-      .limit(Math.min(Number(limit) || 20, 100))
-      .skip(((Number(page) || 1) - 1) * (Number(limit) || 20))
-      .lean();
-
-    // 🧩 Fetch corresponding manual profile images (only for these users)
-    const userIds = users.map((u) => u._id);
-    const profiles = await UserProfile.find({
-      userId: { $in: userIds },
-    }).select("userId profileImage.url");
-
-    const profileMap = profiles.reduce((acc, p) => {
-      acc[String(p.userId)] = p.profileImage?.url || null;
-      return acc;
-    }, {});
-
-    // 🧠 Merge both sources of image (Google photoURL > manual upload > null)
-    const enriched = users.map((u) => ({
-      _id: u._id,
-      name: u.name,
-      email: u.email,
-      photoURL: u.photoURL || profileMap[String(u._id)] || null,
-    }));
-
-    res.json(enriched);
+    const memberIds = group.members.map(String);
+    const results = await searchContacts(req.user.id, { q, limit, excludeIds: memberIds });
+    if (isValidEmail(q) && !results.some((u) => u.email?.toLowerCase() === q.toLowerCase())) {
+      const found = await lookupUserByEmail(req.user.id, q);
+      if (found && !memberIds.includes(String(found._id))) results.unshift(found);
+    }
+    res.json(results);
   } catch (err) {
     console.error("listAvailableUsers error:", err.message);
     res.status(500).json({ message: err.message });
@@ -480,6 +558,7 @@ export const listAvailableUsers = async (req, res) => {
 export const markGroupCompleted = async (req, res) => {
   try {
     const { groupId } = req.params;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
     const uid = req.user.id;
 
     const group = await Group.findById(groupId);
@@ -495,7 +574,7 @@ export const markGroupCompleted = async (req, res) => {
     // Notify other members
     const otherMembers = group.members.map(String).filter((id) => id !== String(uid));
     if (otherMembers.length > 0) {
-      await createNotification(
+      void createNotification(
         otherMembers,
         `"${group.name}" has been marked as completed by ${req.user.name}`,
         `/groups/${group._id}`,
@@ -507,13 +586,109 @@ export const markGroupCompleted = async (req, res) => {
     res.json({ success: true, message: "Trip marked as completed", group });
   } catch (err) {
     console.error("markGroupCompleted error:", err.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", expose: true });
+  }
+};
+
+export const updateGroupIcon = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+    const { icon } = req.body;
+
+    if (icon !== null && !isValidGroupIcon(icon)) {
+      return res.status(400).json({ field: "icon", message: "Invalid icon selection." });
+    }
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    if (!isCreator(group, req.user)) {
+      return res.status(403).json({ message: "Only the creator can change the group icon" });
+    }
+
+    group.icon = icon;
+    // A custom photo and a picked icon are mutually exclusive display
+    // choices - picking an icon clears any uploaded photo.
+    if (group.photo?.public_id) {
+      await cloudinary.uploader.destroy(group.photo.public_id).catch(() => {});
+    }
+    group.photo = { url: "", public_id: "" };
+    await group.save();
+
+    res.json({ success: true, group });
+  } catch (err) {
+    console.error("updateGroupIcon error:", err.message);
+    res.status(500).json({ message: "Server error", expose: true });
+  }
+};
+
+export const uploadGroupPhoto = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { file } = req.body; // base64 string from frontend
+
+    if (!file) return res.status(400).json({ message: "No file received" });
+    const rejection = uploadRejectionReason(file, IMAGE_MIME_TYPES);
+    if (rejection) return res.status(400).json({ message: rejection });
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    if (!isCreator(group, req.user)) {
+      return res.status(403).json({ message: "Only the creator can change the group photo" });
+    }
+
+    if (group.photo?.public_id) {
+      await cloudinary.uploader.destroy(group.photo.public_id).catch(() => {});
+    }
+
+    const result = await cloudinary.uploader.upload(file, {
+      folder: "splitease_group_photos",
+      resource_type: "image",
+    });
+
+    group.photo = { url: result.secure_url, public_id: result.public_id };
+    // A photo takes over the avatar slot, so clear the picked icon too.
+    group.icon = null;
+    await group.save();
+
+    res.json({ success: true, group });
+  } catch (err) {
+    console.error("uploadGroupPhoto error:", err.message);
+    res.status(500).json({ message: "Server error", expose: true });
+  }
+};
+
+export const removeGroupPhoto = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    if (!isCreator(group, req.user)) {
+      return res.status(403).json({ message: "Only the creator can change the group photo" });
+    }
+
+    if (group.photo?.public_id) {
+      await cloudinary.uploader.destroy(group.photo.public_id).catch(() => {});
+    }
+    group.photo = { url: "", public_id: "" };
+    await group.save();
+
+    res.json({ success: true, group });
+  } catch (err) {
+    console.error("removeGroupPhoto error:", err.message);
+    res.status(500).json({ message: "Server error", expose: true });
   }
 };
 
 export const deleteGroup = async (req, res) => {
   try {
     const { groupId } = req.params;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
     const uid = asId(req.user);
 
     if (!uid) return res.status(401).json({ message: "Unauthorized" });
@@ -529,6 +704,7 @@ export const deleteGroup = async (req, res) => {
       Expense.deleteMany({ groupId }),
       GroupMessage.deleteMany({ groupId }),
       Notepad.deleteMany({ groupId }),
+      GroupInvite.deleteMany({ groupId }),
       Notification.deleteMany({ link: `/groups/${groupId}` }),
       Group.deleteOne({ _id: groupId }),
     ]);
@@ -536,14 +712,14 @@ export const deleteGroup = async (req, res) => {
     res.json({ success: true, message: "Trip deleted successfully" });
   } catch (err) {
     console.error("deleteGroup error:", err.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", expose: true });
   }
 };
 
 export const generateInviteLink = async (req, res) => {
   try {
     const { groupId } = req.params;
-    const uid = req.user.id;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
 
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
@@ -551,40 +727,75 @@ export const generateInviteLink = async (req, res) => {
     if (!isCreator(group, req.user))
       return res.status(403).json({ message: "Only creator can generate invite" });
 
-    // If inviteCode doesn't exist, generate one
-    if (!group.inviteCode) {
-      group.inviteCode = crypto.randomBytes(16).toString("hex");
-      await group.save();
-    }
-
-    const frontendUrl = (process.env.FRONTEND_URL || "https://splitease.app").split(",")[0].trim();
-    const joinLink = `${frontendUrl}/join/${group.inviteCode}`;
-
+    const joinLink = await ensureInviteLink(group, { reset: req.body?.reset === true });
     res.json({
       success: true,
       inviteCode: group.inviteCode,
       joinLink,
+      expiresAt: group.inviteExpiresAt,
+      joinApproval: !!group.settings?.joinApproval,
+      groupName: group.name,
+      groupType: group.groupType,
+      memberCount: group.members?.length || 0,
     });
   } catch (err) {
     console.error("generateInviteLink error:", err.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", expose: true });
   }
 };
 
-/**
- * 🟩 POST /api/groups/join/:inviteCode
- * Join group by invite link
- */
+// POST /api/groups/:groupId/invite/reset - old link stops working immediately.
+export const resetInviteLink = async (req, res) => {
+  req.body = { ...(req.body || {}), reset: true };
+  return generateInviteLink(req, res);
+};
+
 export const joinGroupByInvite = async (req, res) => {
   try {
-    const { inviteCode } = req.params;
+    const inviteCode = normalizeInviteCode(req.params.inviteCode);
     const uid = req.user.id;
+    if (typeof inviteCode !== "string" || !/^[A-Za-z0-9_-]{4,64}$/.test(inviteCode))
+      return res.status(404).json({ message: "Invalid invite link" });
 
     let group = await Group.findOne({ inviteCode });
     if (!group) return res.status(404).json({ message: "Invalid invite link" });
+    if (group.inviteExpiresAt && group.inviteExpiresAt < new Date())
+      return res.status(410).json({ message: "This invite link has expired. Ask for a new one." });
+
+    const wasAlreadyMember = group.members.map(String).includes(String(uid));
+
+    // Blocked by the creator: behave like a dead link.
+    if (!wasAlreadyMember) {
+      const creator = await User.findById(group.createdBy).select("blockedUsers").lean().catch(() => null);
+      if ((creator?.blockedUsers || []).map(String).includes(String(uid)))
+        return res.status(404).json({ message: "Invalid invite link" });
+    }
+
+    // Approval-required groups: file a join request instead of joining.
+    if (!wasAlreadyMember && group.settings?.joinApproval && !isCreator(group, req.user)) {
+      await GroupInvite.findOneAndUpdate(
+        { groupId: group._id, userId: uid, status: "pending" },
+        { $set: { kind: "request", invitedBy: null, expiresAt: new Date(Date.now() + INVITE_TTL_MS) } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      if (mongoose.Types.ObjectId.isValid(String(group.createdBy))) {
+        void createNotification(
+          [group.createdBy],
+          `${req.user.name} asked to join "${group.name}"`,
+          `/groups/${group._id}`,
+          "group",
+          { groupName: group.name, groupId: group._id }
+        );
+      }
+      return res.status(202).json({
+        success: true,
+        pending: true,
+        message: "Request sent. You'll be added once the group creator approves.",
+        group: { _id: group._id, name: group.name },
+      });
+    }
 
     // Add user to group if not already member - use $addToSet for atomicity
-    const wasAlreadyMember = group.members.map(String).includes(String(uid));
     if (!wasAlreadyMember) {
       await Group.findByIdAndUpdate(group._id, { $addToSet: { members: uid } });
       group = await Group.findById(group._id);
@@ -592,7 +803,7 @@ export const joinGroupByInvite = async (req, res) => {
       // Notify other members
       const otherMembers = group.members.map(String).filter((id) => id !== String(uid));
       if (otherMembers.length > 0) {
-        await createNotification(
+        void createNotification(
           otherMembers,
           `${req.user.name} joined "${group.name}" using an invite link`,
           `/groups/${group._id}`,
@@ -613,6 +824,6 @@ export const joinGroupByInvite = async (req, res) => {
     });
   } catch (err) {
     console.error("joinGroupByInvite error:", err.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", expose: true });
   }
 };

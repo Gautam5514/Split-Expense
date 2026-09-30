@@ -1,25 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import ChatList from "@/components/chat/ChatList";
 import ChatWindow from "@/components/chat/ChatWindow";
+import ChatDetailsPanel from "@/components/chat/ChatDetailsPanel";
 
-export default function ChatPage() {
+function ChatPageInner() {
+  const searchParams = useSearchParams();
+  // Deep-link target from global search: /chat?open=<userId>
+  const openUserId = searchParams.get("open");
   const [activeFriend, setActiveFriend] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [listKey, setListKey] = useState(0);
+
+  const selectFriend = (friend) => {
+    setActiveFriend(friend);
+    setDetailsOpen(false);
+  };
+
+  const handleRemoved = () => {
+    setActiveFriend(null);
+    setDetailsOpen(false);
+    setListKey((k) => k + 1);
+  };
 
   return (
-    <div className="overflow-hidden bg-background h-[calc(100dvh-96px)] md:h-[calc(100dvh-108px)] px-3 md:px-6 pt-3 pb-20 sm:pb-3">
-      <div className="h-full mx-auto flex max-w-[1500px] overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        {/* Left side: Friend list */}
-        <div className={`h-full ${activeFriend ? "hidden md:block" : "w-full md:w-auto"}`}>
-          <ChatList onSelect={setActiveFriend} activeFriend={activeFriend} />
-        </div>
-
-        {/* Right side: Chat window */}
-        <div className={`h-full flex-1 min-w-0 ${activeFriend ? "block" : "hidden md:block"}`}>
-          <ChatWindow activeFriend={activeFriend} onBack={() => setActiveFriend(null)} />
-        </div>
+    <div className="flex overflow-hidden bg-card h-[calc(100dvh-72px)] pb-20 sm:pb-3 md:h-[calc(100dvh-64px)]">
+      {/* Left side: Friend list */}
+      <div className={`h-full ${activeFriend ? (detailsOpen ? "hidden xl:block" : "hidden lg:block") : "w-full lg:w-auto"}`}>
+        <ChatList key={listKey} onSelect={selectFriend} activeFriend={activeFriend} openUserId={openUserId} />
       </div>
+
+      {/* Middle: Chat window */}
+      <div className={`h-full flex-1 min-w-0 ${activeFriend ? "block" : "hidden lg:block"}`}>
+        <ChatWindow
+          activeFriend={activeFriend}
+          onBack={() => setActiveFriend(null)}
+          detailsOpen={detailsOpen}
+          onToggleDetails={() => setDetailsOpen((o) => !o)}
+          onRemoved={handleRemoved}
+        />
+      </div>
+
+      {/* Right side: Contact details */}
+      {detailsOpen && (
+        <ChatDetailsPanel activeFriend={activeFriend} onClose={() => setDetailsOpen(false)} />
+      )}
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={null}>
+      <ChatPageInner />
+    </Suspense>
   );
 }

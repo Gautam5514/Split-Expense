@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { PRIVATE_USER_FIELDS, stripPrivateUserFields } from "../utils/userPrivacy.js";
 
 const userSchema = new mongoose.Schema({
   firebaseUid: { type: String, sparse: true, index: true }, // sparse: null values excluded from index
@@ -45,6 +46,28 @@ const userSchema = new mongoose.Schema({
   activeDaysCount: { type: Number, default: 0 },
   lastActiveDate: { type: String, default: null }, // "YYYY-MM-DD" (UTC)
   expenseCount: { type: Number, default: 0 },
+
+  // -------------------- Privacy --------------------
+  privacy: {
+    // "contacts": people I already share a group/chat with can add me
+    // directly, everyone else sends an invite I accept. "invite": every
+    // group add is an invite.
+    addPolicy: { type: String, enum: ["contacts", "invite"], default: "contacts" },
+    // Off = nobody can find me by typing my email; only invite links work.
+    discoverableByEmail: { type: Boolean, default: true },
+  },
+  // People who can't add/invite me or find me by email.
+  blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });
 
+// Credential material and device/internal state must never be serialized into
+// an API response. Controllers call res.json(user) on full documents (e.g. the
+// auth endpoints), so strip these at the schema level: this applies to every
+// toJSON()/toObject() of a User document, and code that needs the raw values
+// (bcrypt.compare, OTP checks) reads them straight off the document instead.
+const stripPrivate = (_doc, ret) => stripPrivateUserFields(ret);
+userSchema.set("toJSON", { transform: stripPrivate });
+userSchema.set("toObject", { transform: stripPrivate });
+
+export { PRIVATE_USER_FIELDS };
 export default mongoose.model("User", userSchema);

@@ -2,7 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import { adminLogin } from "../controllers/adminAuthController.js";
 import { adminAuthMiddleware } from "../middleware/adminAuthMiddleware.js";
-import { uploadMedia } from "../controllers/uploadController.js";
+import { uploadAdminMedia } from "../controllers/uploadController.js";
 import { getAdminStats } from "../controllers/adminStatsController.js";
 import {
   listContactMessages,
@@ -40,7 +40,7 @@ router.post("/login", adminLoginLimiter, adminLogin);
 // Everything below requires a valid admin session.
 router.use(adminAuthMiddleware);
 
-router.post("/upload", uploadMedia);
+router.post("/upload", uploadAdminMedia);
 router.get("/stats", getAdminStats);
 
 router.get("/contact-messages", listContactMessages);
