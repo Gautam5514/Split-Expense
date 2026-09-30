@@ -31,7 +31,7 @@
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
-    "fast-check": "^4.10.0",
+    "fast-check": "^4.10.2",
     "jest": "^30.5.1",
     "nodemon": "^3.0.3"
   },
