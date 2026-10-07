@@ -32,7 +32,7 @@
   },
   "devDependencies": {
     "fast-check": "^4.10.0",
-    "jest": "^30.5.1",
+    "jest": "^30.5.2",
     "nodemon": "^3.0.3"
   },
   "overrides": {
