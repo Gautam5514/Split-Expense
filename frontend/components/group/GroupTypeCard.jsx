@@ -2,7 +2,7 @@
 
 import { createElement } from "react";
 import {
-  CalendarDays, TrendingUp, Receipt, Repeat, UserRoundCheck,
+  CalendarDays, TrendingUp, Receipt, UserRoundCheck,
   AlertTriangle, Settings2,
 } from "lucide-react";
 import { formatMoney } from "@/lib/formatCurrency";
@@ -14,7 +14,7 @@ function Stat({ label, value, hint }) {
   return (
     <div className="min-w-0">
       <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
-      <p className="text-xl font-black text-foreground mt-1 truncate">{value}</p>
+      <p className="text-lg font-black text-foreground mt-0.5 truncate">{value}</p>
       {hint && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{hint}</p>}
     </div>
   );
@@ -23,11 +23,11 @@ function Stat({ label, value, hint }) {
 /**
  * The card under the group header that changes with the group type:
  *  - Trip: budget meter, day X of Y, per-day spend, who should pay next
- *  - Roommates: this month vs last month, upcoming monthly bills
+ *  - Roommates: this month vs last month
  *  - Business: total, receipts missing
  *  - Other: total spend
  */
-export default function GroupTypeCard({ group, summary, isCreator, onOpenSettings, onOpenBills }) {
+export default function GroupTypeCard({ group, summary, isCreator, onOpenSettings }) {
   const type = group.groupType || "general";
   const meta = groupTypeMeta(type);
   const currency = summary?.currency || group.settings?.currency || "INR";
@@ -38,7 +38,7 @@ export default function GroupTypeCard({ group, summary, isCreator, onOpenSetting
   }
 
   const header = (
-    <div className="flex items-center justify-between mb-3">
+    <div className="flex items-center justify-between mb-2">
       <span className="flex items-center gap-1.5 text-xs font-bold text-foreground">
         {createElement(meta.Icon, { size: 13, className: "text-primary" })} {meta.label}
       </span>
@@ -104,7 +104,6 @@ export default function GroupTypeCard({ group, summary, isCreator, onOpenSetting
   } else if (type === "roommate") {
     const month = new Intl.DateTimeFormat("en-IN", { month: "long" }).format(new Date());
     const diff = summary.thisMonth - summary.lastMonth;
-    const bills = summary.upcomingBills || [];
     body = (
       <>
         <div className="grid grid-cols-2 gap-3 mb-3">
@@ -112,20 +111,6 @@ export default function GroupTypeCard({ group, summary, isCreator, onOpenSetting
             hint={summary.lastMonth ? `${diff >= 0 ? "+" : "-"}${money(Math.abs(diff))} vs last month` : "First month"} />
           <Stat label="Your share (all time)" value={money(summary.myShare)} hint={`You paid ${money(summary.myPaid)}`} />
         </div>
-        {bills.length ? (
-          <button type="button" onClick={onOpenBills}
-            className="w-full flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition cursor-pointer text-left">
-            <Repeat size={12} className="text-primary shrink-0" />
-            <span className="truncate">
-              Next: <b className="text-foreground">{bills[0].description}</b> {money(bills[0].amount)} on {fmtDay.format(new Date(bills[0].nextRunAt))}
-              {bills.length > 1 && ` · +${bills.length - 1} more`}
-            </span>
-          </button>
-        ) : (
-          <button type="button" onClick={onOpenBills} className="text-xs font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1">
-            <Repeat size={12} /> Set up monthly bills (rent, WiFi…)
-          </button>
-        )}
       </>
     );
   } else if (type === "business") {
@@ -153,7 +138,7 @@ export default function GroupTypeCard({ group, summary, isCreator, onOpenSetting
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 md:p-5 shadow-sm h-full">
+    <div className="bg-card border border-border rounded-2xl p-3 md:p-4 shadow-sm h-full">
       {header}
       {body}
     </div>

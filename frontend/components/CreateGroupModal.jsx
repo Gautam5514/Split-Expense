@@ -50,7 +50,6 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
   const [endDate, setEndDate] = useState("");
   const [budget, setBudget] = useState("");
   const [currency, setCurrency] = useState("INR");
-  const [billDay, setBillDay] = useState("");
   const [receiptRequired, setReceiptRequired] = useState(false);
   const [splitMode, setSplitMode] = useState("equal"); // "equal" | "shares"
   const [selected, setSelected] = useState([]); // PeoplePicker items
@@ -66,7 +65,7 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
   const reset = () => {
     setStep(0); setType(null); setName(""); setNameError(""); setIcon(null);
     setShowAllIcons(false); setPhoto(null); setStartDate(""); setEndDate("");
-    setBudget(""); setCurrency("INR"); setBillDay(""); setReceiptRequired(false); setSplitMode("equal");
+    setBudget(""); setCurrency("INR"); setReceiptRequired(false); setSplitMode("equal");
     setSelected([]); setCreating(false); setCreated(null); setJoinLink("");
   };
 
@@ -128,7 +127,6 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
       if (type === "trip") {
         body.trip = { startDate: startDate || null, endDate: endDate || null, budget: budget || null };
       }
-      if (type === "roommate" && billDay) body.roommate = { billDay: Number(billDay) };
       if (type === "trip" || type === "business") body.settings = { currency };
       if (type === "business") body.settings = { ...body.settings, receiptRequired };
       // How expenses are split is decided here, once - not on every expense.
@@ -357,19 +355,6 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
                       </div>
                     </div>
                   </>
-                )}
-
-                {type === "roommate" && (
-                  <div>
-                    <p className={`${label} mb-2`}>Rent &amp; bills due <span className="normal-case tracking-normal">· optional</span></p>
-                    <select value={billDay} onChange={(e) => setBillDay(e.target.value)} className={`${field} cursor-pointer`}>
-                      <option value="">Not set</option>
-                      {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                        <option key={d} value={d}>Day {d} of every month</option>
-                      ))}
-                    </select>
-                    <p className="text-[11px] text-muted-foreground mt-1.5">Add rent and WiFi as monthly bills from the group.</p>
-                  </div>
                 )}
 
                 {type === "business" && (

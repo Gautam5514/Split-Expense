@@ -66,6 +66,27 @@ const PAGE_TITLES = [
 // only once you've gone deeper (a group, a card inside it, ...).
 const SIDEBAR_ROOTS = SEARCH_ITEMS.map((item) => item.href);
 
+// Items the user actually opens from search are remembered locally and shown
+// (most used first) when the box is empty, instead of a fixed list of pages.
+const HISTORY_KEY = "search-history-v1";
+const HISTORY_LIMIT = 30;
+const HISTORY_SHOWN = 6;
+
+const historyKey = (item) => `${item.kind}:${item.data.id || item.data.href}`;
+
+function readHistory() {
+  try {
+    const list = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    return Array.isArray(list) ? list.filter((e) => e?.kind && e?.data) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeHistory(list) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch {}
+}
+
 const HIDDEN_ROUTES = ["/login", "/register", "/reset-password", "/admin", "/mcp-login"];
 
 export default function DesktopAppNavbar() {
@@ -84,6 +105,7 @@ export default function DesktopAppNavbar() {
   const [searchData, setSearchData] = useState({ groups: [], people: [], expenses: [] });
   const [searching, setSearching] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [history, setHistory] = useState([]);
   const searchInputRef = useRef(null);
   const navRef = useRef(null);
   const debouncedQuery = useDebounce(query.trim(), 250);
@@ -120,6 +142,8 @@ export default function DesktopAppNavbar() {
   }, [pathname]);
 
   useEffect(() => auth.onAuthStateChanged(setFirebaseUser), []);
+
+  useEffect(() => { setHistory(readHistory()); }, []);
 
   useEffect(() => {
     if (!token) return setProfile(null);
@@ -189,7 +213,7 @@ export default function DesktopAppNavbar() {
   // Static in-app pages that match the query (client-side).
   const pageMatches = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return SEARCH_ITEMS.slice(0, 5);
+    if (!normalized) return [];
     return SEARCH_ITEMS.filter((item) =>
       `${item.label} ${item.description}`.toLowerCase().includes(normalized),
     ).slice(0, 5);
@@ -197,13 +221,23 @@ export default function DesktopAppNavbar() {
 
   // A single flat, ordered list of every actionable result — powers keyboard
   // navigation (↑/↓/Enter) across all categories at once.
+  const recentItems = useMemo(
+    () =>
+      [...history]
+        .sort((a, b) => b.count - a.count || b.last - a.last)
+        .slice(0, HISTORY_SHOWN)
+        .map((e) => ({ kind: e.kind, data: e.data })),
+    [history],
+  );
+
   const flatResults = useMemo(() => {
+    if (!query.trim()) return recentItems;
     const groups = searchData.groups.map((g) => ({ kind: "group", data: g }));
     const people = searchData.people.map((p) => ({ kind: "person", data: p }));
     const expenses = searchData.expenses.map((e) => ({ kind: "expense", data: e }));
     const pages = pageMatches.map((p) => ({ kind: "page", data: p }));
     return [...groups, ...people, ...expenses, ...pages];
-  }, [searchData, pageMatches]);
+  }, [searchData, pageMatches, recentItems, query]);
 
   // Reset the highlighted row whenever the result set changes.
   useEffect(() => {
@@ -251,11 +285,24 @@ export default function DesktopAppNavbar() {
   const navigateTo = (item) => {
     if (!item) return;
     const { kind, data } = item;
+    const key = historyKey(item);
+    const prev = history.find((e) => historyKey(e) === key);
+    const next = [
+      { kind, data: kind === "page" ? { href: data.href } : data, count: (prev?.count || 0) + 1, last: Date.now() },
+      ...history.filter((e) => historyKey(e) !== key),
+    ].slice(0, HISTORY_LIMIT);
+    setHistory(next);
+    writeHistory(next);
     if (kind === "group") router.push(`/groupchat?open=${data.id}`);
     else if (kind === "person") router.push(`/chat?open=${data.id}`);
     else if (kind === "expense") router.push(`/groups/${data.groupId}`);
     else if (kind === "page") router.push(data.href);
     closeSearch();
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    writeHistory([]);
   };
 
   const openSearch = () => {
@@ -368,11 +415,17 @@ export default function DesktopAppNavbar() {
               >
                 <div className="flex items-center justify-between px-2.5 pb-1.5 pt-1.5">
                   <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground">
-                    {hasQuery ? "Search results" : "Quick navigation"}
+                    {hasQuery ? "Search results" : "Recent searches"}
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
-                    <CornerDownLeft size={11} /> to open
-                  </span>
+                  {!hasQuery && recentItems.length > 0 ? (
+                    <button type="button" onClick={clearHistory} className="text-[10px] font-bold text-muted-foreground transition hover:text-foreground">
+                      Clear
+                    </button>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                      <CornerDownLeft size={11} /> to open
+                    </span>
+                  )}
                 </div>
 
                 {/* Loading skeleton while a query is in flight and we have nothing yet */}
@@ -390,6 +443,44 @@ export default function DesktopAppNavbar() {
                   </div>
                 ) : (
                   <>
+                    {/* RECENT (empty box) */}
+                    {!hasQuery && recentItems.map((item, idx) => {
+                      const { kind, data } = item;
+                      const page = kind === "page" ? SEARCH_ITEMS.find((p) => p.href === data.href) : null;
+                      const PageIcon = page?.icon;
+                      const GroupIcon = kind === "group" ? getGroupIcon(data.icon) : null;
+                      const avatar =
+                        kind === "page" ? (
+                          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground/[0.05] text-muted-foreground">{PageIcon ? <PageIcon size={17} /> : <Search size={17} />}</span>
+                        ) : kind === "expense" ? (
+                          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400"><ReceiptText size={17} /></span>
+                        ) : data.photoUrl ? (
+                          <img src={data.photoUrl} alt="" className={`h-9 w-9 object-cover ${kind === "person" ? "rounded-full" : "rounded-lg"}`} />
+                        ) : GroupIcon ? (
+                          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"><GroupIcon size={17} /></span>
+                        ) : (
+                          <span className={`flex h-9 w-9 items-center justify-center bg-gradient-to-br text-xs font-black text-white ${kind === "person" ? "rounded-full from-teal-500 to-emerald-600" : "rounded-lg from-cyan-500 to-teal-600"}`}>{data.title?.charAt(0)?.toUpperCase()}</span>
+                        );
+                      return (
+                        <ResultRow
+                          key={`recent-${historyKey(item)}`}
+                          active={idx === activeIndex}
+                          onClick={() => navigateTo(item)}
+                          onMouseEnter={() => setActiveIndex(idx)}
+                          avatar={avatar}
+                          title={page?.label || data.title}
+                          subtitle={page?.description || data.subtitle}
+                        />
+                      );
+                    })}
+                    {!hasQuery && recentItems.length === 0 && (
+                      <div className="px-4 py-8 text-center">
+                        <Search className="mx-auto mb-2 text-muted-foreground/50" size={22} />
+                        <p className="text-sm font-bold text-foreground">No recent searches</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Groups, people and expenses you open will show up here.</p>
+                      </div>
+                    )}
+
                     {/* GROUPS */}
                     {searchData.groups.length > 0 && (
                       <ResultSection label="Groups">
@@ -470,7 +561,7 @@ export default function DesktopAppNavbar() {
 
                     {/* PAGES */}
                     {pageMatches.length > 0 && (
-                      <ResultSection label={hasQuery ? "Pages" : "Quick navigation"}>
+                      <ResultSection label="Pages">
                         {pageMatches.map((item) => {
                           const idx = flatResults.findIndex((r) => r.kind === "page" && r.data.href === item.href);
                           const Icon = item.icon;

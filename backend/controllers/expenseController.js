@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Expense from "../models/expenseModel.js";
 import Group from "../models/groupModel.js";
 import SettlementRequest from "../models/settlementRequestModel.js";
+import UserProfile from "../models/userProfileModel.js";
 import { createNotification } from "../controllers/notificationController.js";
 import { invalidateBalanceCache, computeGroupBalances, to2 } from "../controllers/balanceController.js";
 import { runOcr } from "../utils/ocrService.js";
@@ -490,6 +491,28 @@ export const requestSettlement = async (req, res) => {
       return res.status(201).json(populatedDone);
     }
 
+    // Idempotency: if an identical-direction request is already pending, don't
+    // error out - just return the existing one (200) and re-nudge the
+    // counterparty. A debtor who taps "I've Paid" twice (double tap, stale UI,
+    // retry after a flaky network) should never see a scary 409; they should
+    // just see "request already sent, waiting for confirmation".
+    const existingPending = await SettlementRequest.findOne({
+      groupId, fromUserId, toUserId, status: "pending",
+    });
+    if (existingPending) {
+      const populatedExisting = await populateRequest(SettlementRequest.findById(existingPending._id));
+      const counterpartyId = sameId(uid, fromUserId) ? toUserId : fromUserId;
+      void createNotification(
+        [counterpartyId],
+        `${req.user.name} is still waiting for you to confirm their ₹${Number(existingPending.amount).toFixed(0)} payment in "${group.name}".`,
+        `/groups/${groupId}`,
+        "settlement",
+        { groupName: group.name, groupId, amount: existingPending.amount, kind: "requested" }
+      );
+      io.to(`group:${groupId}`).emit("settlementUpdate", { groupId: String(groupId), kind: "requested" });
+      return res.status(200).json(populatedExisting);
+    }
+
     let request;
     try {
       request = await SettlementRequest.create({
@@ -498,7 +521,16 @@ export const requestSettlement = async (req, res) => {
         initiatedBy: uid,
       });
     } catch (err) {
+      // Lost a create race against a concurrent identical request - treat the
+      // winner as the canonical pending one and return it, same as above.
       if (err.code === 11000) {
+        const winner = await SettlementRequest.findOne({
+          groupId, fromUserId, toUserId, status: "pending",
+        });
+        if (winner) {
+          const populatedWinner = await populateRequest(SettlementRequest.findById(winner._id));
+          return res.status(200).json(populatedWinner);
+        }
         return res.status(409).json({ message: "A settlement request between these two members is already pending." });
       }
       throw err;
@@ -550,31 +582,43 @@ export const confirmSettlementRequest = async (req, res) => {
     const computed = await computeGroupBalances(request.groupId);
     if (!computed) return res.status(404).json({ message: "Group not found." });
     const maxSettleable = maxSettleableBetween(computed.balances, request.fromUserId, request.toUserId);
-    if (!maxSettleable || Number(request.amount) > maxSettleable + 0.01) {
+
+    // Only a *genuinely zero* outstanding balance blocks a confirm now. If the
+    // outstanding amount merely shrank since the request (another expense was
+    // added, or debt got partially settled elsewhere), we clamp the settlement
+    // down to what's actually still owed and let it through - this removes the
+    // frustrating "reject and re-request" loop the user hit, while keeping the
+    // hard invariant that we never settle MORE than is really owed.
+    if (!maxSettleable || maxSettleable < 0.01) {
       return res.status(409).json({
-        message: "Balances have changed since this request was made and it no longer matches the outstanding amount. Reject it and ask for a new request.",
+        message: "There's no outstanding balance left between you two to settle. This request is stale - reject it.",
       });
     }
+    const settleAmount = to2(Math.min(Number(request.amount), maxSettleable));
+    const wasClamped = settleAmount < Number(request.amount) - 0.01;
 
     const expense = await createSettlementExpense({
       groupId: request.groupId,
       fromUserId: request.fromUserId,
       toUserId: request.toUserId,
-      amount: Number(request.amount),
+      amount: settleAmount,
       method: request.method,
     });
 
     request.status = "confirmed";
+    request.amount = settleAmount; // record the amount actually settled
     request.expenseId = expense._id;
     request.respondedAt = new Date();
     await request.save();
 
     void createNotification(
       [request.initiatedBy],
-      `${req.user.name} confirmed the ₹${Number(request.amount).toFixed(0)} settlement in "${group.name}".`,
+      wasClamped
+        ? `${req.user.name} confirmed ₹${settleAmount.toFixed(0)} of your settlement in "${group.name}" (the outstanding balance had changed).`
+        : `${req.user.name} confirmed the ₹${settleAmount.toFixed(0)} settlement in "${group.name}".`,
       `/groups/${request.groupId}`,
       "settlement",
-      { groupName: group.name, groupId: request.groupId, amount: request.amount, kind: "confirmed" }
+      { groupName: group.name, groupId: request.groupId, amount: settleAmount, kind: "confirmed" }
     );
     io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "confirmed" });
 
@@ -672,7 +716,25 @@ export const getPendingSettlements = async (req, res) => {
     const pending = await populateRequest(
       SettlementRequest.find({ groupId, status: "pending" }).sort({ createdAt: -1 })
     );
-    res.json(pending);
+
+    // Attach each creditor's UPI details so the client can render a "Pay"
+    // button on a pending row even when the greedy settlement suggestions
+    // (which simplify/reroute debt) don't contain a matching from->to pair.
+    // Without this, a pending request can become an orphaned row the debtor
+    // can see but not pay through, and the counterparty can't act on.
+    const creditorIds = [...new Set(pending.map((p) => String(p.toUserId?._id || p.toUserId)))];
+    const upiProfiles = creditorIds.length
+      ? await UserProfile.find({ userId: { $in: creditorIds } }).select("userId upiId upiQr.url").lean()
+      : [];
+    const upiMap = new Map(
+      upiProfiles.map((p) => [String(p.userId), { upiId: p.upiId || null, upiQrUrl: p.upiQr?.url || null }])
+    );
+    const enriched = pending.map((p) => ({
+      ...p,
+      toUpi: upiMap.get(String(p.toUserId?._id || p.toUserId)) || { upiId: null, upiQrUrl: null },
+    }));
+
+    res.json(enriched);
   } catch (err) {
     console.error("❌ getPendingSettlements:", err.message);
     res.status(500).json({ message: err.message });

@@ -24,10 +24,13 @@ const fakeCreateNotification = jest.fn(async () => {});
 const fakeIoEmit = jest.fn();
 const fakeIoTo = jest.fn(() => ({ emit: fakeIoEmit }));
 
+const fakeUserProfileModel = makeFakeModel([]);
+
 jest.unstable_mockModule("../index.js", () => ({ io: { to: fakeIoTo }, onlineUsers: new Map() }));
 jest.unstable_mockModule("../models/groupModel.js", () => ({ default: fakeGroupModel }));
 jest.unstable_mockModule("../models/expenseModel.js", () => ({ default: fakeExpenseModel }));
 jest.unstable_mockModule("../models/settlementRequestModel.js", () => ({ default: fakeSettlementRequestModel }));
+jest.unstable_mockModule("../models/userProfileModel.js", () => ({ default: fakeUserProfileModel }));
 jest.unstable_mockModule("../controllers/notificationController.js", () => ({
   createNotification: fakeCreateNotification,
 }));
@@ -39,6 +42,7 @@ const {
   confirmSettlementRequest,
   rejectSettlementRequest,
   cancelSettlementRequest,
+  getPendingSettlements,
 } = await import("../controllers/expenseController.js");
 
 const oid = () => new mongoose.Types.ObjectId();
@@ -76,7 +80,7 @@ function seedGroupWithDebt(amount) {
 }
 
 beforeEach(() => {
-  [fakeGroupModel, fakeExpenseModel, fakeSettlementRequestModel, fakeUserRefModel].forEach((m) => { m._docs.length = 0; });
+  [fakeGroupModel, fakeExpenseModel, fakeSettlementRequestModel, fakeUserRefModel, fakeUserProfileModel].forEach((m) => { m._docs.length = 0; });
   fakeCreateNotification.mockClear();
   fakeIoTo.mockClear();
   fakeIoEmit.mockClear();
@@ -348,5 +352,156 @@ describe("cancelSettlementRequest", () => {
     await cancelSettlementRequest(req, res);
 
     expect(res.statusCode).toBe(403);
+  });
+});
+
+// ── Robustness fixes (the "request works many times / confirm errors" bugs) ──
+describe("requestSettlement idempotency", () => {
+  test("a debtor tapping 'I've Paid' twice doesn't error - it returns the SAME pending request", async () => {
+    const { group, debtor, creditor } = seedGroupWithDebt(500);
+
+    const first = makeRes();
+    await requestSettlement(makeReq({
+      user: { id: debtor, name: "Debtor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    }), first);
+    expect(first.statusCode).toBe(201);
+    expect(first.body.status).toBe("pending");
+
+    // Second identical request - must NOT 409, must NOT create a duplicate.
+    const second = makeRes();
+    await requestSettlement(makeReq({
+      user: { id: debtor, name: "Debtor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    }), second);
+
+    expect(second.statusCode).toBe(200); // idempotent OK, not a 409 error
+    expect(String(second.body._id)).toBe(String(first.body._id)); // same request
+    expect(fakeSettlementRequestModel._docs.filter((d) => d.status === "pending")).toHaveLength(1);
+  });
+
+  test("the re-request re-nudges the counterparty so a stuck pending can be resurfaced", async () => {
+    const { group, debtor, creditor } = seedGroupWithDebt(500);
+    await requestSettlement(makeReq({
+      user: { id: debtor, name: "Debtor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    }), makeRes());
+
+    fakeCreateNotification.mockClear();
+    await requestSettlement(makeReq({
+      user: { id: debtor, name: "Debtor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    }), makeRes());
+
+    expect(fakeCreateNotification).toHaveBeenCalledWith(
+      [String(creditor)],
+      expect.stringContaining("still waiting"),
+      `/groups/${group._id}`,
+      "settlement",
+      expect.objectContaining({ kind: "requested" })
+    );
+  });
+});
+
+describe("confirmSettlementRequest clamping", () => {
+  test("when the outstanding balance shrank after the request, confirm clamps DOWN and still succeeds (no reject-and-retry loop)", async () => {
+    // Debtor owes 500, files "I paid 500".
+    const { group, debtor, creditor } = seedGroupWithDebt(500);
+    const resCreate = makeRes();
+    await requestSettlement(makeReq({
+      user: { id: debtor, name: "Debtor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    }), resCreate);
+    const requestId = resCreate.body._id;
+
+    // Meanwhile the outstanding debt drops to 300 (e.g. a separate partial
+    // settlement) - creditor paid debtor 200 back via another expense.
+    fakeExpenseModel.__addDoc({
+      _id: oid(),
+      groupId: group._id,
+      paidBy: debtor,       // debtor pays, reducing what debtor owes
+      amount: 400,
+      splits: [{ userId: creditor, share: 200 }, { userId: debtor, share: 200 }],
+    });
+
+    // Creditor confirms. Old behavior: 409 "balances have changed, reject it".
+    // New behavior: clamp to the 300 that's actually still owed and settle it.
+    const res = makeRes();
+    await confirmSettlementRequest(
+      makeReq({ user: { id: creditor, name: "Creditor" }, params: { requestId } }),
+      res
+    );
+
+    expect(res.statusCode).toBe(200);
+    const settlementExpense = fakeExpenseModel._docs.find((e) => e.isSettlement);
+    expect(settlementExpense).toBeDefined();
+    expect(settlementExpense.amount).toBe(300); // clamped down from 500
+  });
+
+  test("when the outstanding balance is now ZERO, confirm is rejected as stale (409)", async () => {
+    const { group, debtor, creditor } = seedGroupWithDebt(500);
+    const resCreate = makeRes();
+    await requestSettlement(makeReq({
+      user: { id: debtor, name: "Debtor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    }), resCreate);
+    const requestId = resCreate.body._id;
+
+    // The whole debt gets cleared by another expense before confirm.
+    fakeExpenseModel.__addDoc({
+      _id: oid(),
+      groupId: group._id,
+      paidBy: debtor,
+      amount: 1000,
+      splits: [{ userId: creditor, share: 500 }, { userId: debtor, share: 500 }],
+    });
+
+    const res = makeRes();
+    await confirmSettlementRequest(
+      makeReq({ user: { id: creditor, name: "Creditor" }, params: { requestId } }),
+      res
+    );
+
+    expect(res.statusCode).toBe(409);
+    expect(fakeExpenseModel._docs.filter((e) => e.isSettlement)).toHaveLength(0);
+  });
+});
+
+describe("getPendingSettlements enrichment", () => {
+  test("each pending request carries the creditor's UPI details so an orphaned row can still show 'Pay'", async () => {
+    const { group, debtor, creditor } = seedGroupWithDebt(500);
+    fakeUserProfileModel.__addDoc({
+      _id: oid(),
+      userId: creditor,
+      upiId: "creditor@okaxis",
+      upiQr: { url: "https://cdn.example.com/qr.png" },
+    });
+
+    await requestSettlement(makeReq({
+      user: { id: debtor, name: "Debtor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    }), makeRes());
+
+    const res = makeRes();
+    await getPendingSettlements(makeReq({ user: { id: debtor }, params: { groupId: group._id } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].toUpi).toEqual({ upiId: "creditor@okaxis", upiQrUrl: "https://cdn.example.com/qr.png" });
+  });
+
+  test("a pending request with no UPI profile still returns a null-filled toUpi (never undefined)", async () => {
+    const { group, debtor, creditor } = seedGroupWithDebt(500);
+    await requestSettlement(makeReq({
+      user: { id: debtor, name: "Debtor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    }), makeRes());
+
+    const res = makeRes();
+    await getPendingSettlements(makeReq({ user: { id: creditor }, params: { groupId: group._id } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body[0].toUpi).toEqual({ upiId: null, upiQrUrl: null });
   });
 });

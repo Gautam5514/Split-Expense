@@ -46,7 +46,6 @@ import {
   Download,
   Check,
   Plus,
-  Repeat,
   Settings2,
   Smartphone,
   LogOut,
@@ -65,7 +64,6 @@ import { getGroupIcon } from "@/lib/groupIcons";
 import { groupTypeMeta, categoryMeta } from "@/lib/groupPresets";
 import GroupTypeCard from "@/components/group/GroupTypeCard";
 import GroupSettingsModal from "@/components/group/GroupSettingsModal";
-import RecurringBills from "@/components/group/RecurringBills";
 import CategoryBreakdown from "@/components/group/CategoryBreakdown";
 
 const fmtDate = new Intl.DateTimeFormat("en-IN", {
@@ -379,13 +377,11 @@ export default function GroupDetailPage() {
     group.groupType === "trip" && group.trip?.startDate
       ? `${fmtRange.format(new Date(group.trip.startDate))}${group.trip?.endDate ? ` – ${fmtRange.format(new Date(group.trip.endDate))}` : ""}`
       : null,
-    group.groupType === "roommate" && group.roommate?.billDay ? `Bills due on day ${group.roommate.billDay}` : null,
   ].filter(Boolean).join(" · ");
 
   const tabs = [
     { key: "feed", label: "Expenses", icon: Receipt },
     { key: "breakdown", label: "Insights", icon: TrendingUp },
-    ...(group.groupType === "roommate" ? [{ key: "bills", label: "Bills", icon: Repeat }] : []),
     // { key: "notes", label: "Shared Notes", icon: BookOpen },
   ];
 
@@ -527,10 +523,10 @@ export default function GroupDetailPage() {
             const up = currentUserBalance > 0.01;
             const down = currentUserBalance < -0.01;
             return (
-              <div className="bg-card border border-border rounded-2xl p-4 md:p-5 shadow-sm flex items-center justify-between gap-3 md:flex-col md:items-start md:justify-start">
+              <div className="bg-card border border-border rounded-2xl p-3 md:p-4 shadow-sm flex items-center justify-between gap-3 md:flex-col md:items-start md:justify-start">
                 <div className="min-w-0">
                   <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Your balance</p>
-                  <p className={`text-2xl font-black mt-1 md:mt-2 truncate ${
+                  <p className={`text-xl font-black mt-0.5 md:mt-1 truncate ${
                     up ? "text-emerald-600 dark:text-emerald-400" : down ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"}`}>
                     {up ? `+${money(Math.abs(currentUserBalance))}` : down ? `-${money(Math.abs(currentUserBalance))}` : "Settled up"}
                   </p>
@@ -542,7 +538,7 @@ export default function GroupDetailPage() {
                 {canSettle && (
                   <button type="button"
                     onClick={() => { if (isMobile) setActiveTab("balances"); else document.getElementById("group-balances")?.scrollIntoView({ behavior: "smooth" }); }}
-                    className="shrink-0 h-9 px-4 rounded-full bg-primary/10 text-primary text-xs font-bold hover:bg-primary/15 transition cursor-pointer md:mt-3">
+                    className="shrink-0 h-8 px-3.5 rounded-full bg-primary/10 text-primary text-xs font-bold hover:bg-primary/15 transition cursor-pointer md:mt-2">
                     Settle up
                   </button>
                 )}
@@ -555,7 +551,6 @@ export default function GroupDetailPage() {
               summary={summary}
               isCreator={isCreator}
               onOpenSettings={() => setShowSettings(true)}
-              onOpenBills={() => setActiveTab("bills")}
             />
           </div>
         </div>
@@ -684,7 +679,6 @@ export default function GroupDetailPage() {
                               <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                                 {payerLabel(exp)} · {fmtDate.format(new Date(exp.date))}
                                 {exp.currency && ` · ${formatMoney(exp.originalAmount, exp.currency)}`}
-                                {exp.recurringId && " · monthly"}
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
@@ -802,14 +796,6 @@ export default function GroupDetailPage() {
                       })}
                     </div>
                   )}
-                </motion.div>
-              )}
-
-              {/* Monthly bills (Roommates) */}
-              {activeTab === "bills" && (
-                <motion.div key="bills" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                  <RecurringBills group={group} meId={meId} onChanged={fetchSummary} />
                 </motion.div>
               )}
 
@@ -970,6 +956,24 @@ function BalancesCard({ balances, pendingSettlements, meId, currency = "INR", gr
       (r) => String(r.fromUserId._id) === String(s.from.userId) && String(r.toUserId._id) === String(s.to.userId)
     );
 
+  // Pending requests that the current user is a party to but which DON'T line
+  // up with any smart-settlement suggestion (the greedy debt-minimizer reroutes
+  // debt, so a real A->B request often has no A->B suggestion row). Without
+  // this, those requests would be invisible - the counterparty could never
+  // confirm them and the initiator could never cancel, leaving the debt stuck.
+  const shownPendingIds = new Set(
+    (balances?.suggestions || [])
+      .map((s) => findPendingFor(s))
+      .filter(Boolean)
+      .map((r) => String(r._id))
+  );
+  const orphanPending = (pendingSettlements || []).filter((r) => {
+    if (shownPendingIds.has(String(r._id))) return false;
+    const isParty =
+      String(r.fromUserId._id) === String(meId) || String(r.toUserId._id) === String(meId);
+    return isParty;
+  });
+
   const openForm = (i) => { setActiveForm(i); setMethod("cash"); setNote(""); };
   const closeForm = () => setActiveForm(null);
 
@@ -1115,6 +1119,37 @@ function BalancesCard({ balances, pendingSettlements, meId, currency = "INR", gr
               </div>
             );
           })}
+        </div>
+      )}
+
+      {orphanPending.length > 0 && (
+        <div className="border-t border-border px-5 py-4 space-y-3">
+          <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+            <Clock size={12} className="text-amber-500" /> Pending Settlements
+          </h4>
+          {orphanPending.map((pending) => (
+            <div key={pending._id} className="bg-muted/40 border border-border rounded-xl p-3.5 space-y-2.5">
+              <p className="text-xs leading-relaxed">
+                <span className="font-bold text-rose-600 dark:text-rose-400">
+                  {String(pending.fromUserId._id) === String(meId) ? "You" : pending.fromUserId.name}
+                </span>
+                <span className="text-muted-foreground"> → </span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                  {String(pending.toUserId._id) === String(meId) ? "You" : pending.toUserId.name}
+                </span>
+                <span className="text-muted-foreground"> · </span>
+                <span className="font-bold text-foreground">{formatCurrency(pending.amount)}</span>
+              </p>
+              <PendingSettlementRow
+                pending={pending}
+                meId={meId}
+                formatCurrency={formatCurrency}
+                onConfirm={onConfirmSettlement}
+                onReject={onRejectSettlement}
+                onCancel={onCancelSettlement}
+              />
+            </div>
+          ))}
         </div>
       )}
 

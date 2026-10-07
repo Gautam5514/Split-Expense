@@ -360,10 +360,12 @@ export default function UserDashboardPage() {
                       className="group/card flex items-center gap-2.5 rounded-2xl border border-border/70 bg-card p-2.5 transition-colors duration-200 hover:border-primary/40"
                     >
                       <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                        style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl"
+                        style={group.photo?.url ? undefined : { background: `linear-gradient(135deg, ${g1}, ${g2})` }}
                       >
-                        {GroupIcon ? (
+                        {group.photo?.url ? (
+                          <Image src={group.photo.url} alt="" width={40} height={40} className="h-full w-full rounded-xl object-cover" />
+                        ) : GroupIcon ? (
                           createElement(GroupIcon, { className: "h-4.5 w-4.5 text-white", strokeWidth: 2.2 })
                         ) : (
                           <span className="select-none text-sm font-black tracking-tight text-white">
@@ -736,9 +738,6 @@ const StatCard = ({
           <p className="truncate text-[11px] font-semibold text-muted-foreground">{label}</p>
           <h3 className={`mt-0.5 truncate text-xl font-extrabold tracking-[-0.035em] sm:text-2xl ${valueColor}`}>{value}</h3>
         </div>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.03] text-muted-foreground/60 transition-colors group-hover:bg-cyan-500/10 group-hover:text-cyan-600 dark:bg-white/[0.05] dark:group-hover:text-cyan-400">
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-        </span>
       </div>
       {subtext && (
         <p className="relative mt-3 truncate border-t border-slate-900/[0.055] pt-2.5 text-[11px] font-medium text-muted-foreground dark:border-white/[0.07]">{subtext}</p>

@@ -22,7 +22,6 @@ export default function GroupSettingsModal({ group, hasExpenses, onClose, onSave
   const [startDate, setStartDate] = useState(toInputDate(group.trip?.startDate));
   const [endDate, setEndDate] = useState(toInputDate(group.trip?.endDate));
   const [budget, setBudget] = useState(group.trip?.budget ?? "");
-  const [billDay, setBillDay] = useState(group.roommate?.billDay ?? "");
   const [currency, setCurrency] = useState(group.settings?.currency || "INR");
   const [receiptRequired, setReceiptRequired] = useState(!!group.settings?.receiptRequired);
   const [joinApproval, setJoinApproval] = useState(!!group.settings?.joinApproval);
@@ -60,7 +59,6 @@ export default function GroupSettingsModal({ group, hasExpenses, onClose, onSave
     };
     if (!hasExpenses) body.settings.currency = currency;
     if (groupType === "trip") body.trip = { startDate: startDate || null, endDate: endDate || null, budget: budget === "" ? null : budget };
-    if (groupType === "roommate") body.roommate = { billDay: billDay === "" ? null : Number(billDay) };
 
     try {
       setSaving(true);
@@ -118,16 +116,6 @@ export default function GroupSettingsModal({ group, hasExpenses, onClose, onSave
                 <div><span className={label}>End date</span><input type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} className={inputCls} /></div>
               </div>
               <div><span className={label}>Budget</span><input type="number" min="0" inputMode="decimal" value={budget} placeholder="No budget" onChange={(e) => setBudget(e.target.value)} className={inputCls} /></div>
-            </div>
-          )}
-
-          {groupType === "roommate" && (
-            <div>
-              <span className={label}>Rent / bills due on</span>
-              <select value={billDay} onChange={(e) => setBillDay(e.target.value)} className={inputCls}>
-                <option value="">Not set</option>
-                {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>Day {d}</option>)}
-              </select>
             </div>
           )}
 
