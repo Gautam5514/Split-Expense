@@ -7,7 +7,7 @@ import Expense from "../models/expenseModel.js";
 import User from "../models/userModel.js";
 import RecurringExpense from "../models/recurringExpenseModel.js";
 import { isValidObjectId } from "../middleware/validate.js";
-import { buildGroupSettingsUpdate } from "../utils/groupSettings.js";
+import { buildGroupSettingsUpdate, applyExpenseLock, SETTINGS_LOCKED_MESSAGE } from "../utils/groupSettings.js";
 import { EXPENSE_CATEGORIES } from "../utils/groupPresets.js";
 import { computeGroupBalances, to2 } from "./balanceController.js";
 import { nextRunDate } from "../utils/recurringRunner.js";
@@ -55,11 +55,28 @@ export const updateGroupSettings = async (req, res) => {
     // settings update change it (guards raw API calls too, not just the UI).
     const { groupType: _ignoredGroupType, ...settingsBody } = req.body || {};
 
-    const { update, error, field } = buildGroupSettingsUpdate(settingsBody, {
+    const built = buildGroupSettingsUpdate(settingsBody, {
       memberIds: group.members.map(String),
     });
-    if (error) return res.status(400).json({ field, message: error });
+    if (built.error) return res.status(400).json({ field: built.field, message: built.error });
+    let update = built.update;
     if (!Object.keys(update).length) return res.status(400).json({ message: "Nothing to update." });
+
+    // After the first expense only the receipt and join-approval switches may
+    // change. The server is the source of truth - never trust the client's idea
+    // of whether the group has expenses.
+    const hasExpenses = !!(await Expense.exists({ groupId: group._id }));
+    if (hasExpenses) {
+      const lock = applyExpenseLock(update, group.toObject());
+      if (lock.locked.length)
+        return res.status(409).json({ code: "SETTINGS_LOCKED", field: lock.locked[0], fields: lock.locked, message: SETTINGS_LOCKED_MESSAGE });
+      update = lock.update;
+      if (!Object.keys(update).length) {
+        // Only unchanged locked values were sent - nothing to write.
+        const same = await Group.findById(group._id).populate("members", "name email").populate("createdBy", "name email").lean();
+        return res.json({ ...same, hasExpenses });
+      }
+    }
 
     // Keep dates consistent when only one side is being changed.
     const start = update["trip.startDate"] !== undefined ? update["trip.startDate"] : group.trip?.startDate;
@@ -72,7 +89,7 @@ export const updateGroupSettings = async (req, res) => {
       .populate("members", "name email")
       .populate("createdBy", "name email")
       .lean();
-    res.json(updated);
+    res.json({ ...updated, hasExpenses });
   } catch (err) {
     console.error("updateGroupSettings error:", err.message);
     res.status(500).json({ message: err.message });

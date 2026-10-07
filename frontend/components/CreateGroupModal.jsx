@@ -10,7 +10,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import PeoplePicker from "@/components/people/PeoplePicker";
 import GroupTypeIcon from "@/components/group/GroupTypeIcon";
-import { addPeopleToGroup, describeAddResult } from "@/lib/people";
+import { addPeopleToGroup, describeAddResult, sharesToWeights } from "@/lib/people";
+import ShareSplitEditor from "@/components/people/ShareSplitEditor";
 import { resizeImage } from "@/lib/image";
 import { GROUP_ICONS, getGroupIcon } from "@/lib/groupIcons";
 import {
@@ -52,6 +53,7 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
   const [currency, setCurrency] = useState("INR");
   const [receiptRequired, setReceiptRequired] = useState(false);
   const [splitMode, setSplitMode] = useState("equal"); // "equal" | "shares"
+  const [shares, setShares] = useState({}); // { "me" | "u:<id>": number }
   const [selected, setSelected] = useState([]); // PeoplePicker items
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState(null);
@@ -65,7 +67,7 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
   const reset = () => {
     setStep(0); setType(null); setName(""); setNameError(""); setIcon(null);
     setShowAllIcons(false); setPhoto(null); setStartDate(""); setEndDate("");
-    setBudget(""); setCurrency("INR"); setReceiptRequired(false); setSplitMode("equal");
+    setBudget(""); setCurrency("INR"); setReceiptRequired(false); setSplitMode("equal"); setShares({});
     setSelected([]); setCreating(false); setCreated(null); setJoinLink("");
   };
 
@@ -151,6 +153,16 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
         toast.success(describeAddResult(membersRes.r));
       } else if (membersRes?.err) {
         toast.error(membersRes.err?.response?.data?.message || "Group created, but adding members failed.");
+      }
+      // Per-person shares: only possible once people are members, so patch after adding.
+      if (splitMode === "shares" && Object.values(shares).some((v) => v !== 1)) {
+        try {
+          const weights = sharesToWeights(group, shares, group.createdBy?._id ?? group.createdBy);
+          const r = await api.patch(`/groups/${group._id}/settings`, { settings: { defaultSplit: { type: "shares", weights } } });
+          if (r.data) group = { ...group, ...r.data };
+        } catch {
+          toast.error("Group created, but shares weren't saved - set them in Group settings.");
+        }
       }
       if (photoRes?.r) {
         if (photoRes.r.data?.group) group = { ...group, photo: photoRes.r.data.group.photo, icon: null };
@@ -377,7 +389,22 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
                   </div>
                 )}
 
-                {/* Split: chosen once, here */}
+                <div className="flex pt-1">
+                  <button type="submit" className={primaryBtn}>
+                    Next <ArrowRight size={15} />
+                  </button>
+                </div>
+              </motion.form>
+            )}
+
+            {/* ── Step 3: people ── */}
+            {step === 2 && (
+              <motion.div key="people" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                className="space-y-5">
+                <PeoplePicker selected={selected} onChange={setSelected} />
+
+                {/* Split: asked only after people are added */}
+                {selected.length > 0 && (
                 <div>
                   <p className={`${label} mb-2`}>How do you split expenses?</p>
                   <div className="grid grid-cols-2 gap-2">
@@ -394,23 +421,10 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
                     ))}
                   </div>
                   {splitMode === "shares" && (
-                    <p className="text-[11px] text-muted-foreground mt-1.5">Everyone starts with 1 share - set each person&apos;s shares in Group settings once they join.</p>
+                    <div className="mt-3"><ShareSplitEditor people={selected} shares={shares} onChange={setShares} /></div>
                   )}
                 </div>
-
-                <div className="flex pt-1">
-                  <button type="submit" className={primaryBtn}>
-                    Next <ArrowRight size={15} />
-                  </button>
-                </div>
-              </motion.form>
-            )}
-
-            {/* ── Step 3: people ── */}
-            {step === 2 && (
-              <motion.div key="people" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
-                className="space-y-5">
-                <PeoplePicker selected={selected} onChange={setSelected} />
+                )}
 
                 <div className="flex items-center gap-2">
                   {!selected.length && (

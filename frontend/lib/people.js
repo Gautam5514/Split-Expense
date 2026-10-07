@@ -19,3 +19,15 @@ export function describeAddResult({ added = 0, pending = 0, invited = 0 } = {}) 
   if (invited) parts.push(`${invited} joining email${invited > 1 ? "s" : ""} sent`);
   return parts.join(" · ") || "No one new to add";
 }
+
+// Turns the create-flow share picks into defaultSplit weights. Only people who
+// actually became members can be weighted (invites aren't members yet).
+// `shares` is keyed by row key: "me" for the creator, "u:<userId>" for others.
+export function sharesToWeights(group, shares, creatorId) {
+  const member = (m) => String(m?._id ?? m);
+  return (group?.members || []).map((m) => {
+    const id = member(m);
+    const key = id === String(creatorId) ? "me" : `u:${id}`;
+    return { userId: id, value: shares[key] ?? 1 };
+  });
+}

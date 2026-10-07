@@ -46,7 +46,7 @@ export default function MembersModal({ group, isCreator, onClose, onAdd, onInvit
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: "100%", opacity: 0 }}
           transition={{ type: "spring", stiffness: 320, damping: 32 }}
-          className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl border border-border/50 bg-card shadow-2xl text-foreground overflow-hidden flex flex-col"
+          className="relative w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border border-border/50 bg-card shadow-2xl text-foreground overflow-hidden flex flex-col"
           style={{ maxHeight: "85dvh" }}
         >
           {/* Close */}
@@ -122,7 +122,7 @@ export default function MembersModal({ group, isCreator, onClose, onAdd, onInvit
                           {m.name || "Unnamed"}
                           {isMemberCreator && <Crown size={11} className="text-primary shrink-0" />}
                         </p>
-                        <p className="text-[11px] text-muted-foreground truncate">{m.email}</p>
+                        <p className="text-[11px] text-muted-foreground break-all">{m.email}</p>
                       </div>
 
                       <div className="shrink-0">

@@ -148,3 +148,74 @@ export const unflatten = (flat) => {
   }
   return out;
 };
+
+/**
+ * Once a group has its first expense, only these settings may still change.
+ * Everything else (default split, currency, trip dates/budget, bill day)
+ * would silently change what existing and future expenses mean.
+ */
+export const EDITABLE_AFTER_EXPENSES = ["settings.receiptRequired", "settings.joinApproval"];
+
+export const SETTINGS_LOCKED_MESSAGE =
+  "This can't be changed after the first expense is added. Only 'Receipt required' and 'Approve people who join by link' can still be changed.";
+
+const LOCKED_LABELS = {
+  "settings.defaultSplit": "defaultSplit",
+  "settings.currency": "currency",
+  "trip.startDate": "startDate",
+  "trip.endDate": "endDate",
+  "trip.budget": "budget",
+  "roommate.billDay": "billDay",
+};
+
+const dateKey = (v) => (v ? new Date(v).getTime() : null);
+const numKey = (v) => (v === null || v === undefined ? null : Number(v));
+const splitKey = (ds) => {
+  const type = ds?.type || "equal";
+  if (type === "equal") return "equal";
+  const weights = (ds?.weights || [])
+    .map((w) => `${String(w.userId)}:${Number(w.value)}`)
+    .sort();
+  return `${type}|${weights.join(",")}`;
+};
+
+// What the group currently stores for each lockable key, normalised so it can
+// be compared with a validated update value.
+const currentValue = (group, key) => {
+  switch (key) {
+    case "settings.defaultSplit": return splitKey(group.settings?.defaultSplit);
+    case "settings.currency": return group.settings?.currency || "INR";
+    case "trip.startDate": return dateKey(group.trip?.startDate);
+    case "trip.endDate": return dateKey(group.trip?.endDate);
+    case "trip.budget": return numKey(group.trip?.budget);
+    case "roommate.billDay": return numKey(group.roommate?.billDay);
+    default: return undefined;
+  }
+};
+const nextValue = (key, value) => {
+  switch (key) {
+    case "settings.defaultSplit": return splitKey(value);
+    case "trip.startDate":
+    case "trip.endDate": return dateKey(value);
+    case "trip.budget":
+    case "roommate.billDay": return numKey(value);
+    default: return value;
+  }
+};
+
+/**
+ * For a group that already has expenses: splits a validated update into
+ *  - `update`: what may still be written (locked fields whose value is
+ *    unchanged are dropped, so a client that re-sends the whole form works)
+ *  - `locked`: names of locked fields that would actually CHANGE
+ */
+export const applyExpenseLock = (update, group) => {
+  const kept = {};
+  const locked = [];
+  for (const [key, value] of Object.entries(update)) {
+    if (EDITABLE_AFTER_EXPENSES.includes(key)) { kept[key] = value; continue; }
+    if (!(key in LOCKED_LABELS)) { kept[key] = value; continue; }
+    if (currentValue(group, key) !== nextValue(key, value)) locked.push(LOCKED_LABELS[key]);
+  }
+  return { update: kept, locked };
+};

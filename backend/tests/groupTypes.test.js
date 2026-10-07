@@ -18,7 +18,7 @@ jest.unstable_mockModule("../utils/referralService.js", () => ({
 
 const mongoose = (await import("mongoose")).default;
 const { buildSplits } = await import("../controllers/expenseController.js");
-const { buildGroupSettingsUpdate, unflatten } = await import("../utils/groupSettings.js");
+const { buildGroupSettingsUpdate, unflatten, applyExpenseLock, EDITABLE_AFTER_EXPENSES } = await import("../utils/groupSettings.js");
 const { nextRunDate } = await import("../utils/recurringRunner.js");
 const { defaultSplitFor } = await import("../utils/defaultSplit.js");
 
@@ -192,5 +192,134 @@ describe("defaultSplitFor (the group's own split)", () => {
     const res = buildGroupSettingsUpdate({ settings: { defaultSplit: { type: "shares", weights: [] } } }, { memberIds: [] });
     expect(res.error).toBeUndefined();
     expect(res.update["settings.defaultSplit"]).toEqual({ type: "shares", weights: [] });
+  });
+});
+
+// What the create-group "By shares" screen sends (per-person stepper, 1-20):
+// PATCH settings.defaultSplit = { type: "shares", weights: [{ userId, value }] }
+describe("create-group shares: settings validation + resulting split", () => {
+  const settings = (weights) => ({ settings: { defaultSplit: { type: "shares", weights } } });
+  const w = (userId, value) => ({ userId, value });
+
+  test("1/2/3 shares on 600 = 100/200/300 end to end", () => {
+    const [a, b, c] = [oid(), oid(), oid()];
+    const res = buildGroupSettingsUpdate(settings([w(a, 1), w(b, 2), w(c, 3)]), { memberIds: [a, b, c] });
+    expect(res.error).toBeUndefined();
+    const saved = res.update["settings.defaultSplit"];
+    const r = defaultSplitFor({ settings: { defaultSplit: saved } }, [a, b, c], 600, a);
+    expect([shareOf(r.splits, a), shareOf(r.splits, b), shareOf(r.splits, c)]).toEqual([100, 200, 300]);
+  });
+
+  test("amounts that don't divide evenly still add up to the exact bill", () => {
+    const [a, b, c] = [oid(), oid(), oid()];
+    const saved = buildGroupSettingsUpdate(settings([w(a, 1), w(b, 2), w(c, 7)]), { memberIds: [a, b, c] }).update["settings.defaultSplit"];
+    for (const amount of [100, 99.99, 0.01, 1234.56]) {
+      const r = defaultSplitFor({ settings: { defaultSplit: saved } }, [a, b, c], amount, b);
+      expect(total(r.splits)).toBe(Number(amount.toFixed(2)));
+    }
+  });
+
+  test("max stepper value (20) is accepted", () => {
+    const [a, b] = [oid(), oid()];
+    expect(buildGroupSettingsUpdate(settings([w(a, 20), w(b, 1)]), { memberIds: [a, b] }).error).toBeUndefined();
+  });
+
+  test("creator-only weights (everyone else is a pending invite) are valid", () => {
+    const a = oid();
+    const res = buildGroupSettingsUpdate(settings([w(a, 2)]), { memberIds: [a] });
+    expect(res.error).toBeUndefined();
+    expect(res.update["settings.defaultSplit"].weights).toEqual([{ userId: a, value: 2 }]);
+  });
+
+  test("a member who joins later (no saved weight) counts as 1 share", () => {
+    const [a, b, late] = [oid(), oid(), oid()];
+    const r = defaultSplitFor({ settings: { defaultSplit: { type: "shares", weights: [w(a, 1), w(b, 3)] } } }, [a, b, late], 500, a);
+    expect([shareOf(r.splits, a), shareOf(r.splits, b), shareOf(r.splits, late)]).toEqual([100, 300, 100]);
+  });
+
+  test("a member who left (weight kept) is simply not part of the split", () => {
+    const [a, b, gone] = [oid(), oid(), oid()];
+    const r = defaultSplitFor({ settings: { defaultSplit: { type: "shares", weights: [w(a, 1), w(b, 1), w(gone, 8)] } } }, [a, b], 100, a);
+    expect(shareOf(r.splits, a)).toBe(50);
+  });
+
+  test("rejects weights for someone who isn't a member (pending invite)", () => {
+    const [a, pending] = [oid(), oid()];
+    expect(buildGroupSettingsUpdate(settings([w(a, 1), w(pending, 2)]), { memberIds: [a] }).field).toBe("defaultSplit");
+  });
+
+  test("rejects duplicates, negatives, NaN, over-1000 and all-zero", () => {
+    const [a, b] = [oid(), oid()];
+    const m = { memberIds: [a, b] };
+    expect(buildGroupSettingsUpdate(settings([w(a, 1), w(a, 2)]), m).field).toBe("defaultSplit");
+    expect(buildGroupSettingsUpdate(settings([w(a, -1)]), m).field).toBe("defaultSplit");
+    expect(buildGroupSettingsUpdate(settings([w(a, "abc")]), m).field).toBe("defaultSplit");
+    expect(buildGroupSettingsUpdate(settings([w(a, 1001)]), m).field).toBe("defaultSplit");
+    expect(buildGroupSettingsUpdate(settings([w(a, 0), w(b, 0)]), m).field).toBe("defaultSplit");
+    expect(buildGroupSettingsUpdate(settings([{ userId: "not-an-id", value: 1 }]), m).field).toBe("defaultSplit");
+  });
+
+  test("switching back to equal clears saved weights", () => {
+    const a = oid();
+    const res = buildGroupSettingsUpdate({ settings: { defaultSplit: { type: "equal", weights: [w(a, 5)] } } }, { memberIds: [a] });
+    expect(res.update["settings.defaultSplit"]).toEqual({ type: "equal", weights: [] });
+  });
+});
+
+describe("applyExpenseLock (settings after the first expense)", () => {
+  const [a, b] = [oid(), oid()];
+  const group = {
+    settings: { currency: "INR", defaultSplit: { type: "shares", weights: [{ userId: a, value: 2 }, { userId: b, value: 1 }] } },
+    trip: { startDate: new Date("2026-10-01"), endDate: new Date("2026-10-09"), budget: 5000 },
+    roommate: { billDay: 5 },
+  };
+
+  test("only the two switches are editable", () => {
+    expect(EDITABLE_AFTER_EXPENSES).toEqual(["settings.receiptRequired", "settings.joinApproval"]);
+    const r = applyExpenseLock({ "settings.receiptRequired": true, "settings.joinApproval": false }, group);
+    expect(r.locked).toEqual([]);
+    expect(r.update).toEqual({ "settings.receiptRequired": true, "settings.joinApproval": false });
+  });
+
+  test("any changed locked field is reported", () => {
+    const r = applyExpenseLock({
+      "settings.currency": "USD",
+      "settings.defaultSplit": { type: "equal", weights: [] },
+      "trip.startDate": new Date("2026-10-02"),
+      "trip.endDate": null,
+      "trip.budget": 6000,
+      "roommate.billDay": 6,
+    }, group);
+    expect(r.locked.sort()).toEqual(["billDay", "budget", "currency", "defaultSplit", "endDate", "startDate"]);
+  });
+
+  test("the same values re-sent are dropped silently (weight order and number type do not matter)", () => {
+    const r = applyExpenseLock({
+      "settings.currency": "INR",
+      "settings.defaultSplit": { type: "shares", weights: [{ userId: b, value: 1 }, { userId: a, value: 2 }] },
+      "trip.startDate": new Date("2026-10-01"),
+      "trip.endDate": new Date("2026-10-09"),
+      "trip.budget": 5000,
+      "roommate.billDay": 5,
+      "settings.receiptRequired": true,
+    }, group);
+    expect(r.locked).toEqual([]);
+    expect(r.update).toEqual({ "settings.receiptRequired": true });
+  });
+
+  test("changing just one weight, or just the split type, is a change", () => {
+    expect(applyExpenseLock({ "settings.defaultSplit": { type: "shares", weights: [{ userId: a, value: 3 }, { userId: b, value: 1 }] } }, group).locked).toEqual(["defaultSplit"]);
+    expect(applyExpenseLock({ "settings.defaultSplit": { type: "percent", weights: [{ userId: a, value: 2 }, { userId: b, value: 1 }] } }, group).locked).toEqual(["defaultSplit"]);
+  });
+
+  test("a group with no stored settings counts as INR / equal / no trip data", () => {
+    const bare = {};
+    expect(applyExpenseLock({ "settings.currency": "INR", "settings.defaultSplit": { type: "equal", weights: [] }, "trip.budget": null, "trip.startDate": null, "roommate.billDay": null }, bare).locked).toEqual([]);
+    expect(applyExpenseLock({ "settings.currency": "USD" }, bare).locked).toEqual(["currency"]);
+    expect(applyExpenseLock({ "settings.defaultSplit": { type: "equal", weights: [{ userId: a, value: 9 }] } }, bare).locked).toEqual([]); // equal ignores weights
+  });
+
+  test("keys it does not know about pass straight through", () => {
+    expect(applyExpenseLock({ "settings.notepadEnabled": true }, group)).toEqual({ update: { "settings.notepadEnabled": true }, locked: [] });
   });
 });

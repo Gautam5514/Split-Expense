@@ -9,7 +9,7 @@
     "seed:user": "node scripts/seed-password-user.js",
     "user:otp-bypass": "node scripts/set-user-otp-bypass.js",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand",
-    "test:int": "node --experimental-vm-modules node_modules/.bin/jest --runInBand tests/groupSecurity.int.test.js"
+    "test:int": "node --experimental-vm-modules node_modules/.bin/jest --runInBand tests/groupSecurity.int.test.js tests/settingsLock.int.test.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

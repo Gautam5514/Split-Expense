@@ -203,9 +203,13 @@ export const getGroupById = async (req, res) => {
       photoURL: photoMap.get(String(m._id)) || null,
     }));
 
+    // Settings that define how expenses work lock after the first expense.
+    const hasExpenses = !!(await Expense.exists({ groupId: group._id }));
+
     res.json({
       ...group,
       members: enrichedMembers,
+      hasExpenses,
     });
   } catch (err) {
     console.error("getGroupById error:", err.message);

@@ -556,7 +556,7 @@ export default function GroupDetailPage() {
         </div>
 
         {/* ── TWO-COLUMN LAYOUT ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5">
 
           {/* LEFT: TABS + CONTENT */}
           <div className="min-w-0 space-y-4">
@@ -1085,21 +1085,23 @@ function BalancesCard({ balances, pendingSettlements, meId, currency = "INR", gr
                   />
                 ) : isDebtor ? (
                   <div className="space-y-2">
-                    {(s.to.upiId || s.to.upiQrUrl) && currency === "INR" && (
+                    <div className="flex items-center gap-2">
+                      {(s.to.upiId || s.to.upiQrUrl) && currency === "INR" && (
+                        <button
+                          type="button"
+                          onClick={() => setPayPanel(s)}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 rounded-lg text-xs transition cursor-pointer"
+                        >
+                          <Smartphone size={13} /> Pay {formatCurrency(s.amount)}
+                        </button>
+                      )}
                       <button
-                        type="button"
-                        onClick={() => setPayPanel(s)}
-                        className="w-full flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 rounded-lg text-xs transition cursor-pointer"
+                        onClick={() => openForm(i)}
+                        className="shrink-0 flex items-center justify-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-semibold py-2 px-3 rounded-lg text-xs transition cursor-pointer whitespace-nowrap"
                       >
-                        <Smartphone size={13} /> Pay {formatCurrency(s.amount)} to {s.to.name}
+                        <CheckCircle size={13} /> I&apos;ve Paid
                       </button>
-                    )}
-                    <button
-                      onClick={() => openForm(i)}
-                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
-                    >
-                      <CheckCircle size={13} /> I&apos;ve Paid {formatCurrency(s.amount)}
-                    </button>
+                    </div>
                     {(s.to.upiId || s.to.upiQrUrl) && currency === "INR" && (
                       <p className="text-[10px] text-muted-foreground text-center">After paying, tap &quot;I&apos;ve Paid&quot; so {s.to.name} can confirm.</p>
                     )}
