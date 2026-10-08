@@ -16,7 +16,7 @@ const VALUES = [
   {
     icon: Coffee,
     title: "Built by Gautam Pandit",
-    desc: "From a real college problem to a full live product at split.elitecrew.online, built from scratch to fix group money friction.",
+    desc: "From a real college problem to a full live product at splitease.tech, built from scratch to fix group money friction.",
   },
   {
     icon: HeartHandshake,
@@ -79,7 +79,7 @@ export default function AboutPageClient() {
           Ending &ldquo;I&apos;ll pay you back later&rdquo; forever
         </h1>
         <p className="relative z-10 mx-auto mt-5 max-w-2xl text-sm font-medium text-white/60 sm:text-base leading-relaxed">
-          SplitEase (split.elitecrew.online) was built by founder <strong className="text-white">Gautam Pandit</strong> to give students, flatmates, and travel groups a zero-paywall, intelligent platform for shared expenses.
+          SplitEase (splitease.tech) was built by founder <strong className="text-white">Gautam Pandit</strong> to give students, flatmates, and travel groups a zero-paywall, intelligent platform for shared expenses.
         </p>
       </header>
 
@@ -109,7 +109,7 @@ export default function AboutPageClient() {
                 Gautam Pandit
               </h2>
               <p className="mt-1 text-cyan-400 font-mono text-xs tracking-wider uppercase">
-                Creator of SplitEase (split.elitecrew.online)
+                Creator of SplitEase (splitease.tech)
               </p>
               <p className="mt-4 text-sm sm:text-base text-white/70 leading-relaxed max-w-xl">
                 Gautam Pandit designed, architected, and engineered SplitEase end-to-end. Driven by the frustration of awkward micro-debts during college and group trips, he conducted 6 months of research, wrote the complete system specifications, and developed SplitEase into a full-scale web and mobile application.
@@ -168,7 +168,7 @@ export default function AboutPageClient() {
           From a College Problem to a Production Product
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-white/60 sm:text-base">
-          SplitEase didn&apos;t start as a commercial venture — it started as a lived problem. After living through messy roommate bills, student hostel expenses, and group vacation math, Gautam spent months analyzing why existing tools failed real groups. The result is split.elitecrew.online: a fast, zero-paywall application with receipt OCR, AI debt simplification, and real-time syncing.
+          SplitEase didn&apos;t start as a commercial venture — it started as a lived problem. After living through messy roommate bills, student hostel expenses, and group vacation math, Gautam spent months analyzing why existing tools failed real groups. The result is splitease.tech: a fast, zero-paywall application with receipt OCR, AI debt simplification, and real-time syncing.
         </p>
       </section>
 
@@ -203,7 +203,7 @@ export default function AboutPageClient() {
           Try SplitEase Today
         </h2>
         <p className="mx-auto mt-4 max-w-md text-sm font-medium text-white/50 sm:text-base">
-          Free to join, free to use, live at split.elitecrew.online.
+          Free to join, free to use, live at splitease.tech.
         </p>
         <div className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-3">
           <button

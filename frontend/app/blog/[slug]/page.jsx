@@ -21,7 +21,7 @@ const AUTHOR_ICONS = { github: Github, x: XIcon, linkedin: Linkedin, instagram: 
 // content). Admin-authored DB posts render on-demand instead - dynamicParams
 // stays true so a slug that isn't in the static list still resolves.
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://splitease.tech";
 
 export function generateStaticParams() {
   return BLOG_POSTS.map((p) => ({ slug: p.slug }));

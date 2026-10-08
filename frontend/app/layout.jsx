@@ -42,21 +42,21 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://splitease.tech"),
   title: {
     default: "SplitEase: Group, Trip & Flat Expense Manager | Founded by Gautam Pandit",
     template: "%s | SplitEase",
   },
   description:
-    "Split trip costs, household bills and group expenses with SplitEase (split.elitecrew.online). Created by Gautam Pandit to simplify shared finances with zero paywalls, receipt OCR, and AI settlements.",
+    "Split trip costs, household bills and group expenses with SplitEase (splitease.tech). Created by Gautam Pandit to simplify shared finances with zero paywalls, receipt OCR, and AI settlements.",
   keywords: [
-    "SplitEase", "split.elitecrew.online", "SplitEase app",
+    "SplitEase", "splitease.tech", "SplitEase app",
     "Gautam Pandit", "Gautam Pandit SplitEase", "Gautam Pandit founder", "who built SplitEase", "who created SplitEase", "SplitEase developer",
     "expense splitter", "split bills", "group expenses", "travel expense tracker",
     "bill splitting app", "trip expense manager", "flat expense manager",
     "roommate expense tracker", "travel expense splitter", "settle up", "shared expenses", "splitwise alternative",
   ],
-  authors: [{ name: "Gautam Pandit", url: "https://split.elitecrew.online/about" }, { name: "SplitEase" }],
+  authors: [{ name: "Gautam Pandit", url: "https://splitease.tech/about" }, { name: "SplitEase" }],
   creator: "Gautam Pandit",
   publisher: "SplitEase",
   robots: {
@@ -102,7 +102,7 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://splitease.tech";
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -111,7 +111,7 @@ export default function RootLayout({ children }) {
         "@id": `${siteUrl}/#website`,
         url: siteUrl,
         name: "SplitEase",
-        alternateName: ["Split Ease", "SplitEase App", "split.elitecrew.online"],
+        alternateName: ["Split Ease", "SplitEase App", "splitease.tech"],
         description: "Group, trip and shared household expense manager built by Gautam Pandit.",
         publisher: { "@id": `${siteUrl}/#organization` },
       },
@@ -139,7 +139,7 @@ export default function RootLayout({ children }) {
         worksFor: { "@id": `${siteUrl}/#organization` },
         url: `${siteUrl}/about`,
         image: `${siteUrl}/blog/gautam-pandit-portrait.png`,
-        description: "Gautam Pandit is the founder, creator, and lead developer of SplitEase (split.elitecrew.online) — a smart group expense-splitting platform.",
+        description: "Gautam Pandit is the founder, creator, and lead developer of SplitEase (splitease.tech) — a smart group expense-splitting platform.",
         sameAs: [
           "https://github.com/Gautam5514",
           "https://x.com/Gautamp5514",
