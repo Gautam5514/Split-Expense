@@ -41,5 +41,8 @@
     "jest-environment-jsdom": "^30.5.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.13.6"
   }
 }
