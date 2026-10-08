@@ -1,11 +1,11 @@
 import AboutPageClient from "@/components/about/AboutPageClient";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://splitease.tech";
 
 export const metadata = {
   title: "Gautam Pandit — Founder & Developer of SplitEase | About Us",
   description:
-    "Meet Gautam Pandit, founder and sole developer of SplitEase (split.elitecrew.online). Learn about the story, technology, and vision behind the zero-paywall group expense manager.",
+    "Meet Gautam Pandit, founder and sole developer of SplitEase (splitease.tech). Learn about the story, technology, and vision behind the zero-paywall group expense manager.",
   keywords: [
     "Gautam Pandit",
     "Gautam Pandit SplitEase",
@@ -14,7 +14,7 @@ export const metadata = {
     "who created SplitEase",
     "SplitEase developer",
     "SplitEase",
-    "split.elitecrew.online",
+    "splitease.tech",
   ],
   alternates: { canonical: `${siteUrl}/about` },
   openGraph: {
@@ -22,7 +22,7 @@ export const metadata = {
     url: `${siteUrl}/about`,
     title: "Gautam Pandit — Founder & Developer of SplitEase",
     description:
-      "Meet Gautam Pandit, founder and sole developer of SplitEase (split.elitecrew.online). Learn how a college problem grew into a live group expense manager.",
+      "Meet Gautam Pandit, founder and sole developer of SplitEase (splitease.tech). Learn how a college problem grew into a live group expense manager.",
     siteName: "SplitEase",
     images: [
       {
@@ -37,7 +37,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Gautam Pandit — Founder & Developer of SplitEase",
     description:
-      "Meet Gautam Pandit, founder and developer of SplitEase (split.elitecrew.online).",
+      "Meet Gautam Pandit, founder and developer of SplitEase (splitease.tech).",
     images: [`${siteUrl}/blog/gautam-pandit-portrait.png`],
     creator: "@Gautamp5514",
   },
@@ -53,7 +53,7 @@ export default function AboutPage() {
         url: `${siteUrl}/about`,
         name: "About Gautam Pandit & SplitEase",
         description:
-          "Learn about Gautam Pandit, founder and developer of SplitEase (split.elitecrew.online).",
+          "Learn about Gautam Pandit, founder and developer of SplitEase (splitease.tech).",
         mainEntity: { "@id": `${siteUrl}/#gautam-pandit` },
       },
       {
@@ -75,7 +75,7 @@ export default function AboutPage() {
         url: `${siteUrl}/about`,
         image: `${siteUrl}/blog/gautam-pandit-portrait.png`,
         description:
-          "Gautam Pandit is the founder, creator, and lead developer of SplitEase (split.elitecrew.online) — the zero-paywall group expense splitting app.",
+          "Gautam Pandit is the founder, creator, and lead developer of SplitEase (splitease.tech) — the zero-paywall group expense splitting app.",
         sameAs: [
           "https://github.com/Gautam5514",
           "https://x.com/Gautamp5514",

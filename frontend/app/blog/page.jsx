@@ -5,7 +5,7 @@ import { getAllPosts } from "@/lib/blogPostsServer";
 // Server-rendered for SEO: the full post list ships as HTML, no JS required.
 // The category filter is a client-side progressive enhancement on top.
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://splitease.tech";
 
 export const metadata = {
   title: "Blog — Expense Splitting Tips, Guides & Product News",

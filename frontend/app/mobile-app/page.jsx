@@ -1,6 +1,6 @@
 import MobileAppPageClient from "@/components/mobile-app/MobileAppPageClient";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://split.elitecrew.online";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://splitease.tech";
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.kunal.splitapp";
 
 export const metadata = {
