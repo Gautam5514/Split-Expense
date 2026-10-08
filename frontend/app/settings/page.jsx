@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { auth } from "@/lib/firebaseClient";
 import { sendPasswordResetEmail, signOut } from "firebase/auth";
@@ -43,6 +43,14 @@ export default function SettingsPage() {
   // Deactivate modal
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
 
+  const fetchProfile = useCallback(async () => {
+    try {
+      const res = await api.get("/profile");
+      setProfile(res.data || null);
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  }, []);
+
   useEffect(() => {
     setCurrency(localStorage.getItem("settings_currency") || "USD");
     setSplitStrategy(localStorage.getItem("settings_split") || "equal");
@@ -50,15 +58,7 @@ export default function SettingsPage() {
     setTwoFactor(localStorage.getItem("settings_2fa") === "true");
     if (token) fetchProfile();
     else setLoading(false);
-  }, [token]);
-
-  const fetchProfile = async () => {
-    try {
-      const res = await api.get("/profile");
-      setProfile(res.data || null);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
-  };
+  }, [token, fetchProfile]);
 
   const saveCurrency = (val) => {
     setCurrency(val);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
 import toast from "@/lib/toast";
@@ -77,11 +77,7 @@ export default function ReferralSection() {
   // Hook must run unconditionally (before the loading/error returns).
   const animatedCoins = useCountUp(data?.coins ?? 0);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(false);
@@ -105,7 +101,11 @@ export default function ReferralSection() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const copyToClipboard = async (text, label, key) => {
     try {

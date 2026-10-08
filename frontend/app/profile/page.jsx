@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import toast from "@/lib/toast";
@@ -42,17 +42,7 @@ export default function ProfilePage() {
     return () => unsub();
   }, []);
 
-  useEffect(() => {
-    if (token) fetchProfile();
-  }, [token]);
-
-  useEffect(() => {
-    if (!drawerOpen) return;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, [drawerOpen]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const res = await api.get("/profile");
       const data = res.data || {};
@@ -63,7 +53,17 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (token) fetchProfile();
+  }, [token, fetchProfile]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [drawerOpen]);
 
   const openEdit = () => {
     setForm({ ...profile });

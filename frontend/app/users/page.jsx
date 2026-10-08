@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, createElement } from "react";
+import { useEffect, useState, createElement, useCallback } from "react";
 import { api } from "@/lib/api";
 import toast from "@/lib/toast";
 import Link from "next/link";
@@ -91,15 +91,7 @@ export default function UserDashboardPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  useEffect(() => {
-    // Wait for Firebase to finish restoring the session on a hard refresh -
-    // fetching before it resolves means every request goes out unauthenticated.
-    if (authLoading) return;
-    if (!token) { setLoading(false); return; }
-    fetchData();
-  }, [token, authLoading]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       // Everything in one parallel round - including the owe/owed totals,
@@ -151,7 +143,15 @@ export default function UserDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Wait for Firebase to finish restoring the session on a hard refresh -
+    // fetching before it resolves means every request goes out unauthenticated.
+    if (authLoading) return;
+    if (!token) { setLoading(false); return; }
+    fetchData();
+  }, [token, authLoading, fetchData]);
 
   // The wizard handles type, setup and members; we only land in the group once
   // the user finishes it.
