@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/Gautam5514/Split-Expense/actions/workflows/codeql.yml/badge.svg)](https://github.com/Gautam5514/Split-Expense/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Split bills with friends, groups, and roommates — track who paid, who owes
+Split bills with friends, groups, and roommates  track who paid, who owes
 what, and settle up. Frontend is **Next.js**, backend is **Node/Express +
 MongoDB**.
 
