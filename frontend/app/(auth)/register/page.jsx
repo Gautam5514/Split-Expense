@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import toast from "@/lib/toast";
 import { Eye, EyeOff, User, Mail, Lock, Loader2, ArrowRight, ShieldCheck, RotateCcw } from "lucide-react";
 import { signInWithCustomToken, signInWithPopup } from "firebase/auth";
+import McpConnectGate from "@/components/McpConnectGate";
+import { hasMcpRequest, notifyMcpSignedIn } from "@/lib/mcpConnect";
 import Link from "next/link";
 import { auth, googleProvider } from "@/lib/firebaseClient";
 import { useAuth } from "@/context/AuthContext";
@@ -125,7 +127,8 @@ export default function RegisterPage() {
   const { token, setToken } = useAuth();
 
   useEffect(() => {
-    if (token) router.replace("/users");
+    // An AI app's connect request is finished by <McpConnectGate/> instead.
+    if (token && !hasMcpRequest()) router.replace("/users");
   }, [token, router]);
 
   // Capture ?ref=CODE for attribution at first-ever signup.
@@ -239,6 +242,7 @@ export default function RegisterPage() {
       await signInWithCustomToken(auth, data.customToken);
       clearStoredReferralCode();
       toast.success("Account created successfully!");
+      if (notifyMcpSignedIn()) return;
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {
         localStorage.removeItem("pendingInvite");
@@ -284,6 +288,7 @@ export default function RegisterPage() {
       await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
       clearStoredReferralCode();
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
+      if (notifyMcpSignedIn()) return;
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {
         localStorage.removeItem("pendingInvite");
@@ -308,6 +313,7 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex bg-[#0B0B0B] text-white">
+      <McpConnectGate />
 
       {/* LEFT PANEL: Form and Branding */}
       <div className="w-full lg:w-[48%] h-full flex flex-col justify-between px-6 sm:px-12 md:px-16 py-8 relative overflow-y-auto bg-[#0A0A0A] border-r border-white/5 custom-scrollbar">

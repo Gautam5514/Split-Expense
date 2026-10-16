@@ -11,6 +11,8 @@ import { api } from "@/lib/api";
 import { adminApi, setAdminToken } from "@/lib/adminApi";
 import { captureReferralFromLocation, getStoredReferralCode, clearStoredReferralCode } from "@/lib/referral";
 import AuthVisual from "@/components/AuthVisual";
+import McpConnectGate from "@/components/McpConnectGate";
+import { hasMcpRequest, notifyMcpSignedIn } from "@/lib/mcpConnect";
 
 const expenseCards = [
   {
@@ -159,7 +161,9 @@ export default function LoginPage() {
   const [forgotEmail, setForgotEmail]     = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  useEffect(() => { if (token) router.replace("/users"); }, [token, router]);
+  // When an AI app (Claude/ChatGPT) sent the user here, <McpConnectGate/> finishes
+  // the connection after sign-in instead of the usual redirect to /users.
+  useEffect(() => { if (token && !hasMcpRequest()) router.replace("/users"); }, [token, router]);
 
   // If a browser retained the old OTP screen during a deployment, force it
   // back to the direct email/password form while review mode is active.
@@ -192,6 +196,7 @@ export default function LoginPage() {
     await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
     clearStoredReferralCode();
     toast.success("Login successful!");
+    if (notifyMcpSignedIn()) return;
 
     const pendingInvite = localStorage.getItem("pendingInvite");
     if (pendingInvite) {
@@ -291,6 +296,7 @@ export default function LoginPage() {
       await api.post("/auth/google", { token: idToken, referralCode: getStoredReferralCode() }).catch(() => {});
       clearStoredReferralCode();
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
+      if (notifyMcpSignedIn()) return;
       const pendingInvite = localStorage.getItem("pendingInvite");
       if (pendingInvite) {
         localStorage.removeItem("pendingInvite");
@@ -344,6 +350,7 @@ export default function LoginPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="auth-page-wrapper h-[100dvh] overflow-hidden flex bg-[#0B0B0B] text-white">
+      <McpConnectGate />
 
       {/* LEFT PANEL: Form and Branding */}
       <div className="w-full lg:w-[48%] h-full flex flex-col justify-between px-6 sm:px-12 md:px-16 py-8 relative overflow-y-auto bg-[#0A0A0A] border-r border-white/5 custom-scrollbar">

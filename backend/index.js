@@ -36,6 +36,7 @@ import blogRoutes from "./routes/blogRoutes.js";
 import careerRoutes from "./routes/careerRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import mcpRoutes from "./routes/mcpRoutes.js";
+import { oauth } from "./services/oauth/instance.js";
 import inviteRoutes from "./routes/inviteRoutes.js";
 import fxRoutes from "./routes/fxRoutes.js";
 import quickSplitRoutes from "./routes/quickSplitRoutes.js";
@@ -94,7 +95,8 @@ const corsOptions = {
     "Accept",
   ],
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-  exposedHeaders: ["Mcp-Session-Id"],
+  // WWW-Authenticate lets browser-based MCP clients read the OAuth discovery hint.
+  exposedHeaders: ["Mcp-Session-Id", "WWW-Authenticate"],
 };
 
 // Handle preflight OPTIONS requests for all routes (required for DELETE/PUT from browsers)
@@ -322,6 +324,12 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/careers", careerRoutes);
 app.use("/api/admin", adminRoutes);
+
+// OAuth 2.1 for the MCP endpoint: discovery (/.well-known/*), /register,
+// /authorize, /token, /revoke at the root + the consent API used by the
+// website's existing /login + /register pages. No-ops if API_PUBLIC_URL is not configured.
+app.use("/api/oauth", oauth.apiRouter);
+app.use(oauth.authRouter);
 
 // Remote MCP endpoint (Streamable HTTP). Mounted at the top level so the URL is
 // simply <origin>/mcp — the address users paste into ChatGPT / Claude.

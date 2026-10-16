@@ -28,6 +28,19 @@ const ok = (data) => ({
 });
 const fail = (message) => ({ content: [{ type: "text", text: message }], isError: true });
 
+/**
+ * Unexpected failure: log the real error server-side, tell the client only a
+ * generic message (Mongo/Mongoose errors can leak schema + internals).
+ */
+const internalFail = (tool, e) => {
+  console.error(`❌ MCP tool ${tool} failed:`, e?.message || e);
+  return fail("Something went wrong while running this tool. Please try again.");
+};
+
+const MAX_EXPENSES = 500;
+const DEFAULT_EXPENSES = 200;
+const SUMMARY_CONCURRENCY = 5;
+
 /** Load a group the user is a member of, or return null. */
 async function memberGroup(groupId, userId) {
   if (!isObjectId(groupId)) return null;
@@ -63,7 +76,7 @@ export function buildSplitEaseMcpServer(authedUser) {
         if (!user) return fail("User not found.");
         return ok({ id: user._id, name: user.name, email: user.email, createdAt: user.createdAt });
       } catch (e) {
-        return fail(e.message);
+        return internalFail("get_me", e);
       }
     },
   );
@@ -94,7 +107,7 @@ export function buildSplitEaseMcpServer(authedUser) {
           })),
         );
       } catch (e) {
-        return fail(e.message);
+        return internalFail("list_groups", e);
       }
     },
   );
@@ -118,7 +131,7 @@ export function buildSplitEaseMcpServer(authedUser) {
           members: (group.members || []).map((m) => ({ id: m._id, name: m.name, email: m.email })),
         });
       } catch (e) {
-        return fail(e.message);
+        return internalFail("get_group", e);
       }
     },
   );
@@ -129,7 +142,7 @@ export function buildSplitEaseMcpServer(authedUser) {
       title: "Create group",
       description: "Create a new group owned by the current user.",
       inputSchema: {
-        name: z.string().min(2).max(100).describe("Group name."),
+        name: z.string().trim().min(2).max(100).describe("Group name."),
         groupType: z.enum(["trip", "roommate", "general"]).optional(),
       },
     },
@@ -145,7 +158,7 @@ export function buildSplitEaseMcpServer(authedUser) {
         return ok({ id: populated._id, name: populated.name, groupType: populated.groupType });
       } catch (e) {
         if (e?.code === 11000) return fail("You already have a group with this name.");
-        return fail(e.message);
+        return internalFail("create_group", e);
       }
     },
   );
@@ -155,16 +168,21 @@ export function buildSplitEaseMcpServer(authedUser) {
     "list_expenses",
     {
       title: "List group expenses",
-      description: "List all expenses in a group you belong to.",
-      inputSchema: { groupId: objectId },
+      description:
+        "List expenses (newest first) in a group you belong to. Returns up to `limit` items (default 200, max 500).",
+      inputSchema: {
+        groupId: objectId,
+        limit: z.number().int().min(1).max(MAX_EXPENSES).optional().describe("Max expenses to return."),
+      },
     },
-    async ({ groupId }) => {
+    async ({ groupId, limit }) => {
       try {
         const group = await memberGroup(groupId, uid);
         if (!group) return fail("Group not found, or you are not a member.");
         const expenses = await Expense.find({ groupId })
           .populate("paidBy", "name email")
           .sort({ date: -1 })
+          .limit(limit ?? DEFAULT_EXPENSES)
           .lean();
         return ok(
           expenses.map((x) => ({
@@ -179,7 +197,7 @@ export function buildSplitEaseMcpServer(authedUser) {
           })),
         );
       } catch (e) {
-        return fail(e.message);
+        return internalFail("list_expenses", e);
       }
     },
   );
@@ -217,7 +235,7 @@ export function buildSplitEaseMcpServer(authedUser) {
         });
         return ok({ balances: readable, suggestions });
       } catch (e) {
-        return fail(e.message);
+        return internalFail("get_balances", e);
       }
     },
   );
@@ -238,13 +256,19 @@ export function buildSplitEaseMcpServer(authedUser) {
         let totalOwedToYou = 0;
         let totalYouOwe = 0;
         const perGroup = [];
-        for (const g of groups) {
-          const computed = await computeGroupBalances(g._id);
-          if (!computed) continue;
-          const bal = Number((computed.balances[uid] || 0).toFixed(2));
-          if (bal > 0) totalOwedToYou += bal;
-          else if (bal < 0) totalYouOwe += -bal;
-          if (Math.abs(bal) >= 0.01) perGroup.push({ group: g.name, groupId: g._id, yourBalance: bal });
+        // Bounded concurrency: much faster than one-by-one for users with many
+        // groups, without hammering MongoDB with an unbounded fan-out.
+        for (let i = 0; i < groups.length; i += SUMMARY_CONCURRENCY) {
+          const batch = groups.slice(i, i + SUMMARY_CONCURRENCY);
+          const results = await Promise.all(batch.map((g) => computeGroupBalances(g._id)));
+          batch.forEach((g, idx) => {
+            const computed = results[idx];
+            if (!computed) return;
+            const bal = Number((computed.balances[uid] || 0).toFixed(2));
+            if (bal > 0) totalOwedToYou += bal;
+            else if (bal < 0) totalYouOwe += -bal;
+            if (Math.abs(bal) >= 0.01) perGroup.push({ group: g.name, groupId: g._id, yourBalance: bal });
+          });
         }
         return ok({
           totalOwedToYou: Number(totalOwedToYou.toFixed(2)),
@@ -253,7 +277,7 @@ export function buildSplitEaseMcpServer(authedUser) {
           groups: perGroup,
         });
       } catch (e) {
-        return fail(e.message);
+        return internalFail("get_overall_summary", e);
       }
     },
   );

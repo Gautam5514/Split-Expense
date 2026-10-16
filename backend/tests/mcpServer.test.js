@@ -231,3 +231,77 @@ describe("get_overall_summary", () => {
     expect(out.groups).toHaveLength(2);
   });
 });
+
+// ── hardening added with the OAuth work ─────────────────────────────────────
+describe("tool hardening", () => {
+  test("create_group's schema trims the name before enforcing the 2-char minimum", () => {
+    registered.clear();
+    buildSplitEaseMcpServer({ id: String(oid()), email: "u@e.com", name: "U" });
+    const schema = registered.get("create_group").def.inputSchema.name;
+    expect(schema.safeParse("   a   ").success).toBe(false);
+    expect(schema.safeParse("  ab  ")).toMatchObject({ success: true, data: "ab" });
+    expect(schema.safeParse("x".repeat(101)).success).toBe(false);
+  });
+
+  test("unexpected database errors are logged, not leaked to the client", async () => {
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+    fakeGroupModel.create.mockRejectedValueOnce(new Error("E11000 collection: prod.groups index: secret_idx_1 dup key"));
+    const res = await callTool(oid(), "create_group", { name: "Boom" });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).not.toMatch(/E11000|secret_idx|prod\.groups/);
+    expect(res.content[0].text).toMatch(/something went wrong/i);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  test("list_expenses validates `limit` (1-500, integer)", () => {
+    registered.clear();
+    buildSplitEaseMcpServer({ id: String(oid()), email: "u@e.com", name: "U" });
+    const limit = registered.get("list_expenses").def.inputSchema.limit;
+    expect(limit.safeParse(0).success).toBe(false);
+    expect(limit.safeParse(501).success).toBe(false);
+    expect(limit.safeParse(1.5).success).toBe(false);
+    expect(limit.safeParse(500).success).toBe(true);
+    expect(limit.safeParse(undefined).success).toBe(true);
+  });
+
+  test("rejects a malformed group id at the schema level (no DB query)", () => {
+    registered.clear();
+    buildSplitEaseMcpServer({ id: String(oid()), email: "u@e.com", name: "U" });
+    const gid = registered.get("get_group").def.inputSchema.groupId;
+    for (const bad of ["", "123", "zzzzzzzzzzzzzzzzzzzzzzzz", "{\"$ne\":null}", "a".repeat(25)]) {
+      expect(gid.safeParse(bad).success).toBe(false);
+    }
+    expect(gid.safeParse("a".repeat(24)).success).toBe(true);
+  });
+
+  test("get_overall_summary handles many groups (batched) and skips groups with no data", async () => {
+    const uid = oid();
+    const ids = Array.from({ length: 12 }, () => oid());
+    ids.forEach((id, i) => fakeGroupModel.__addDoc({ _id: id, name: `G${i}`, members: [uid] }));
+    fakeComputeGroupBalances.mockImplementation(async (gid) => {
+      if (String(gid) === String(ids[3])) return null; // vanished group
+      return { uniqueMembers: [], balances: { [uid.toString()]: 10 } };
+    });
+    const out = payload(await callTool(uid, "get_overall_summary"));
+    expect(fakeComputeGroupBalances).toHaveBeenCalledTimes(12);
+    expect(out.totalOwedToYou).toBe(110);
+    expect(out.groups).toHaveLength(11);
+  });
+
+  test("get_overall_summary tolerates sub-cent balances and a user with no groups", async () => {
+    const uid = oid();
+    expect(payload(await callTool(uid, "get_overall_summary"))).toMatchObject({ totalOwedToYou: 0, totalYouOwe: 0, net: 0, groups: [] });
+    fakeGroupModel.__addDoc({ _id: oid(), name: "Tiny", members: [uid] });
+    fakeComputeGroupBalances.mockResolvedValue({ uniqueMembers: [], balances: { [uid.toString()]: 0.004 } });
+    expect(payload(await callTool(uid, "get_overall_summary")).groups).toEqual([]);
+  });
+
+  test("tools only ever act as the authenticated user (a spoofed userId argument has no effect)", async () => {
+    const me = oid();
+    const victim = oid();
+    fakeGroupModel.__addDoc({ _id: oid(), name: "VictimGroup", members: [victim] });
+    const res = await callTool(me, "list_groups", { userId: String(victim) });
+    expect(payload(res)).toEqual([]);
+  });
+});
