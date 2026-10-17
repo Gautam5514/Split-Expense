@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { formatCurrency } from "@/lib/formatCurrency";
 
 // Helper component for a consistent section layout
 const Section = ({ title, children, className = "" }) => (
@@ -202,7 +203,7 @@ export default function OcrReceipt({ text }) {
           )}
           <div className="flex justify-between font-bold text-foreground text-base border-t-2 border-border pt-2 mt-2">
             <span>Total:</span>
-            <span>₹{totals.finalTotal?.toFixed(2) || '0.00'}</span>
+            <span>{formatCurrency(totals.finalTotal)}</span>
           </div>
         </div>
       </div>
