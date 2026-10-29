@@ -16,7 +16,7 @@ import socket, { connectSocket } from "@/lib/socket";
  */
 export function useRealtime({ event, groupId, enabled = true, onChange }) {
   const handler = useRef(onChange);
-  handler.current = onChange;
+  useEffect(() => { handler.current = onChange; });
 
   useEffect(() => {
     if (!enabled) return undefined;

@@ -8,6 +8,8 @@ jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ token: "test-token", loading: false }),
 }));
 jest.mock("@/lib/api", () => ({ api: { get: jest.fn(), post: jest.fn() } }));
+// The real hook pulls in socket.io + firebase/auth, which needs `fetch` (absent in jsdom).
+jest.mock("@/lib/useRealtime", () => ({ useRealtime: jest.fn() }));
 jest.mock("@/lib/toast", () => ({
   __esModule: true,
   default: { success: jest.fn(), error: jest.fn() },
