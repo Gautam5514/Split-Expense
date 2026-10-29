@@ -9,6 +9,7 @@ import { runOcr } from "../utils/ocrService.js";
 import { isValidObjectId } from "../middleware/validate.js";
 import { incrementExpenseCount } from "../utils/referralService.js";
 import { io } from "../index.js";
+import { notifyGroupChange } from "../utils/realtime.js";
 import { isTrustedCloudinaryUrl } from "../utils/uploadSecurity.js";
 import { defaultSplitFor } from "../utils/defaultSplit.js";
 
@@ -332,6 +333,11 @@ export const addExpense = async (req, res) => {
       );
     }
 
+    // Live update: everyone viewing this group, and every member's dashboard.
+    // "settlementUpdate" is kept for app builds that only know that event.
+    io.to(`group:${groupId}`).emit("settlementUpdate", { groupId: String(groupId), kind: "expense" });
+    void notifyGroupChange(io, groupId, "expense", allMembers);
+
     res.status(201).json(populated);
   } catch (err) {
     console.error("❌ addExpense:", err.message);
@@ -487,6 +493,7 @@ export const requestSettlement = async (req, res) => {
         { groupName: group.name, groupId, amount: amt, kind: "confirmed" }
       );
       io.to(`group:${groupId}`).emit("settlementUpdate", { groupId: String(groupId), kind: "confirmed" });
+      void notifyGroupChange(io, groupId, "confirmed");
       const populatedDone = await populateRequest(SettlementRequest.findById(done._id));
       return res.status(201).json(populatedDone);
     }
@@ -510,6 +517,7 @@ export const requestSettlement = async (req, res) => {
         { groupName: group.name, groupId, amount: existingPending.amount, kind: "requested" }
       );
       io.to(`group:${groupId}`).emit("settlementUpdate", { groupId: String(groupId), kind: "requested" });
+      void notifyGroupChange(io, groupId, "requested");
       return res.status(200).json(populatedExisting);
     }
 
@@ -548,6 +556,7 @@ export const requestSettlement = async (req, res) => {
       kind: "requested",
     });
     io.to(`group:${groupId}`).emit("settlementUpdate", { groupId, kind: "requested" });
+    void notifyGroupChange(io, groupId, "requested");
 
     res.status(201).json(populated);
   } catch (err) {
@@ -621,6 +630,7 @@ export const confirmSettlementRequest = async (req, res) => {
       { groupName: group.name, groupId: request.groupId, amount: settleAmount, kind: "confirmed" }
     );
     io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "confirmed" });
+    void notifyGroupChange(io, request.groupId, "confirmed");
 
     const populated = await populateRequest(SettlementRequest.findById(request._id));
     res.json({ request: populated, expense });
@@ -662,6 +672,7 @@ export const rejectSettlementRequest = async (req, res) => {
       { groupName: group?.name, groupId: request.groupId, amount: request.amount, kind: "rejected" }
     );
     io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "rejected" });
+    void notifyGroupChange(io, request.groupId, "rejected");
 
     const populated = await populateRequest(SettlementRequest.findById(request._id));
     res.json(populated);
@@ -692,6 +703,7 @@ export const cancelSettlementRequest = async (req, res) => {
     await request.save();
 
     io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "cancelled" });
+    void notifyGroupChange(io, request.groupId, "cancelled");
 
     const populated = await populateRequest(SettlementRequest.findById(request._id));
     res.json(populated);

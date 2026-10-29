@@ -244,8 +244,13 @@ export default function Globe({ scrollProgress }) {
             else { path.moveTo(sx, sy); drawing = true; }
           } else drawing = false;
         }
-        ctx.strokeStyle = "rgba(34,211,238,0.20)"; ctx.lineWidth = 3.2; ctx.stroke(path);
-        ctx.strokeStyle = "rgba(125,236,255,0.70)"; ctx.lineWidth = 1.3; ctx.stroke(path);
+        // Dotted route: zero-length dashes + round caps render as evenly spaced
+        // dots, and the offset drifts so they march from origin to destination.
+        ctx.setLineDash([0, 7]);
+        ctx.lineDashOffset = -now * 12;
+        ctx.strokeStyle = "rgba(34,211,238,0.16)"; ctx.lineWidth = 5; ctx.stroke(path);
+        ctx.strokeStyle = "rgba(150,240,255,0.9)"; ctx.lineWidth = 2; ctx.stroke(path);
+        ctx.setLineDash([]);
 
         // travelling comet head (two cheap concentric discs, no shadow)
         const pk = Math.round(((now * 0.35 + a * 0.27) % 1) * SEG);

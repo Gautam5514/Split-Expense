@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { CheckCircle2, ChevronRight } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -25,8 +25,8 @@ const SLIDES = [
     shortTitle: "Tablet review",
     desc: "Review room audits and examine receipt details on a highly responsive tablet canvas. Settle balances from a couch, a hammock, or anywhere you unwind.",
     imageSrc: "/tablet.webp",
-    lineColor: "#34d399",
-    glowColor: "rgba(52, 211, 153, 0.16)",
+    lineColor: "#22d3ee",
+    glowColor: "rgba(34, 211, 238, 0.16)",
     features: ["Interactive room balance visualizers", "Pinch-to-zoom scanned receipt viewer", "Quick swipe navigation between screens"],
   },
   {
@@ -36,8 +36,8 @@ const SLIDES = [
     shortTitle: "Mobile companion",
     desc: "Log cost splits in seconds from the taxi, ticket line, or restaurant. Attach a receipt photo and confirm settlements directly from your phone.",
     imageSrc: "/mobile.webp",
-    lineColor: "#f472b6",
-    glowColor: "rgba(244, 114, 182, 0.16)",
+    lineColor: "#22d3ee",
+    glowColor: "rgba(34, 211, 238, 0.16)",
     features: ["Attach receipt photos to any expense", "QR & link invites to join instantly", "Two-party settlements confirmed in-app"],
   },
 ];
@@ -224,6 +224,109 @@ function GlassTransition({ slide, index, progress, start, end, reduceMotion }) {
   );
 }
 
+function MobileShowcase() {
+  const trackRef = useRef(null);
+  const [index, setIndex] = useState(0);
+
+  const goTo = (i) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const next = Math.max(0, Math.min(SLIDES.length - 1, i));
+    track.scrollTo({ left: next * track.clientWidth, behavior: "smooth" });
+  };
+
+  const onScroll = (e) => {
+    const t = e.currentTarget;
+    const i = Math.round(t.scrollLeft / t.clientWidth);
+    setIndex((cur) => (cur === i ? cur : i));
+  };
+
+  const arrow = "grid h-11 w-11 place-items-center border border-white/15 bg-white/[0.04] text-white transition-colors hover:border-cyan-400/50 hover:bg-white/[0.09] disabled:pointer-events-none disabled:opacity-30";
+
+  return (
+    <div className="relative px-5 py-16 sm:px-10 sm:py-20 lg:hidden">
+      <div className="mx-auto max-w-2xl text-center">
+        <p className="mb-3 text-xs tracking-[0.14em] text-cyan-300/75">Made for every screen</p>
+        <h2 className="font-serif-premium text-4xl font-normal tracking-tight text-white sm:text-5xl">Your split, wherever you are.</h2>
+        <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-white/50 sm:text-base">Three focused experiences. One continuously synced group ledger.</p>
+      </div>
+
+      <div className="mx-auto mt-10 max-w-2xl" role="region" aria-roledescription="carousel" aria-label="Device experiences">
+        {/* slides: swipe or use the buttons */}
+        <div
+          ref={trackRef}
+          onScroll={onScroll}
+          className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {SLIDES.map((slide, i) => (
+            <article
+              key={slide.id}
+              aria-roledescription="slide"
+              aria-label={`${i + 1} of ${SLIDES.length}`}
+              className="w-full shrink-0 snap-center border border-white/10 bg-[#07090b]"
+            >
+              <div className="relative aspect-[16/10] bg-black/70">
+                <div className="pointer-events-none absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/15 blur-[70px]" />
+                <Image
+                  src={slide.imageSrc}
+                  alt={`${slide.title} device preview`}
+                  width={1672}
+                  height={941}
+                  sizes="(max-width: 672px) 100vw, 640px"
+                  loading="lazy"
+                  decoding="async"
+                  className="relative h-full w-full object-contain"
+                  draggable={false}
+                />
+              </div>
+              <div className="p-6">
+                <div className="flex items-center gap-3 text-[11px] tracking-[0.12em] text-white/45">
+                  <span className="font-serif-premium text-base tracking-normal text-cyan-300/80">0{i + 1}</span>
+                  <span className="h-px w-8 bg-white/20" />
+                  <span className="uppercase">{slide.tag}</span>
+                </div>
+                <h3 className="font-serif-premium mt-4 text-2xl font-normal leading-tight text-white sm:text-3xl">{slide.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-white/55">{slide.desc}</p>
+                <ul className="mt-5 space-y-2.5">
+                  {slide.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3 text-sm text-white/70">
+                      <CheckCircle2 className="mt-0.5 h-[18px] w-[18px] shrink-0 text-cyan-400" strokeWidth={1.8} />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={`/demo/${slide.id}`}
+                  aria-label={`View the ${slide.title} live demo`}
+                  className="mt-6 inline-flex items-center gap-2 border border-white/15 bg-white/[0.05] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/[0.09]"
+                >
+                  View Live Demo
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        {/* controls */}
+        <div className="mt-5 flex items-center justify-between">
+          <button type="button" onClick={() => goTo(index - 1)} disabled={index === 0} aria-label="Previous slide" className={arrow}>
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-2" aria-hidden="true">
+            {SLIDES.map((slide, i) => (
+              <span key={slide.id} className={`h-1 transition-all duration-300 ${i === index ? "w-8 bg-cyan-400" : "w-4 bg-white/20"}`} />
+            ))}
+          </div>
+          <button type="button" onClick={() => goTo(index + 1)} disabled={index === SLIDES.length - 1} aria-label="Next slide" className={arrow}>
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DeviceSlideShowcase() {
   const containerRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -245,12 +348,12 @@ export default function DeviceSlideShowcase() {
   });
 
   return (
-    <section ref={containerRef} id="device-slide-showcase" className="relative z-20 h-[560vh] bg-[#030303] text-white">
+    <section ref={containerRef} id="device-slide-showcase" className="relative z-20 bg-[#030303] text-white lg:h-[560vh]">
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(14,116,144,0.06),transparent_58%)]" />
       </div>
 
-      <div className="sticky top-0 z-10 flex h-[100svh] w-full items-center overflow-hidden px-5 sm:px-10 md:px-16 lg:px-24">
+      <div className="sticky top-0 z-10 hidden h-[100svh] w-full items-center overflow-hidden px-5 sm:px-10 md:px-16 lg:flex lg:px-24">
         <motion.div style={{ opacity: introOpacity }} className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-5 sm:px-10 md:px-16">
           <div className="w-full max-w-6xl">
             <div className="mb-9 text-center sm:mb-12">
@@ -283,6 +386,9 @@ export default function DeviceSlideShowcase() {
           </div>
         </motion.div>
       </div>
+
+      {/* Phones and tablets: a plain stacked layout, no scroll animation. */}
+      <MobileShowcase />
     </section>
   );
 }

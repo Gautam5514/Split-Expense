@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useRealtime } from "@/lib/useRealtime";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -91,9 +92,9 @@ export default function UserDashboardPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       // Everything in one parallel round - including the owe/owed totals,
       // which used to need a second wave of one request per group.
       const [analyticsRes, groupsRes, profileRes, meRes, summaryRes] = await Promise.all([
@@ -139,11 +140,15 @@ export default function UserDashboardPage() {
       }
 
     } catch {
-      toast.error("Failed to load dashboard data");
+      if (!silent) toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Live update: any change in one of my groups (new expense, settlement,
+  // member change) refreshes the totals and group list without a reload.
+  useRealtime({ event: "dashboardUpdate", enabled: !authLoading && !!token, onChange: () => fetchData(true) });
 
   useEffect(() => {
     // Wait for Firebase to finish restoring the session on a hard refresh -
@@ -257,12 +262,12 @@ export default function UserDashboardPage() {
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.12 }}
-              className="flex shrink-0 items-center gap-2.5"
+              className="flex shrink-0 items-center gap-2.5 max-sm:w-full"
             >
               <button
                 type="button"
                 onClick={() => { setOpenQuickSplitId(null); setShowQuickSplit(true); }}
-                className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-cyan-600/25 bg-cyan-500/10 px-4 text-sm font-bold text-cyan-700 transition hover:-translate-y-0.5 hover:bg-cyan-500/15 dark:text-cyan-300"
+                className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-cyan-600/25 max-sm:flex-1 bg-cyan-500/10 px-4 text-sm font-bold text-cyan-700 transition hover:-translate-y-0.5 hover:bg-cyan-500/15 dark:text-cyan-300"
               >
                 <Split className="h-4 w-4" />
                 Quick Split
@@ -270,7 +275,7 @@ export default function UserDashboardPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateModal(true)}
-                className="flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-cyan-600 to-teal-700 px-5 text-sm font-bold text-white shadow-[0_8px_20px_-10px_rgba(8,145,178,0.9)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-12px_rgba(8,145,178,0.95)] active:translate-y-0"
+                className="flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl max-sm:flex-1 bg-gradient-to-br from-cyan-600 to-teal-700 px-5 text-sm font-bold text-white shadow-[0_8px_20px_-10px_rgba(8,145,178,0.9)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-12px_rgba(8,145,178,0.95)] active:translate-y-0"
               >
                 <Plus className="h-4 w-4" />
                 New group
@@ -278,7 +283,7 @@ export default function UserDashboardPage() {
             </motion.div>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
             <StatCard label="Total Groups" value={groups.length} subtext={`${activeGroups.length} currently active`} icon={<Users className="h-5 w-5" />} iconBg="bg-blue-500/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-300" />
             <StatCard label="Spent This Month" value={analytics ? `₹${analytics.monthlySummary?.totalSpent?.toLocaleString("en-IN") || 0}` : "₹0"} subtext={analytics?.monthlySummary?.topCategory ? `Mostly ${getCategoryLabel(analytics.monthlySummary.topCategory)}` : "No spending this month"} icon={<Calendar className="h-5 w-5" />} iconBg="bg-violet-500/10 text-violet-600 dark:bg-violet-400/10 dark:text-violet-300" />
             <StatCard label="You Have to Pay" value={totalOwe > 0 ? `₹${Number(totalOwe).toLocaleString("en-IN")}` : "₹0"} subtext={totalOwe > 0 ? "Pending across your groups" : "You're fully settled"} icon={<ArrowUpRight className="h-5 w-5" />} iconBg="bg-rose-500/10 text-rose-600 dark:bg-rose-400/10 dark:text-rose-300" valueColor={totalOwe > 0 ? "text-rose-600 dark:text-rose-400" : "text-foreground"} />
@@ -728,19 +733,19 @@ const StatCard = ({
   insightType,
 }) => {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4">
+    <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-3.5 sm:p-4">
       <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-cyan-400/[0.07] blur-2xl transition group-hover:bg-cyan-400/[0.12]" />
-      <div className="relative flex items-center gap-3.5">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
+      <div className="relative flex flex-col items-start gap-2.5 sm:flex-row sm:items-center sm:gap-3.5">
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 [&>svg]:h-[18px] [&>svg]:w-[18px] sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${iconBg}`}>
           {icon}
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 max-sm:w-full sm:flex-1">
           <p className="truncate text-[11px] font-semibold text-muted-foreground">{label}</p>
-          <h3 className={`mt-0.5 truncate text-xl font-extrabold tracking-[-0.035em] sm:text-2xl ${valueColor}`}>{value}</h3>
+          <h3 className={`mt-0.5 truncate text-lg font-extrabold tracking-[-0.035em] sm:text-2xl ${valueColor}`}>{value}</h3>
         </div>
       </div>
       {subtext && (
-        <p className="relative mt-3 truncate border-t border-slate-900/[0.055] pt-2.5 text-[11px] font-medium text-muted-foreground dark:border-white/[0.07]">{subtext}</p>
+        <p className="relative mt-2.5 line-clamp-2 min-h-[2.4em] sm:min-h-0 border-t border-slate-900/[0.055] pt-2.5 text-[10.5px] font-medium leading-snug text-muted-foreground sm:line-clamp-1 sm:text-[11px] dark:border-white/[0.07]">{subtext}</p>
       )}
 
       {/* Insight Indicator */}

@@ -5,7 +5,7 @@ import { ArrowUpRight, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 // Single bright accent (AXIOM-style chartreuse) used sparingly.
-const ACCENT = "#c9e265";
+const ACCENT = "#22d3ee";
 
 // Surface colors are applied as INLINE styles (not Tailwind classes) so the
 // card, image stage, and borders always paint with a clear contrast against
@@ -197,7 +197,7 @@ export default function HowItWorksSection() {
                     className="flex items-center justify-center w-5 h-5 rounded-full transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                     style={{ backgroundColor: ACCENT }}
                   >
-                    <ArrowUpRight className="w-3 h-3" strokeWidth={3} style={{ color: "#16180e" }} />
+                    <ArrowUpRight className="w-3 h-3" strokeWidth={3} style={{ color: "#031a20" }} />
                   </span>
                 </button>
               </div>

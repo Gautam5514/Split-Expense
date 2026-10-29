@@ -177,6 +177,9 @@ io.on("connection", (socket) => {
 
       // Attach userId to socket so room-join handlers can verify membership
       socket.userId = String(userId);
+      // Personal room: lets the server push dashboard/group-list updates to this user
+      socket.join(`user:${userId}`);
+      socket.joinPendingGroups?.().catch(() => {});
 
       // Mark online
       onlineUsers.set(String(userId), socket.id);
@@ -249,7 +252,10 @@ io.on("connection", (socket) => {
   // Groups
   // -----------------------------------------
   // joinGroup - verify membership before allowing
-  socket.on("joinGroup", async (groupId) => {
+  // A client often emits joinGroup right after connecting, before its
+  // "register" has been verified. Those requests are remembered and applied as
+  // soon as the socket is authenticated, instead of being silently dropped.
+  const joinGroupRoom = async (groupId) => {
     if (!socket.userId || !isValidObjectId(groupId)) return;
     try {
       const group = await Group.findOne({
@@ -260,10 +266,26 @@ io.on("connection", (socket) => {
     } catch {
       // Invalid ID format or DB error - silently ignore
     }
+  };
+  socket.joinPendingGroups = async () => {
+    const pending = [...(socket.pendingGroups || [])];
+    socket.pendingGroups?.clear();
+    await Promise.all(pending.map(joinGroupRoom));
+  };
+
+  socket.on("joinGroup", async (groupId) => {
+    if (!isValidObjectId(groupId)) return;
+    if (!socket.userId) {
+      (socket.pendingGroups ||= new Set()).add(String(groupId));
+      return;
+    }
+    await joinGroupRoom(groupId);
   });
 
   socket.on("leaveGroup", (groupId) => {
-    if (isValidObjectId(groupId)) socket.leave(`group:${groupId}`);
+    if (!isValidObjectId(groupId)) return;
+    socket.pendingGroups?.delete(String(groupId));
+    socket.leave(`group:${groupId}`);
   });
 
   socket.on("groupTyping", (payload) => {

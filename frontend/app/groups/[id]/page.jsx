@@ -57,7 +57,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import NotepadSection from "@/components/Notepad/NotepadSection";
 import OcrViewModal from "@/components/OcrViewModal";
 import Loader3D from "@/components/Loader3D";
-import socket, { connectSocket } from "@/lib/socket";
+import { useRealtime } from "@/lib/useRealtime";
 import { formatMoney } from "@/lib/formatCurrency";
 import GroupAvatarEditor from "@/components/group/GroupAvatarEditor";
 import { getGroupIcon } from "@/lib/groupIcons";
@@ -191,26 +191,24 @@ export default function GroupDetailPage() {
     fetchPendingMembers();
   }, [groupId, token, authLoading]);
 
-  // Live refresh: any confirm/reject/cancel from the other party (or from
-  // this user on another tab) pushes a "settlementUpdate" event to everyone
-  // viewing this group, so the balances/pending list never go stale.
-  useEffect(() => {
-    if (!groupId || !token) return;
-    connectSocket();
-    socket.emit("joinGroup", groupId);
-    const onSettlementUpdate = (payload) => {
-      if (String(payload?.groupId) !== String(groupId)) return;
+  // Live refresh: any change in this group (new expense, settlement, member
+  // change), from anyone or from this user on another device, pushes a
+  // "groupUpdate" event so the page never goes stale.
+  useRealtime({
+    event: "groupUpdate",
+    groupId,
+    enabled: !!groupId && !!token,
+    onChange: (payload) => {
       fetchBalances();
       fetchExpenses();
       fetchPendingSettlements();
       fetchSummary();
-    };
-    socket.on("settlementUpdate", onSettlementUpdate);
-    return () => {
-      socket.off("settlementUpdate", onSettlementUpdate);
-      socket.emit("leaveGroup", groupId);
-    };
-  }, [groupId, token]);
+      if (payload?.kind === "member" || payload?.kind === "completed" || payload?.kind === "reconnect") {
+        fetchGroup();
+        fetchPendingMembers();
+      }
+    },
+  });
 
   const handleRemove = async (userId) => {
     try {

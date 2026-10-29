@@ -17,6 +17,7 @@ import { generateInviteCode, isShortInviteCode, normalizeInviteCode } from "../u
 import { searchContacts, lookupUserByEmail } from "./peopleController.js";
 import { getContactIds, isBlockedBetween, inviteLinkExpiry, INVITE_TTL_MS } from "../utils/contacts.js";
 import cloudinary from "../config/cloudinary.js";
+import { notifyGroupChange } from "../utils/realtime.js";
 import { uploadRejectionReason, IMAGE_MIME_TYPES } from "../utils/uploadSecurity.js";
 
 // Helper utilities
@@ -291,6 +292,7 @@ export const addMembersByEmail = async (req, res) => {
       updated = await Group.findById(groupId)
         .populate("members", "name email")
         .populate("createdBy", "name email");
+      void notifyGroupChange(req.app?.get?.("io"), groupId, "member");
 
       void createNotification(
         userIdsToAdd,
@@ -514,6 +516,8 @@ export const removeMember = async (req, res) => {
       return res.status(400).json({ message: "Creator cannot be removed from the group." });
 
     await Group.updateOne({ _id: groupId }, { $pull: { members: userId } });
+    // include the removed person so their dashboard drops the group too
+    void notifyGroupChange(req.app?.get?.("io"), groupId, "member", [...group.members.map(String), String(userId)]);
 
     const updated = await Group.findById(groupId)
       .populate("members", "name email")
@@ -574,6 +578,7 @@ export const markGroupCompleted = async (req, res) => {
 
     group.isCompleted = true;
     await group.save();
+    void notifyGroupChange(req.app?.get?.("io"), groupId, "completed", group.members.map(String));
 
     // Notify other members
     const otherMembers = group.members.map(String).filter((id) => id !== String(uid));
@@ -704,6 +709,7 @@ export const deleteGroup = async (req, res) => {
       return res.status(403).json({ message: "Only the trip creator can delete this trip" });
     }
 
+    const memberIdsBeforeDelete = group.members.map(String);
     await Promise.all([
       Expense.deleteMany({ groupId }),
       GroupMessage.deleteMany({ groupId }),
@@ -713,6 +719,7 @@ export const deleteGroup = async (req, res) => {
       Group.deleteOne({ _id: groupId }),
     ]);
 
+    void notifyGroupChange(req.app?.get?.("io"), groupId, "deleted", memberIdsBeforeDelete);
     res.json({ success: true, message: "Trip deleted successfully" });
   } catch (err) {
     console.error("deleteGroup error:", err.message);
@@ -803,6 +810,7 @@ export const joinGroupByInvite = async (req, res) => {
     if (!wasAlreadyMember) {
       await Group.findByIdAndUpdate(group._id, { $addToSet: { members: uid } });
       group = await Group.findById(group._id);
+      void notifyGroupChange(req.app?.get?.("io"), group._id, "member");
 
       // Notify other members
       const otherMembers = group.members.map(String).filter((id) => id !== String(uid));

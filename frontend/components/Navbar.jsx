@@ -200,10 +200,10 @@ export default function Navbar() {
                 What we offer
               </Link>
               <Link
-                href="/pricing"
+                href="/platforms"
                 className="px-1.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
               >
-                Pricing
+                Platforms
               </Link>
               <Link
                 href="/blog"
@@ -254,7 +254,7 @@ export default function Navbar() {
                       className="fixed inset-x-3 top-[70px] sm:inset-x-auto sm:absolute sm:right-0 sm:top-auto sm:mt-3 sm:w-[380px] max-w-[calc(100vw-1.5rem)] sm:max-w-[380px] rounded-xl shadow-2xl z-50 overflow-hidden bg-background/97 backdrop-blur-2xl border border-border"
                     >
                       <div className="relative overflow-hidden border-b border-border px-4 py-4">
-                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/8 via-transparent to-teal-500/8" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/8 via-transparent to-cyan-500/8" />
                         <div className="relative flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-500/10">
@@ -371,7 +371,7 @@ export default function Navbar() {
                       <div className="flex items-center gap-3 px-3 py-3 border-b border-border/50 mb-1">
                         {profile?.avatar || user?.photoURL ? (
                           <div className="relative shrink-0">
-                            <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full blur opacity-25" />
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-cyan-500 rounded-full blur opacity-25" />
                             <img
                               src={profile?.avatar || user?.photoURL}
                               className="relative w-10 h-10 rounded-full border border-white/20 object-cover shadow-sm"
@@ -441,13 +441,13 @@ export default function Navbar() {
 
           {/* Groups FAB - center raised button */}
           <div className="relative -top-4 flex flex-col items-center">
-            <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-cyan-500 to-teal-600 opacity-20 blur-sm animate-ping pointer-events-none" />
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-cyan-500 to-cyan-600 opacity-20 blur-sm animate-ping pointer-events-none" />
             <div className="absolute inset-0 rounded-full bg-cyan-500/20 blur-md animate-pulse pointer-events-none" />
             <Link
               href="/dashboard"
               className={`flex items-center justify-center w-13 h-13 rounded-full border-4 border-background/95 shadow-[0_4px_16px_rgba(8,145,178,0.45)] transition-all transform active:scale-95 duration-200 z-10 ${
                 pathname === "/dashboard"
-                  ? "bg-gradient-to-tr from-cyan-500 via-teal-500 to-cyan-600 text-white scale-105"
+                  ? "bg-gradient-to-tr from-cyan-500 via-cyan-500 to-cyan-600 text-white scale-105"
                   : "bg-card text-cyan-600 dark:text-cyan-400 hover:text-cyan-500"
               }`}
               style={{ width: 52, height: 52 }}

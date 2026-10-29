@@ -26,9 +26,9 @@ const DEVICES = [
     title: "Balances, big and clear",
     desc: "Review expense allocations and settle up in full-screen comfort - from a hammock, a couch, or wherever you do your best relaxed finance work.",
     imageSrc: "/screen-desktop-room.png",
-    accent: "bg-emerald-500",
-    accentText: "text-emerald-600 dark:text-emerald-400",
-    accentBg: "bg-emerald-50 dark:bg-emerald-500/10",
+    accent: "bg-cyan-500",
+    accentText: "text-cyan-600 dark:text-cyan-400",
+    accentBg: "bg-cyan-50 dark:bg-cyan-500/10",
     beacon: { top: "55%", left: "78%", label: "Group Balances", icon: "₹", text: "Manage balances, add shared trip expenses, and invite members!", italic: "Spending is 'steady' because we haven't logged last night yet." }
   },
   {
@@ -39,9 +39,9 @@ const DEVICES = [
     title: "Log it before you forget",
     desc: "Scan bills, split expenses in 3 seconds, and stay synced - even while holding a heavy suitcase at the airport.",
     imageSrc: "/screen-mobile-dash.png",
-    accent: "bg-violet-500",
-    accentText: "text-violet-600 dark:text-violet-400",
-    accentBg: "bg-violet-50 dark:bg-violet-500/10",
+    accent: "bg-cyan-500",
+    accentText: "text-cyan-600 dark:text-cyan-400",
+    accentBg: "bg-cyan-50 dark:bg-cyan-500/10",
     beacon: { bottom: "3.5%", left: "50%", label: "Quick Add", icon: "⚡", text: "Tap the floating Groups tab to quick-log street meals and tickets!", italic: "Optimized for one-handed use while holding a heavy suitcase." }
   }
 ];
@@ -283,7 +283,7 @@ function TabletMockup({ dev }) {
       <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-slate-700 z-20" />
       <div className="relative w-full bg-slate-900">
         <img src={dev.imageSrc} className="w-full h-auto block" alt="SplitEase Tablet" />
-        <Beacon pos={dev.beacon} color="bg-emerald-500" />
+        <Beacon pos={dev.beacon} color="bg-cyan-500" />
         <Caption pos={dev.beacon} accentText={dev.accentText} />
       </div>
     </div>
@@ -296,7 +296,7 @@ function MobileMockup({ dev }) {
       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-14 h-2.5 bg-[#1c1c1e] rounded-full z-20" />
       <div className="relative w-full bg-slate-900">
         <img src={dev.imageSrc} className="w-full h-auto block" alt="SplitEase Mobile" />
-        <Beacon pos={dev.beacon} color="bg-violet-500" />
+        <Beacon pos={dev.beacon} color="bg-cyan-500" />
         <Caption pos={dev.beacon} accentText={dev.accentText} />
       </div>
     </div>

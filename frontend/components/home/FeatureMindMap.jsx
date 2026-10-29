@@ -1,290 +1,199 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { GraduationCap, House, Building2, Plane, Users, Globe2, ArrowUpRight } from "lucide-react";
 
-const ACCENT = "#c9e265"; // section accent (matches the rest of the landing)
-
-// Single source of truth. Add an audience or item = one array entry.
 const AUDIENCES = [
-  { id: "hostel", label: "Hostel Students", color: "#34d399", items: ["Mess & rent", "Daily orders"] },
-  { id: "roommates", label: "Roommates", color: "#38bdf8", items: ["Rent & bills", "Groceries"] },
-  { id: "flatmates", label: "Flatmates", color: "#a78bfa", items: ["Shared rent", "Utilities"] },
-  { id: "trips", label: "Trip Explorers", color: "#fb7185", items: ["Stays & cabs", "Food & fun"] },
-  { id: "friends", label: "Friend Groups", color: "#fbbf24", items: ["Dinners out", "Parties & gifts"] },
-  { id: "anywhere", label: "Anywhere You Split", color: "#2dd4bf", items: ["Any group", "Any currency"] },
+  {
+    label: "Hostel Students",
+    icon: GraduationCap,
+    tagline: "Mess, rent and daily orders made simple.",
+    group: "Hostel Block B",
+    members: ["🧑🏻", "👩🏽", "🧔🏻", "👩🏻"],
+    expenses: [["🍛", "Mess fee", "Aman", 4200], ["🛒", "Daily orders", "Riya", 860], ["📺", "Subscriptions", "Karan", 399]],
+    result: "4 people · settled in 2 transfers",
+  },
+  {
+    label: "Roommates",
+    icon: House,
+    tagline: "Split rent, groceries and house expenses easily.",
+    group: "Flat 402",
+    members: ["🧑🏽", "👩🏻", "🧔🏽"],
+    expenses: [["🏠", "Rent & bills", "Neha", 24000], ["🥦", "Groceries", "Rohit", 3150], ["⚡", "Utilities", "Neha", 1850]],
+    result: "3 people · ₹9,667 each",
+  },
+  {
+    label: "Flatmates",
+    icon: Building2,
+    tagline: "Shared living, simplified.",
+    group: "Koramangala Crew",
+    members: ["👩🏽", "🧑🏻", "👩🏻", "🧔🏻", "🧑🏽"],
+    expenses: [["🏢", "Shared rent", "Aditi", 42000], ["📶", "Wi-Fi", "Karan", 1200], ["🛋️", "Household purchases", "Neha", 6400]],
+    result: "5 people · auto-reminders on",
+  },
+  {
+    label: "Trip Explorers",
+    icon: Plane,
+    tagline: "Keep your trips fun, not complicated.",
+    group: "Goa Trip 2026",
+    members: ["🧑🏻", "👩🏽", "🧔🏻", "👩🏻", "🧑🏽", "👩🏼"],
+    expenses: [["🏨", "Stays & cabs", "Rohit", 28400], ["🍤", "Food & fun", "Aditi", 9600], ["🎟️", "Activities & tickets", "Karan", 6800]],
+    result: "6 friends · 18 bills → 2 transfers",
+  },
+  {
+    label: "Friend Groups",
+    icon: Users,
+    tagline: "From dinners out to parties and gifts.",
+    group: "Friday Gang",
+    members: ["🧑🏽", "👩🏻", "🧔🏽", "👩🏽"],
+    expenses: [["🍷", "Dinners out", "Neha", 5400], ["🎁", "Parties & gifts", "Aman", 2300], ["📅", "Events", "Riya", 1800]],
+    result: "4 friends · everyone even",
+  },
+  {
+    label: "Anywhere You Split",
+    icon: Globe2,
+    tagline: "Any group, any currency, any use case.",
+    group: "Remote Team",
+    members: ["🧑🏻", "👩🏽", "🧔🏻"],
+    expenses: [["👥", "Any group", "Sam", 120], ["💱", "Any currency", "Aditi", 85], ["🧩", "Any custom expense", "Karan", 40]],
+    currency: "$",
+    result: "3 people · 3 currencies · one balance",
+  },
 ];
 
-const ROW_H = 40;
-
-/* Mobile: render the SAME organic map at a fixed internal width, scaled down
-   and placed in a horizontally-scrollable strip so the whole tree is viewable
-   by sliding sideways. (Desktop is untouched.) */
-const MOBILE_FW = 700; // internal map width on mobile
-const MOBILE_SCALE = 0.78; // shrink to fit a phone; scroll reveals the rest
-const TREE_H =
-  (AUDIENCES.reduce((n, a) => n + Math.max(1, a.items.length), 0) +
-    (AUDIENCES.length - 1) * 0.55) *
-    ROW_H +
-  48; // matches buildTree's H (padding * 2)
-
-/** A smooth horizontal cubic between two points. */
-function curve(px, py, cx, cy) {
-  const dx = cx - px;
-  return `M ${px} ${py} C ${px + dx * 0.5} ${py}, ${cx - dx * 0.5} ${cy}, ${cx} ${cy}`;
-}
-
-/** Track container width so the tree is responsive. */
-function useWidth() {
-  const ref = useRef(null);
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
-    ro.observe(el);
-    setWidth(el.offsetWidth);
-    return () => ro.disconnect();
-  }, []);
-  return [ref, width];
-}
-
-/** Compute the whole tree (positions + cascading animation delays). */
-function buildTree(width, rootRightX) {
-  const x1 = Math.max(330, width * 0.32);
-  const x2 = Math.max(610, width * 0.62);
-
-  const totalRows = AUDIENCES.reduce((n, a) => n + Math.max(1, a.items.length), 0);
-  const gapRows = (AUDIENCES.length - 1) * 0.55;
-  const padding = 24;
-  const H = (totalRows + gapRows) * ROW_H + padding * 2;
-  const cyRoot = H / 2;
-
-  const nodes = [];
-  const edges = [];
-  let cursor = padding;
-
-  AUDIENCES.forEach((a, ai) => {
-    const rows = Math.max(1, a.items.length);
-    const blockH = rows * ROW_H;
-    const ay = cursor + blockH / 2;
-    cursor += blockH + 0.55 * ROW_H;
-
-    const d1 = 0.12 + ai * 0.1; // level-1 stagger
-
-    nodes.push({ id: a.id, level: 1, x: x1, y: ay, color: a.color, label: a.label, delay: d1 + 0.45 });
-    edges.push({ id: `e-root-${a.id}`, color: a.color, w: 2, d: curve(rootRightX, cyRoot, x1, ay), delay: d1 });
-
-    a.items.forEach((it, ii) => {
-      const iy = ay + (ii - (a.items.length - 1) / 2) * ROW_H;
-      const id = `${a.id}-${ii}`;
-      const d2 = 0.7 + ai * 0.1 + ii * 0.07; // level-2 stagger (after level-1)
-      nodes.push({ id, level: 2, x: x2, y: iy, color: a.color, label: it, delay: d2 + 0.4 });
-      edges.push({ id: `e-${id}`, color: a.color, w: 1.4, d: curve(x1, ay, x2, iy), delay: d2 });
-    });
-  });
-
-  return { nodes, edges, H, cyRoot };
-}
+const INTERVAL = 4500;
+const fmt = (n, c = "₹") => c + n.toLocaleString("en-IN");
 
 export default function FeatureMindMap() {
-  const reduce = useReducedMotion();
-  const [ref, width] = useWidth();
-  const compact = width > 0 && width < 760;
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const reduced = useReducedMotion();
 
-  const viewRef = useRef(null);
-  const inView = useInView(viewRef, { once: true, amount: 0.3 });
-  const play = inView || reduce;
+  useEffect(() => {
+    if (paused || reduced) return;
+    const id = setTimeout(() => setActive((a) => (a + 1) % AUDIENCES.length), INTERVAL);
+    return () => clearTimeout(id);
+  }, [active, paused, reduced]);
+
+  const cur = AUDIENCES[active];
+  const cc = cur.currency || "₹";
+  const total = cur.expenses.reduce((s, e) => s + e[3], 0);
 
   return (
-    <section id="who-its-for" className="relative py-14 sm:py-20 bg-[#030303] text-white overflow-hidden">
-      {/* Soft glow to lift the black field a touch. */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/2 left-1/3 w-[640px] h-[640px] -translate-y-1/2 rounded-full blur-[170px]" style={{ background: "rgba(150,168,60,0.05)" }} />
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8">
-        {/* Technical eyebrow */}
-        <div className="flex items-center gap-4 mb-6">
-          <span className="font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.25em] whitespace-nowrap" style={{ color: ACCENT }}>
-            {"// Who it's for · 02 / 03"}
-          </span>
-          <span className="flex-1 h-px" style={{ backgroundColor: "rgba(255,255,255,0.1)" }} />
-          <span className="relative flex items-center justify-center w-6 h-6 rounded-full" style={{ border: "1px solid rgba(255,255,255,0.15)" }}>
-            <Plus size={12} style={{ color: "rgba(255,255,255,0.4)" }} />
-          </span>
-        </div>
-
-        {/* Heading */}
-        <div className="mb-8 sm:mb-10 max-w-2xl">
-          <h2 className="font-mono font-bold uppercase text-2xl sm:text-3xl md:text-4xl tracking-tight leading-[1.05]">
-            Built for anyone
-            <br />
-            <span style={{ color: "rgba(255,255,255,0.35)" }}>who splits money</span>
+    <section id="who-its-for" className="relative overflow-hidden bg-[#030303] py-20 text-white sm:py-28">
+      <div className="pointer-events-none absolute left-1/2 top-1/3 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-cyan-500/[0.06] blur-[140px]" />
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
+        <header className="mb-12 max-w-2xl sm:mb-16">
+          <p className="mb-4 font-mono text-xs font-bold uppercase tracking-[0.2em] text-cyan-400">{"// Who it’s for"}</p>
+          <h2 className="font-sans text-3xl font-extrabold uppercase leading-[1.06] tracking-tight sm:text-4xl lg:text-5xl">
+            Built for anyone<br /><span className="text-white/45">who splits money</span>
           </h2>
-          <p className="mt-4 text-sm text-white/55 max-w-lg">
-            From a hostel room to a week-long trip, anywhere a bill gets shared,
-            SplitEase branches out to fit.
+          <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/55 sm:text-base">
+            From a hostel room to a week-long trip, anywhere a bill gets shared, SplitEase fits right in.
           </p>
-        </div>
+        </header>
 
-        {/* The mind map */}
-        <div ref={viewRef}>
-          <div ref={ref} className="relative w-full">
-            {compact ? (
-              /* Mobile: the full map, scaled down inside a sideways-scroll strip */
-              <div
-                className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
-              >
-                <div style={{ width: MOBILE_FW * MOBILE_SCALE, height: TREE_H * MOBILE_SCALE }}>
-                  <div
-                    style={{
-                      width: MOBILE_FW,
-                      transform: `scale(${MOBILE_SCALE})`,
-                      transformOrigin: "top left",
-                    }}
+        <div
+          className="grid items-stretch gap-8 lg:grid-cols-[1fr_minmax(0,460px)] lg:gap-14"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          {/* Persona selector: big type, no images */}
+          <ul role="tablist" aria-label="Who SplitEase is for" className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
+            {AUDIENCES.map((a, i) => {
+              const on = i === active;
+              const Icon = a.icon;
+              return (
+                <li key={a.label}>
+                  <button
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => setActive(i)}
+                    onFocus={() => setActive(i)}
+                    onMouseEnter={() => setActive(i)}
+                    className="group relative flex w-full items-center gap-4 overflow-hidden py-4 text-left sm:gap-6 sm:py-5"
                   >
-                    <OrganicTree width={MOBILE_FW} play={play} reduce={reduce} />
+                    <span className={`w-7 font-mono text-xs transition-colors ${on ? "text-cyan-400" : "text-white/25"}`}>0{i + 1}</span>
+                    <span className={`font-sans text-xl font-extrabold uppercase tracking-tight transition-all duration-300 sm:text-3xl lg:text-[2.1rem] ${on ? "translate-x-2 text-white" : "text-white/30 group-hover:text-white/60"}`}>
+                      {a.label}
+                    </span>
+                    <Icon className={`ml-auto h-5 w-5 shrink-0 transition-all duration-300 ${on ? "text-cyan-400" : "text-white/20"}`} aria-hidden="true" />
+                    <ArrowUpRight className={`h-5 w-5 shrink-0 transition-all duration-300 ${on ? "translate-x-0 text-cyan-400 opacity-100" : "-translate-x-2 opacity-0"}`} aria-hidden="true" />
+                    {on && !reduced && !paused && (
+                      <motion.span
+                        key={`bar-${active}`}
+                        className="absolute bottom-0 left-0 h-px bg-cyan-400"
+                        initial={{ width: 0 }}
+                        animate={{ width: "100%" }}
+                        transition={{ duration: INTERVAL / 1000, ease: "linear" }}
+                      />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Live ledger for the active persona */}
+          <div className="relative">
+            <div className="absolute -inset-px rounded-[28px] bg-gradient-to-b from-cyan-400/40 via-cyan-400/5 to-transparent" aria-hidden="true" />
+            <div className="relative h-full rounded-[28px] bg-[#071218] p-6 sm:p-7">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={cur.label}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-400">Live group</p>
+                      <h3 className="mt-1.5 text-xl font-bold tracking-tight">{cur.group}</h3>
+                      <p className="mt-1 text-xs text-white/50">{cur.tagline}</p>
+                    </div>
+                    <div className="flex -space-x-1.5">
+                      {cur.members.map((m, i) => (
+                        <span key={i} className="grid h-8 w-8 place-items-center rounded-full border-2 border-[#071218] bg-[#16262e] text-base">{m}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </div>
-            ) : (
-              width > 0 && <OrganicTree width={width} play={play} reduce={reduce} />
-            )}
+
+                  <ul className="mt-6 space-y-2.5">
+                    {cur.expenses.map(([emoji, name, who, amt], i) => (
+                      <motion.li
+                        key={name}
+                        initial={{ opacity: 0, x: 18 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.08 * i + 0.1, duration: 0.35 }}
+                        className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3"
+                      >
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-lg">{emoji}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">{name}</p>
+                          <p className="text-[11px] text-white/45">paid by {who}</p>
+                        </div>
+                        <span className="font-mono text-sm font-bold tabular-nums">{fmt(amt, cc)}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-5 flex items-end justify-between border-t border-white/10 pt-4">
+                    <div>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40">Group total</p>
+                      <p className="mt-1 text-3xl font-extrabold tabular-nums tracking-tight">{fmt(total, cc)}</p>
+                    </div>
+                    <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-[11px] font-semibold text-cyan-200">
+                      {cur.result}
+                    </span>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
-          {compact && (
-            <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
-              ← swipe to explore →
-            </p>
-          )}
         </div>
       </div>
     </section>
-  );
-}
-
-/* ── Desktop: thin left-rooted tree that draws itself in ────────── */
-function OrganicTree({ width, play, reduce }) {
-  const pillRef = useRef(null);
-  const pillLeft = 4;
-  const [pillW, setPillW] = useState(190);
-  useEffect(() => {
-    const el = pillRef.current;
-    if (!el) return;
-    const measure = () => setPillW(el.offsetWidth); // full border-box width
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    measure();
-    return () => ro.disconnect();
-  }, []);
-
-  // Converge the branches *under* the pill so they always emerge from its right
-  // edge — tucked 16px inside, hidden by the opaque pill, never leaving a gap.
-  const rootRightX = pillLeft + pillW - 16;
-  const { nodes, edges, H, cyRoot } = buildTree(width, rootRightX);
-
-  return (
-    <div className="relative" style={{ height: H }}>
-      <svg width={width} height={H} className="absolute inset-0 pointer-events-none" style={{ overflow: "visible" }}>
-        {edges.map((e) => (
-          <motion.path
-            key={e.id}
-            d={e.d}
-            fill="none"
-            stroke={e.color}
-            strokeWidth={e.w}
-            strokeLinecap="round"
-            initial={{ pathLength: reduce ? 1 : 0, opacity: reduce ? 0.55 : 0 }}
-            animate={play ? { pathLength: 1, opacity: 0.55 } : {}}
-            transition={{ duration: reduce ? 0 : 0.65, delay: reduce ? 0 : e.delay, ease: "easeInOut" }}
-          />
-        ))}
-
-        {/* Glowing dots that travel each branch start → end, pause, then loop.
-            keyPoints "0;1;1" with keyTimes "0;0.7;1" = move over the first 70%
-            of the cycle, then hold at the END for the remaining 30% before it
-            jumps back to the start and runs again. */}
-        {play && !reduce && edges.map((e, i) => {
-          const glowR = e.w + 3;
-          const coreR = e.w + 0.6;
-          const dur = (e.w >= 2 ? 2.9 : 2.3) + (i % 4) * 0.18;
-          return (
-            <g key={`flow-${e.id}`}>
-              <circle r={glowR} fill={e.color} opacity="0.3" />
-              <circle r={coreR} fill={e.color} />
-              <animateMotion
-                dur={`${dur}s`}
-                repeatCount="indefinite"
-                calcMode="linear"
-                keyPoints="0;1;1"
-                keyTimes="0;0.7;1"
-                path={e.d}
-              />
-            </g>
-          );
-        })}
-      </svg>
-
-      {/* Root pill — static wrapper keeps the vertical centering; inner motion
-          element owns the entrance animation so the two transforms don't clash. */}
-      <div className="absolute z-20" style={{ left: pillLeft, top: cyRoot, transform: "translateY(-50%)" }}>
-        <motion.div
-          className="inline-block"
-          initial={{ opacity: 0, x: reduce ? 0 : -8 }}
-          animate={play ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: reduce ? 0 : 0.4 }}
-        >
-          <div
-            ref={pillRef}
-            className="flex items-center gap-2.5 rounded-full px-5 py-2.5"
-            style={{ background: "#080a0d", border: `1px solid ${ACCENT}66`, boxShadow: `0 0 22px ${ACCENT}2e` }}
-          >
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: ACCENT, boxShadow: `0 0 7px ${ACCENT}` }} />
-            <span className="font-mono text-sm font-bold uppercase tracking-wide text-white whitespace-nowrap">SplitEase</span>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Nodes + labels — wrapper centers on the line endpoint (and pulls left by
-          the dot's radius so the dot's centre, not its edge, sits on the line). */}
-      {nodes.map((n) => {
-        const r = n.level === 1 ? 4.5 : 3;
-        return (
-          <div
-            key={n.id}
-            className="absolute z-10"
-            style={{ left: n.x - r, top: n.y, transform: "translateY(-50%)" }}
-          >
-            <motion.div
-              className="flex items-center gap-2.5"
-              initial={{ opacity: 0, x: reduce ? 0 : -6 }}
-              animate={play ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: reduce ? 0 : 0.4, delay: reduce ? 0 : n.delay }}
-            >
-              <span
-                className="rounded-full shrink-0"
-                style={{
-                  width: r * 2,
-                  height: r * 2,
-                  background: n.color,
-                  boxShadow: `0 0 6px ${n.color}aa`,
-                }}
-              />
-              <span
-                className={
-                  n.level === 1
-                    ? "relative top-[10px] text-[13px] font-semibold uppercase tracking-[0.08em] text-white/90 whitespace-nowrap"
-                    : "relative top-[10px] text-[13px] font-normal text-white/55 whitespace-nowrap"
-                }
-              >
-                {n.label}
-              </span>
-            </motion.div>
-          </div>
-        );
-      })}
-    </div>
   );
 }

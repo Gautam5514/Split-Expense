@@ -15,7 +15,7 @@ export default function sitemap() {
     { path: "/features/secure-login", priority: 0.6, changeFrequency: "monthly" },
     { path: "/how-it-works", priority: 0.8, changeFrequency: "monthly" },
     { path: "/blog", priority: 0.8, changeFrequency: "weekly" },
-    { path: "/pricing", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/platforms", priority: 0.7, changeFrequency: "monthly" },
     { path: "/downloadapp", priority: 0.7, changeFrequency: "monthly" },
     { path: "/help-center", priority: 0.5, changeFrequency: "monthly" },
     { path: "/contact", priority: 0.4, changeFrequency: "yearly" },

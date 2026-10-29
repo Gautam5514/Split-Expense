@@ -23,7 +23,6 @@ const FeatureMindMap = dynamic(() => import("@/components/home/FeatureMindMap"))
 const FeaturesSection = dynamic(() => import("@/components/home/FeaturesSection"));
 const DeviceSlideShowcase = dynamic(() => import("@/components/home/DeviceSlideShowcase"));
 const TestimonialsSection = dynamic(() => import("@/components/home/TestimonialsSection"));
-const FinalGravitySection = dynamic(() => import("@/components/home/FinalGravitySection"));
 const Footer = dynamic(() => import("@/components/Footer"));
 
 export default function HomePage() {
@@ -74,9 +73,6 @@ export default function HomePage() {
         <TestimonialsSection />
       </LazySection>
       <SearchIntentSection />
-      <LazySection minHeight="100vh">
-        <FinalGravitySection />
-      </LazySection>
       <LazySection minHeight="40vh">
         <Footer />
       </LazySection>

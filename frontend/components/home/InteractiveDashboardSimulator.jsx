@@ -429,7 +429,7 @@ export default function InteractiveDashboardSimulator() {
 
             {/* Profile widget */}
             <div className="mt-auto flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/[0.04] border border-white/10">
-              <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=c4b5fd" className="w-7.5 h-7.5 rounded-lg object-cover bg-teal-900" alt="Felix" />
+              <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=c4b5fd" className="w-7.5 h-7.5 rounded-lg object-cover bg-cyan-900" alt="Felix" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-white truncate leading-tight">Felix Kumar</p>
                 <p className="text-[9px] text-white/35 truncate">felix@gmail.com</p>
@@ -489,7 +489,7 @@ export default function InteractiveDashboardSimulator() {
                         setShowAddExpenseModal(true);
                       }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-cyan-500 hover:from-cyan-400 hover:to-cyan-400 transition"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>{activeTab === "dashboard" || activeTab === "groups" ? "New Group" : "Add Spent"}</span>
@@ -821,7 +821,7 @@ export default function InteractiveDashboardSimulator() {
         </button>
 
         {/* Group Stats Card */}
-        <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.03] bg-gradient-to-r from-cyan-500/[0.02] to-teal-500/[0.02] relative overflow-hidden backdrop-blur-md">
+        <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.03] bg-gradient-to-r from-cyan-500/[0.02] to-cyan-500/[0.02] relative overflow-hidden backdrop-blur-md">
           <div className="absolute top-2 right-2 opacity-20" style={{ color: group.color }}>{renderIcon(group.icon, "w-10 h-10")}</div>
           <h3 className="text-sm font-black text-white leading-tight">{group.name}</h3>
           <p className="text-[9px] text-white/40 mt-0.5">Overall group room expense log</p>
@@ -1076,7 +1076,7 @@ export default function InteractiveDashboardSimulator() {
               return (
                 <div key={isMobileFlow ? `mobile-ai-msg-${m.id}` : `desktop-ai-msg-${m.id}`} className={`flex items-start gap-2.5 ${isUser ? "justify-end" : "justify-start"}`}>
                 {!isUser && (
-                  <div className="w-6.5 h-6.5 rounded-lg bg-gradient-to-br from-cyan-600 to-teal-600 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm border border-white/10">
+                  <div className="w-6.5 h-6.5 rounded-lg bg-gradient-to-br from-cyan-600 to-cyan-600 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm border border-white/10">
                     <Bot className="w-3.5 h-3.5" />
                   </div>
                 )}
@@ -1086,7 +1086,7 @@ export default function InteractiveDashboardSimulator() {
                   </span>
                   <div className={`px-3 py-2 rounded-2xl text-[9.5px] leading-relaxed shadow-sm max-w-[90%] whitespace-pre-line ${
                     isUser
-                      ? "bg-gradient-to-br from-cyan-600 to-teal-600 text-white rounded-tr-none font-semibold border border-cyan-400/20"
+                      ? "bg-gradient-to-br from-cyan-600 to-cyan-600 text-white rounded-tr-none font-semibold border border-cyan-400/20"
                       : "bg-white/5 text-white border border-white/5 rounded-tl-none"
                   }`}>
                     {m.content}

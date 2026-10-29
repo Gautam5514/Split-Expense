@@ -66,7 +66,7 @@ export default function ScrollPinnedShowcase() {
       title: "Command Center",
       desc: "Manage trips, calculate percentages, and track spending profiles on a unified desktop command layout. Built for serious financial coordination and power users.",
       icon: Laptop,
-      color: "from-cyan-500 to-blue-500",
+      color: "from-cyan-500 to-cyan-500",
       accent: "text-cyan-400",
     },
     {
@@ -74,16 +74,16 @@ export default function ScrollPinnedShowcase() {
       title: "Detailed Room Audit",
       desc: "Drill down into individual expense rooms, view categorizations, upload invoices, and resolve disputes on a highly interactive, responsive layout.",
       icon: Compass,
-      color: "from-emerald-500 to-teal-500",
-      accent: "text-emerald-400",
+      color: "from-cyan-500 to-cyan-500",
+      accent: "text-cyan-400",
     },
     {
       tag: "ON THE GO FREEDOM",
       title: "Mobile Interface",
       desc: "Log cost splits in seconds directly from the taxi, ticket line, or restaurant. Access AI receipt scanner offline and settle debts with one-tap optimizations.",
       icon: Smartphone,
-      color: "from-pink-500 to-purple-500",
-      accent: "text-pink-400",
+      color: "from-cyan-500 to-cyan-500",
+      accent: "text-cyan-400",
     },
   ];
 

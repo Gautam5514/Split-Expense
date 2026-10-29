@@ -77,7 +77,7 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Verify Split-Expense on OpenSSF Best Practices"
-              className="group mt-5 mb-5 inline-flex w-fit items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 py-2.5 transition-all duration-300 hover:border-cyan-400/30 hover:bg-cyan-400/[0.05]"
+              className="group mt-5 mb-5 inline-flex w-fit max-w-full flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 py-2.5 transition-all duration-300 hover:border-cyan-400/30 hover:bg-cyan-400/[0.05]"
             >
               <img
                 src="https://www.bestpractices.dev/projects/14650/badge"
@@ -107,7 +107,7 @@ export default function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-[30px] h-[30px] flex items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.02] text-[#718096] hover:text-white hover:border-white/[0.2] hover:bg-white/[0.05] transition-all duration-300"
+                  className="w-9 h-9 sm:w-[30px] sm:h-[30px] flex items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.02] text-[#718096] hover:text-white hover:border-white/[0.2] hover:bg-white/[0.05] transition-all duration-300"
                 >
                   {social.icon}
                 </a>
@@ -116,20 +116,20 @@ export default function Footer() {
             </div>
 
             {/* Copyright block */}
-            <p className="text-[11px] text-[#4A5568] leading-relaxed">
+            <p className="hidden text-[11px] leading-relaxed text-[#4A5568] lg:block">
               &copy; {new Date().getFullYear()} SplitEase. SplitEase and the SplitEase logo are trademarks of SplitEase.
             </p>
           </div>
 
           {/* Right Column (3 Columns of Links) */}
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-10 lg:gap-6 pt-2">
+          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-10 lg:gap-6 pt-2 max-sm:border-t max-sm:border-white/[0.07] max-sm:pt-10">
             
             {/* Column 1 - Platform Features */}
-            <div>
+            <div className="max-sm:col-span-2">
               <h4 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#A0AEC0] mb-5">
                 Features
               </h4>
-              <ul className="flex flex-col gap-3">
+              <ul className="grid grid-cols-2 gap-x-6 gap-y-1 sm:flex sm:flex-col sm:gap-3">
                 {[
                   { label: "AI Expense Splitter", href: "/features/ai-expense-splitter" },
                   { label: "Smart Settlements", href: "/features/smart-settlements" },
@@ -141,7 +141,7 @@ export default function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-xs text-[#718096] hover:text-white transition-all duration-200"
+                      className="inline-block py-2 text-[13px] text-[#8793a8] transition-all duration-200 hover:text-white sm:py-0 sm:text-xs sm:text-[#718096]"
                     >
                       {link.label}
                     </Link>
@@ -155,7 +155,7 @@ export default function Footer() {
               <h4 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#A0AEC0] mb-5">
                 Company
               </h4>
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-col gap-1 sm:gap-3">
                 {[
                   { label: "Blog", href: "/blog" },
                   { label: "About Us", href: "/about" },
@@ -169,14 +169,14 @@ export default function Footer() {
                         href={link.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-[#718096] hover:text-white transition-all duration-200"
+                        className="inline-block py-2 text-[13px] text-[#8793a8] transition-all duration-200 hover:text-white sm:py-0 sm:text-xs sm:text-[#718096]"
                       >
                         {link.label}
                       </a>
                     ) : (
                       <Link
                         href={link.href}
-                        className="text-xs text-[#718096] hover:text-white transition-all duration-200"
+                        className="inline-block py-2 text-[13px] text-[#8793a8] transition-all duration-200 hover:text-white sm:py-0 sm:text-xs sm:text-[#718096]"
                       >
                         {link.label}
                       </Link>
@@ -191,7 +191,7 @@ export default function Footer() {
               <h4 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#A0AEC0] mb-5">
                 Legal
               </h4>
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-col gap-1 sm:gap-3">
                 {[
                   { label: "Legal Overview", href: "/legal" },
                   { label: "Security Center", href: "/security" },
@@ -202,7 +202,7 @@ export default function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-xs text-[#718096] hover:text-white transition-all duration-200"
+                      className="inline-block py-2 text-[13px] text-[#8793a8] transition-all duration-200 hover:text-white sm:py-0 sm:text-xs sm:text-[#718096]"
                     >
                       {link.label}
                     </Link>
@@ -213,6 +213,11 @@ export default function Footer() {
 
           </div>
         </div>
+
+        {/* Phones and tablets: copyright sits under the links */}
+        <p className="pb-6 text-center text-[11px] leading-relaxed text-[#4A5568] lg:hidden">
+          &copy; {new Date().getFullYear()} SplitEase. SplitEase and the SplitEase logo are trademarks of SplitEase.
+        </p>
 
         {/* Massive Serif Brand Watermark */}
         <div className="w-full select-none pointer-events-none flex items-end justify-center border-t border-white/[0.07] pt-6 pb-2 overflow-hidden">

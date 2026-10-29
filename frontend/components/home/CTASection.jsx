@@ -51,7 +51,7 @@ export default function CTASection() {
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-[1.06] tracking-tight text-gray-900 dark:text-white"
             >
               Split bills.{" "}
-              <span className="bg-gradient-to-r from-cyan-600 via-sky-500 to-emerald-500 bg-clip-text text-transparent dark:from-cyan-300 dark:via-sky-300 dark:to-emerald-300">
+              <span className="bg-gradient-to-r from-cyan-600 via-cyan-500 to-cyan-400 bg-clip-text text-transparent dark:from-cyan-200 dark:via-cyan-300 dark:to-cyan-400">
                 Not friendships.
               </span>
             </motion.h2>

@@ -2,282 +2,303 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Saira_Condensed, VT323 } from "next/font/google";
-import {
-  AnimatePresence,
-  motion,
-  useInView,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-} from "framer-motion";
+import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
+import { Check, CheckCheck, ScanLine, Smartphone, Laptop, Tablet, ArrowRight } from "lucide-react";
 
-/* Axiom-style rotating words: the centered word auto-advances every 900ms,
-   gets square bracket corners, and hovering any word shows a cursor-following
-   info chip. The list scrolls one way forever (content repeats), never jumps
-   back to the top. Whole section fits one viewport. */
+/* Engine showcase: a tab rail of the six core skills over one stage. Each skill
+   plays its own looping mini-demo built from plain markup (no screenshots), so
+   it stays crisp, light, and on-brand. Auto-advances, pauses on hover/focus. */
 
 const condensed = Saira_Condensed({ weight: "600", subsets: ["latin"] });
 const pixel = VT323({ weight: "400", subsets: ["latin"] });
 
-const STEP_MS = 900;
-const ROW = "clamp(44px, 6.5vw, 92px)";
+const AUTO_MS = 6500;
 
-const WORDS = [
-  { label: "INSTANT SPLIT", info: "EQUAL, SHARES OR EXACT. SETTLED IN ONE TAP", image: "/intelligence/instant-split.jpg" },
-  { label: "RECEIPT VISION", info: "ATTACH BILL PHOTOS NOW - AI ITEMIZATION COMING SOON", image: "/intelligence/receipt-vision.jpg" },
-  { label: "SETTLE CHAT", info: "EVERY PAYMENT LIVES INSIDE THE CONVERSATION", image: "/intelligence/settle-chat.jpg" },
-  { label: "DEBT GRAPH", info: "BALANCES ROUTED THROUGH MINIMAL TRANSFERS", image: "/intelligence/debt-graph.jpg" },
-  { label: "LIVE LEDGER", info: "REAL-TIME SYNC ACROSS EVERY DEVICE", image: "/intelligence/live-ledger.jpg" },
-  { label: "SETTLE CONFIRM", info: "TWO-PARTY CONFIRMATION BEFORE ANY BALANCE MOVES", image: "/intelligence/settle-confirm.jpg" },
+const FEATURES = [
+  { id: "split", label: "Instant Split", info: "Equal, shares or exact. Settled in one tap.", points: ["Equal, ratio or exact amounts", "Edit any share, totals stay balanced", "Multi-currency groups"] },
+  { id: "receipt", label: "Receipt Vision", info: "Attach bill photos now. AI itemization coming soon.", points: ["Snap or upload any bill", "Proof stays attached to the expense", "Itemised splitting is on the way"] },
+  { id: "chat", label: "Settle Chat", info: "Every payment lives inside the conversation.", points: ["Pay and chat in one thread", "Payments logged automatically", "No more “did you send it?”"] },
+  { id: "graph", label: "Debt Graph", info: "Balances routed through minimal transfers.", points: ["Cuts transfers to the minimum", "Works across the whole group", "One clear list of who pays whom"] },
+  { id: "ledger", label: "Live Ledger", info: "Real-time sync across every device.", points: ["Phone, tablet and web in sync", "Everyone sees the same numbers", "Updates land in under a second"] },
+  { id: "confirm", label: "Settle Confirm", info: "Two-party confirmation before any balance moves.", points: ["Payer marks it, receiver confirms", "Balances change only after both", "A clean audit trail"] },
 ];
 
-// Active index grows forever; content repeats so the scroll never jumps back up.
-const wordAt = (i) => WORDS[((i % WORDS.length) + WORDS.length) % WORDS.length];
+/* ---------- mini demos ---------- */
 
-function Corners() {
-  const side = "absolute h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 border-cyan-400/90";
+function useTick(count, ms, active) {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => setT((v) => (v + 1) % count), ms);
+    return () => clearInterval(id);
+  }, [count, ms, active]);
+  return t;
+}
+
+const Shell = ({ children, title }) => (
+  <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-[#071218] p-4 sm:p-5">
+    <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400">{title}</p>
+    <div className="flex-1">{children}</div>
+  </div>
+);
+
+function SplitDemo({ run }) {
+  const mode = useTick(2, 2200, run);
+  const rows = [["🧑🏻", "Aman"], ["👩🏽", "Riya"], ["🧔🏻", "Karan"]];
+  const pct = mode === 0 ? [33, 33, 34] : [50, 30, 20];
   return (
-    <motion.span
-      layoutId="word-brackets"
-      transition={{ type: "spring", stiffness: 420, damping: 34 }}
-      className="pointer-events-none absolute -inset-x-3 inset-y-1 sm:-inset-x-5"
-    >
-      <span className={`${side} left-0 top-0 border-l border-t`} />
-      <span className={`${side} right-0 top-0 border-r border-t`} />
-      <span className={`${side} bottom-0 left-0 border-b border-l`} />
-      <span className={`${side} bottom-0 right-0 border-b border-r`} />
-    </motion.span>
+    <Shell title={mode === 0 ? "Split equally" : "Split by shares"}>
+      <div className="flex items-baseline justify-between">
+        <p className="text-3xl font-extrabold tabular-nums">₹1,200</p>
+        <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-semibold text-cyan-200">Dinner · Fri</span>
+      </div>
+      <div className="mt-5 space-y-3.5">
+        {rows.map(([e, n], i) => (
+          <div key={n} className="flex items-center gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-[#16262e] text-base">{e}</span>
+            <div className="flex-1">
+              <div className="mb-1 flex justify-between text-xs"><span>{n}</span><span className="font-mono tabular-nums">₹{Math.round(1200 * pct[i] / 100)}</span></div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                <motion.div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-200" animate={{ width: `${pct[i]}%` }} transition={{ type: "spring", stiffness: 120, damping: 20 }} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Shell>
   );
 }
 
-export default function IntelligenceSection() {
-  const sectionRef = useRef(null);
-  const rowRef = useRef(null);
-  const inView = useInView(sectionRef, { amount: 0.3 });
-  const reducedMotion = useReducedMotion();
-
-  // Start on the second word so the initial y of 0 already centers it.
-  const [active, setActive] = useState(1);
-  const [hovered, setHovered] = useState(null);
-  const [rowH, setRowH] = useState(0);
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const chipX = useSpring(mouseX, { stiffness: 380, damping: 34, mass: 0.5 });
-  const chipY = useSpring(mouseY, { stiffness: 380, damping: 34, mass: 0.5 });
-
-  useEffect(() => {
-    const measure = () => rowRef.current && setRowH(rowRef.current.offsetHeight);
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
-
-  // Hold a hovered feature for four seconds, then resume the automatic sequence.
-  useEffect(() => {
-    if (!inView) return;
-
-    if (hovered !== null) {
-      const hold = setTimeout(() => {
-        setHovered(null);
-        setActive((i) => i + 1);
-      }, 4000);
-      return () => clearTimeout(hold);
-    }
-
-    const id = setInterval(() => setActive((i) => i + 1), STEP_MS);
-    return () => clearInterval(id);
-  }, [inView, hovered]);
-
-  // Drop a stale hover once its row has scrolled out from under the cursor.
-  useEffect(() => {
-    if (hovered !== null && Math.abs(hovered - active) > 2) setHovered(null);
-  }, [active, hovered]);
-
-  const focus = hovered ?? active;
-
-  const onMouseMove = (e) => {
-    mouseX.set(Math.min(e.clientX, window.innerWidth - 360));
-    mouseY.set(Math.min(e.clientY, window.innerHeight - 80));
-  };
-
+function ReceiptDemo({ run }) {
+  const step = useTick(5, 900, run);
+  const items = [["Paneer tikka", 420], ["Butter naan ×4", 240], ["Cold drinks", 180], ["GST 5%", 42]];
   return (
-    <section
-      ref={sectionRef}
-      onMouseMove={onMouseMove}
-      className="relative flex min-h-[780px] flex-col overflow-hidden bg-[#030303] text-white sm:min-h-[112dvh] lg:min-h-[820px]"
-    >
-      {/* Ambient glow, same language as the rest of the landing page */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[680px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-900/10 blur-[130px]" />
-
-      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-6 py-9 sm:px-8 sm:py-14">
-        {/* Header block */}
-        <div className="max-w-md font-mono text-[10px] font-bold uppercase leading-relaxed tracking-[0.12em] sm:text-[11px]">
-          <p className="text-cyan-400">Splitease</p>
-          <p className="text-white/40">Inside the Splitease engine</p>
-          <p className="mt-5 text-white/70">
-            A living expense engine. Continuously tracking, auto-balancing, and
-            settling debts with contextual awareness. Each node is a distinct
-            skill, working in unison.
-          </p>
-        </div>
-
-        {/* A visual explanation appears on the right without changing the word interaction. */}
-        <AnimatePresence mode="wait">
-          {hovered !== null && (
-            <motion.aside
-              key={wordAt(hovered).label}
-              initial={{ opacity: 0, x: -220, scaleX: 0.025, scaleY: 1, rotateY: -86, filter: "blur(5px)" }}
-              animate={{
-                opacity: [0, 1, 1],
-                x: [-220, -90, 0],
-                scaleX: [0.025, 0.035, 1],
-                scaleY: 1,
-                rotateY: [-86, -78, 0],
-                filter: ["blur(5px)", "blur(2px)", "blur(0px)"],
-              }}
-              exit={{
-                opacity: [1, 1, 0],
-                x: [0, -90, -190],
-                scaleX: [1, 0.035, 0.02],
-                scaleY: 1,
-                rotateY: [0, -78, -88],
-                filter: ["blur(0px)", "blur(2px)", "blur(5px)"],
-              }}
-              transition={{ duration: 0.78, times: [0, 0.28, 1], ease: [0.22, 1, 0.36, 1] }}
-              className="pointer-events-none absolute right-6 top-1/2 z-30 hidden h-[clamp(460px,56dvh,540px)] w-[26%] max-w-[380px] -translate-y-1/2 lg:block xl:right-10"
-              style={{ transformOrigin: "left center", perspective: 1200 }}
-            >
-              <div className="relative h-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.035] p-1 shadow-[0_35px_100px_rgba(0,0,0,0.72),0_0_45px_rgba(34,211,238,0.1),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.06] via-transparent to-cyan-400/[0.035]" />
-                <img
-                  src={wordAt(hovered).image}
-                  alt={`${wordAt(hovered).label.toLowerCase()} feature preview`}
-                  className="relative h-full w-full rounded-[1.5rem] object-cover opacity-95"
-                />
-                <div className="absolute inset-1 rounded-[1.5rem] border border-white/[0.06] bg-gradient-to-t from-black via-black/10 to-white/[0.025]" />
-                <div className="absolute inset-x-6 bottom-6">
-                  <div className="mb-3 flex items-center gap-2 font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-300">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 shadow-[0_0_12px_#22d3ee]" />
-                    Visual preview
-                  </div>
-                  <p className={`${condensed.className} text-2xl uppercase leading-none tracking-wide text-white`}>
-                    {wordAt(hovered).label}
-                  </p>
-                </div>
-              </div>
-              <motion.span
-                initial={{ scaleX: 0, opacity: 0 }}
-                animate={{ scaleX: 1, opacity: 1 }}
-                exit={{ scaleX: 0, opacity: 0 }}
-                transition={{ delay: 0.12, duration: 0.35, ease: "easeOut" }}
-                className="absolute -left-20 top-1/2 h-px w-20 origin-left bg-gradient-to-r from-transparent via-cyan-300/30 to-cyan-300/80 shadow-[0_0_12px_rgba(34,211,238,0.5)]"
-              />
-            </motion.aside>
-          )}
-        </AnimatePresence>
-
-        {/* Rotating word stack, vertically centered in the leftover space */}
-        <div className="my-8 py-2 sm:my-auto sm:py-6">
-          <p className="mb-4 hidden text-center font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 md:block">
-            Hover on words
-          </p>
-
-          <div
-            className="relative mx-auto overflow-hidden"
-            style={{
-              height: `calc(3 * ${ROW})`,
-              maskImage: "linear-gradient(180deg, transparent 0%, black 22%, black 78%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(180deg, transparent 0%, black 22%, black 78%, transparent 100%)",
-            }}
-          >
-            {/* Invisible sizer that defines one row height */}
-            <div ref={rowRef} aria-hidden className="invisible" style={{ height: ROW }} />
-
-            <motion.div
-              className="absolute inset-x-0 top-0"
-              animate={{ y: (1 - active) * rowH }}
-              transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 240, damping: 30 }}
-            >
-              {rowH > 0 &&
-                Array.from({ length: 8 }, (_, k) => active - 3 + k).map((idx) => {
-                  const word = wordAt(idx);
-                  const isFocus = idx === focus;
-                  return (
-                    <div
-                      key={idx}
-                      className="absolute inset-x-0 flex items-center justify-center"
-                      style={{ top: idx * rowH, height: ROW }}
-                    >
-                      <span
-                        onMouseEnter={() => setHovered(idx)}
-                        onMouseLeave={() => setHovered(null)}
-                        className="clickable relative cursor-pointer select-none px-4 sm:px-8"
-                      >
-                        {isFocus && <Corners />}
-                        <span
-                          className={`${condensed.className} text-[clamp(34px,5vw,72px)] uppercase leading-none tracking-[0.01em]`}
-                          style={
-                            isFocus
-                              ? { color: "#F5F7FA" }
-                              : {
-                                  backgroundImage:
-                                    "linear-gradient(180deg, rgba(245,247,250,0.6), rgba(245,247,250,0.06))",
-                                  WebkitBackgroundClip: "text",
-                                  backgroundClip: "text",
-                                  color: "transparent",
-                                }
-                          }
-                        >
-                          {word.label}
-                        </span>
-                      </span>
-                    </div>
-                  );
-                })}
-            </motion.div>
-          </div>
-
-          {/* Touch devices get the info inline instead of a cursor chip */}
-          <div className="mt-5 flex justify-center md:hidden">
-            <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2">
-              <img src={wordAt(active).image} alt="" className="aspect-[16/8] w-full rounded-xl object-cover" />
-              <p className="px-2 pb-2 pt-3 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-white/85">
-                &middot; {wordAt(active).info}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Intelligence / Model footer line */}
-        <div className="flex items-end gap-4 sm:gap-7">
-          <span className={`${pixel.className} leading-none text-[clamp(40px,6.6vw,92px)]`}>
-            Intelligence
-          </span>
-          <span className="mb-[0.18em] h-px flex-1 bg-white/30" />
-          <span className="font-serif-premium italic leading-none text-[clamp(40px,6.6vw,92px)]">
-            Model
-          </span>
-        </div>
+    <Shell title="Receipt attached">
+      <div className="relative mx-auto h-full max-w-[250px] overflow-hidden rounded-lg bg-[#f3efe6] p-4 font-mono text-[11px] text-[#2a2a2a]">
+        <p className="text-center text-[10px] font-bold uppercase tracking-widest">Spice Route</p>
+        <div className="my-2 border-t border-dashed border-black/30" />
+        {items.map(([n, a], i) => (
+          <motion.div key={n} initial={false} animate={{ opacity: step > i ? 1 : 0.15 }} className="flex justify-between py-0.5">
+            <span>{n}</span><span>₹{a}</span>
+          </motion.div>
+        ))}
+        <div className="my-2 border-t border-dashed border-black/30" />
+        <motion.div initial={false} animate={{ opacity: step >= 4 ? 1 : 0.15 }} className="flex justify-between font-bold"><span>Total</span><span>₹882</span></motion.div>
+        <motion.div
+          className="pointer-events-none absolute inset-x-0 h-10 bg-gradient-to-b from-transparent via-cyan-400/40 to-transparent"
+          animate={{ top: ["-15%", "100%"] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
+        />
+        <ScanLine className="absolute right-2 top-2 h-4 w-4 text-cyan-600" aria-hidden="true" />
       </div>
+    </Shell>
+  );
+}
 
-      {/* Cursor-following info chip */}
-      <AnimatePresence>
-        {hovered !== null && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.18 }}
-            className="pointer-events-none fixed left-0 top-0 z-[60] hidden md:block"
-            style={{ x: chipX, y: chipY }}
-          >
-            <p className="ml-5 mt-6 whitespace-nowrap rounded-lg border border-cyan-400/50 bg-black/90 px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_0_24px_rgba(34,211,238,0.15)]">
-              &middot; {wordAt(hovered).info}
-            </p>
+function ChatDemo({ run }) {
+  const step = useTick(5, 1100, run);
+  const msgs = [
+    { me: false, t: "Sent ₹450 on UPI 💸" },
+    { me: true, t: "Got it, thanks!" },
+  ];
+  return (
+    <Shell title="Group · Goa Trip">
+      <div className="flex h-full flex-col justify-end gap-2.5">
+        {msgs.map((m, i) => step > i && (
+          <motion.div key={i} initial={{ opacity: 0, y: 10, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${m.me ? "self-end rounded-br-sm bg-cyan-400 text-[#00232c]" : "self-start rounded-bl-sm bg-white/10"}`}>
+            {m.t}
+          </motion.div>
+        ))}
+        {step > 2 && (
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="self-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-cyan-200">
+            <CheckCheck className="mr-1.5 inline h-3 w-3" aria-hidden="true" />Settled · ₹450 logged
           </motion.div>
         )}
-      </AnimatePresence>
+      </div>
+    </Shell>
+  );
+}
+
+function GraphDemo({ run }) {
+  const after = useTick(2, 2600, run) === 1;
+  const before = [["Aman", "Riya", 300], ["Riya", "Karan", 450], ["Karan", "Neha", 200], ["Neha", "Aman", 150], ["Aman", "Karan", 100]];
+  const best = [["Riya", "Neha", 150], ["Karan", "Neha", 100]];
+  const list = after ? best : before;
+  return (
+    <Shell title={after ? "Minimal transfers" : "Raw balances"}>
+      <div className="flex items-end justify-between">
+        <motion.p key={after} initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-5xl font-extrabold tabular-nums text-cyan-300">{list.length}</motion.p>
+        <p className="pb-1 text-xs text-white/50">transfers needed</p>
+      </div>
+      <ul className="mt-4 space-y-1.5">
+        <AnimatePresence mode="popLayout">
+          {list.map(([a, b, amt]) => (
+            <motion.li key={a + b + amt} layout initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-xs">
+              <span className="font-semibold">{a}</span><ArrowRight className="h-3 w-3 text-cyan-400" aria-hidden="true" /><span className="font-semibold">{b}</span>
+              <span className="ml-auto font-mono tabular-nums">₹{amt}</span>
+            </motion.li>
+          ))}
+        </AnimatePresence>
+      </ul>
+    </Shell>
+  );
+}
+
+function LedgerDemo({ run }) {
+  const t = useTick(4, 1000, run);
+  const devices = [[Smartphone, "Phone"], [Tablet, "Tablet"], [Laptop, "Web"]];
+  return (
+    <Shell title="Live ledger">
+      <div className="grid grid-cols-3 gap-2.5">
+        {devices.map(([Icon, name], i) => (
+          <div key={name} className="relative rounded-xl border border-white/10 bg-white/[0.03] p-3 text-center">
+            <Icon className="mx-auto h-5 w-5 text-white/60" aria-hidden="true" />
+            <p className="mt-1 text-[10px] text-white/50">{name}</p>
+            <motion.p animate={{ opacity: t > i ? 1 : 0.25 }} className="mt-2 font-mono text-sm font-bold tabular-nums">₹{t === 0 ? "3,200" : "3,650"}</motion.p>
+            <span className={`absolute right-2 top-2 h-1.5 w-1.5 rounded-full ${t > i ? "bg-cyan-400 shadow-[0_0_8px_#22d3ee]" : "bg-white/20"}`} />
+          </div>
+        ))}
+      </div>
+      <motion.p animate={{ opacity: t >= 1 ? 1 : 0 }} className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-400/[0.07] px-3 py-2 text-xs text-cyan-100">
+        + ₹450 “Cab to airport” added. Synced on all devices.
+      </motion.p>
+    </Shell>
+  );
+}
+
+function ConfirmDemo({ run }) {
+  const step = useTick(4, 1300, run);
+  const steps = ["Rohit marks ₹450 as paid", "Aditi gets a confirmation request", "Aditi confirms receipt", "Balances updated"];
+  return (
+    <Shell title="Two-party confirm">
+      <ol className="space-y-2.5">
+        {steps.map((s, i) => {
+          const done = step >= i;
+          return (
+            <motion.li key={s} animate={{ opacity: done ? 1 : 0.3 }} className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2.5 text-sm">
+              <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${done ? "bg-cyan-400 text-[#00232c]" : "bg-white/10 text-white/40"}`}>
+                {done ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : i + 1}
+              </span>
+              {s}
+            </motion.li>
+          );
+        })}
+      </ol>
+    </Shell>
+  );
+}
+
+const DEMOS = { split: SplitDemo, receipt: ReceiptDemo, chat: ChatDemo, graph: GraphDemo, ledger: LedgerDemo, confirm: ConfirmDemo };
+
+/* ---------- section ---------- */
+
+export default function IntelligenceSection() {
+  const sectionRef = useRef(null);
+  const inView = useInView(sectionRef, { amount: 0.3 });
+  const reduced = useReducedMotion();
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (!inView || paused || reduced) return;
+    const id = setTimeout(() => setActive((a) => (a + 1) % FEATURES.length), AUTO_MS);
+    return () => clearTimeout(id);
+  }, [active, inView, paused, reduced]);
+
+  const f = FEATURES[active];
+  const Demo = DEMOS[f.id];
+
+  return (
+    <section ref={sectionRef} className="relative overflow-hidden bg-[#030303] py-20 text-white sm:py-28">
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[680px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/[0.07] blur-[130px]" />
+
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
+        <header className="mb-10 max-w-2xl sm:mb-12">
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-cyan-400">{"// Inside the SplitEase engine"}</p>
+          <h2 className={`${condensed.className} mt-4 text-4xl uppercase leading-[1.02] sm:text-6xl`}>
+            Six skills.<br /><span className="text-white/40">One living ledger.</span>
+          </h2>
+          <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/55 sm:text-base">
+            Tracking, balancing and settling debts with context. Pick a skill and watch it work.
+          </p>
+        </header>
+
+        <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocusCapture={() => setPaused(true)} onBlurCapture={() => setPaused(false)}>
+          {/* tab rail */}
+          <div
+            role="tablist"
+            aria-label="Engine skills"
+            onKeyDown={(e) => {
+              const n = FEATURES.length;
+              const next = { ArrowRight: (active + 1) % n, ArrowLeft: (active + n - 1) % n, Home: 0, End: n - 1 }[e.key];
+              if (next === undefined) return;
+              e.preventDefault();
+              setActive(next);
+              e.currentTarget.children[next]?.focus();
+            }}
+            className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-3 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+            {FEATURES.map((x, i) => {
+              const on = i === active;
+              return (
+                <button
+                  key={x.id}
+                  role="tab"
+                  aria-selected={on}
+                  tabIndex={on ? 0 : -1}
+                  onClick={() => setActive(i)}
+                  className={`relative shrink-0 overflow-hidden rounded-full border px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${on ? "border-cyan-400/60 bg-cyan-400/10 text-white" : "border-white/10 text-white/45 hover:border-white/25 hover:text-white/80"}`}
+                >
+                  {on && (
+                    <motion.span
+                      key={`p-${active}-${paused}`}
+                      aria-hidden="true"
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500/25 to-cyan-400/45"
+                      initial={{ width: reduced || paused ? "100%" : 0 }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: reduced || paused ? 0 : AUTO_MS / 1000, ease: "linear" }}
+                    />
+                  )}
+                  <span className="relative"><span className="mr-2 text-cyan-400/70">0{i + 1}</span>{x.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* stage */}
+          <div className="relative mt-4 overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-[#0a1a22] via-[#05090c] to-[#030303] p-5 sm:p-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={f.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="grid items-center gap-8 lg:grid-cols-[1fr_minmax(0,430px)] lg:gap-14"
+              >
+                <div>
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-400">0{active + 1} / 0{FEATURES.length}</p>
+                  <h3 className={`${condensed.className} mt-3 text-5xl uppercase leading-none sm:text-7xl`}>{f.label}</h3>
+                  <p className="mt-4 max-w-md text-base text-white/65">{f.info}</p>
+                  <ul className="mt-6 space-y-2.5">
+                    {f.points.map((p) => (
+                      <li key={p} className="flex items-center gap-3 text-sm text-white/80">
+                        <span className="grid h-5 w-5 place-items-center rounded-full bg-cyan-400/15 text-cyan-300"><Check className="h-3 w-3" aria-hidden="true" /></span>{p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="h-[330px]"><Demo run={inView && !reduced} /></div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        <div className="mt-14 flex items-end gap-4 sm:gap-7">
+          <span className={`${pixel.className} leading-none text-[clamp(40px,6.6vw,92px)]`}>Intelligence</span>
+          <span className="mb-[0.18em] h-px flex-1 bg-white/30" />
+          <span className="font-serif-premium italic leading-none text-[clamp(40px,6.6vw,92px)]">Model</span>
+        </div>
+      </div>
     </section>
   );
 }

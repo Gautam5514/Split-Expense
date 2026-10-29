@@ -17,10 +17,10 @@ function TimelineDot({ scrollYProgress, index, total, color }) {
   const innerDotOpacity = useTransform(scrollYProgress, [startReveal, targetProgress], [0, 1]);
 
   const dotColor = color.includes('cyan') ? '#22d3ee' :
-                   color.includes('emerald') ? '#34d399' :
-                   color.includes('pink') ? '#f472b6' :
-                   color.includes('violet') ? '#a78bfa' :
-                   color.includes('amber') ? '#fbbf24' : '#34d399';
+                   color.includes('emerald') ? '#22d3ee' :
+                   color.includes('pink') ? '#22d3ee' :
+                   color.includes('violet') ? '#22d3ee' :
+                   color.includes('amber') ? '#22d3ee' : '#22d3ee';
 
   return (
     <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-8 h-4 z-10 pointer-events-none items-center justify-center">
@@ -395,9 +395,9 @@ export default function FeaturesSection() {
       tag: "AI OCR PARSER",
       title: "OCR Receipt Scanning",
       desc: "Point your camera at any bill or import a PDF. Our smart AI scanner reads the total, tax, items, and tax ratios instantly without manual typing.",
-      color: "text-emerald-400",
-      glowBg: "bg-emerald-500/10",
-      borderColor: "hover:border-emerald-500/25",
+      color: "text-cyan-400",
+      glowBg: "bg-cyan-500/10",
+      borderColor: "hover:border-cyan-500/25",
       points: ["Item-by-item split allocation", "Smart total and tax identification", "Automatic item categorization"],
       image: "/ocr_recept.webp",
     },
@@ -405,9 +405,9 @@ export default function FeaturesSection() {
       tag: "LLM INSIGHTS",
       title: "AI Expense Assistant",
       desc: "Ask our embedded LLM assistant anything about your spend. Get spending breakdowns, net-debt summaries, and tap-to-clear settlements instantly.",
-      color: "text-pink-400",
-      glowBg: "bg-pink-500/10",
-      borderColor: "hover:border-pink-500/25",
+      color: "text-cyan-400",
+      glowBg: "bg-cyan-500/10",
+      borderColor: "hover:border-cyan-500/25",
       points: ["Ask custom spending queries", "Generates visual debt charts", "Automatic payment suggestions"],
       image: "/ai_expense.webp",
     },
@@ -415,9 +415,9 @@ export default function FeaturesSection() {
       tag: "GROUP CHAT",
       title: "Group & Direct Chat",
       desc: "Discuss finances inside every group chat room. Share receipt attachments, agree on ratios, and log settlements directly inside the messaging thread.",
-      color: "text-violet-400",
-      glowBg: "bg-violet-500/10",
-      borderColor: "hover:border-violet-500/25",
+      color: "text-cyan-400",
+      glowBg: "bg-cyan-500/10",
+      borderColor: "hover:border-cyan-500/25",
       points: ["Expense attachments in chat", "Direct message settled alerts", "Live notification hubs"],
       image: "/groupchat.webp",
     },
@@ -425,9 +425,9 @@ export default function FeaturesSection() {
       tag: "EASY INVITATIONS",
       title: "QR & Link Invites",
       desc: "Generate custom group QR codes or invite links. Guests scan or tap to join instantly without complicated onboarding sheets.",
-      color: "text-amber-400",
-      glowBg: "bg-amber-500/10",
-      borderColor: "hover:border-amber-500/25",
+      color: "text-cyan-400",
+      glowBg: "bg-cyan-500/10",
+      borderColor: "hover:border-cyan-500/25",
       points: ["One-click join invite links", "Detailed QR code scanners", "Auto group landing page redirection"],
       image: "/qrlink.webp",
     },
@@ -435,9 +435,9 @@ export default function FeaturesSection() {
       tag: "OTP CHECKER",
       title: "Secure OTP Login",
       desc: "Every authentication is secured. Login is verified with a one-time passcode generated and dispatched to your email for security.",
-      color: "text-emerald-500",
-      glowBg: "bg-emerald-500/10",
-      borderColor: "hover:border-emerald-500/25",
+      color: "text-cyan-500",
+      glowBg: "bg-cyan-500/10",
+      borderColor: "hover:border-cyan-500/25",
       points: ["Instant email code dispatch", "Robust protection rules", "Zero password requirement fallback"],
       image: "/secure_otp.webp",
     },
@@ -449,7 +449,7 @@ export default function FeaturesSection() {
       {/* Background glow graphics */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-cyan-900/5 rounded-full blur-[140px]" />
-        <div className="absolute bottom-1/3 left-1/3 w-[500px] h-[500px] bg-purple-900/5 rounded-full blur-[140px]" />
+        <div className="absolute bottom-1/3 left-1/3 w-[500px] h-[500px] bg-cyan-900/5 rounded-full blur-[140px]" />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-12">
@@ -512,10 +512,10 @@ export default function FeaturesSection() {
                 <defs>
                   <linearGradient id="timeline-gradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#22d3ee" />
-                    <stop offset="25%" stopColor="#34d399" />
-                    <stop offset="50%" stopColor="#f472b6" />
-                    <stop offset="75%" stopColor="#a78bfa" />
-                    <stop offset="100%" stopColor="#fbbf24" />
+                    <stop offset="25%" stopColor="#22d3ee" />
+                    <stop offset="50%" stopColor="#22d3ee" />
+                    <stop offset="75%" stopColor="#22d3ee" />
+                    <stop offset="100%" stopColor="#22d3ee" />
                   </linearGradient>
                   <pattern id="active-railway-sleepers" width="28" height="15" patternUnits="userSpaceOnUse">
                     <line x1="3" y1="7.5" x2="25" y2="7.5" stroke="#67e8f9" strokeOpacity=".75" strokeWidth="2.2" strokeLinecap="round" />

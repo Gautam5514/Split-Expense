@@ -8,6 +8,8 @@ import { createNotification } from "./notificationController.js";
 import { computeGroupBalances, invalidateBalanceCache } from "./balanceController.js";
 import { isValidObjectId } from "../middleware/validate.js";
 import { maskEmail } from "../utils/contacts.js";
+import { notifyGroupChange } from "../utils/realtime.js";
+import { io } from "../index.js";
 
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
 const isCreator = (group, reqUser) => {
@@ -21,6 +23,7 @@ const isLive = (inv) => inv.status === "pending" && new Date(inv.expiresAt) > ne
 const addToGroup = async (group, userId, joinedName, how) => {
   await Group.updateOne({ _id: group._id }, { $addToSet: { members: new mongoose.Types.ObjectId(String(userId)) } });
   invalidateBalanceCache(group._id);
+  void notifyGroupChange(io, group._id, "member");
   const others = group.members.map(String).filter((id) => id !== String(userId));
   if (others.length) {
     void createNotification(
@@ -221,6 +224,7 @@ export const leaveGroup = async (req, res) => {
 
     await Group.updateOne({ _id: groupId }, { $pull: { members: new mongoose.Types.ObjectId(String(uid)) } });
     invalidateBalanceCache(groupId);
+    void notifyGroupChange(io, groupId, "member", group.members.map(String));
     const others = group.members.map(String).filter((id) => id !== String(uid));
     if (others.length) {
       void createNotification(

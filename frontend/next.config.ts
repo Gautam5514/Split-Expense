@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    // The pricing page was replaced by the platforms page.
+    return [{ source: "/pricing", destination: "/platforms", permanent: true }];
+  },
   async headers() {
     return [
       {

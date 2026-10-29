@@ -1,3 +1,4 @@
+import PageHeroShell from "@/components/PageHeroShell";
 import Footer from "@/components/Footer";
 import BlogPageContent from "@/components/blog/BlogPageContent";
 import { getAllPosts } from "@/lib/blogPostsServer";
@@ -108,18 +109,7 @@ export default async function BlogPage() {
       />
 
       {/* ── Hero: same treatment as the landing page ── */}
-      <section className="relative w-full overflow-hidden flex flex-col items-center bg-black pt-28 sm:pt-36 pb-40 sm:pb-56">
-        {/* Background gradients matching the landing hero */}
-        <div
-          className="absolute inset-x-0 top-0 bottom-0 z-0"
-          style={{ background: "linear-gradient(180deg, #000 0%, #2F2C2A 67%)" }}
-        />
-        <div
-          className="pointer-events-none absolute top-[45%] bottom-0 -left-[218px] -right-[218px] z-[4]"
-          style={{ background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, #000 83.35%)" }}
-        />
-
-        <div className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col items-center text-center">
+      <PageHeroShell className="pb-40 pt-28 sm:pb-56 sm:pt-36">
           <p className="mb-5 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-white/70">
             The SplitEase Blog
           </p>
@@ -131,28 +121,7 @@ export default async function BlogPage() {
             need to split bills with friends, roommates and travel groups
             without the awkwardness.
           </p>
-        </div>
-
-        {/* Flanking rock textures — the same stones as the landing hero */}
-        <picture>
-          <source srcSet="/stone-left.webp" type="image/webp" />
-          <img
-            src="/stone-left.webp"
-            alt=""
-            decoding="async"
-            className="pointer-events-none absolute max-w-none bottom-[-220px] left-[-160px] size-[620px] max-lg:bottom-[-140px] max-lg:left-[-120px] max-lg:size-[440px] max-md:bottom-[-60px] max-md:left-[-12%] max-md:size-[280px] z-[5]"
-          />
-        </picture>
-        <picture>
-          <source srcSet="/stone-right.webp" type="image/webp" />
-          <img
-            src="/stone-right.webp"
-            alt=""
-            decoding="async"
-            className="pointer-events-none absolute max-w-none right-[-640px] bottom-[-260px] h-[720px] w-[1150px] max-lg:right-[-460px] max-lg:bottom-[-170px] max-lg:h-[520px] max-lg:w-[830px] max-md:right-[-180px] max-md:bottom-[-60px] max-md:size-[380px] z-[5]"
-          />
-        </picture>
-      </section>
+      </PageHeroShell>
 
       {/* ── Everything below the hero, in the landing page's design language ── */}
       <BlogPageContent featured={featured} posts={rest} />
