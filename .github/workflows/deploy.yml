@@ -30,7 +30,18 @@ jobs:
 
             cd backend
 
-            npm ci --omit=dev
+            # npm ci was OOM-killed (exit 137) on the small EC2 instance, so add
+            # a 2G swapfile once if the box has no swap.
+            if [ "$(swapon --show --noheadings | wc -l)" -eq 0 ]; then
+              sudo fallocate -l 2G /swapfile
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+              sudo swapon /swapfile
+              grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+            fi
+            free -m
+
+            NODE_OPTIONS=--max-old-space-size=512 npm ci --omit=dev --no-audit --no-fund
 
             pm2 restart split-backend --update-env
             pm2 save
