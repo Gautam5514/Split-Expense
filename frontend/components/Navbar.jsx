@@ -19,6 +19,7 @@ import HideOnScrollNav from "@/components/HideOnScrollNav";
 import CoinBadge from "@/components/CoinBadge";
 import ThemeToggle from "@/components/ThemeToggle";
 import useCoins from "@/hooks/useCoins";
+import FeaturesMenu from "@/components/FeaturesMenu";
 import { PlayStoreNavLink } from "@/components/PlayStoreLink";
 
 const NAV_LINKS = [
@@ -199,12 +200,7 @@ export default function Navbar() {
               >
                 What we offer
               </Link>
-              <Link
-                href="/platforms"
-                className="px-1.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
-              >
-                Platforms
-              </Link>
+              <FeaturesMenu />
               <Link
                 href="/blog"
                 className="hidden md:block px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"

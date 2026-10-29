@@ -31,6 +31,10 @@ import {
   EyeOff,
   Sparkles,
   Bot,
+  Clock,
+  ShieldCheck,
+  ExternalLink,
+  MessageSquareText,
 } from "lucide-react";
 
 /* Official multi-colour Google "G" mark. */
@@ -47,6 +51,32 @@ function GoogleIcon({ className = "h-5 w-5" }) {
 
 const ease = [0.22, 1, 0.36, 1];
 
+const ASSISTANTS = [
+  { name: "Claude", href: "https://claude.ai/new" },
+  { name: "ChatGPT", href: "https://chatgpt.com" },
+  { name: "Gemini", href: "https://gemini.google.com/app" },
+  { name: "Grok", href: "https://grok.com" },
+  { name: "Copilot", href: "https://copilot.microsoft.com" },
+];
+
+const TRY_ASKING = [
+  "How much do I owe across all my groups?",
+  "Show the last 5 expenses in my trip group",
+  "Create a group called Flatmates",
+];
+
+/** Seconds until a Firebase ID token (JWT) expires, or null if unreadable. */
+function secondsLeft(token) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return Math.max(0, payload.exp - Math.floor(Date.now() / 1000));
+  } catch {
+    return null;
+  }
+}
+
+const fmtTime = (sec) => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+
 export default function McpLoginPage() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState("");
@@ -57,6 +87,16 @@ export default function McpLoginPage() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [ready, setReady] = useState(false);
+  const [reveal, setReveal] = useState(false);
+  const [copiedKey, setCopiedKey] = useState("");
+  const [left, setLeft] = useState(null);
+
+  useEffect(() => {
+    if (!token) { setLeft(null); return; }
+    setLeft(secondsLeft(token));
+    const id = setInterval(() => setLeft(secondsLeft(token)), 1000);
+    return () => clearInterval(id);
+  }, [token]);
 
   useEffect(() => {
     const unsub = onIdTokenChanged(auth, async (u) => {
@@ -138,6 +178,17 @@ export default function McpLoginPage() {
     }
   };
 
+  const copyText = async (key, text, msg) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      toast.success(msg);
+      setTimeout(() => setCopiedKey(""), 2000);
+    } catch {
+      toast.error("Copy failed.");
+    }
+  };
+
   const handleLogout = async () => {
     await signOut(auth);
     setToken("");
@@ -147,7 +198,7 @@ export default function McpLoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full bg-[#0a0a0a] text-white">
+    <div className="relative flex min-h-[100dvh] w-full flex-col bg-[#0a0a0a] text-white lg:h-[100dvh] lg:flex-row lg:overflow-hidden">
       {/* Kill Chrome/Safari autofill's white box — keep inputs dark & premium. */}
       <style jsx global>{`
         .mcp-field:-webkit-autofill,
@@ -189,8 +240,25 @@ export default function McpLoginPage() {
         </p>
       </div>
 
+      {/* ── Mobile + tablet banner: cropped hero so small screens keep the illustration ── */}
+      <header className="relative h-52 shrink-0 overflow-hidden bg-black sm:h-64 lg:hidden">
+        <Image
+          src="/mcp-hub.png"
+          alt="ChatGPT, Gemini, Claude, Grok and Copilot connecting through MCP to SplitEase"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[50%_12%]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-[#0a0a0a]" />
+        <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 px-5 pb-4 sm:px-10">
+          <Image src="/logo-concept-app.svg" alt="" width={36} height={36} className="rounded-xl ring-1 ring-white/15" />
+          <p className="text-base font-semibold tracking-tight">SplitEase MCP</p>
+        </div>
+      </header>
+
       {/* ─────────────────────────── RIGHT: auth form ─────────────────────────── */}
-      <main className="relative flex flex-1 items-center justify-center overflow-hidden px-5 py-10 sm:px-10">
+      <main className="relative z-10 flex min-h-0 flex-1 overflow-y-auto px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4 sm:px-10 lg:py-12">
         <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-[120px]" />
         <div className="pointer-events-none absolute bottom-0 left-10 h-64 w-64 rounded-full bg-violet-500/10 blur-[120px]" />
 
@@ -198,13 +266,8 @@ export default function McpLoginPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease }}
-          className="relative w-full max-w-[420px]"
+          className="relative m-auto w-full max-w-[440px] sm:max-w-[480px] sm:rounded-3xl sm:border sm:border-white/10 sm:bg-white/[0.03] sm:p-8 sm:shadow-[0_30px_80px_-30px_rgba(34,211,238,0.25)] sm:backdrop-blur-xl"
         >
-          {/* mobile brand */}
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <Image src="/logo-concept-app.svg" alt="" width={44} height={44} className="rounded-xl" />
-            <p className="text-base font-semibold tracking-tight">SplitEase MCP</p>
-          </div>
 
           <AnimatePresence mode="wait">
             {!ready ? (
@@ -228,7 +291,7 @@ export default function McpLoginPage() {
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/25 bg-cyan-400/[0.08] px-3 py-1 text-[11px] font-semibold text-cyan-200">
                   <Sparkles className="h-3 w-3" /> Connect your assistant
                 </span>
-                <h1 className="mt-4 text-3xl font-semibold tracking-tight">Sign in to continue</h1>
+                <h1 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Sign in to continue</h1>
                 <p className="mt-2 text-sm leading-relaxed text-white/50">
                   Log in, copy your secure token, and paste it into Claude, ChatGPT, Gemini, Grok or Copilot.
                 </p>
@@ -236,13 +299,13 @@ export default function McpLoginPage() {
                 <button
                   onClick={handleGoogle}
                   disabled={googleBusy}
-                  className="group mt-7 flex w-full items-center justify-center gap-3 rounded-2xl border border-white/12 bg-white px-4 py-3.5 font-medium text-gray-800 shadow-lg transition hover:bg-white/90 disabled:opacity-60"
+                  className="group mt-6 flex w-full items-center justify-center gap-3 rounded-2xl border border-white/12 bg-white px-4 py-3.5 font-medium text-gray-800 shadow-lg transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] hover:bg-white/90 disabled:opacity-60"
                 >
                   {googleBusy ? <Loader2 className="h-5 w-5 animate-spin text-gray-500" /> : <GoogleIcon />}
                   Continue with Google
                 </button>
 
-                <div className="my-6 flex items-center gap-4 text-[11px] font-medium uppercase tracking-widest text-white/25">
+                <div className="my-5 flex items-center gap-4 text-[11px] font-medium uppercase tracking-widest text-white/25">
                   <span className="h-px flex-1 bg-white/10" /> or use email <span className="h-px flex-1 bg-white/10" />
                 </div>
 
@@ -282,14 +345,15 @@ export default function McpLoginPage() {
                   <button
                     type="submit"
                     disabled={busy}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-500 to-violet-600 px-4 py-3.5 font-semibold text-white shadow-[0_10px_30px_-8px_rgba(56,189,248,0.6)] transition hover:brightness-110 disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-500 to-violet-600 px-4 py-3.5 font-semibold text-white shadow-[0_10px_30px_-8px_rgba(56,189,248,0.6)] transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] hover:brightness-110 hover:shadow-[0_14px_36px_-8px_rgba(56,189,248,0.75)] disabled:opacity-60"
                   >
                     {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in"}
                   </button>
                 </form>
 
-                <p className="mt-6 text-center text-[11px] leading-relaxed text-white/35">
-                  Tokens expire in ~1 hour. You can generate a new one anytime.
+                <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[11px] leading-relaxed text-white/35">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-300/70" />
+                  Tokens expire in ~1 hour. Nothing is stored by this page.
                 </p>
               </motion.div>
             ) : (
@@ -318,44 +382,105 @@ export default function McpLoginPage() {
                   </div>
                 </div>
 
-                <label className="mb-2 mt-6 block text-xs font-medium text-white/50">Secure token</label>
+                {/* expiry */}
+                {left !== null && (
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-white/55"><Clock className="h-3.5 w-3.5" /> Token expires in</span>
+                      <span className={`font-mono font-semibold ${left < 300 ? "text-amber-300" : "text-emerald-300"}`}>
+                        {left === 0 ? "Expired" : fmtTime(left)}
+                      </span>
+                    </div>
+                    <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className={`h-full rounded-full transition-all duration-1000 ${left < 300 ? "bg-amber-400" : "bg-gradient-to-r from-emerald-400 to-cyan-400"}`}
+                        style={{ width: `${Math.min(100, (left / 3600) * 100)}%` }}
+                      />
+                    </div>
+                    {left < 300 && (
+                      <button onClick={refreshToken} className="mt-2.5 text-[11px] font-semibold text-amber-300 hover:underline">
+                        Expiring soon, get a fresh token
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <label className="mb-2 mt-5 flex items-center justify-between text-xs font-medium text-white/50">
+                  Secure token
+                  <button onClick={() => setReveal((r) => !r)} className="flex items-center gap-1 text-white/40 hover:text-white/70">
+                    {reveal ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    {reveal ? "Hide" : "Reveal"}
+                  </button>
+                </label>
                 <textarea
                   readOnly
-                  value={token}
-                  onFocus={(e) => e.target.select()}
-                  rows={5}
-                  className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-4 font-mono text-[11px] leading-relaxed text-cyan-200/90 outline-none focus:border-cyan-400/40"
+                  value={reveal ? token : token.slice(0, 18) + "•".repeat(48)}
+                  onFocus={(e) => reveal && e.target.select()}
+                  rows={3}
+                  className="w-full resize-none break-all rounded-2xl border border-white/10 bg-black/40 p-4 font-mono text-[11px] leading-relaxed text-cyan-200/90 outline-none focus:border-cyan-400/40"
                 />
 
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <button
-                    onClick={copyToken}
+                    onClick={() => copyText("prompt", `set my SplitEase token to ${token}`, "Prompt copied. Paste it into your assistant.")}
                     disabled={!token}
-                    className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-500 to-violet-600 px-4 py-3 font-semibold text-white shadow-[0_10px_30px_-10px_rgba(56,189,248,0.6)] transition hover:brightness-110 disabled:opacity-60"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-500 to-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(56,189,248,0.6)] transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] hover:brightness-110 hover:shadow-[0_14px_36px_-8px_rgba(56,189,248,0.75)] disabled:opacity-60"
                   >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copied ? "Copied" : "Copy token"}
+                    {copiedKey === "prompt" ? <Check className="h-4 w-4" /> : <MessageSquareText className="h-4 w-4" />}
+                    {copiedKey === "prompt" ? "Copied" : "Copy ready prompt"}
                   </button>
                   <button
-                    onClick={refreshToken}
-                    disabled={busy}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-4 py-3 font-medium text-white/80 transition hover:bg-white/[0.08] disabled:opacity-60"
+                    onClick={copyToken}
+                    disabled={!token}
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white/80 transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] hover:bg-white/[0.08] disabled:opacity-60"
                   >
-                    <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
-                    New token
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied ? "Copied" : "Token only"}
                   </button>
                 </div>
+                <button
+                  onClick={refreshToken}
+                  disabled={busy}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 py-2.5 text-xs font-medium text-white/60 transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] hover:bg-white/[0.06] disabled:opacity-60"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} /> Generate new token
+                </button>
 
-                <div className="mt-5 rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.06] p-4">
-                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-cyan-300">
-                    <Bot className="h-3.5 w-3.5" /> How to use it
+                {/* steps */}
+                <div className="mt-5 rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.05] p-4">
+                  <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-cyan-300">
+                    <Bot className="h-3.5 w-3.5" /> Connect in 3 steps
                   </p>
-                  <p className="text-[12px] leading-relaxed text-white/60">
-                    In your AI assistant, say:{" "}
-                    <span className="rounded-md bg-black/40 px-1.5 py-0.5 font-mono text-[11px] text-cyan-200">
-                      set my SplitEase token to &lt;paste&gt;
-                    </span>
-                  </p>
+                  <ol className="space-y-2.5 text-[12px] text-white/65">
+                    <li className="flex gap-2.5"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-cyan-400/20 text-[10px] font-bold text-cyan-200">1</span>Copy the ready prompt above.</li>
+                    <li className="flex gap-2.5"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-cyan-400/20 text-[10px] font-bold text-cyan-200">2</span>
+                      <span>Open your assistant:
+                        <span className="mt-1.5 flex flex-wrap gap-1.5">
+                          {ASSISTANTS.map((a) => (
+                            <a key={a.name} href={a.href} target="_blank" rel="noopener noreferrer"
+                               className="inline-flex items-center gap-1 rounded-full border border-white/12 bg-black/30 px-2.5 py-1 text-[11px] font-medium text-white/80 transition hover:border-cyan-300/50 hover:text-white">
+                              {a.name} <ExternalLink className="h-2.5 w-2.5" />
+                            </a>
+                          ))}
+                        </span>
+                      </span>
+                    </li>
+                    <li className="flex gap-2.5"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-cyan-400/20 text-[10px] font-bold text-cyan-200">3</span>Paste it and send. You are connected.</li>
+                  </ol>
+                </div>
+
+                {/* try asking */}
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-white/35">Then try asking</p>
+                  <div className="space-y-1.5">
+                    {TRY_ASKING.map((q) => (
+                      <button key={q} onClick={() => copyText(q, q, "Question copied.")}
+                        className="group flex w-full items-center justify-between gap-3 rounded-xl bg-white/[0.04] px-3 py-2 text-left text-[12px] text-white/70 transition hover:bg-white/[0.08] hover:text-white">
+                        <span>“{q}”</span>
+                        {copiedKey === q ? <Check className="h-3.5 w-3.5 shrink-0 text-emerald-300" /> : <Copy className="h-3.5 w-3.5 shrink-0 text-white/25 group-hover:text-white/60" />}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <button
