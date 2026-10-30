@@ -28,7 +28,7 @@ const LINKS = [
   { href: "/ai", icon: Bot, label: "AI" },
 ];
 
-const HIDDEN_ROUTES = ["/login", "/register", "/reset-password", "/admin", "/mcp-login"];
+const HIDDEN_ROUTES = ["/login", "/register", "/reset-password", "/admin"];
 
 export default function AppSidebar() {
   const pathname = usePathname();

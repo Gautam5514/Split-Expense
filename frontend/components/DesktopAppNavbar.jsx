@@ -87,7 +87,7 @@ function writeHistory(list) {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch {}
 }
 
-const HIDDEN_ROUTES = ["/login", "/register", "/reset-password", "/admin", "/mcp-login"];
+const HIDDEN_ROUTES = ["/login", "/register", "/reset-password", "/admin"];
 
 export default function DesktopAppNavbar() {
   const router = useRouter();

@@ -20,7 +20,7 @@ const FEATURES = [
 
 const PLATFORMS = [
   { href: "/mobile-app", icon: Smartphone, label: "Mobile App", badge: "Android", desc: "Every group and settlement in your pocket" },
-  { href: "/mcp-login",  icon: Plug,       label: "MCP Server", badge: "AI",      desc: "Connect Claude, ChatGPT, Gemini & more" },
+  { href: "/mcp",  icon: Plug,       label: "MCP Server", badge: "AI",      desc: "Connect Claude, ChatGPT, Gemini & more" },
 ];
 
 export default function FeaturesMenu() {

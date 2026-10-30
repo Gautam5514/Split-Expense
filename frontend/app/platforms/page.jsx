@@ -41,7 +41,7 @@ const PLATFORMS = [
     desc: "Connect your SplitEase account to an AI assistant such as Claude, ChatGPT, Gemini, Grok or Copilot, and ask about your money in plain language.",
     points: ["See your groups and balances", "Check recent expenses in any group", "Get an overall summary across groups", "Create a new group by asking"],
     cta: "Connect your assistant",
-    href: "/mcp-login",
+    href: "/mcp",
   },
 ];
 
@@ -56,7 +56,7 @@ const FAQS = [
   },
   {
     q: "What is MCP?",
-    a: "MCP lets an AI assistant talk to SplitEase on your behalf. You log in once, copy your secure token and paste it into the assistant. After that you can ask things like who owes what in a group.",
+    a: "MCP lets an AI assistant talk to SplitEase on your behalf. You paste one link into the assistant and sign in once. After that you can ask things like who owes what in a group.",
   },
   {
     q: "Is it free to use?",

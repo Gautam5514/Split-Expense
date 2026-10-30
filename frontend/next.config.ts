@@ -22,7 +22,10 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     // The pricing page was replaced by the platforms page.
-    return [{ source: "/pricing", destination: "/platforms", permanent: true }];
+    return [
+      { source: "/pricing", destination: "/platforms", permanent: true },
+      { source: "/mcp-login", destination: "/mcp", permanent: true },
+    ];
   },
   async headers() {
     return [

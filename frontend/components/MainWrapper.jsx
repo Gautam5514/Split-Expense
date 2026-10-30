@@ -6,7 +6,7 @@ import { useSidebar } from "@/context/SidebarContext";
 
 // Routes that render full-bleed (no navbar) must not get the logged-in top
 // padding that normally offsets content below the fixed navbar.
-const FULL_BLEED_ROUTES = ["/mcp-login"];
+const FULL_BLEED_ROUTES = [];
 
 export default function MainWrapper({ children }) {
   const { token } = useAuth();

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import Footer from "@/components/Footer";
 import { PlayStoreButton } from "@/components/PlayStoreLink";
 
@@ -46,18 +46,10 @@ export default function FeaturePageLayout({
   return (
     <div className="min-h-[100dvh] overflow-x-clip bg-[#030303] text-white">
       {/* Hero */}
-      <header className="relative px-6 pb-20 pt-36 sm:pt-44">
+      <header className="relative px-6 pb-20 pt-28 sm:pt-32">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_at_50%_0%,rgba(14,165,233,0.07)_0%,transparent_70%)]" />
 
         <div className="relative mx-auto max-w-6xl">
-          <Link
-            href="/"
-            className="mb-10 inline-flex items-center gap-2 text-xs font-semibold text-white/50 transition-colors hover:text-white"
-          >
-            <ArrowLeft size={14} />
-            Back to home
-          </Link>
-
           <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-16">
             <div>
               <div className="flex flex-wrap items-center gap-2.5">
@@ -68,7 +60,7 @@ export default function FeaturePageLayout({
                   {status}
                 </span>
               </div>
-              <h1 className="font-serif-premium mt-4 text-4xl font-normal leading-[1.08] tracking-tight sm:text-5xl">
+              <h1 className="font-serif-premium mt-4 text-4xl font-normal leading-[1.1] tracking-tight sm:text-5xl lg:text-[3.4rem]">
                 {title}
               </h1>
               <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/55 sm:text-base">
