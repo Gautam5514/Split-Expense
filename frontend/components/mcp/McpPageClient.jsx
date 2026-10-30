@@ -12,10 +12,6 @@ import {
   Plug,
   ShieldCheck,
   Sparkles,
-  Wallet,
-  Users,
-  Receipt,
-  UserPlus,
   CheckCircle2,
   KeyRound,
 } from "lucide-react";
@@ -30,55 +26,15 @@ import toast from "@/lib/toast";
 
 const MCP_URL = process.env.NEXT_PUBLIC_MCP_URL || `${API_URL}/mcp`;
 
-/* ── Brand marks (simplified, drawn inline so there are no image requests) ── */
+/* ── Official brand marks (transparent PNGs in /public/mcp) ── */
 
-function ClaudeMark({ className = "h-7 w-7" }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <g stroke="#D97757" strokeWidth="2.4" strokeLinecap="round">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <line
-            key={i}
-            x1="12"
-            y1={i % 2 ? 5.2 : 3}
-            x2="12"
-            y2="9"
-            transform={`rotate(${i * 30} 12 12)`}
-          />
-        ))}
-      </g>
-    </svg>
-  );
-}
-
-function ChatGPTMark({ className = "h-7 w-7" }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinejoin="round">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <path
-          key={i}
-          d="M12 2.6c1.7 0 3 1.2 3 2.7v3.4L12 10.4 9 8.7V5.3c0-1.5 1.3-2.7 3-2.7Z"
-          transform={`rotate(${i * 60} 12 12)`}
-        />
-      ))}
-    </svg>
-  );
-}
-
-function GeminiMark({ className = "h-7 w-7" }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <defs>
-        <linearGradient id="gem-grad" x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#4285F4" />
-          <stop offset="0.55" stopColor="#9B72CB" />
-          <stop offset="1" stopColor="#D96570" />
-        </linearGradient>
-      </defs>
-      <path fill="url(#gem-grad)" d="M12 1.5C12.6 7.6 16.4 11.4 22.5 12 16.4 12.6 12.6 16.4 12 22.5 11.4 16.4 7.6 12.6 1.5 12 7.6 11.4 11.4 7.6 12 1.5Z" />
-    </svg>
-  );
-}
+const makeMark = (src) =>
+  function Mark({ className = "h-7 w-7" }) {
+    return <img src={src} alt="" aria-hidden="true" className={`object-contain ${className}`} />;
+  };
+const ClaudeMark = makeMark("/mcp/claude.png");
+const ChatGPTMark = makeMark("/mcp/chatgpt.png");
+const GeminiMark = makeMark("/mcp/gemini.png");
 
 const ASSISTANTS = [
   {
@@ -87,8 +43,18 @@ const ASSISTANTS = [
     maker: "Anthropic",
     Mark: ClaudeMark,
     glow: "bg-orange-500/15",
-    accent: "text-orange-300",
-    activeBorder: "border-orange-400/40",
+    theme: {
+      bg: "linear-gradient(160deg, #2B2724 0%, #1C1A18 100%)",
+      border: "rgba(217,119,87,0.35)",
+      glow: "rgba(217,119,87,0.22)",
+      text: "#F5F1EA",
+      muted: "rgba(245,241,234,0.62)",
+      accent: "#E8906F",
+      btnBg: "#D97757",
+      btnText: "#FFFFFF",
+      chip: "rgba(217,119,87,0.16)",
+      serif: true,
+    },
     steps: [
       "Open Claude and go to Settings, then Connectors.",
       "Click Add custom connector.",
@@ -105,8 +71,17 @@ const ASSISTANTS = [
     maker: "OpenAI",
     Mark: ChatGPTMark,
     glow: "bg-emerald-500/15",
-    accent: "text-emerald-300",
-    activeBorder: "border-emerald-400/40",
+    theme: {
+      bg: "#212121",
+      border: "rgba(255,255,255,0.16)",
+      glow: "rgba(16,163,127,0.2)",
+      text: "#ECECEC",
+      muted: "rgba(236,236,236,0.62)",
+      accent: "#19C37D",
+      btnBg: "#FFFFFF",
+      btnText: "#0D0D0D",
+      chip: "rgba(255,255,255,0.08)",
+    },
     steps: [
       "Open ChatGPT and go to Settings, then Connectors.",
       "Under Advanced, turn on Developer mode.",
@@ -123,8 +98,17 @@ const ASSISTANTS = [
     maker: "Google",
     Mark: GeminiMark,
     glow: "bg-blue-500/15",
-    accent: "text-blue-300",
-    activeBorder: "border-blue-400/40",
+    theme: {
+      bg: "linear-gradient(160deg, #1B1C22 0%, #131314 100%)",
+      border: "rgba(130,150,255,0.35)",
+      glow: "rgba(110,130,255,0.28)",
+      text: "#E8EAED",
+      muted: "rgba(232,234,237,0.62)",
+      accent: "#8AB4F8",
+      btnBg: "linear-gradient(90deg, #4285F4 0%, #9B72CB 60%, #D96570 100%)",
+      btnText: "#FFFFFF",
+      chip: "rgba(138,180,248,0.14)",
+    },
     steps: [
       "Install Gemini CLI if you have not already.",
       "Run the command below in your terminal.",
@@ -138,11 +122,45 @@ const ASSISTANTS = [
   },
 ];
 
+// Capability cards show a small example of what the assistant answers. The
+// names and amounts are illustrative only.
 const CAPABILITIES = [
-  { icon: Users, title: "Your groups", desc: "List every group you are in and who is in them." },
-  { icon: Wallet, title: "Balances", desc: "See who owes whom, in one group or across all of them." },
-  { icon: Receipt, title: "Recent expenses", desc: "Pull the latest expenses from any group, with amounts and payers." },
-  { icon: UserPlus, title: "Create groups", desc: "Ask for a new group by name and it is ready in the app." },
+  {
+    title: "Your groups",
+    desc: "List every group you are in and who is in them.",
+    rgb: "34,211,238",
+    rows: [
+      { a: "G", l: "Goa Trip", r: "5 members" },
+      { a: "F", l: "Flatmates", r: "3 members" },
+      { a: "O", l: "Office Lunch", r: "8 members" },
+    ],
+  },
+  {
+    title: "Balances",
+    desc: "See who owes whom, in one group or across all of them.",
+    rgb: "52,211,153",
+    rows: [
+      { a: "A", l: "Aman owes you", r: "₹1,200", tone: "pos" },
+      { a: "R", l: "You owe Riya", r: "₹450", tone: "neg" },
+      { a: "K", l: "Karan owes you", r: "₹800", tone: "pos" },
+    ],
+  },
+  {
+    title: "Recent expenses",
+    desc: "Pull the latest expenses from any group, with amounts and payers.",
+    rgb: "251,191,36",
+    rows: [
+      { a: "D", l: "Dinner · Riya paid", r: "₹3,200" },
+      { a: "C", l: "Cab · You paid", r: "₹640" },
+      { a: "H", l: "Hotel · Aman paid", r: "₹9,500" },
+    ],
+  },
+  {
+    title: "Create groups",
+    desc: "Ask for a new group by name and it is ready in the app.",
+    rgb: "167,139,250",
+    chat: { q: "Create a group called Flatmates", ok: "Flatmates is ready" },
+  },
 ];
 
 const PROMPTS = [
@@ -193,6 +211,7 @@ export default function McpPageClient() {
   const [active, setActive] = useState("claude");
   const [copied, copy] = useCopy();
   const current = ASSISTANTS.find((a) => a.id === active);
+  const t = current.theme;
   const float = (delay) =>
     reducedMotion
       ? {}
@@ -274,7 +293,7 @@ export default function McpPageClient() {
 
         <div className="mt-10 grid gap-5 lg:grid-cols-[260px_1fr]">
           <div role="tablist" aria-label="Assistant" className="flex gap-3 overflow-x-auto lg:flex-col lg:overflow-visible">
-            {ASSISTANTS.map(({ id, name, maker, Mark, activeBorder }) => {
+            {ASSISTANTS.map(({ id, name, maker, Mark, theme }) => {
               const on = id === active;
               return (
                 <button
@@ -282,8 +301,9 @@ export default function McpPageClient() {
                   role="tab"
                   aria-selected={on}
                   onClick={() => setActive(id)}
+                  style={on ? { borderColor: theme.border, background: theme.bg } : undefined}
                   className={`clickable flex min-w-[170px] flex-1 items-center gap-3 rounded-2xl border p-4 text-left transition-colors duration-300 lg:flex-none ${
-                    on ? `${activeBorder} bg-white/[0.05]` : "border-white/[0.08] bg-[#0B0B0F] hover:border-white/20"
+                    on ? "" : "border-white/[0.08] bg-[#0B0B0F] hover:border-white/20"
                   }`}
                 >
                   <Mark className="h-7 w-7 shrink-0" />
@@ -296,8 +316,14 @@ export default function McpPageClient() {
             })}
           </div>
 
-          <div className="relative min-h-[360px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0B0B0F] p-6 sm:p-8">
-            <div className={`pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full blur-3xl ${current.glow}`} />
+          <div
+            className="relative min-h-[360px] overflow-hidden rounded-2xl border p-6 transition-[background,border-color] duration-500 sm:p-8"
+            style={{ background: t.bg, borderColor: t.border, color: t.text }}
+          >
+            <div
+              className="pointer-events-none absolute -right-10 -top-10 h-64 w-64 rounded-full blur-3xl transition-colors duration-500"
+              style={{ background: t.glow }}
+            />
             <AnimatePresence mode="wait">
               <motion.div
                 key={current.id}
@@ -308,14 +334,19 @@ export default function McpPageClient() {
                 className="relative"
               >
                 <div className="flex items-center gap-3">
-                  <current.Mark className="h-8 w-8" />
-                  <h3 className="text-xl font-bold">Connect {current.name}</h3>
+                  <current.Mark className="h-9 w-9" />
+                  <h3 className={`text-xl font-bold ${t.serif ? "font-serif-premium !font-normal text-2xl" : ""}`}>
+                    Connect {current.name}
+                  </h3>
                 </div>
 
                 <ol className="mt-6 space-y-4">
                   {current.steps.map((step, i) => (
-                    <li key={step} className="flex items-start gap-3 text-sm leading-relaxed text-white/65">
-                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 font-mono text-[11px] font-bold text-white/70">
+                    <li key={step} className="flex items-start gap-3 text-sm leading-relaxed" style={{ color: t.muted }}>
+                      <span
+                        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold"
+                        style={{ background: t.chip, color: t.accent }}
+                      >
                         {i + 1}
                       </span>
                       {step}
@@ -325,7 +356,7 @@ export default function McpPageClient() {
 
                 {current.command && (
                   <div className="mt-5 flex items-start gap-2 rounded-xl border border-white/10 bg-black/50 p-3">
-                    <code className="min-w-0 flex-1 break-all font-mono text-[11px] leading-relaxed text-cyan-200/90">
+                    <code className="min-w-0 flex-1 break-all font-mono text-[11px] leading-relaxed" style={{ color: t.accent }}>
                       {current.command}
                     </code>
                     <button
@@ -338,12 +369,13 @@ export default function McpPageClient() {
                   </div>
                 )}
 
-                <p className="mt-5 text-xs leading-relaxed text-white/40">{current.note}</p>
+                <p className="mt-5 text-xs leading-relaxed opacity-50">{current.note}</p>
 
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <button
                     onClick={() => copy("url", MCP_URL, "MCP link copied. Paste it into your assistant.")}
-                    className="clickable inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-black transition-transform duration-200 hover:scale-[1.03]"
+                    style={{ background: t.btnBg, color: t.btnText }}
+                    className="clickable inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold transition-transform duration-200 hover:scale-[1.03]"
                   >
                     {copied === "url" ? <Check size={15} /> : <Copy size={15} />}
                     {copied === "url" ? "Copied" : "Copy MCP link"}
@@ -352,7 +384,8 @@ export default function McpPageClient() {
                     href={current.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`clickable inline-flex items-center gap-1.5 rounded-full border border-white/10 px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-white/[0.06] ${current.accent}`}
+                    style={{ color: t.accent, borderColor: t.border }}
+                    className="clickable inline-flex items-center gap-1.5 rounded-full border px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-white/[0.06]"
                   >
                     {current.cta}
                     <ArrowUpRight size={14} />
@@ -376,13 +409,64 @@ export default function McpPageClient() {
               key={item.title}
               {...fadeUp}
               transition={{ duration: 0.55, delay: (i % 4) * 0.08, ease: "easeOut" }}
-              className="group rounded-2xl border border-white/[0.08] bg-[#0B0B0F] p-6 transition-colors duration-300 hover:border-cyan-400/30"
+              className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0B0B0F] p-3 transition-all duration-500 hover:-translate-y-1 hover:border-white/20"
+              style={{ boxShadow: "0 30px 60px -40px rgba(0,0,0,0.9)" }}
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20 transition-transform duration-300 group-hover:scale-110">
-                <item.icon size={20} />
-              </span>
-              <h3 className="mt-4 text-base font-bold text-white">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-white/50">{item.desc}</p>
+              {/* example preview */}
+              <div
+                className="relative flex h-52 flex-col justify-center gap-2 overflow-hidden rounded-2xl border border-white/[0.06] p-4"
+                style={{ background: `linear-gradient(160deg, rgba(${item.rgb},0.2) 0%, rgba(${item.rgb},0.04) 55%, #070709 100%)` }}
+              >
+                <div
+                  className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full blur-3xl"
+                  style={{ background: `rgba(${item.rgb},0.3)` }}
+                />
+                <span className="absolute right-3 top-2.5 font-mono text-[8px] font-bold uppercase tracking-[0.2em] text-white/25">
+                  Example
+                </span>
+
+                {item.rows?.map((row, r) => (
+                  <div
+                    key={row.l}
+                    className="relative flex items-center gap-2.5 rounded-xl border border-white/[0.07] bg-black/45 px-3 py-2 backdrop-blur-sm transition-transform duration-500 ease-out group-hover:translate-x-1"
+                    style={{ transitionDelay: `${r * 60}ms` }}
+                  >
+                    <span
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                      style={{ background: `rgba(${item.rgb},0.2)`, color: `rgb(${item.rgb})` }}
+                    >
+                      {row.a}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-white/80">{row.l}</span>
+                    <span
+                      className={`shrink-0 font-mono text-xs font-bold ${
+                        row.tone === "pos" ? "text-emerald-300" : row.tone === "neg" ? "text-rose-300" : "text-white/60"
+                      }`}
+                    >
+                      {row.r}
+                    </span>
+                  </div>
+                ))}
+
+                {item.chat && (
+                  <>
+                    <div className="relative ml-auto max-w-[88%] rounded-2xl rounded-br-md border border-white/10 bg-white/10 px-3.5 py-2 text-xs font-medium text-white/85">
+                      {item.chat.q}
+                    </div>
+                    <div
+                      className="relative max-w-[88%] rounded-2xl rounded-bl-md border px-3.5 py-2 text-xs font-semibold transition-transform duration-500 group-hover:translate-x-1"
+                      style={{ borderColor: `rgba(${item.rgb},0.4)`, background: `rgba(${item.rgb},0.14)`, color: `rgb(${item.rgb})` }}
+                    >
+                      {item.chat.ok}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="px-3 pb-4 pt-6">
+                <h3 className="text-xl font-bold tracking-tight text-white">{item.title}</h3>
+                <p className="mt-2.5 text-[15px] leading-relaxed text-white/55">{item.desc}</p>
+              </div>
             </motion.div>
           ))}
         </div>
