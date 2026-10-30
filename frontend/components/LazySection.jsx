@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 export default function LazySection({
   children,
   minHeight = "60vh",
+  mobileMinHeight = minHeight,
   rootMargin = "600px 0px",
 }) {
   const ref = useRef(null);
@@ -50,7 +51,7 @@ export default function LazySection({
   }, [rootMargin, show]);
 
   return (
-    <div ref={ref} style={show ? undefined : { minHeight }}>
+    <div ref={ref} className={show ? undefined : "min-h-[var(--lazy-mobile-height)] md:min-h-[var(--lazy-height)]"} style={show ? undefined : { "--lazy-mobile-height": mobileMinHeight, "--lazy-height": minHeight }}>
       {show ? children : null}
     </div>
   );

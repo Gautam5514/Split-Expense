@@ -1,5 +1,7 @@
 "use client";
 
+import SectionHeading from "./SectionHeading";
+
 import { motion } from "framer-motion";
 import { ArrowUpRight, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -94,35 +96,13 @@ export default function HowItWorksSection() {
         }
       `}</style>
 
-      {/* Warm olive glows - tint the black field toward AXIOM. */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] rounded-full blur-[150px]" style={{ background: "rgba(150,168,60,0.06)" }} />
         <div className="absolute bottom-1/4 right-1/5 w-[500px] h-[500px] rounded-full blur-[140px]" style={{ background: "rgba(120,140,50,0.05)" }} />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8">
-        {/* Technical top bar */}
-        <div className="flex items-center gap-4 mb-8">
-          <span className="font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.25em] whitespace-nowrap" style={{ color: ACCENT }}>
-            {"// Workflow · 01 / 03"}
-          </span>
-          <span className="flex-1 h-px" style={{ backgroundColor: "rgba(255,255,255,0.1)" }} />
-          <span className="relative flex items-center justify-center w-6 h-6 rounded-full" style={{ border: "1px solid rgba(255,255,255,0.15)" }}>
-            <Plus size={12} style={{ color: "rgba(255,255,255,0.4)" }} />
-          </span>
-        </div>
-
-        {/* Heading */}
-        <div className="mb-14 sm:mb-20 max-w-2xl">
-          <h2 className="font-mono font-bold uppercase text-3xl sm:text-4xl md:text-5xl tracking-tight leading-[1.05]" style={{ color: "#ffffff" }}>
-            From trip to settle
-            <br />
-            <span style={{ color: "rgba(255,255,255,0.35)" }}>in three steps</span>
-          </h2>
-          <p className="mt-4 text-sm sm:text-base font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>
-            No spreadsheets, no awkward math, no reminders.
-          </p>
-        </div>
+        <SectionHeading eyebrow="Workflow · 01 / 03" title="From trip to settle" secondary="in three steps" description="No spreadsheets, no awkward math, no reminders." />
 
         {/* Cards grid - wider gaps leave room for the offset corner crosshairs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-16 lg:gap-x-16">

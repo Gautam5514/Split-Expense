@@ -1,0 +1,2 @@
+.wordmark{width:100%;position:relative;overflow:hidden;border-top:1px solid #ffffff12;padding:15px 0 0;user-select:none}.canvas{display:block;width:100%;height:clamp(100px,23vw,285px);font-family:var(--font-inter),Arial,sans-serif;opacity:.7}
+@media(max-width:640px){.wordmark{padding-top:10px}.canvas{height:clamp(85px,24vw,150px);opacity:.6}}

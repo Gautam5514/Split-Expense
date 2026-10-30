@@ -9,7 +9,6 @@ import { captureReferralFromLocation } from "@/lib/referral";
 // Above-the-fold: load eagerly so the hero paints immediately.
 import HeroSection from "@/components/home/HeroSection";
 import SmoothScroll from "@/components/SmoothScroll";
-import ScrollProgressAndTop from "@/components/ScrollProgressAndTop";
 import LazySection from "@/components/LazySection";
 import SearchIntentSection from "@/components/home/SearchIntentSection";
 
@@ -18,6 +17,7 @@ import SearchIntentSection from "@/components/home/SearchIntentSection";
 // the initial JS bundle small so the page becomes interactive fast.
 const ShowcaseSection = dynamic(() => import("@/components/ShowcaseSection"));
 const IntelligenceSection = dynamic(() => import("@/components/home/IntelligenceSection"));
+const BentoSection = dynamic(() => import("@/components/home/BentoSection"));
 const HowItWorksSection = dynamic(() => import("@/components/home/HowItWorksSection"));
 const FeatureMindMap = dynamic(() => import("@/components/home/FeatureMindMap"));
 const FeaturesSection = dynamic(() => import("@/components/home/FeaturesSection"));
@@ -45,17 +45,19 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip bg-background font-sans text-foreground selection:bg-primary selection:text-primary-foreground">
       <SmoothScroll />
-      <ScrollProgressAndTop />
 
       {/* Above the fold — eager */}
       <HeroSection />
 
       {/* Below the fold — chunked + mounted on demand */}
-      <LazySection minHeight="800vh">
+      <LazySection minHeight="800vh" mobileMinHeight="85svh">
         <ShowcaseSection />
       </LazySection>
       <LazySection minHeight="100vh">
         <IntelligenceSection />
+      </LazySection>
+      <LazySection minHeight="100vh">
+        <BentoSection />
       </LazySection>
       <LazySection minHeight="100vh">
         <HowItWorksSection />

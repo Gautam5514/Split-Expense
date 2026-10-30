@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import useMediaQuery from "@/hooks/useMediaQuery";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   motion,
@@ -148,6 +149,7 @@ function FeatureCard({ feature, index, total, progress, reduced }) {
 export default function ShowcaseSection() {
   const ref = useRef(null);
   const total = FEATURES.length;
+  const desktop = useMediaQuery("(min-width: 768px)");
   const reduced = useReducedMotion() ?? false;
 
   const { scrollYProgress } = useScroll({
@@ -167,13 +169,13 @@ export default function ShowcaseSection() {
         <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
           {/* GLOBE — behind everything */}
           <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-60">
-            <Globe scrollProgress={scrollYProgress} />
+            {desktop && <Globe scrollProgress={scrollYProgress} />}
           </div>
 
           {/* FLYING CARDS — each card carries its own "+" corner marks, so the
               marks fly in and settle together with the card (see FeatureCard) */}
           <div className="absolute inset-0 z-20">
-            {FEATURES.map((f, i) => (
+            {desktop && FEATURES.map((f, i) => (
               <FeatureCard
                 key={f.num}
                 feature={f}
@@ -254,7 +256,7 @@ function MobileShowcase({ reduced }) {
             type="button"
             onClick={() => go(-1)}
             aria-label="Previous feature"
-            className="absolute left-1 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition active:scale-90"
+            className="absolute left-1 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition active:scale-90"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -262,7 +264,7 @@ function MobileShowcase({ reduced }) {
             type="button"
             onClick={() => go(1)}
             aria-label="Next feature"
-            className="absolute right-1 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition active:scale-90"
+            className="absolute right-1 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition active:scale-90"
           >
             <ChevronRight className="h-5 w-5" />
           </button>

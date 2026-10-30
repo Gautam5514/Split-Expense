@@ -13,6 +13,7 @@ import AppThemeGate from "@/components/AppThemeGate";
 import AppFontGate from "@/components/AppFontGate";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ChromeGate from "@/components/ChromeGate";
+import MarketingScrollProgress from "@/components/MarketingScrollProgress";
 import AppSidebar from "@/components/AppSidebar";
 import DesktopAppNavbar from "@/components/DesktopAppNavbar";
 import { SidebarProvider } from "@/context/SidebarContext";
@@ -261,6 +262,7 @@ export default function RootLayout({ children }) {
                 <ChromeGate>
                   <AppFooter />
                   <CustomCursor />
+                  <MarketingScrollProgress />
                   <InstallPrompt />
                 </ChromeGate>
                 </SidebarProvider>

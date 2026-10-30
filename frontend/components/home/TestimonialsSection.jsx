@@ -1,5 +1,7 @@
 "use client";
 
+import SectionHeading from "./SectionHeading";
+
 import { motion } from "framer-motion";
 
 // Note: testimonial cards intentionally carry no third-party company logos or
@@ -80,16 +82,9 @@ export default function TestimonialsSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="text-center mb-16 sm:mb-24"
-        >
-        
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal text-white tracking-tight leading-tight font-serif-premium max-w-3xl mx-auto">
-            Loved by thousands of <span className="italic text-cyan-400 font-serif-premium">groups</span> and <span className="italic text-cyan-400 font-serif-premium">travelers</span>.
-          </h2>
-          <p className="mt-4 text-sm sm:text-base text-[#8A93A6] max-w-md mx-auto leading-relaxed">
-            See how SplitEase is turning complex vacation balances into stress-free group settlements.
-          </p>
-        </motion.div>
+          >
+<SectionHeading eyebrow="From the community" title="Loved by groups" secondary="and travelers." description="See how SplitEase is turning complex vacation balances into stress-free group settlements." />
+</motion.div>
 
         {/* Masonry / Bento Grid Layout */}
         <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 [column-fill:_balance]">
@@ -100,7 +95,7 @@ export default function TestimonialsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.7, delay: i * 0.08, ease: "easeOut" }}
-              className="break-inside-avoid mb-6 relative group flex flex-col p-7 rounded-[22px] border border-white/[0.06] bg-[#0A0A0F]/45 backdrop-blur-xl hover:border-cyan-500/20 hover:bg-[#0E0E15]/75 hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+              className="break-inside-avoid mb-6 relative group min-w-0 flex flex-col p-5 sm:p-7 rounded-[22px] border border-white/[0.06] bg-[#0A0A0F]/45 backdrop-blur-xl hover:border-cyan-500/20 hover:bg-[#0E0E15]/75 hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
             >
               {/* Card Header (Avatar, Name, Role) */}
               <div className="flex items-center gap-3.5">
@@ -110,7 +105,7 @@ export default function TestimonialsSection() {
                     {t.avatar}
                   </div>
                 </div>
-                <div>
+                <div className="min-w-0 break-words">
                   <h3 className="text-sm font-semibold text-white tracking-wide">
                     {t.author}
                   </h3>

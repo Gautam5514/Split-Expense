@@ -1,5 +1,7 @@
 "use client";
 
+import SectionHeading from "./SectionHeading";
+
 import { useRef, useState } from "react";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -225,6 +227,7 @@ function GlassTransition({ slide, index, progress, start, end, reduceMotion }) {
 }
 
 function MobileShowcase() {
+  const reduced = useReducedMotion();
   const trackRef = useRef(null);
   const [index, setIndex] = useState(0);
 
@@ -232,7 +235,7 @@ function MobileShowcase() {
     const track = trackRef.current;
     if (!track) return;
     const next = Math.max(0, Math.min(SLIDES.length - 1, i));
-    track.scrollTo({ left: next * track.clientWidth, behavior: "smooth" });
+    track.scrollTo({ left: next * track.clientWidth, behavior: reduced ? "instant" : "smooth" });
   };
 
   const onScroll = (e) => {
@@ -245,25 +248,21 @@ function MobileShowcase() {
 
   return (
     <div className="relative px-5 py-16 sm:px-10 sm:py-20 lg:hidden">
-      <div className="mx-auto max-w-2xl text-center">
-        <p className="mb-3 text-xs tracking-[0.14em] text-cyan-300/75">Made for every screen</p>
-        <h2 className="font-serif-premium text-4xl font-normal tracking-tight text-white sm:text-5xl">Your split, wherever you are.</h2>
-        <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-white/50 sm:text-base">Three focused experiences. One continuously synced group ledger.</p>
-      </div>
+      <SectionHeading eyebrow="Made for every screen" title="Your split," secondary="wherever you are." description="Three focused experiences. One continuously synced group ledger." />
 
       <div className="mx-auto mt-10 max-w-2xl" role="region" aria-roledescription="carousel" aria-label="Device experiences">
         {/* slides: swipe or use the buttons */}
         <div
           ref={trackRef}
           onScroll={onScroll}
-          className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory items-start overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {SLIDES.map((slide, i) => (
             <article
               key={slide.id}
               aria-roledescription="slide"
               aria-label={`${i + 1} of ${SLIDES.length}`}
-              className="w-full shrink-0 snap-center border border-white/10 bg-[#07090b]"
+              className="w-full min-w-0 shrink-0 snap-center border border-white/10 bg-[#07090b]"
             >
               <div className="relative aspect-[16/10] bg-black/70">
                 <div className="pointer-events-none absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/15 blur-[70px]" />
@@ -279,7 +278,7 @@ function MobileShowcase() {
                   draggable={false}
                 />
               </div>
-              <div className="p-6">
+              <div className="p-5 sm:p-6">
                 <div className="flex items-center gap-3 text-[11px] tracking-[0.12em] text-white/45">
                   <span className="font-serif-premium text-base tracking-normal text-cyan-300/80">0{i + 1}</span>
                   <span className="h-px w-8 bg-white/20" />
@@ -356,11 +355,7 @@ export default function DeviceSlideShowcase() {
       <div className="sticky top-0 z-10 hidden h-[100svh] w-full items-center overflow-hidden px-5 sm:px-10 md:px-16 lg:flex lg:px-24">
         <motion.div style={{ opacity: introOpacity }} className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-5 sm:px-10 md:px-16">
           <div className="w-full max-w-6xl">
-            <div className="mb-9 text-center sm:mb-12">
-              <p className="mb-3 text-xs tracking-[0.14em] text-cyan-300/75">Made for every screen</p>
-              <h2 className="font-serif-premium text-4xl font-normal tracking-tight text-white sm:text-5xl md:text-6xl">Your split, wherever you are.</h2>
-              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/45 sm:text-base">Three focused experiences. One continuously synced group ledger.</p>
-            </div>
+            <SectionHeading eyebrow="Made for every screen" title="Your split," secondary="wherever you are." description="Three focused experiences. One continuously synced group ledger." />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-5">
               {SLIDES.map((slide, index) => (
                 <ArrivalCard key={slide.id} slide={slide} progress={scrollYProgress} index={index} reduceMotion={reduceMotion} />

@@ -158,8 +158,8 @@ export default function Navbar() {
               <img src="/logo-concept-app.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
             <span className={`font-extrabold text-base sm:text-xl tracking-tight transition-all duration-300 ${
-              !isLoggedIn 
-                ? "text-white font-serif-premium lowercase text-lg sm:text-2xl" 
+              !isLoggedIn
+                ? "text-white font-serif-premium lowercase text-lg sm:text-2xl max-[380px]:hidden"
                 : "brand-text"
             }`}>
               SplitEase
@@ -209,13 +209,13 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/login"
-                className="px-1.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
+                className="inline-flex min-h-11 items-center px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white/70 hover:text-white transition-all hover:bg-white/5"
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="px-2.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold text-white bg-white/5 hover:bg-white/10 border border-white/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+                className="inline-flex min-h-11 items-center px-2.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold text-white bg-white/5 hover:bg-white/10 border border-white/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
               >
                 Get started
               </Link>

@@ -1,5 +1,7 @@
 "use client";
 
+import SectionHeading from "./SectionHeading";
+
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -62,18 +64,9 @@ export default function SearchIntentSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="mx-auto mb-16 max-w-3xl text-center sm:mb-20"
-        >
-          <h2
-            id="expense-use-cases"
-            className="font-serif-premium text-3xl font-normal leading-[1.12] tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[3.4rem]"
           >
-            Split the bill. Keep the <span className="italic text-cyan-400 font-serif-premium">friends</span>.
-          </h2>
-          <p className="mx-auto mt-5 max-w-xl text-sm leading-relaxed text-[#8A93A6] sm:text-base">
-            Goa trips, flat rent, team lunches. SplitEase keeps one clear record of who paid, who owes, and what's left to settle, so nobody has to chase anyone.
-          </p>
-        </motion.div>
+<SectionHeading eyebrow="Made for sharing" title="Split the bill." secondary="Keep the friends." description="Goa trips, flat rent, team lunches. SplitEase keeps one clear record of who paid, who owes, and what's left to settle, so nobody has to chase anyone." id="expense-use-cases" />
+</motion.div>
 
         {/* The Three Scenario Cards */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">

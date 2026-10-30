@@ -1,5 +1,7 @@
 "use client";
 
+import SectionHeading from "./SectionHeading";
+
 import { useRef, useState } from "react";
 import { motion, useMotionValueEvent, useScroll, useTransform, useSpring } from "framer-motion";
 import { Check } from "lucide-react";
@@ -455,17 +457,7 @@ export default function FeaturesSection() {
       <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-12">
 
         {/* Section Header */}
-        <div className="max-w-2xl mb-20 sm:mb-28 text-left">
-          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.25em] text-cyan-400 mb-3 font-mono">
-            Built for real trips
-          </p>
-          <h2 className="font-serif-premium font-normal text-white text-4xl sm:text-5xl md:text-6xl tracking-tight leading-[1.1] mb-5">
-            Every feature your group needs
-          </h2>
-          <p className="text-white/50 text-sm sm:text-base md:text-lg leading-relaxed font-medium">
-            Built from real travel pain points - from scanning receipts to settling cross-group debts with AI.
-          </p>
-        </div>
+        <SectionHeading eyebrow="Built for real trips" title="Every feature" secondary="your group needs" description="Built from real travel pain points - from scanning receipts to settling cross-group debts with AI." />
 
         {/* Alternating Split Rows */}
         <div ref={containerRef} className="relative space-y-0">

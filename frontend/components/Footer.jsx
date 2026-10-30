@@ -1,7 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import ParticleWordmark from "./ParticleWordmark";
 import { PlayStoreIconLink } from "@/components/PlayStoreLink";
+
+/* Trust seal for the OpenSSF Best Practices project record. OpenSSF's own badge
+   image rendered blank for visitors, so the seal is drawn locally; the link still
+   points at the public record, which is the source of truth for the status. */
+const TrustSeal = () => (
+  <span className="relative grid h-11 w-11 shrink-0 place-items-center">
+    <span className="absolute inset-0 rounded-full bg-cyan-400/20 blur-md" />
+    <svg viewBox="0 0 48 48" className="relative h-11 w-11" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="sealRing" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#67e8f9" />
+          <stop offset="1" stopColor="#0e7490" />
+        </linearGradient>
+      </defs>
+      <circle cx="24" cy="24" r="22" stroke="url(#sealRing)" strokeWidth="1.5" />
+      <circle cx="24" cy="24" r="18" fill="#0b141a" stroke="rgba(103,232,249,0.25)" strokeDasharray="1.5 2.5" />
+      <path d="M24 12l9 3.4v7.1c0 5.2-3.6 9.1-9 10.5-5.4-1.4-9-5.3-9-10.5v-7.1z" fill="url(#sealRing)" opacity=".18" stroke="#67e8f9" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M19.5 23.5l3.2 3.2 5.8-6.2" stroke="#67e8f9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  </span>
+);
 
 const GithubIcon = () => (
   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
@@ -70,27 +92,20 @@ export default function Footer() {
               {" "}for details.
             </p>
 
-            {/* Live verification badge: the image is served by OpenSSF, so its
-                displayed status always matches the public project record. */}
+            {/* Verification badge: links to the public OpenSSF project record. */}
             <a
               href="https://www.bestpractices.dev/projects/14650"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Verify Split-Expense on OpenSSF Best Practices"
-              className="group mt-5 mb-5 inline-flex w-fit max-w-full flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 py-2.5 transition-all duration-300 hover:border-cyan-400/30 hover:bg-cyan-400/[0.05]"
+              className="group mt-5 mb-5 inline-flex w-fit max-w-full flex-wrap items-center gap-3 rounded-xl border border-cyan-400/20 bg-gradient-to-br from-cyan-400/[0.07] to-white/[0.02] px-3.5 py-2.5 transition-all duration-300 hover:border-cyan-400/30 hover:bg-cyan-400/[0.05]"
             >
-              <img
-                src="https://www.bestpractices.dev/projects/14650/badge"
-                alt="OpenSSF Best Practices badge status for Split-Expense"
-                width="130"
-                height="26"
-                loading="lazy"
-                className="h-[26px] w-auto"
-              />
-              <span className="text-[10px] leading-tight text-[#718096] transition-colors group-hover:text-[#A0AEC0]">
-                Click to verify
-                <br />
-                our public status
+              <TrustSeal />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-[12px] font-semibold leading-tight text-white/90">OpenSSF Best Practices</span>
+                <span className="text-[10px] leading-tight text-[#718096] transition-colors group-hover:text-[#A0AEC0]">
+                  Click to verify our public status
+                </span>
               </span>
             </a>
 
@@ -219,18 +234,7 @@ export default function Footer() {
           &copy; {new Date().getFullYear()} SplitEase. SplitEase and the SplitEase logo are trademarks of SplitEase.
         </p>
 
-        {/* Massive Serif Brand Watermark */}
-        <div className="w-full select-none pointer-events-none flex items-end justify-center border-t border-white/[0.07] pt-6 pb-2 overflow-hidden">
-          <span
-            className="font-serif-premium leading-none text-[clamp(70px,15vw,220px)] tracking-tight lowercase select-none bg-clip-text text-transparent"
-            style={{
-              backgroundImage:
-                "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 90%)",
-            }}
-          >
-            splitease
-          </span>
-        </div>
+        <ParticleWordmark />
 
       </div>
     </footer>
