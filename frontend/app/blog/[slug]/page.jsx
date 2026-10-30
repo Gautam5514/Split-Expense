@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Github, Linkedin, Instagram, Mail } from "lucide-react";
@@ -196,9 +197,12 @@ export default async function BlogPostPage({ params }) {
           {post.authorLinks && (
             <div className="mb-10 flex flex-col gap-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 sm:flex-row sm:items-center sm:p-6">
               {post.authorImage && (
-                <img
+                <Image
                   src={post.authorImage}
                   alt={post.author}
+                  width={112}
+                  height={112}
+                  sizes="112px"
                   className="h-24 w-24 shrink-0 rounded-2xl object-cover object-top sm:h-28 sm:w-28"
                 />
               )}

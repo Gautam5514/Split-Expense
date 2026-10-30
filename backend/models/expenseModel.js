@@ -65,5 +65,9 @@ const expenseSchema = new mongoose.Schema(
 expenseSchema.index({ groupId: 1, date: -1 });
 expenseSchema.index({ paidBy: 1 });
 expenseSchema.index({ participants: 1 });
+// Compound indexes for the dashboard analytics / recent-activity queries
+// (equality field first, then the sort field).
+expenseSchema.index({ paidBy: 1, date: -1 });
+expenseSchema.index({ participants: 1, date: -1 });
 
 export default mongoose.model("Expense", expenseSchema);

@@ -40,20 +40,23 @@ export const createNotification = async (userIds, message, link, type = "group",
     // title + subtitle + per-type channel. Scoped to the app on purpose: web
     // push already works fine and isn't part of this change.
     const { title: mobileTitle, subtitle, channelId } = buildPushContent(type, meta);
-    await sendExpoPushNotifications(recipientIds, {
-      title: mobileTitle,
-      subtitle,
-      body: message,
-      data,
-      channelId,
-    });
-
-    // 🌐 Dispatch FCM web push (browser / PWA) - unchanged, plain title as before.
-    await sendFCMWebPushNotifications(recipientIds, {
-      title: notificationTitleForType(type),
-      body: message,
-      data,
-    });
+    // Expo (mobile) and FCM (web) are independent - send them together.
+    // allSettled so one channel failing never blocks or hides the other.
+    await Promise.allSettled([
+      sendExpoPushNotifications(recipientIds, {
+        title: mobileTitle,
+        subtitle,
+        body: message,
+        data,
+        channelId,
+      }),
+      // 🌐 FCM web push (browser / PWA) - unchanged, plain title as before.
+      sendFCMWebPushNotifications(recipientIds, {
+        title: notificationTitleForType(type),
+        body: message,
+        data,
+      }),
+    ]);
 
   } catch (err) {
     console.error("❌ Error sending notification:", err.message);
@@ -250,6 +253,7 @@ const sendExpoPushNotifications = async (userIds, payload) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(messagesChunk),
+        signal: AbortSignal.timeout(15_000), // don't hang on a stalled Expo call
       });
 
       if (!response.ok) {

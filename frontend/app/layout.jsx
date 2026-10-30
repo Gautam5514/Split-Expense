@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Inter, Satisfy, Bricolage_Grotesque } from "next/font/google";
+import { Inter, Satisfy, Bricolage_Grotesque, Instrument_Serif, Caveat, Josefin_Sans } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
@@ -38,6 +38,30 @@ const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500", "600", "700", "800"],
   variable: "--font-bricolage",
+  display: "swap",
+});
+
+// Self-hosted replacements for the old render-blocking Google Fonts @import
+// in globals.css (only the families actually referenced by the UI).
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-instrument",
+  display: "swap",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-caveat",
+  display: "swap",
+});
+
+const josefin = Josefin_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-josefin",
   display: "swap",
 });
 
@@ -182,7 +206,7 @@ export default function RootLayout({ children }) {
   };
 
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${satisfy.variable} ${bricolage.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${satisfy.variable} ${bricolage.variable} ${instrumentSerif.variable} ${caveat.variable} ${josefin.variable}`}>
       <head>
         {/* theme-color matches manifest.json theme_color exactly */}
         <meta name="theme-color" content="#0891B2" />

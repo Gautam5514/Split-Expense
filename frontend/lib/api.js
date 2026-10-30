@@ -5,6 +5,25 @@ export const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+// Share one network call between identical GETs that are in flight at the same
+// time (e.g. several components asking for /users/me on page load). Only plain
+// `api.get(url)` calls are shared - anything with params/headers/signal goes
+// straight through - and each caller gets its own copy of the data.
+const rawGet = api.get.bind(api);
+const inflightGets = new Map();
+api.get = (url, config) => {
+  if (config !== undefined || typeof url !== "string") return rawGet(url, config);
+  let pending = inflightGets.get(url);
+  if (!pending) {
+    pending = rawGet(url).finally(() => inflightGets.delete(url));
+    inflightGets.set(url, pending);
+  }
+  return pending.then((res) => ({
+    ...res,
+    data: typeof structuredClone === "function" ? structuredClone(res.data) : res.data,
+  }));
+};
+
 // Lazily import auth to avoid a module-initialization cycle and to guarantee
 // we always use the same Firebase Auth instance as AuthContext.
 let _auth = null;

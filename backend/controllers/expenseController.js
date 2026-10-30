@@ -362,13 +362,47 @@ export const getExpenses = async (req, res) => {
       return res.status(403).json({ message: "You are not a member of this group." });
     }
 
-    const expenses = await Expense.find({ groupId })
-      .sort({ date: -1 })
+    // Opt-in pagination: only when the client sends ?limit=. Without it the
+    // response is the same full array older web/app builds already expect.
+    const wantsPage = req.query.limit !== undefined;
+    if (!wantsPage) {
+      const expenses = await Expense.find({ groupId })
+        .sort({ date: -1 })
+        .populate("paidBy", "name email")
+        .populate("payers.userId", "name email")
+        .populate("splits.userId", "name email")
+        .lean();
+      return res.json(expenses);
+    }
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
+    const filter = { groupId };
+    if (req.query.cursor) {
+      // cursor = "<dateMs>_<expenseId>" of the last item of the previous page
+      const [ms, id] = String(req.query.cursor).split("_");
+      const cursorDate = new Date(Number(ms));
+      if (Number.isNaN(cursorDate.getTime()) || !isValidObjectId(id)) {
+        return res.status(400).json({ message: "Invalid cursor." });
+      }
+      filter.$or = [
+        { date: { $lt: cursorDate } },
+        { date: cursorDate, _id: { $lt: id } },
+      ];
+    }
+    const rows = await Expense.find(filter)
+      .sort({ date: -1, _id: -1 })
+      .limit(limit + 1)
       .populate("paidBy", "name email")
       .populate("payers.userId", "name email")
       .populate("splits.userId", "name email")
       .lean();
-    res.json(expenses);
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const last = items[items.length - 1];
+    res.json({
+      items,
+      nextCursor: hasMore && last ? `${new Date(last.date).getTime()}_${last._id}` : null,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

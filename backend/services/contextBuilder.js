@@ -84,8 +84,14 @@ Here is the complete chronological log of all individual expenses registered in 
 
   const allExpenses = [];
 
-  for (const group of groups) {
-    const expenses = await Expense.find({ groupId: group._id }).populate("paidBy", "name email").lean();
+  // Query every group in parallel (was one awaited query per group), then
+  // process in the original order so the output is identical.
+  const expensesByGroup = await Promise.all(
+    groups.map((g) => Expense.find({ groupId: g._id }).populate("paidBy", "name email").lean())
+  );
+
+  for (const [groupIdx, group] of groups.entries()) {
+    const expenses = expensesByGroup[groupIdx];
     
     // Calculate balances for this group
     const balances = {};

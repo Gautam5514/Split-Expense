@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
+import compression from "compression";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import connectDB from "./config/db.js";
@@ -105,6 +106,19 @@ app.options("*", cors(corsOptions));
 app.use(cors(corsOptions));
 
 app.use(sanitizeServerErrors);
+
+// HTTP response compression. Skipped for the MCP endpoint and any
+// streamed (SSE) response, since buffering would stall event delivery.
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.path.startsWith("/mcp")) return false;
+      if (String(req.headers.accept || "").includes("text/event-stream")) return false;
+      if (String(res.getHeader("Content-Type") || "").includes("text/event-stream")) return false;
+      return compression.filter(req, res);
+    },
+  })
+);
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));

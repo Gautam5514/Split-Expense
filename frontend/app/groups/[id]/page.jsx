@@ -105,15 +105,17 @@ export default function GroupDetailPage() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  const fetchGroup = async () => {
+  // `silent` refreshes (realtime events) update the data in place instead of
+  // flashing the full-page loader again.
+  const fetchGroup = async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await api.get(`/groups/${groupId}`);
       setGroup(res.data);
     } catch {
       toast.error("Failed to load group details");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -204,7 +206,7 @@ export default function GroupDetailPage() {
       fetchPendingSettlements();
       fetchSummary();
       if (payload?.kind === "member" || payload?.kind === "completed" || payload?.kind === "reconnect") {
-        fetchGroup();
+        fetchGroup({ silent: true });
         fetchPendingMembers();
       }
     },

@@ -6,6 +6,9 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const MODEL_PRIORITY = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"];
 
+// Generous cap so a hung upstream call can't hold a request open indefinitely.
+const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS) || 90_000;
+
 const FALLBACK_STATUSES = new Set([404, 429, 500, 503]);
 
 export const generateWithRetry = async (prompt) => {
@@ -20,7 +23,7 @@ export const generateWithRetry = async (prompt) => {
         // Low temperature: answers involve money math, where consistency
         // matters far more than creative variety.
         temperature: 0.4,
-      });
+      }, { timeout: LLM_TIMEOUT_MS });
       return completion.choices?.[0]?.message?.content ?? "";
     } catch (err) {
       lastError = err;

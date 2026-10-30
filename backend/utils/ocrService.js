@@ -33,11 +33,25 @@ getWorker().catch(() => {});
  * Run OCR on a URL or local file path.
  * Returns extracted text string, or null if nothing useful was recognized.
  */
+const OCR_TIMEOUT_MS = Number(process.env.OCR_TIMEOUT_MS) || 30_000;
+
 export const runOcr = async (fileUrl) => {
   try {
     const worker = await getWorker();
-    const { data } = await worker.recognize(fileUrl);
-    return data.text?.trim() || null;
+    // Bound the wait so a stuck/slow receipt can't hold the request open
+    // forever. On timeout the expense is still saved, just without OCR text
+    // (the same outcome as an image with nothing recognizable).
+    let timer;
+    const timeout = new Promise((resolve) => {
+      timer = setTimeout(() => resolve(null), OCR_TIMEOUT_MS);
+    });
+    const recognized = worker.recognize(fileUrl).then(({ data }) => data.text?.trim() || null);
+    recognized.catch(() => {}); // avoid unhandled rejection if the timeout wins
+    try {
+      return await Promise.race([recognized, timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
   } catch (err) {
     // Worker may have crashed - reset so the next call re-initializes it
     if (workerPromise) {

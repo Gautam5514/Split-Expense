@@ -10,6 +10,9 @@ const MODEL_PRIORITY = [
   "gemini-2.0-flash",
 ];
 
+// Generous cap so a hung upstream call can't hold a request open indefinitely.
+const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS) || 90_000;
+
 const FALLBACK_STATUSES = new Set([403, 404, 429, 500, 503]);
 
 export const generateWithRetry = async (prompt) => {
@@ -23,7 +26,7 @@ export const generateWithRetry = async (prompt) => {
         // Low temperature: answers involve money math, where consistency
         // matters far more than creative variety.
         generationConfig: { temperature: 0.4 },
-      });
+      }, { timeout: LLM_TIMEOUT_MS });
       const result = await model.generateContent(prompt);
       return result.response.text();
     } catch (err) {

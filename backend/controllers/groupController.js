@@ -198,14 +198,17 @@ export const getGroupById = async (req, res) => {
       );
     }
 
-    const photoMap = await buildPhotoMap((group.members || []).map((m) => m._id));
+    // Photo lookup and the "has expenses" check are independent - run together.
+    // (Settings that define how expenses work lock after the first expense.)
+    const [photoMap, existingExpense] = await Promise.all([
+      buildPhotoMap((group.members || []).map((m) => m._id)),
+      Expense.exists({ groupId: group._id }),
+    ]);
     const enrichedMembers = (group.members || []).map((m) => ({
       ...m,
       photoURL: photoMap.get(String(m._id)) || null,
     }));
-
-    // Settings that define how expenses work lock after the first expense.
-    const hasExpenses = !!(await Expense.exists({ groupId: group._id }));
+    const hasExpenses = !!existingExpense;
 
     res.json({
       ...group,

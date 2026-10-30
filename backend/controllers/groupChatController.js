@@ -24,15 +24,15 @@ export const getGroupMessages = async (req, res) => {
     if (!group.members.map(String).includes(String(uid)))
       return res.status(403).json({ message: "Not a member of this group" });
 
-    await User.findByIdAndUpdate(uid, {
-      $pull: { hiddenGroupChats: group._id },
-    });
-
-    // Mark all existing group messages as seen by the current user
-    await GroupMessage.updateMany(
-      { groupId, seenBy: { $ne: uid } },
-      { $addToSet: { seenBy: uid } }
-    );
+    // The two writes are independent - run them together.
+    await Promise.all([
+      User.findByIdAndUpdate(uid, { $pull: { hiddenGroupChats: group._id } }),
+      // Mark all existing group messages as seen by the current user
+      GroupMessage.updateMany(
+        { groupId, seenBy: { $ne: uid } },
+        { $addToSet: { seenBy: uid } }
+      ),
+    ]);
 
     // Emit group messages seen socket signal
     const io = req.app.get("io");
@@ -40,10 +40,36 @@ export const getGroupMessages = async (req, res) => {
       io.to(`group:${groupId}`).emit("groupMessagesSeen", { groupId, userId: uid });
     }
 
-    const messages = await GroupMessage.find({ groupId })
-      .populate("sender", "name email photoURL")
-      .sort({ createdAt: 1 })
-      .lean();
+    // Opt-in pagination: only when the client sends ?limit=. Without it the
+    // full history comes back exactly as before. Paged mode returns the
+    // newest `limit` messages (oldest-first, like the full list) and a
+    // `nextCursor` (the oldest returned _id) for loading older ones.
+    const wantsPage = req.query.limit !== undefined;
+    let messages;
+    let pageMeta = null;
+    if (!wantsPage) {
+      messages = await GroupMessage.find({ groupId })
+        .populate("sender", "name email photoURL")
+        .sort({ createdAt: 1 })
+        .lean();
+    } else {
+      const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
+      const filter = { groupId };
+      if (req.query.before) {
+        if (!isValidObjectId(req.query.before)) {
+          return res.status(400).json({ message: "Invalid cursor" });
+        }
+        filter._id = { $lt: req.query.before };
+      }
+      const rows = await GroupMessage.find(filter)
+        .populate("sender", "name email photoURL")
+        .sort({ _id: -1 })
+        .limit(limit + 1)
+        .lean();
+      const hasMore = rows.length > limit;
+      messages = (hasMore ? rows.slice(0, limit) : rows).reverse();
+      pageMeta = { nextCursor: hasMore && messages[0] ? String(messages[0]._id) : null };
+    }
 
     // Attach imageUrl (Google or manual)
     const senderIds = [...new Set(messages.map((m) => m.sender?._id))];
@@ -61,7 +87,7 @@ export const getGroupMessages = async (req, res) => {
       },
     }));
 
-    res.json(finalMsgs);
+    res.json(pageMeta ? { items: finalMsgs, ...pageMeta } : finalMsgs);
   } catch (err) {
     console.error("getGroupMessages error:", err);
     res.status(500).json({ message: "Server error", expose: true });

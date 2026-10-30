@@ -37,10 +37,12 @@ export default function ChatList({ onSelect, activeFriend, openUserId }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const userRes = await api.get("/users/me");
+        // Independent requests - fetch together instead of one after the other.
+        const [userRes, contactsRes] = await Promise.all([
+          api.get("/users/me"),
+          api.get("/chat/my-contacts"),
+        ]);
         setMe(userRes.data);
-
-        const contactsRes = await api.get("/chat/my-contacts");
 
         // Sort by lastMessageAt desc
         const sorted = (contactsRes.data.items || []).sort(
