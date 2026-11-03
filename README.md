@@ -1,254 +1,204 @@
-# 💸 Split‑Expense
+<div align="center">
 
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14650/badge)](https://www.bestpractices.dev/projects/14650) [Click to verify our public status →](https://www.bestpractices.dev/projects/14650)
+<img src="frontend/public/logo-concept-app.svg" width="96" alt="SplitEase logo" />
+
+# SplitEase · Split‑Expense
+
+### Split bills. Not friendships.
+
+Groups, trips and flat bills in one place: log an expense in seconds, see who owes whom,
+settle in the fewest payments, and let **Autopilot** do the admin for you, always with your approval.
+
 [![CI](https://github.com/Gautam5514/Split-Expense/actions/workflows/ci.yml/badge.svg)](https://github.com/Gautam5514/Split-Expense/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Gautam5514/Split-Expense/actions/workflows/codeql.yml/badge.svg)](https://github.com/Gautam5514/Split-Expense/actions/workflows/codeql.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14650/badge)](https://www.bestpractices.dev/projects/14650)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Good first issues](https://img.shields.io/github/issues/Gautam5514/Split-Expense/good%20first%20issue?label=good%20first%20issues)](https://github.com/Gautam5514/Split-Expense/labels/good%20first%20issue)
 
-Split bills with friends, groups, and roommates  track who paid, who owes
-what, and settle up. Frontend is **Next.js**, backend is **Node/Express +
-MongoDB**.
+**[Web app](https://splitease.tech)** · **[Android app](https://play.google.com/store/apps/details?id=com.kunal.splitapp)** · **[Mobile repo](https://github.com/Gautam5514/splitApp)** · **[API docs](docs/API.md)** · **[Autopilot docs](docs/autopilot/README.md)**
 
-> ⭐ New here? This guide is written for beginners — just follow the steps in
-> order and you'll have it running locally.
->
-> **Like this project?** [Give it a star](https://github.com/Gautam5514/Split-Expense) — it helps others find it!
+</div>
 
 ---
 
-## 🛠️ Tech Stack
+## Contents
 
-**Frontend**
-
-![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=next.js&logoColor=white)
-![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![Three.js](https://img.shields.io/badge/Three.js-000000?style=flat-square&logo=three.js&logoColor=white)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=flat-square&logo=framer&logoColor=white)
-![Recharts](https://img.shields.io/badge/Recharts-8884d8?style=flat-square)
-![Axios](https://img.shields.io/badge/Axios-5A29E4?style=flat-square&logo=axios&logoColor=white)
-
-**Backend**
-
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=node.js&logoColor=white)
-![Express](https://img.shields.io/badge/Express-000000?style=flat-square&logo=express&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white)
-![Mongoose](https://img.shields.io/badge/Mongoose-880000?style=flat-square&logo=mongoose&logoColor=white)
-![JWT](https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&logoColor=white)
-![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=flat-square&logo=socket.io&logoColor=white)
-
-**Database, Auth & Storage**
-
-![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat-square&logo=firebase&logoColor=black)
-![Cloudinary](https://img.shields.io/badge/Cloudinary-3448C5?style=flat-square&logo=cloudinary&logoColor=white)
-![Nodemailer](https://img.shields.io/badge/Nodemailer-22B573?style=flat-square&logo=nodemailer&logoColor=white)
-
-**AI, Agents & OCR**
-
-![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white)
-![Google Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-F55036?style=flat-square&logo=groq&logoColor=white)
-![Cerebras](https://img.shields.io/badge/Cerebras-F96316?style=flat-square)
-![OpenRouter](https://img.shields.io/badge/OpenRouter-6566F1?style=flat-square)
-![Model Context Protocol](https://img.shields.io/badge/MCP-000000?style=flat-square&logo=modelcontextprotocol&logoColor=white)
-![Tesseract.js](https://img.shields.io/badge/Tesseract.js-EE4C2C?style=flat-square)
-
-**Real-time, Security & DevOps**
-
-![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=flat-square&logo=socket.io&logoColor=white)
-![Helmet](https://img.shields.io/badge/Helmet-000000?style=flat-square&logo=helmet&logoColor=white)
-![Zod](https://img.shields.io/badge/Zod-3E67B1?style=flat-square&logo=zod&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
-![CodeQL](https://img.shields.io/badge/CodeQL-2088FF?style=flat-square&logo=github&logoColor=white)
-![PM2](https://img.shields.io/badge/PM2-2B037A?style=flat-square&logo=pm2&logoColor=white)
-![AWS EC2](https://img.shields.io/badge/AWS_EC2-FF9900?style=flat-square&logo=amazonec2&logoColor=white)
-
-**Testing**
-
-![Jest](https://img.shields.io/badge/Jest-C21325?style=flat-square&logo=jest&logoColor=white)
-![fast-check](https://img.shields.io/badge/fast--check-6E4AFF?style=flat-square)
+- [Highlights](#highlights)
+- [Autopilot, the AI agent](#autopilot-the-ai-agent)
+- [Smart notifications](#smart-notifications)
+- [MCP server](#mcp-server)
+- [Architecture](#architecture)
+- [Run it locally](#run-it-locally)
+- [Tests and quality](#tests-and-quality)
+- [Contributing](#contributing)
 
 ---
 
-## 🤖 AI, MCP Server & Autopilot
+## Highlights
 
-Split-Expense ships with a full AI layer, not just a chat box:
+| | |
+|---|---|
+| 🧮 **Exact splits** | Equal, exact, percent, shares or itemised. Every share is computed in integer paise, so totals always add up. |
+| 👥 **Groups that fit** | Trip, flat (roommate), business or general groups, each with its own categories, budget and default split. |
+| ⚡ **Settle in fewer payments** | Balances are netted and routed through the minimum number of transfers, with one-tap UPI on mobile. |
+| 🧭 **Autopilot** | Type "rent 20000" or "dinner 3000 Rahul ko chhod ke". Autopilot drafts the plan, you approve, it does the work. |
+| 🔔 **Live and push** | Socket.IO updates, Android push (Expo/FCM) and web push, with smart monthly, weekend and trip-season tips. |
+| 🛰️ **MCP server** | Claude, Cursor and other MCP clients can read your data over OAuth 2.1, scoped to your account. |
+| 🧾 **Receipt OCR** | Tesseract.js reads bills so expenses can start from a photo. |
+| 🔐 **Secure by default** | Firebase auth, Helmet, Zod validation, per-user rate limits, CodeQL and OpenSSF practices. |
 
-- **🛰️ Remote MCP Server** — an [MCP](https://modelcontextprotocol.io)
-  (Model Context Protocol) endpoint built on `@modelcontextprotocol/sdk`
-  that lets AI clients (Claude, Cursor, and other MCP hosts) securely read
-  your Split-Expense data. Each connection is a **per-request server scoped
-  to one Firebase-authenticated user** — tools run through the same Mongoose
-  models and balance engine as the REST API, so group membership and
-  permissions are always enforced. Exposed tools: `get_me`, `list_groups`,
-  `get_group`, `list_expenses`, `get_balances`, `get_overall_summary`,
-  `create_group`.
-- **🧭 Autopilot AI Agent** — a guarded agent (`/api/agent`) that turns a
-  plain-English request ("split dinner 3 ways in the Goa trip group") into a
-  **reviewable plan** of actions. It never executes blindly: every write step
-  is proposed, hashed, and must be **explicitly approved** before it runs,
-  with a strict in-process allowlist (`create_group`, `set_group_budget`,
-  `create_expense`, `read_summary`, `monitor_budget`). Progress streams live
-  over SSE. Off by default — guarded by `AUTOPILOT_ENABLED` and a second
-  `AUTOPILOT_WRITES_ENABLED` switch.
-- **🔌 Pluggable LLM providers** — the agent is provider-agnostic and only
-  needs "JSON in, JSON out", so it auto-selects from whichever keys you set:
-  **Groq → Cerebras → Gemini → OpenRouter**, with automatic fallback. Add a
-  provider with just an API key; no redeploy or code change needed.
-- **🧾 Receipt OCR** — **Tesseract.js** reads itemized receipts so expenses
-  can be drafted from a photo.
+---
 
-👉 Protocol and tool details: [`docs/mcp-tool-contracts.md`](docs/mcp-tool-contracts.md).
+## Autopilot, the AI agent
 
-### 🔌 Connect an MCP client
-
-The MCP server speaks the **Streamable HTTP** transport, so any MCP host can
-reach it at a plain URL — no local install:
+A chat agent that turns plain English or Hinglish into a **reviewable plan**, then executes it
+only after you approve. Lives in a floating widget on the web and a full screen in the app.
 
 ```
-https://api.splitease.tech/mcp     # hosted
-http://localhost:5000/mcp          # local dev
+"rent 21000"  ->  plan: Rent ₹21,000, paid by you, split equally (4 people)  ->  "make it 24000"  ->  Approve ₹24,000  ->  done, verified
 ```
 
-**Claude / Cursor / ChatGPT connectors (recommended — OAuth 2.1):**
-just add the URL as a custom connector. On first use the client is bounced to
-the SplitEase login page, you approve access, and it receives an access token
-scoped to your account. No manual token handling.
+**What it can do**
+
+| Changes (always need approval) | Answers (read-only, instant) |
+|---|---|
+| Create a group (picks trip / flat / business type) | Who owes whom, with the simplest settle-up |
+| Add people (contacts join, others get an invite) | Your balance across every group |
+| Record an expense you paid (uses the group's default split) | Recent expenses, or search ("food", "taxi") |
+| Set a trip budget and budget alerts | |
+| Delete an expense you added, or a group you created (red confirmation) | |
+
+**How it stays safe and smart**
+
+- **Understands casual language.** "petrol 1.5k", "maine 900 diye taxi ke liye", "pizza 600 with Aman and Priya". It fills in safe defaults and asks one short question only when something is truly missing.
+- **Instant corrections.** While a plan waits: "make it 4000", "Rahul ko hata do", "Priya bhi", "call it Team dinner". No retyping. Edit the card directly if you prefer.
+- **Approval-gated execution.** Plans are hashed and versioned; every step runs in a MongoDB transaction, is verified by reading it back, and is idempotent on retry. Deletes and amounts over ₹50,000 need the button, not a typed "yes".
+- **Grounded numbers.** Every amount the model returns must appear in your message, so "3600" can never silently become "36000".
+- **Reliable on free models.** Groq → Cerebras → Gemini → OpenRouter with per-model cooldowns, a 15 s budget, one repair retry, and an offline parser when every provider is busy.
+
+Switches: `AUTOPILOT_ENABLED`, `AUTOPILOT_WRITES_ENABLED`, plus any one provider key (e.g. `GROQ_API_KEY`).
+Details and threat model: [`docs/autopilot/`](docs/autopilot/README.md) · [`docs/agent-threat-model.md`](docs/agent-threat-model.md)
+
+---
+
+## Smart notifications
+
+Gentle, scheduled tips that bring people back without spamming them. **No setup needed:** they
+run automatically and can be paused from **Admin → Notifications**.
+
+| Tip | When (IST) | Example |
+|---|---|---|
+| New month | 1st of every month, 10:00 | "Naya mahina, naya hisaab. Is mahine ka rent aur bills abhi add karo." |
+| Weekend | One Sunday a month, 12:30 | "Sunday plans? Pay once, split in seconds." |
+| Trip season | Nov and Dec, 19:30 | "Puri is calling. Plan a winter getaway, or go big with Goa." |
+
+- **Respectful:** at most 1 a day and 5 in any 30 days, never between 21:00 and 09:00, new users wait two days, and people already planning a trip get no trip tips.
+- **Personal:** first name and nearby destinations from the profile's state or city (no GPS); English and Hinglish variants.
+- **Exactly once:** each send is claimed in a unique index first, and the frequency cap is one atomic write per person, so restarts or a second server never double-send.
+- **Measurable:** 10% holdout per campaign and open tracking per variant, visible in the admin page.
+
+Tapping a tip opens Autopilot with a ready draft ("Create group Puri Trip, budget 30000").
+
+---
+
+## MCP server
+
+A remote [Model Context Protocol](https://modelcontextprotocol.io) endpoint (Streamable HTTP) so AI
+assistants can securely read your SplitEase data. Every request gets a fresh server scoped to one
+authenticated user, running through the same models and permission checks as the REST API.
 
 ```jsonc
-// Example MCP client config (e.g. an mcp.json)
-{
-  "mcpServers": {
-    "splitease": {
-      "url": "https://api.splitease.tech/mcp"
-    }
-  }
-}
+{ "mcpServers": { "splitease": { "url": "https://api.splitease.tech/mcp" } } }
 ```
 
-**Manual / scripted access (legacy — Firebase ID token):** send the token as a
-Bearer header. Grab a fresh one from the `/mcp-login` page.
-
-```bash
-curl -s https://api.splitease.tech/mcp \
-  -H "Authorization: Bearer <YOUR_SPLITEASE_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "tools/list",
-    "params": {}
-  }'
-```
-
-> 🔐 Every request is **scoped to the authenticated user** — tools only ever
-> see your own groups and expenses, and group-membership checks are enforced.
-> The endpoint is **stateless** (a fresh, user-scoped server per POST) and
-> rate-limited per credential.
+Add the URL as a custom connector in Claude, Cursor or ChatGPT; OAuth 2.1 handles sign-in.
+Tools: `get_me`, `list_groups`, `get_group`, `list_expenses`, `get_balances`, `get_overall_summary`, `create_group`.
+Scripted access with a Firebase ID token and full contracts: [`docs/mcp-tool-contracts.md`](docs/mcp-tool-contracts.md) · [`docs/MCP-OAUTH.md`](docs/MCP-OAUTH.md)
 
 ---
 
-## ✨ What it does
+## Architecture
 
-- 👥 Create groups, add friends, split bills
-- 🧾 Track expenses and see who owes what
-- 🔔 Real-time updates + push notifications
-- 🤖 AI helpers for receipts (OCR) and smart summaries
-- 🧭 **Autopilot** AI agent that plans actions for you — with approval before any write
-- 🛰️ **MCP server** so AI assistants (Claude, Cursor, …) can securely read your data
-- 🔐 Login/signup with secure auth
-
----
-
-## 🗂️ Project layout
+```mermaid
+flowchart LR
+  W["Web (Next.js)"] -- REST + Socket.IO --> API["API (Express)"]
+  A["Android/iOS (Expo)"] -- REST + Socket.IO --> API
+  M["MCP clients"] -- OAuth 2.1 --> API
+  API --> DB[("MongoDB")]
+  API --> LLM["Groq · Cerebras · Gemini · OpenRouter"]
+  API --> P["Expo push · FCM web push"]
+  API --> C["Cloudinary · Tesseract OCR"]
+```
 
 ```
 Split/
-├── backend/    # Express API + MongoDB (runs on :5000)
-└── frontend/   # Next.js app (runs on :3000)
+├── backend/                 Express API on :5000
+│   ├── controllers/         groups, expenses, balances, notifications, ...
+│   ├── modules/autopilot/   planner, LLM chain, approval + execution
+│   ├── modules/engagement/  scheduled tips: schedule, copy, runner, admin
+│   └── tests/               Jest (unit, property-based, DB integration)
+├── frontend/                Next.js web app on :3000
+└── docs/                    API, Autopilot, MCP, security
 ```
+
+The mobile app lives in its own repo: **[Gautam5514/splitApp](https://github.com/Gautam5514/splitApp)**. It talks to the same API.
+
+**Stack:** Next.js · React · Tailwind · Framer Motion · Node · Express · MongoDB/Mongoose · Socket.IO · Firebase · Zod · Cloudinary · Tesseract.js · Jest · fast-check · GitHub Actions · PM2 on AWS EC2
 
 ---
 
-## 🚀 Run it locally (step by step)
+## Run it locally
 
-**You need:** [Node.js](https://nodejs.org) 18+, and a MongoDB connection
-string (get a free one at [MongoDB Atlas](https://www.mongodb.com/atlas)).
+You need **Node 18+** and a MongoDB connection string (a free [Atlas](https://www.mongodb.com/atlas) cluster works).
 
-### 1. Get the code
 ```bash
-git clone https://github.com/Gautam5514/Split-Expense.git
-cd Split-Expense
+git clone https://github.com/Gautam5514/Split-Expense.git && cd Split-Expense
+
+# 1. API
+cd backend && npm install
+cp .env.example .env          # fill in MONGO_URI and auth values
+npm run dev                   # http://localhost:5000
+
+# 2. Web (new terminal)
+cd frontend && npm install
+cp .env.example .env.local
+npm run dev                   # http://localhost:3000
 ```
 
-### 2. Start the backend
-```bash
-cd backend
-npm install
-cp .env.example .env      # open .env and fill in your values
-npm run dev                # → http://localhost:5000
-```
+Only need the basics? Leave Firebase push, Cloudinary, SMTP and AI keys empty; those only matter for
+push, uploads, email and AI features. To try Autopilot, add `AUTOPILOT_ENABLED=true`,
+`AUTOPILOT_WRITES_ENABLED=true` and one free key such as `GROQ_API_KEY`
+(plus `NEXT_PUBLIC_AUTOPILOT_ENABLED=true` for the web build).
 
-### 3. Start the frontend (open a **new** terminal)
-```bash
-cd frontend
-npm install
-cp .env.example .env.local   # open .env.local and fill in your values
-npm run dev                   # → http://localhost:3000
-```
-
-### 4. Open the app
-Go to **http://localhost:3000** in your browser. That's it! 🎉
-
-> 🔒 **Never commit `.env` / `.env.local`.** They hold secrets and are
-> already git-ignored — the `.env.example` files are just templates to copy.
-
-**Only need MongoDB + auth working?** You can leave the Firebase, Cloudinary,
-SMTP, and AI keys blank for now — those only matter if you're touching push
-notifications, image uploads, emails, or AI features.
+> Never commit `.env` or `.env.local`. They are git-ignored; the `.env.example` files are templates.
 
 ---
 
-## 🧪 Running tests
+## Tests and quality
 
 ```bash
-cd backend && npm test     # backend tests
-cd frontend && npm test    # frontend tests
+cd backend && npm test     # 600+ tests: unit, property-based (fast-check), integration
+cd frontend && npm test    # component tests, including the Autopilot widget
 ```
 
-Continuous integration runs both suites (including fast-check property-based
-security tests), frontend linting and production
-dependency audits on every pull request and push to `main`. Security-focused
-static analysis is run by CodeQL. See the [API reference](docs/API.md),
-[security policy](SECURITY.md), [secure-development guide](docs/SECURE_DEVELOPMENT.md),
-and [release process](docs/RELEASING.md).
+CI runs both suites, linting and dependency audits on every pull request; CodeQL scans for security
+issues. See the [security policy](SECURITY.md), [secure development guide](docs/SECURE_DEVELOPMENT.md),
+[financial invariants](docs/financial-invariants.md) and [release process](docs/RELEASING.md).
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-New to open source? You're welcome here — code, docs, bug reports, and ideas
-all count as contributions.
+New to open source? Welcome. Code, docs, bug reports and ideas all count.
 
-👉 **Full step-by-step guide:** [CONTRIBUTING.md](CONTRIBUTING.md)
-(explains forking, branches, and pull requests in plain language)
+1. Fork, then branch: `git checkout -b feat/my-change`
+2. Make the change, with tests where it makes sense
+3. Open a pull request
 
-Quick version:
-1. **Fork** this repo (button top-right on GitHub)
-2. **Clone** your fork, then create a branch: `git checkout -b feat/my-change`
-3. Make your changes and **commit** them
-4. **Push** to your fork and **open a Pull Request**
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [`good first issue`](https://github.com/Gautam5514/Split-Expense/labels/good%20first%20issue) label.
 
-Look for issues labeled [`good first issue`](https://github.com/Gautam5514/Split-Expense/issues) to get started.
+If SplitEase helped you, a ⭐ helps others find it.
 
----
+## License
 
-## ⭐ Support the project
-
-If Split-Expense helped you, please **[star the repo](https://github.com/Gautam5514/Split-Expense)** — it's the easiest way to say thanks. ❤️
-
-## 📄 License
-
-Released under the [MIT License](LICENSE). Copyright © 2026 Gautam Pandit.
+[MIT](LICENSE) © 2026 Gautam Pandit

@@ -56,6 +56,13 @@ const userSchema = new mongoose.Schema({
     // Off = nobody can find me by typing my email; only invite links work.
     discoverableByEmail: { type: Boolean, default: true },
   },
+  // -------------------- Notifications --------------------
+  // Monthly reminders, weekend nudges and trip ideas. Unset means on; switching it
+  // off (Settings, or "Turn off tips") is recorded with the time for consent records.
+  notificationPrefs: {
+    engagement: { type: Boolean, default: undefined },
+    engagementUpdatedAt: { type: Date, default: undefined },
+  },
   // People who can't add/invite me or find me by email.
   blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });

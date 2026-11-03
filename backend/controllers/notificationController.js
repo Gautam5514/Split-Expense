@@ -3,6 +3,7 @@ import Notification from "../models/notification.model.js";
 import User from "../models/userModel.js";
 import { io, onlineUsers } from "../index.js";
 import admin from "../config/firebaseAdmin.js";
+import { RULES } from "../modules/engagement/config.js";
 
 
 /**
@@ -194,7 +195,8 @@ const getUnreadCounts = async (userIds) => {
   if (!objectIds.length) return new Map();
 
   const rows = await Notification.aggregate([
-    { $match: { userId: { $in: objectIds }, isRead: false } },
+    // Tips and reminders never inflate the app icon badge.
+    { $match: { userId: { $in: objectIds }, isRead: false, type: { $ne: "promo" } } },
     { $group: { _id: "$userId", count: { $sum: 1 } } },
   ]);
 
@@ -469,6 +471,110 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
 };
 
 
+
+/**
+ * 📣 Engagement campaigns (monthly reminder, weekend nudge, trip ideas).
+ *
+ * Unlike createNotification every recipient gets their own copy (name, nearby
+ * destination), so messages are built per user. Each item:
+ *   { userId, title, body, image?, appLink, webLink, cta, campaign }
+ * - Bell: stored as type "promo" with `link: "/dashboard"`, which every app and
+ *   web build can open; the real call-to-action rides in `cta` for new clients.
+ * - App: Expo push with a big picture on Android and a TTL, so a stale nudge is
+ *   dropped instead of arriving late. Dead tokens are pruned from Expo's tickets.
+ * - Web: one FCM message per token (chunked at 500) with image + action buttons.
+ */
+export const sendEngagementNotifications = async (items) => {
+  if (!items.length) return { stored: 0 };
+  const saved = await Notification.insertMany(items.map((it) => ({
+    userId: it.userId, type: "promo", message: it.body, title: it.title, image: it.image || undefined,
+    link: "/dashboard", cta: { label: it.cta, link: it.webLink }, campaign: it.campaign,
+  })));
+  saved.forEach((doc) => {
+    const socketId = onlineUsers.get(String(doc.userId));
+    if (socketId) io.to(socketId).emit("notification", doc);
+  });
+  const byUser = new Map(items.map((it, i) => [String(it.userId), { ...it, notificationId: String(saved[i]._id) }]));
+  const users = await User.find({ _id: { $in: [...byUser.keys()] } }, "expoPushTokens webPushTokens").lean();
+  await Promise.allSettled([sendEngagementExpo(users, byUser), sendEngagementWeb(users, byUser)]);
+  return { stored: saved.length };
+};
+
+const ENGAGEMENT_TTL_SECONDS = RULES.pushTtlSeconds;
+const absoluteUrl = (path) => (HTTPS_ORIGIN && path ? `${HTTPS_ORIGIN}${path.startsWith("/") ? path : `/${path}`}` : "");
+
+// A device token can sit on two accounts (old data) or be stored twice; each device gets
+// one tip per run, and only a person's most recent devices are used. O(1) per token.
+const MAX_DEVICES = 10;
+const sendEngagementExpo = async (users, byUser) => {
+  const seen = new Set();
+  const messages = users.flatMap((user) => {
+    const it = byUser.get(String(user._id));
+    const tokens = [...(user.expoPushTokens || [])]
+      .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
+      .filter(({ token }) => isValidExpoPushToken(token) && !seen.has(token) && seen.add(token))
+      .slice(0, MAX_DEVICES);
+    return tokens.map(({ token, platform }) => ({
+      to: token,
+      title: it.title,
+      body: it.body,
+      // `prompt`: newer app builds open Autopilot with this draft; older ones follow `link`.
+      data: { link: it.appLink, type: "promo", campaign: it.campaign, notificationId: it.notificationId, ...(it.prompt && { prompt: it.prompt }), ...(it.groupId && { groupId: String(it.groupId) }) },
+      ttl: ENGAGEMENT_TTL_SECONDS,
+      ...(it.image && { richContent: { image: it.image } }),
+      // A channel the device lacks would hide the push entirely, so this uses one every live build has.
+      ...(platform === "android" && { channelId: RULES.androidChannel, priority: "normal" }),
+    }));
+  });
+  const dead = [];
+  for (const batch of chunk(messages, 100)) {
+    try {
+      const res = await fetch(EXPO_PUSH_ENDPOINT, {
+        method: "POST",
+        headers: { Accept: "application/json", "Accept-Encoding": "gzip, deflate", "Content-Type": "application/json" },
+        body: JSON.stringify(batch),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) { console.error("❌ Engagement Expo push failed:", res.status); continue; }
+      const { data = [] } = await res.json().catch(() => ({}));
+      data.forEach((ticket, i) => { if (ticket?.details?.error === "DeviceNotRegistered") dead.push(batch[i].to); });
+    } catch (err) {
+      console.error("❌ Engagement Expo push error:", err.message);
+    }
+  }
+  if (dead.length) await User.updateMany({ "expoPushTokens.token": { $in: dead } }, { $pull: { expoPushTokens: { token: { $in: dead } } } });
+};
+
+const sendEngagementWeb = async (users, byUser) => {
+  const seen = new Set();
+  const messages = users.flatMap((user) => {
+    const it = byUser.get(String(user._id));
+    const link = absoluteUrl(it.webLink);
+    // Newest tokens are appended last.
+    const tokens = (user.webPushTokens || []).filter((t) => typeof t === "string" && t && !seen.has(t) && seen.add(t)).slice(-MAX_DEVICES);
+    return tokens.map((token) => ({
+      token,
+      data: {
+        title: it.title, body: it.body, link: it.webLink, type: "promo",
+        ...(it.image && { image: it.image }), cta: it.cta || "", campaign: it.campaign || "", notificationId: it.notificationId,
+      },
+      webpush: { headers: { TTL: String(ENGAGEMENT_TTL_SECONDS), Urgency: "low" }, ...(link && { fcmOptions: { link } }) },
+    }));
+  });
+  const stale = [];
+  for (const batch of chunk(messages, 500)) {
+    try {
+      const response = await admin.messaging().sendEach(batch);
+      response.responses.forEach((r, i) => {
+        const code = r.error?.code;
+        if (code === "messaging/invalid-registration-token" || code === "messaging/registration-token-not-registered") stale.push(batch[i].token);
+      });
+    } catch (err) {
+      console.error("❌ Engagement web push error:", err.message);
+    }
+  }
+  if (stale.length) await User.updateMany({ webPushTokens: { $in: stale } }, { $pull: { webPushTokens: { $in: stale } } });
+};
 
 /**
  * 📩 Fetch latest notifications for logged-in user

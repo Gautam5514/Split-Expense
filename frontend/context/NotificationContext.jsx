@@ -5,7 +5,7 @@ import toast from "@/lib/toast";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { API_URL } from "@/lib/config";
-import { BellRing, Clock3, ReceiptText, UsersRound, HandCoins } from "lucide-react";
+import { BellRing, Clock3, ReceiptText, UsersRound, HandCoins, Sparkles } from "lucide-react";
 import { getNotificationPermission, onForegroundMessage } from "@/lib/firebaseMessaging";
 
 const NotificationContext = createContext();
@@ -17,6 +17,14 @@ const getNotificationMeta = (type) => {
       Icon: ReceiptText,
       iconClass: "bg-emerald-500/10 text-emerald-500 ring-emerald-500/15",
       accentClass: "from-emerald-500/20 via-transparent to-teal-500/10",
+    };
+  }
+  if (type === "promo") {
+    return {
+      label: "SplitEase tip",
+      Icon: Sparkles,
+      iconClass: "bg-violet-500/10 text-violet-600 ring-violet-500/15",
+      accentClass: "from-violet-500/20 via-transparent to-cyan-500/10",
     };
   }
   if (type === "settlement") {
@@ -105,7 +113,7 @@ function NotificationToast({ notif, visible }) {
             </div>
 
             <p className="line-clamp-2 text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">
-              {notif.message}
+              {notif.title ? `${notif.title} ${notif.message}` : notif.message}
             </p>
 
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-3">
@@ -260,6 +268,21 @@ export function NotificationProvider({ children }) {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [token]);
 
+  // A tip opened from the bell or toast: record the open, then go where it points.
+  // Only stable setters are used, so the socket handler below can call these directly.
+  const openPromo = (n) => {
+    setNotifications((prev) => prev.filter((x) => x._id !== n._id));
+    if (isMongoObjectId(n._id)) api.post("/engagement/opened", { notificationId: n._id }).catch(() => {});
+    const url = new URL(n.cta?.link || n.link || "/dashboard", window.location.origin);
+    // Autopilot lives on every page: open it in place with the suggested draft.
+    if (url.searchParams.get("autopilot") === "1") {
+      window.dispatchEvent(new CustomEvent("autopilot:open", { detail: { prompt: url.searchParams.get("prompt") || undefined, groupId: url.searchParams.get("groupId") || undefined } }));
+      return;
+    }
+    window.location.assign(url.href);
+  };
+
+
   // Real-time socket notifications.
   useEffect(() => {
     if (!token) return;
@@ -316,7 +339,7 @@ export function NotificationProvider({ children }) {
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, setNotifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead }}
+      value={{ notifications, setNotifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead, openPromo }}
     >
       {children}
     </NotificationContext.Provider>

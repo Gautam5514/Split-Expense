@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard, MessageSquare, Newspaper, Briefcase, LogOut,
-  ChevronsUpDown, ExternalLink,
+  ChevronsUpDown, ExternalLink, BellRing,
 } from "lucide-react";
 import { getAdminToken, clearAdminToken } from "@/lib/adminApi";
 
@@ -20,6 +20,7 @@ const NAV_GROUPS = [
       { href: "/admin/messages", label: "Messages", icon: MessageSquare },
       { href: "/admin/blog", label: "Blog", icon: Newspaper },
       { href: "/admin/careers", label: "Careers", icon: Briefcase },
+      { href: "/admin/notifications", label: "Notifications", icon: BellRing },
     ],
   },
 ];

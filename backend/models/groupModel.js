@@ -72,5 +72,7 @@ groupSchema.pre("save", function (next) {
 groupSchema.index({ name: 1, createdBy: 1 }, { unique: true });
 // "Groups I'm in", newest first - the query behind almost every page.
 groupSchema.index({ members: 1, updatedAt: -1 });
+// "Already planning a trip?" lookups for trip-season tips.
+groupSchema.index({ members: 1, groupType: 1, createdAt: -1 });
 
 export default mongoose.model("Group", groupSchema);

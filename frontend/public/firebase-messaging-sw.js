@@ -128,6 +128,21 @@ messaging.onBackgroundMessage((payload) => {
   const link = payload.data?.link || "/dashboard";
   const type = payload.data?.type || "splitease";
 
+  // Tips and reminders: artwork, one action, quiet, and a newer tip replaces an unread one.
+  if (type === "promo") {
+    return self.registration.showNotification(notificationTitle, {
+      body: notificationBody,
+      icon: "/logo-concept-app.svg",
+      badge: "/logo-concept-app.svg",
+      ...(payload.data?.image && { image: payload.data.image }),
+      tag: "splitease-tip",
+      renotify: false,
+      silent: true,
+      actions: [{ action: "open", title: payload.data?.cta || "Open" }, { action: "dismiss", title: "Not now" }],
+      data: { link, type },
+    });
+  }
+
   // Use a unique tag per message so rapid notifications don't collapse each other.
   const tag = `${type}-${Date.now()}`;
 
@@ -145,6 +160,7 @@ messaging.onBackgroundMessage((payload) => {
 // Open / focus the app when the user clicks the notification.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  if (event.action === "dismiss") return;
 
   const link = event.notification.data?.link || "/dashboard";
   const targetUrl = new URL(link, self.location.origin).href;

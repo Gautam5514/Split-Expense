@@ -28,3 +28,63 @@ describe("Autopilot provider selection", () => {
     expect(meta.provider).toBe("local");
   });
 });
+
+describe("Autopilot offline grammar and normalisation", () => {
+  test("widget examples parse into the right actions offline", async () => {
+    const { parseLocal } = await import("../modules/autopilot/planner.js");
+    expect(parseLocal("Create group Goa Trip with Aman and Priya, budget 40k").actions).toEqual([
+      { type: "create_group", name: "Goa Trip", members: ["Aman", "Priya"] },
+      { type: "set_group_budget", amount: "40000" },
+    ]);
+    expect(parseLocal("Dinner 3600 paid by me, split equally, leave out Rahul").actions[0]).toMatchObject({ title: "Dinner", amount: "3600", excluded: ["Rahul"] });
+    expect(parseLocal("Set the budget to 25000 and alert me at 75 and 90").actions).toEqual([
+      { type: "set_group_budget", amount: "25000" }, { type: "monitor_budget", thresholds: [75, 90] },
+    ]);
+  });
+  test("near-miss model output is repaired before strict validation", async () => {
+    const { normalizeIntent } = await import("../modules/autopilot/planner.js");
+    const { intentSchema } = await import("../modules/autopilot/contracts.js");
+    const fixed = normalizeIntent({ currency: "₹", actions: [{ type: "create_expense", title: "Hotel", amount: 8000, payer: "me" }, { type: "monitor_budget", thresholds: ["75%", 90] }, { type: "send_money" }], note: "x" });
+    expect(() => intentSchema.parse(fixed)).not.toThrow();
+    expect(fixed.currency).toBe("INR");
+    expect(fixed.actions.map(a => a.type)).toEqual(["create_expense", "monitor_budget"]);
+    expect(fixed.clarification).toMatch(/send money/);
+    expect(fixed.actions[0]).toMatchObject({ amount: "8000", payer: "me", splitType: "equal", participants: [] });
+  });
+});
+
+describe("Autopilot member matching", () => {
+  test("a unique first name resolves to the full member name", async () => {
+    const { buildPlan } = await import("../modules/autopilot/planner.js");
+    const actorId = "000000000000000000000001", aman = "000000000000000000000002";
+    const group = { _id: "000000000000000000000009", createdBy: actorId, settings: { currency: "INR" } };
+    const plan = buildPlan({ groupName: null, currency: null, clarification: null, actions: [{ type: "create_expense", title: "Taxi", amount: "900", payer: "me", participants: ["me", "aman"], excluded: [], splitType: "equal", shares: [] }] },
+      { actorId, group, members: [{ _id: actorId, name: "Me Myself" }, { _id: aman, name: "Aman Gupta" }] });
+    expect(plan.clarifications).toEqual([]);
+    expect(plan.steps[0].payload.splits.map(s => s.memberId).sort()).toEqual([actorId, aman]);
+  });
+});
+
+describe("Autopilot normalisation never changes meaning", () => {
+  const exp = (extra) => ({ actions: [{ type: "create_expense", title: "x", amount: "1000", payer: "me", ...extra }] });
+  test.each([
+    ["unknown currency", { currency: "JPY", ...exp() }],
+    ["foreign symbol in amount", exp({ amount: "$100" })],
+    ["percentage split", exp({ splitType: "percentage" })],
+  ])("%s stays invalid so it is re-asked", async (_name, raw) => {
+    const { normalizeIntent } = await import("../modules/autopilot/planner.js");
+    const { intentSchema } = await import("../modules/autopilot/contracts.js");
+    expect(intentSchema.safeParse(normalizeIntent(raw)).success).toBe(false);
+  });
+  test("a name prefix is not guessed (Aman is not Amanda)", async () => {
+    const { buildPlan } = await import("../modules/autopilot/planner.js");
+    const actorId = "000000000000000000000001";
+    const plan = buildPlan({ groupName: null, currency: null, clarification: null, actions: [{ type: "create_expense", title: "T", amount: "900", payer: "me", participants: ["me", "Aman"], excluded: [], splitType: "equal", shares: [] }] },
+      { actorId, group: { _id: "000000000000000000000009", createdBy: actorId, settings: { currency: "INR" } }, members: [{ _id: actorId, name: "Me" }, { _id: "000000000000000000000002", name: "Amanda Roy" }] });
+    expect(plan.clarifications.join(" ")).toMatch(/Aman/);
+  });
+  test("offline thresholds outside 1-100 ask instead of vanishing", async () => {
+    const { parseLocal } = await import("../modules/autopilot/planner.js");
+    expect(parseLocal("alert at 1000").clarification).toMatch(/percentages/);
+  });
+});

@@ -42,7 +42,7 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { token, setToken } = useAuth();
-  const { notifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead } = useNotifications();
+  const { notifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead, openPromo } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [user, setUser] = useState(null);
@@ -96,6 +96,10 @@ export default function Navbar() {
   const isLoggedIn = !!token;
 
   const getNotificationMeta = (type) => {
+    if (type === "promo") return {
+      label: "Tip", Icon: Sparkles,
+      iconClass: "bg-violet-500/10 text-violet-600 dark:text-violet-400 ring-violet-500/15",
+    };
     if (type === "expense") return {
       label: "Expense", Icon: ReceiptText,
       iconClass: "bg-emerald-500/10 text-emerald-500 ring-emerald-500/15",
@@ -292,7 +296,7 @@ export default function Navbar() {
                               <li key={n._id || i}>
                                 <button
                                   type="button"
-                                  onClick={() => { markOneAsRead(n._id); router.push(n.link || "/dashboard"); setNotifOpen(false); }}
+                                  onClick={() => { setNotifOpen(false); if (n.type === "promo") return openPromo(n); markOneAsRead(n._id); router.push(n.link || "/dashboard"); }}
                                   className="group flex w-full gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-foreground/5"
                                 >
                                   <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${iconClass}`}>
@@ -309,7 +313,7 @@ export default function Navbar() {
                                       </span>
                                     </div>
                                     <p className="line-clamp-2 text-sm font-medium leading-5 text-foreground/80 group-hover:text-foreground">
-                                      {n.message}
+                                      {n.title ? `${n.title} ${n.message}` : n.message}
                                     </p>
                                   </div>
                                 </button>

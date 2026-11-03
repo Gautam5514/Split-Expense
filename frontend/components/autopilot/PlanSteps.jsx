@@ -1,11 +1,110 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Bell, CheckCircle2, ExternalLink, Loader2, Mail, PiggyBank, Receipt, Scale, UserCheck, UserPlus, Users, CircleDashed, Wallet } from "lucide-react";
+import { ArrowRight, Bell, CheckCircle2, ExternalLink, Loader2, Mail, PiggyBank, Receipt, Scale, UserCheck, UserPlus, Users, CircleDashed, Wallet, List, Pencil, Globe2, Trash2, AlertTriangle } from "lucide-react";
 import { PEOPLE_COLORS, initials, money } from "./format";
 
-const ICONS = { create_group: Users, add_members: UserPlus, set_group_budget: PiggyBank, create_expense: Receipt, monitor_budget: Bell, read_summary: Scale };
+const ICONS = { create_group: Users, add_members: UserPlus, set_group_budget: PiggyBank, create_expense: Receipt, monitor_budget: Bell, read_summary: Scale, read_overall: Globe2, list_expenses: List, delete_expense: Trash2, delete_group: Trash2 };
+const DELETES = ["delete_expense", "delete_group"];
+
+// What a delete will remove, stated plainly before anyone approves it.
+function DangerSummary({ step, result }) {
+  const p = step.payload, i = p.impact || {};
+  if (result) return <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground"><CheckCircle2 className="h-4 w-4 text-emerald-500" />Deleted. {step.type === "delete_group" ? "The group is gone for everyone." : "Balances are updated for everyone in the group."}</p>;
+  return (
+    <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/[0.06] p-3">
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-red-700 dark:text-red-300"><AlertTriangle className="h-3.5 w-3.5" /> Permanent. This can&apos;t be undone.</p>
+      {step.type === "delete_group" ? (
+        <ul className="mt-2 grid grid-cols-3 gap-2 text-center">
+          {[["Members", i.members], ["Expenses", i.expenses], ["Total spent", money(i.totalMinor || 0, p.currency)]].map(([k, v]) => <li key={k} className="rounded-lg bg-background/70 px-2 py-2"><p className="text-[10px] text-muted-foreground">{k}</p><p className="text-sm font-semibold tabular-nums">{v}</p></li>)}
+        </ul>
+      ) : (
+        <p className="mt-1.5 text-xs leading-5 text-muted-foreground">Removes this expense{i.date ? ` from ${new Date(i.date).toLocaleDateString(undefined, { day: "numeric", month: "short" })}` : ""} and recalculates what everyone in the group owes. Members are told it was deleted.</p>
+      )}
+    </div>
+  );
+}
+const READS = ["read_summary", "read_overall", "list_expenses"];
+const SPLIT_LABEL = { equal: "split equally", exact: "exact shares", shares: "by the group's shares", percent: "by the group's percentages" };
+const cap = s => (s ? s[0].toUpperCase() + s.slice(1) : s);
+const toMajor = minor => String(minor / 100);
+
+// Change the plan without retyping it. The server rebuilds and re-checks the plan from these edits.
+function EditExpense({ step, onSave, onCancel, busy }) {
+  const p = step.payload;
+  const [title, setTitle] = useState(p.name || "");
+  const [amount, setAmount] = useState(toMajor(p.amountMinor));
+  const roster = p.roster || p.splits.map(s => ({ memberId: s.memberId, name: s.name }));
+  const [chosen, setChosen] = useState(() => new Set(p.splits.map(s => s.memberId)));
+  const exact = p.splitType === "exact";
+  const validAmount = /^\d+(?:\.\d{1,2})?$/.test(amount.trim()) && Number(amount) > 0;
+  const changes = {};
+  if (title.trim() && title.trim() !== p.name) changes.title = title.trim();
+  if (validAmount && Math.round(Number(amount) * 100) !== p.amountMinor) changes.amount = amount.trim();
+  const before = new Set(p.splits.map(s => s.memberId));
+  if (!exact && (chosen.size !== before.size || [...chosen].some(id => !before.has(id)))) changes.excluded = roster.map(r => r.memberId).filter(id => !chosen.has(id));
+  const toggle = id => setChosen(c => { const n = new Set(c); if (n.has(id)) { if (n.size > 1) n.delete(id); } else n.add(id); return n; });
+  return (
+    <form onSubmit={e => { e.preventDefault(); if (Object.keys(changes).length && validAmount) onSave(changes); }} className="mt-3 space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+      <label className="block text-[11px] font-medium text-muted-foreground">What
+        <input value={title} maxLength={200} onChange={e => setTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40" /></label>
+      <label className="block text-[11px] font-medium text-muted-foreground">Amount ({p.currency})
+        <input value={amount} inputMode="decimal" disabled={exact} onChange={e => setAmount(e.target.value)} aria-invalid={!validAmount} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm tabular-nums text-foreground outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50" /></label>
+      {!exact && (
+        <fieldset><legend className="text-[11px] font-medium text-muted-foreground">Split between</legend>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">{roster.map(r => {
+            const on = chosen.has(r.memberId);
+            return <button key={r.memberId} type="button" aria-pressed={on} onClick={() => toggle(r.memberId)} className={`rounded-full border px-3 py-1 text-xs transition ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground line-through"}`}>{r.name}</button>;
+          })}</div>
+        </fieldset>
+      )}
+      {exact && <p className="text-[11px] text-muted-foreground">Exact shares: type the new shares in the chat, like “me 300, Aman 600”.</p>}
+      <div className="flex gap-2">
+        <button disabled={busy || !validAmount || !Object.keys(changes).length} className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40">Update plan</button>
+        <button type="button" onClick={onCancel} className="rounded-full border border-border px-4 py-1.5 text-xs hover:bg-muted">Cancel</button>
+      </div>
+    </form>
+  );
+}
+
+function Overall({ overall }) {
+  const totals = Object.entries(overall.totals || {});
+  return (
+    <div className="mt-4 space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        {totals.length === 0 && <p className="col-span-2 text-sm text-muted-foreground">You aren&apos;t in any active groups yet.</p>}
+        {totals.map(([cur, t]) => [
+          <div key={`${cur}-in`} className="rounded-xl border border-border/60 bg-background/40 p-3"><p className="text-[11px] text-muted-foreground">You get back</p><p className="mt-1 text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{money(t.owedMinor, cur)}</p></div>,
+          <div key={`${cur}-out`} className="rounded-xl border border-border/60 bg-background/40 p-3"><p className="text-[11px] text-muted-foreground">You owe</p><p className="mt-1 text-sm font-semibold tabular-nums text-rose-600 dark:text-rose-400">{money(t.oweMinor, cur)}</p></div>,
+        ])}
+      </div>
+      {overall.groups.length > 0 && (
+        <ul className="divide-y divide-border/60 rounded-xl border border-border/60 bg-background/40">
+          {overall.groups.map(g => (
+            <li key={g.groupId}><Link href={`/groups/${g.groupId}`} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted/50"><span className="min-w-0 flex-1 truncate">{g.name}</span><span className={`tabular-nums font-medium ${g.balanceMinor > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>{g.balanceMinor > 0 ? "gets back " : "owes "}{money(Math.abs(g.balanceMinor), g.currency)}</span></Link></li>
+          ))}
+        </ul>
+      )}
+      {overall.settledCount > 0 && <p className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />Settled up in {overall.settledCount} other group{overall.settledCount === 1 ? "" : "s"}.</p>}
+    </div>
+  );
+}
+
+function ExpenseList({ expenses, currency }) {
+  if (!expenses.length) return <p className="mt-3 text-sm text-muted-foreground">No matching expenses yet.</p>;
+  return (
+    <ul className="mt-3 divide-y divide-border/60 rounded-xl border border-border/60 bg-background/40">
+      {expenses.map(e => (
+        <li key={e.id} className="flex items-center gap-3 px-3 py-2.5">
+          <div className="min-w-0 flex-1"><p className="truncate text-sm">{e.title}</p><p className="text-[11px] text-muted-foreground">{e.paidBy} · {cap(e.category)} · {new Date(e.date).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</p></div>
+          <span className="text-sm font-medium tabular-nums">{money(e.amountMinor, currency)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function Avatar({ name, index, size = "h-7 w-7 text-[11px]" }) {
   return <span className={`${size} ${PEOPLE_COLORS[index % PEOPLE_COLORS.length]} inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white`}>{initials(name)}</span>;
@@ -127,8 +226,10 @@ function Insights({ result, currency }) {
   );
 }
 
-export default function PlanSteps({ run, groupName, running }) {
+export default function PlanSteps({ run, groupName, running, onEdit, busy }) {
   const steps = run.plan?.steps || [];
+  const [editing, setEditing] = useState(null);
+  const canEdit = step => onEdit && run.status === "waiting_approval" && step.action !== undefined && step.type === "create_expense";
   const firstPending = steps.findIndex(s => !run.results.some(r => r.stepId === s.id));
   return (
     <ol className="relative space-y-3">
@@ -137,11 +238,12 @@ export default function PlanSteps({ run, groupName, running }) {
         const result = run.results.find(r => r.stepId === step.id);
         const Icon = ICONS[step.type] || Wallet;
         const state = result?.verified ? "verified" : running && i === firstPending ? "executing" : "proposed";
-        const isRead = step.type === "read_summary";
+        const isRead = READS.includes(step.type);
+        const isDelete = DELETES.includes(step.type);
         return (
-          <motion.li key={step.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }} className={`relative overflow-hidden rounded-2xl border bg-card p-4 transition-colors ${state === "verified" ? "border-emerald-500/40" : state === "executing" ? "border-primary/50" : "border-border"}`}>
+          <motion.li key={step.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }} className={`relative overflow-hidden rounded-2xl border bg-card p-4 transition-colors ${state === "verified" ? "border-emerald-500/40" : state === "executing" ? "border-primary/50" : isDelete ? "border-red-500/40" : "border-border"}`}>
             <div className="flex items-start gap-3.5">
-              <span className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${state === "verified" ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400" : "bg-primary/10 text-primary"}`}><Icon className="h-[18px] w-[18px]" /></span>
+              <span className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${state === "verified" ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400" : isDelete ? "bg-red-500/12 text-red-600 dark:text-red-400" : "bg-primary/10 text-primary"}`}><Icon className="h-[18px] w-[18px]" /></span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-[15px] font-semibold leading-tight"><span className="mr-1.5 text-muted-foreground tabular-nums">{i + 1}.</span>{step.title}</h3>
@@ -150,16 +252,21 @@ export default function PlanSteps({ run, groupName, running }) {
                     {state === "verified" ? "Verified" : state === "executing" ? "Executing" : isRead ? "Read-only" : "Proposed"}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{p.name && step.type !== "create_group" ? p.name : groupName(p.groupId)} · {p.currency}</p>
+                {step.type !== "read_overall" && <p className="mt-1 text-xs text-muted-foreground">{p.name && step.type !== "create_group" ? p.name : groupName(p.groupId)} · {p.currency}{step.type === "create_group" && p.groupType ? ` · ${cap(p.groupType)}` : ""}</p>}
                 {p.amountMinor !== undefined && step.type !== "monitor_budget" && <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">{money(p.amountMinor, p.currency)}</p>}
-                {step.type === "create_expense" && p.splits && <><p className="mt-1 text-xs text-muted-foreground">Paid by you · split {p.splits.length} way{p.splits.length > 1 ? "s" : ""}</p><SplitBreakdown splits={p.splits} currency={p.currency} total={p.amountMinor} /></>}
+                {step.type === "create_expense" && p.splits && <><p className="mt-1 text-xs text-muted-foreground">Paid by you · {p.splits.length} {p.splits.length > 1 ? "people" : "person"}, {SPLIT_LABEL[p.splitType] || "split"}{p.category ? ` · ${cap(p.category)}` : ""}</p>
+                  {editing === step.id ? <EditExpense step={step} busy={busy} onCancel={() => setEditing(null)} onSave={changes => { setEditing(null); onEdit(step, changes); }} /> : <SplitBreakdown splits={p.splits} currency={p.currency} total={p.amountMinor} />}
+                  {canEdit(step) && editing !== step.id && <button type="button" disabled={busy} onClick={() => setEditing(step.id)} className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-50"><Pencil className="h-3 w-3" /> Edit amount or people</button>}</>}
                 {step.type === "add_members" && p.people && <People people={p.people} result={result} />}
                 {step.type === "monitor_budget" && (
                   <div className="mt-3"><div className="flex flex-wrap gap-2">{p.thresholds.map(t => <span key={t} className="rounded-lg border border-border bg-background/50 px-3 py-1.5 text-sm font-semibold tabular-nums">{t}%</span>)}</div><p className="mt-2 text-xs leading-5 text-muted-foreground">In-app alerts only, checked when you press “Check budgets”. Approving this step is your opt-in; you can disable it any time.</p></div>
                 )}
-                {isRead && result && <Insights result={result} currency={p.currency} />}
-                {isRead && !result && <p className="mt-2 text-sm text-muted-foreground">Reads your group&apos;s ledger and explains who owes whom. Makes no changes.</p>}
-                {result?.href && !isRead && <Link href={result.href} className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">Open in group <ExternalLink className="h-3 w-3" /></Link>}
+                {isDelete && <DangerSummary step={step} result={result} />}
+                {step.type === "read_summary" && result && <Insights result={result} currency={p.currency} />}
+                {step.type === "read_overall" && result?.overall && <Overall overall={result.overall} />}
+                {step.type === "list_expenses" && result?.expenses && <ExpenseList expenses={result.expenses} currency={p.currency} />}
+                {isRead && !result && <p className="mt-2 text-sm text-muted-foreground">{step.type === "read_overall" ? "Adds up your balance in every group." : step.type === "list_expenses" ? "Looks through this group's expenses." : "Reads your group's ledger and explains who owes whom."} Makes no changes.</p>}
+                {result?.href && !isRead && step.type !== "delete_group" && <Link href={result.href} className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">Open in group <ExternalLink className="h-3 w-3" /></Link>}
               </div>
             </div>
           </motion.li>

@@ -43,6 +43,8 @@ import inviteRoutes from "./routes/inviteRoutes.js";
 import fxRoutes from "./routes/fxRoutes.js";
 import quickSplitRoutes from "./routes/quickSplitRoutes.js";
 import { startRecurringRunner } from "./utils/recurringRunner.js";
+import engagementRoutes from "./modules/engagement/routes.js";
+import { startEngagementRunner } from "./modules/engagement/runner.js";
 
 dotenv.config();
 assertSecurityConfiguration();
@@ -350,6 +352,7 @@ app.use("/api/fx", fxRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/quick-splits", quickSplitRoutes);
 app.use("/api/balances", balanceRoutes);
+app.use("/api", engagementRoutes); // /users/me/notification-prefs, /engagement/opened
 app.use("/api/users", userRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/profile", userProfileRoutes);
@@ -396,4 +399,6 @@ server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   // Monthly bills (Roommates groups). Skipped under tests.
   if (process.env.NODE_ENV !== "test") startRecurringRunner();
+  // Monthly / weekend / trip-season tips. Pause or resume from Admin → Notifications.
+  if (process.env.NODE_ENV !== "test") startEngagementRunner();
 });

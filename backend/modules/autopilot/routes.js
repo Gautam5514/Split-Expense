@@ -9,18 +9,39 @@ import { authorizedRun, memberGroup } from "./context.js";
 import { createRun, decide, executeRun, event } from "./run.service.js";
 import { checkBudgets } from "./monitor.service.js";
 import { describeProviders } from "./llm.js";
+import { realtime } from "./domain.js";
 const router = express.Router();
+const STALE_MS = 2 * 60_000;
+if (process.env.NODE_ENV !== "test") {
+  const ai = describeProviders();
+  console.info(`[autopilot] enabled=${process.env.AUTOPILOT_ENABLED === "true"} writes=${process.env.AUTOPILOT_WRITES_ENABLED === "true"} planner=${ai.mode === "ai" ? `${ai.label} (${ai.model})${ai.fallbacks.length ? ` + ${ai.fallbacks.join(", ")}` : ""}` : "offline only (no AI key set)"}`);
+}
 // Off unless AUTOPILOT_ENABLED=true. Writes need a second switch (AUTOPILOT_WRITES_ENABLED).
 router.use((req, res, next) => {
   if (process.env.AUTOPILOT_ENABLED !== "true") return res.status(404).json({ code: "AUTOPILOT_DISABLED", message: "Autopilot is disabled on this server." });
   next();
 });
 router.use(authMiddleware);
-router.use(rateLimit({ windowMs: 60000, limit: 30, keyGenerator: req => req.user.id, standardHeaders: "draft-8", legacyHeaders: false }));
+// Executed expenses notify members and refresh open screens, like the manual flow.
+router.use((req, res, next) => { realtime.io ||= req.app?.get?.("io") || null; next(); });
+// Per user per minute: reads (status polling) 240, other writes 60, new runs (each may call
+// several LLMs) 20. Separate budgets so a long plan can't lock its owner out of progress checks.
+const limiter = (limit, skip) => rateLimit({
+  windowMs: 60000, limit, skip, keyGenerator: req => req.user.id, standardHeaders: "draft-8", legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({ code: "RATE_LIMITED", message: "You're going a little fast. Give it a few seconds and try again." }),
+});
+router.use(limiter(240, req => req.method !== "GET"));
+router.use(limiter(60, req => req.method === "GET"));
+router.post("/runs", limiter(20));
 const route = fn => (req,res,next) => Promise.resolve(fn(req,res)).catch(next);
 const getRun = req => authorizedRun(AgentRun, req.user.id, objectId.parse(req.params.runId));
-const present = run => ({ ...run.toObject(), runId: String(run._id), writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true" });
-router.get("/capabilities", (req,res) => res.json({ enabled: true, writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true", ai: describeProviders(), provider: describeProviders().provider, monitoring: "on_demand" }));
+const present = run => {
+  const data = run.toObject();
+  // Lets the UI offer Resume/Cancel when a run stopped making progress (e.g. a server restart).
+  const stale = ["planning", "running"].includes(data.status) && Date.now() - new Date(data.updatedAt).getTime() > STALE_MS;
+  return { ...data, runId: String(run._id), writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true", stale };
+};
+router.get("/capabilities", (req,res) => res.json({ enabled: true, writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true", ai: describeProviders(), provider: describeProviders().provider, monitoring: "on_demand", features: ["edit_plan", "read_overall", "list_expenses", "group_types", "delete"] }));
 router.get("/groups", route(async (req,res) => res.json(await Group.find({ members: req.user.id }).select("name settings.currency groupType photo.url").limit(100).lean())));
 router.post("/runs", route(async (req,res) => {
   const run = await createRun(req.user, req.body);
@@ -34,7 +55,13 @@ router.get("/runs", route(async (req,res) => {
 router.get("/runs/:runId", route(async (req,res) => res.json(present(await getRun(req)))));
 router.post("/runs/:runId/decision", route(async (req,res) => res.json(present(await decide(req.user, objectId.parse(req.params.runId), req.body)))));
 router.post("/runs/:runId/resume", route(async (req,res) => {
-  await getRun(req);
+  const run = await getRun(req);
+  // A run that is genuinely still executing must not be driven twice in parallel.
+  const busy = () => Object.assign(new Error("Still working on this one. Give it a moment."), { status: 409, code: "STILL_RUNNING" });
+  if (run.status === "running" && Date.now() - new Date(run.updatedAt).getTime() < STALE_MS) throw busy();
+  // Claim the run atomically so two resume clicks can't drive it in parallel.
+  const claim = await AgentRun.updateOne({ _id: run._id, updatedAt: run.updatedAt }, { $set: { updatedAt: new Date() } }, { timestamps: false });
+  if (!claim.modifiedCount) throw busy();
   await executeRun(req.user, req.params.runId);
   res.json(present(await getRun(req)));
 }));

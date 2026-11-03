@@ -22,6 +22,7 @@ import {
   ReceiptText,
   Search,
   Settings,
+  Sparkles,
   User,
   UsersRound,
   X,
@@ -94,7 +95,7 @@ export default function DesktopAppNavbar() {
   const pathname = usePathname();
   const { token, setToken } = useAuth();
   const { collapsed } = useSidebar();
-  const { notifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead } = useNotifications();
+  const { notifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead, openPromo } = useNotifications();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -601,20 +602,21 @@ export default function DesktopAppNavbar() {
           <button
             type="button"
             onClick={() => { setNotificationsOpen((open) => !open); setProfileOpen(false); setSearchOpen(false); setHasUnread(false); }}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-muted-foreground transition-all duration-200 hover:border-foreground/[0.08] hover:bg-foreground/[0.05] hover:text-foreground active:scale-95"
+            className={`relative flex h-10 w-10 items-center justify-center rounded-full border text-muted-foreground outline-none transition-all duration-200 hover:border-foreground/[0.08] hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-cyan-500/50 active:scale-95 ${notificationsOpen ? "border-foreground/[0.08] bg-foreground/[0.06] text-foreground" : "border-transparent"}`}
             aria-label="Notifications"
+            aria-expanded={notificationsOpen}
           >
             <Bell size={18} />
             {hasUnread && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />}
           </button>
           <AnimatePresence>
             {notificationsOpen && (
-              <motion.div initial={{ opacity: 0, y: 6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.98 }} className="absolute right-0 top-[52px] w-[370px] overflow-hidden rounded-2xl border border-border bg-menu-solid shadow-[0_24px_70px_-20px_rgba(0,0,0,0.4)]">
-                <div className="flex items-center justify-between border-b border-border px-4 py-3.5"><div><p className="text-sm font-extrabold text-foreground">Notifications</p><p className="mt-0.5 text-[11px] text-muted-foreground">{unreadCount ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}` : "You're all caught up"}</p></div>{notifications.length > 0 && <button type="button" onClick={markAllAsRead} className="text-xs font-bold text-cyan-600 hover:text-cyan-500 dark:text-cyan-400">Clear all</button>}</div>
+              <motion.div initial={{ opacity: 0, y: 6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.98 }} transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }} className="absolute right-0 top-[50px] w-[340px] max-w-[calc(100vw-1.5rem)] origin-top-right overflow-hidden rounded-2xl border border-border bg-menu-solid shadow-[0_18px_50px_-18px_rgba(0,0,0,0.35)]">
+                <div className="flex items-center justify-between border-b border-border px-4 py-3"><div><p className="text-[13px] font-bold text-foreground">Notifications</p><p className="mt-0.5 text-[11px] text-muted-foreground">{unreadCount ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}` : "You're all caught up"}</p></div>{notifications.length > 0 && <button type="button" onClick={markAllAsRead} className="text-xs font-bold text-cyan-600 hover:text-cyan-500 dark:text-cyan-400">Clear all</button>}</div>
                 {notifications.length ? (
-                  <div className="max-h-[340px] overflow-y-auto p-2 custom-scrollbar">{notifications.slice(0, 8).map((item, index) => { const ExpenseIcon = item.type === "expense" ? ReceiptText : UsersRound; return <button key={item._id || index} type="button" onClick={() => { markOneAsRead(item._id); router.push(item.link || "/dashboard"); setNotificationsOpen(false); }} className="flex w-full gap-3 rounded-xl p-3 text-left transition hover:bg-foreground/[0.045]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"><ExpenseIcon size={17} /></span><span className="min-w-0 flex-1"><span className="line-clamp-2 text-xs font-semibold leading-5 text-foreground/85">{item.message}</span><span className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground"><Clock3 size={10} /> Recent update</span></span></button>; })}</div>
+                  <div className="max-h-[340px] overflow-y-auto p-2 custom-scrollbar">{notifications.slice(0, 8).map((item, index) => { const ExpenseIcon = item.type === "promo" ? Sparkles : item.type === "expense" ? ReceiptText : UsersRound; return <button key={item._id || index} type="button" onClick={() => { setNotificationsOpen(false); if (item.type === "promo") return openPromo(item); markOneAsRead(item._id); router.push(item.link || "/dashboard"); }} className="flex w-full gap-3 rounded-xl p-3 text-left transition hover:bg-foreground/[0.045]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"><ExpenseIcon size={17} /></span><span className="min-w-0 flex-1"><span className="line-clamp-2 text-xs font-semibold leading-5 text-foreground/85">{item.title ? `${item.title} ${item.message}` : item.message}</span><span className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground"><Clock3 size={10} /> Recent update</span></span></button>; })}</div>
                 ) : (
-                  <div className="px-5 py-9 text-center"><CheckCircle2 className="mx-auto mb-2 text-emerald-500" size={25} /><p className="text-sm font-bold text-foreground">Nothing new</p><p className="mt-1 text-xs text-muted-foreground">Updates from your groups will appear here.</p></div>
+                  <div className="flex items-center gap-3 px-4 py-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"><CheckCircle2 size={17} /></span><div><p className="text-[13px] font-semibold text-foreground">Nothing new</p><p className="text-[11px] text-muted-foreground">Updates from your groups will appear here.</p></div></div>
                 )}
               </motion.div>
             )}

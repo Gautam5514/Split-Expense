@@ -21,13 +21,14 @@ jest.unstable_mockModule("mongoose", () => ({ default: { connection: { transacti
 jest.unstable_mockModule("../models/groupModel.js", () => ({ default: {} }));
 jest.unstable_mockModule("../models/userModel.js", () => ({ default: {} }));
 jest.unstable_mockModule("../modules/autopilot/models.js", () => ({ AgentRun: Model }));
-jest.unstable_mockModule("../modules/autopilot/context.js", () => ({ authorizedRun: authorize, snapshot, fail: (status, code, message) => Object.assign(new Error(message), { status, code }) }));
+jest.unstable_mockModule("../modules/autopilot/context.js", () => ({ authorizedRun: authorize, snapshot, sameContext: (current, saved) => !saved || current.fingerprint === saved || current.legacy === saved, fail: (status, code, message) => Object.assign(new Error(message), { status, code }) }));
 jest.unstable_mockModule("../modules/autopilot/domain.js", () => ({ applyStep }));
 jest.unstable_mockModule("../modules/autopilot/insights.js", () => ({ computeInsights: jest.fn() }));
-jest.unstable_mockModule("../modules/autopilot/planner.js", () => ({ extractIntent: jest.fn(), buildPlan: jest.fn(), collectPeopleRefs: jest.fn() }));
+jest.unstable_mockModule("../modules/autopilot/planner.js", () => ({ extractIntent: jest.fn(), buildPlan: jest.fn(), collectPeopleRefs: jest.fn(), applyEdits: jest.fn(), readCorrection: jest.fn(() => null), parseLocal: jest.fn(() => ({ actions: [], clarification: null })) }));
+jest.unstable_mockModule("../models/expenseModel.js", () => ({ default: {} }));
 jest.unstable_mockModule("../modules/autopilot/people.js", () => ({ resolvePeople: jest.fn() }));
 jest.unstable_mockModule("../utils/contacts.js", () => ({ getContactIds: jest.fn() }));
-jest.unstable_mockModule("../middleware/validate.js", () => ({ isValidEmail: jest.fn(), normalizeEmail: jest.fn() }));
+jest.unstable_mockModule("../middleware/validate.js", () => ({ isValidEmail: jest.fn(), normalizeEmail: jest.fn(), escapeRegExp: s => s }));
 jest.unstable_mockModule("../controllers/balanceController.js", () => ({ invalidateBalanceCache: jest.fn(), computeGroupBalances: jest.fn(), buildSettlement: jest.fn() }));
 const { executeRun, decide } = await import("../modules/autopilot/run.service.js");
 const { hash } = await import("../modules/autopilot/contracts.js");

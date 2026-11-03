@@ -42,6 +42,15 @@ Optional natural language/Hinglish extraction: `AUTOPILOT_PROVIDER=gemini` uses 
 
 Mongoose creates new collections/indexes using the application's normal model initialization. If your development configuration disables automatic index creation, create the declared indexes before testing (especially actorId/requestKey, monitor owner/group and notice eventKey uniqueness). No schema migration was executed.
 
+## Production checklist
+
+`.env` files are gitignored, so production needs these set on the hosts themselves:
+
+- **Frontend host:** `NEXT_PUBLIC_AUTOPILOT_ENABLED=true`. It is baked in at build time, so **trigger a fresh build** after adding it. A restart is not enough.
+- **Backend host:** `AUTOPILOT_ENABLED=true`, `AUTOPILOT_PROVIDER=auto` and at least one key (`GROQ_API_KEY` recommended). Add `AUTOPILOT_WRITES_ENABLED=true` only if approved plans should really write. Then restart.
+- **Check the backend log on boot** for a line like `[autopilot] enabled=true writes=true planner=Groq (openai/gpt-oss-120b)`. `offline only` means no key was found. Failed provider calls are logged as `[autopilot] attempt failed provider=… status=…`; prompts and replies are never logged.
+- If the backend reports Autopilot as disabled, the launcher does not appear at all. If it is enabled but the AI providers are down, plans still work in basic mode, and the chat says so.
+
 ## Manual acceptance sequence
 
 1. With both backend flags false, authenticated `/api/agent/capabilities` returns 404; frontend route shows disabled state.

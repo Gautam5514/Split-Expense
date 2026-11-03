@@ -24,6 +24,8 @@ import {
   updateApplicationStatus,
 } from "../controllers/careerController.js";
 
+import { engagementStatus, sendEngagementTest, updateEngagement } from "../modules/engagement/admin.js";
+
 const router = express.Router();
 
 // 10 attempts per 15 min - there is exactly one admin account, so this can be strict.
@@ -42,6 +44,10 @@ router.use(adminAuthMiddleware);
 
 router.post("/upload", uploadAdminMedia);
 router.get("/stats", getAdminStats);
+
+router.get("/engagement", engagementStatus);
+router.patch("/engagement", updateEngagement);
+router.post("/engagement/test", sendEngagementTest);
 
 router.get("/contact-messages", listContactMessages);
 router.patch("/contact-messages/:id", updateContactMessageStatus);

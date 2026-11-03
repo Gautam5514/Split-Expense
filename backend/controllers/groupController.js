@@ -709,6 +709,21 @@ export const removeGroupPhoto = async (req, res) => {
   }
 };
 
+// Everything a group owns, removed together. Shared by the delete endpoint and Autopilot.
+// Inside a transaction the deletes run one after another (a session can't run them in parallel).
+export async function deleteGroupCore(groupId, { session = null } = {}) {
+  const ops = [
+    () => Expense.deleteMany({ groupId }, { session }),
+    () => GroupMessage.deleteMany({ groupId }, { session }),
+    () => Notepad.deleteMany({ groupId }, { session }),
+    () => GroupInvite.deleteMany({ groupId }, { session }),
+    () => Notification.deleteMany({ link: `/groups/${groupId}` }, { session }),
+    () => Group.deleteOne({ _id: groupId }, { session }),
+  ];
+  if (!session) return Promise.all(ops.map((op) => op()));
+  for (const op of ops) await op();
+}
+
 export const deleteGroup = async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -725,14 +740,7 @@ export const deleteGroup = async (req, res) => {
     }
 
     const memberIdsBeforeDelete = group.members.map(String);
-    await Promise.all([
-      Expense.deleteMany({ groupId }),
-      GroupMessage.deleteMany({ groupId }),
-      Notepad.deleteMany({ groupId }),
-      GroupInvite.deleteMany({ groupId }),
-      Notification.deleteMany({ link: `/groups/${groupId}` }),
-      Group.deleteOne({ _id: groupId }),
-    ]);
+    await deleteGroupCore(groupId);
 
     void notifyGroupChange(req.app?.get?.("io"), groupId, "deleted", memberIdsBeforeDelete);
     res.json({ success: true, message: "Trip deleted successfully" });
