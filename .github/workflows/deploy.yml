@@ -32,22 +32,35 @@ jobs:
             # The deploy was failing with:
             #   fatal: unable to write loose object file: No space left on device
             # Free up space before fetching. All of these are safe to remove:
-            # npm's cache, old pm2 logs, apt caches, and dangling git objects.
+            # npm's cache, old pm2 logs, and apt caches.
             npm cache clean --force 2>/dev/null || true
             pm2 flush 2>/dev/null || true
-            sudo journalctl --vacuum-time=3d 2>/dev/null || true
-            sudo apt-get clean 2>/dev/null || true
+            # Rotate first so the current journal can also be vacuumed.
+            sudo -n journalctl --rotate --vacuum-time=3d --vacuum-size=100M || echo "WARNING: journal cleanup failed"
+            sudo -n apt-get clean || echo "WARNING: apt cache cleanup failed"
 
-            # Compact the local git repo and drop unreachable objects.
-            git gc --prune=now --aggressive 2>/dev/null || true
+            # Do not repack git on a nearly full disk: it needs temporary space.
 
             echo "=== Disk usage after cleanup ==="
             df -h /
 
-            # Abort early with a clear message if the disk is still nearly full.
-            USED_PCT=$(df --output=pcent / | tail -1 | tr -dc '0-9')
-            if [ "${USED_PCT:-0}" -ge 95 ]; then
-              echo "ERROR: root disk is ${USED_PCT}% full; free space before deploying." >&2
+            # Reserve 1 GiB for git/npm, plus 2 GiB if swap must be created.
+            # Check available bytes rather than a rounded usage percentage.
+            NEED_SWAP=0
+            REQUIRED_KB=1048576
+            if [ "$(swapon --show --noheadings | wc -l)" -eq 0 ]; then
+              NEED_SWAP=1
+              REQUIRED_KB=$((REQUIRED_KB + 2097152))
+            fi
+            AVAILABLE_KB=$(df -Pk . | awk 'NR == 2 {print $4}')
+            if [ "$AVAILABLE_KB" -lt "$REQUIRED_KB" ]; then
+              echo "ERROR: ${AVAILABLE_KB} KiB free; need ${REQUIRED_KB} KiB for deployment (including new swap if needed)." >&2
+              echo "=== Largest directories on the root filesystem ==="
+              sudo -n du -xhd1 / /var /home 2>/dev/null | sort -hr | head -30 || true
+              echo "=== Swap files and deleted files still held open ==="
+              swapon --show
+              sudo -n lsof +L1 2>/dev/null | head -30 || true
+              echo "Free space or expand the EC2 root EBS volume AND its partition/filesystem, then rerun deployment." >&2
               exit 1
             fi
 
@@ -58,7 +71,11 @@ jobs:
 
             # npm ci was OOM-killed (exit 137) on the small EC2 instance, so add
             # a 2G swapfile once if the box has no swap.
-            if [ "$(swapon --show --noheadings | wc -l)" -eq 0 ]; then
+            if [ "$NEED_SWAP" -eq 1 ]; then
+              if [ -e /swapfile ]; then
+                echo "ERROR: /swapfile exists but is inactive; inspect and enable it before retrying." >&2
+                exit 1
+              fi
               sudo fallocate -l 2G /swapfile
               sudo chmod 600 /swapfile
               sudo mkswap /swapfile
@@ -68,6 +85,7 @@ jobs:
             free -m
 
             NODE_OPTIONS=--max-old-space-size=512 npm ci --omit=dev --no-audit --no-fund
+            npm cache clean --force || echo "WARNING: npm cache cleanup failed"
 
             pm2 restart split-backend --update-env
             pm2 save
