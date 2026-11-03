@@ -15,6 +15,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import ChromeGate from "@/components/ChromeGate";
 import MarketingScrollProgress from "@/components/MarketingScrollProgress";
 import AppSidebar from "@/components/AppSidebar";
+import AutopilotWidget from "@/components/autopilot/AutopilotWidget";
 import DesktopAppNavbar from "@/components/DesktopAppNavbar";
 import { SidebarProvider } from "@/context/SidebarContext";
 
@@ -265,6 +266,7 @@ export default function RootLayout({ children }) {
                   <MarketingScrollProgress />
                   <InstallPrompt />
                 </ChromeGate>
+                <AutopilotWidget />
                 </SidebarProvider>
               </NotificationProvider>
             </AuthProvider>

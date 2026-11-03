@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { buildSplits } from "../controllers/expenseController.js";
+import { buildSplits } from "./expenseSplits.js";
 
 /**
  * How a group splits an expense when the client doesn't say: the split

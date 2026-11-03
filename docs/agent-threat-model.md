@@ -1,0 +1,11 @@
+# Agent threat model
+
+Untrusted inputs: natural language, group/member names, provider JSON, expense descriptions, route IDs, reconnect cursors and all browser bodies. No descriptions/notes/receipts are supplied as model system instructions. The model extracts bounded proposed intents; Zod rejects unknown fields/tools and domain code resolves names/permissions.
+
+Controls: server-attested actor, strict allowlist, user-scoped rate limit, 4,000-character requests, 12 actions/run, bounded amounts, provider timeout/retry inherited from existing integration, exact minor-unit validation, approval hash/version, stale snapshot detection, membership rechecks, transaction checkpoints, generic provider/DB error messages, no raw prompt logging, owner-scoped history and 30-day TTL. Model extraction is disabled by default; no production route execution even when flags are accidentally true.
+
+Approval forgery/replay: owner + hash + version + required step set + compare-and-swap pending state. Concurrent executors serialize ledger updates through transactions; completed steps are skipped. Kill switch is checked for every write. Cancellation updates the same run document used by financial transactions, so conflicting in-flight transactions must retry and observe the stopped status.
+
+Data minimization: prompt/plan stored in access-controlled run document for 30 days. Tool diagnostics use safe event codes, no token/secret/raw provider logs. Monitoring consent rules/notices persist until separately managed; the run TTL also removes historical approval records, so this local policy is not a production audit-retention design.
+
+Residual risks/gates: existing manual/MCP writes are not all versioned transaction participants; transaction isolation and process-crash recovery require integration tests on a replica set. Optional Gemini can misunderstand intent; precise user review and server validation remain necessary. No measured hallucination/quality targets are claimed. Creating equivalent new requests with new keys produces distinct plans; UUID dedupe is scoped to a single submitted request. Planning is HTTP-bound, not a background durable queue. Scope remains local until those gates and production observability are implemented.

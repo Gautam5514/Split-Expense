@@ -31,6 +31,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import notepadeRoutes from "./routes/notepadRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import autopilotRoutes from "./modules/autopilot/routes.js";
 import referralRoutes from "./routes/referralRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
@@ -91,6 +92,7 @@ const corsOptions = {
     "Content-Type",
     "Authorization",
     "X-SplitEase-Token",
+    "Last-Event-ID",
     "Mcp-Session-Id",
     "Mcp-Protocol-Version",
     "Accept",
@@ -355,6 +357,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/notepads", notepadeRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/agent", autopilotRoutes);
 app.use("/api/referrals", referralRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/blog", blogRoutes);

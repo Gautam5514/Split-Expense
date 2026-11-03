@@ -260,13 +260,43 @@ export const addMembersByEmail = async (req, res) => {
     if (!isCreator(group, req.user))
       return res.status(403).json({ message: "Only the group creator can add members." });
 
+    const out = await addMembersCore({ group, actor: { id: uid, name: req.user.name }, emails, userIds, io: req.app?.get?.("io") });
+    const finalGroup = await Group.findById(groupId)
+      .populate("members", "name email")
+      .populate("createdBy", "name email");
+
+    res.json({
+      group: finalGroup,
+      added: out.direct.length,
+      pending: out.toInvite.length + out.skipped,
+      invited: out.unregisteredEmails.length,
+      invitedEmails: out.unregisteredEmails,
+    });
+  } catch (err) {
+    console.error("❌ addMembersByEmail:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * The one place that decides how a person joins a group (see addMembersByEmail).
+ * Shared by the HTTP endpoint and Autopilot so both obey the same consent rules.
+ * `group` must be a mongoose document. With `session`, every write joins that
+ * transaction; with `after` (an array), notifications and emails are queued there
+ * for the caller to run once the transaction has committed.
+ */
+export async function addMembersCore({ group, actor, emails = [], userIds = [], io = null, session = null, after = null }) {
+  const effect = (fn) => (after ? after.push(fn) : void fn());
+  const opts = session ? { session } : {};
+  const uid = actor.id;
+  const groupId = group._id;
     const normalizedEmails = [...new Set(emails.map(normalizeEmail))];
     const [registeredUsers, inviter, contactIds] = await Promise.all([
       User.find(
         { $or: [{ email: { $in: normalizedEmails } }, { _id: { $in: userIds.map((id) => new mongoose.Types.ObjectId(id)) } }] },
         "_id email name privacy blockedUsers"
-      ),
-      User.findById(uid).select("blockedUsers").lean(),
+      ).session(session),
+      User.findById(uid).select("blockedUsers").session(session).lean(),
       getContactIds(uid),
     ]);
     const registeredEmails = new Set(registeredUsers.map((u) => u.email));
@@ -285,38 +315,35 @@ export const addMembersByEmail = async (req, res) => {
     }
 
     // Direct adds
-    let updated = null;
     if (direct.length > 0) {
       const userIdsToAdd = direct.map((u) => new mongoose.Types.ObjectId(u._id));
       await Group.updateOne(
         { _id: group._id },
-        { $addToSet: { members: { $each: [group.createdBy, ...userIdsToAdd].filter((x) => mongoose.Types.ObjectId.isValid(String(x))) } } }
+        { $addToSet: { members: { $each: [group.createdBy, ...userIdsToAdd].filter((x) => mongoose.Types.ObjectId.isValid(String(x))) } } },
+        opts
       );
-      updated = await Group.findById(groupId)
-        .populate("members", "name email")
-        .populate("createdBy", "name email");
-      void notifyGroupChange(req.app?.get?.("io"), groupId, "member");
+      effect(() => notifyGroupChange(io, groupId, "member"));
 
-      void createNotification(
+      effect(() => createNotification(
         userIdsToAdd,
-        `You were added to group "${group.name}" by ${req.user.name}`,
+        `You were added to group "${group.name}" by ${actor.name}`,
         `/groups/${group._id}`,
         "group",
         { groupName: group.name, groupId: group._id }
-      );
+      ));
 
       const existingMemberIds = group.members
         .map(String)
         .filter((id) => !userIdsToAdd.map(String).includes(id) && id !== String(uid));
       if (existingMemberIds.length > 0) {
         const addedNames = direct.map((u) => u.name || u.email).join(", ");
-        void createNotification(
+        effect(() => createNotification(
           existingMemberIds,
-          `${req.user.name} added ${addedNames} to "${group.name}"`,
+          `${actor.name} added ${addedNames} to "${group.name}"`,
           `/groups/${group._id}`,
           "group",
           { groupName: group.name, groupId: group._id }
-        );
+        ));
       }
     }
 
@@ -327,51 +354,36 @@ export const addMembersByEmail = async (req, res) => {
         GroupInvite.findOneAndUpdate(
           { groupId: group._id, userId: u._id, status: "pending" },
           { $set: { kind: "invite", invitedBy: uid, expiresAt } },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
+          { upsert: true, new: true, setDefaultsOnInsert: true, ...opts }
         )
       ));
-      void createNotification(
+      effect(() => createNotification(
         toInvite.map((u) => u._id),
-        `${req.user.name} invited you to join "${group.name}"`,
+        `${actor.name} invited you to join "${group.name}"`,
         "/invites",
         "group",
         { groupName: group.name, groupId: group._id }
-      );
+      ));
     }
 
     // Send invitation emails to unregistered addresses
     if (unregisteredEmails.length > 0) {
       const joinLink = await ensureInviteLink(group);
-      const inviterName = req.user.name || "A friend";
+      const inviterName = actor.name || "A friend";
 
       // Send sequentially through the pooled transporter so a batch of invites
       // never opens a burst of parallel SMTP connections (which Gmail rejects).
-      void sendEmailsSafely(
+      effect(() => sendEmailsSafely(
         unregisteredEmails.map((email) => ({
           to: email,
           subject: `${String(inviterName).replace(/[\r\n]+/g, " ").slice(0, 80)} invited you to split expenses on SplitEase`,
           html: buildInviteEmailHtml({ inviterName, groupName: group.name, joinLink, email }),
         }))
-      );
+      ));
     }
 
-    // Build response
-    const finalGroup = updated || await Group.findById(groupId)
-      .populate("members", "name email")
-      .populate("createdBy", "name email");
-
-    res.json({
-      group: finalGroup,
-      added: direct.length,
-      pending: toInvite.length + skipped,
-      invited: unregisteredEmails.length,
-      invitedEmails: unregisteredEmails,
-    });
-  } catch (err) {
-    console.error("❌ addMembersByEmail:", err.message);
-    res.status(500).json({ message: err.message });
-  }
-};
+  return { direct, toInvite, unregisteredEmails, skipped };
+}
 
 // A fresh short code no other group is using (collisions are ~1 in 887M,
 // so the retry loop is only a safety net).

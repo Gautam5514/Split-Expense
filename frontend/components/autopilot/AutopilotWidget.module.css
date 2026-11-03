@@ -1,0 +1,112 @@
+.launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  width: 62px;
+  height: 62px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.82);
+  border-radius: 25px;
+  color: #183c3c;
+  background:
+    radial-gradient(ellipse at 85% 95%,#c6ebe42b,transparent 65%),
+    linear-gradient(155deg,#ffffff6b,#ffffff14 48%,#ffffff45);
+  -webkit-backdrop-filter: blur(5px) saturate(145%);
+  backdrop-filter: blur(5px) saturate(145%);
+  box-shadow:
+    0 8px 24px #273e4510,
+    0 1px 3px #2845490c,
+    inset 0 2px 3px #ffffffed,
+    inset 2px 0 4px #ffffffa8,
+    inset -1px -3px 5px #a9d8d347,
+    inset 0 -8px 14px #ffffff30;
+  text-align: left;
+  transition: width .5s cubic-bezier(.22,1,.36,1), border-radius .5s cubic-bezier(.22,1,.36,1), box-shadow .3s;
+}
+/* A hairline spectral rim gives the clear surface its curved glass edge. */
+.launcher::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  padding: 1px;
+  pointer-events: none;
+  border-radius: inherit;
+  background: conic-gradient(from 140deg,#9ee9db8c,#e4b8e566 18%,#fff4bd80 35%,#ffffffed 49%,#d4dcff8c 65%,#eebed76b 81%,#b5ece98c);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+/* Opposite crescent reflections, like light catching a rounded water drop. */
+.launcher::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 29px 7px at 17% 9%,#ffffffed,transparent 75%),
+    radial-gradient(ellipse 19px 3px at 12% 16%,#ffffffed,transparent 80%),
+    radial-gradient(ellipse 28px 5px at 88% 88%,#ffffffed,transparent 75%),
+    radial-gradient(ellipse 15px 3px at 91% 80%,#ffffffc7,transparent 75%);
+  opacity: .85;
+  transition: opacity .3s,transform .5s;
+}
+.launcherIcon { position: relative; display: flex; width: 60px; height: 60px; flex: 0 0 60px; align-items: center; justify-content: center; filter: drop-shadow(0 1px 1px #ffffffb3); }
+.launcherLabel { position: relative; flex: 0 0 155px; white-space: nowrap; opacity: 0; transform: translateX(8px); visibility: hidden; transition: opacity .2s, transform .3s, visibility .2s; }
+.launcher:focus-visible { width: 225px; border-radius: 999px; }
+.launcher:focus-visible .launcherLabel { opacity: 1; transform: translateX(0); visibility: visible; }
+@media(hover:hover) and (pointer:fine) {
+  .launcher:hover { width: 225px; border-radius: 999px; box-shadow: 0 10px 30px #273e451a, inset 0 2px 3px #ffffffed, inset 2px 0 4px #ffffffa8, inset -1px -3px 5px #a9d8d347; }
+  .launcher:hover::after { opacity: 1; transform: scaleX(1.025); }
+  .launcher:hover .launcherLabel { opacity: 1; transform: translateX(0); visibility: visible; transition-delay: .07s; }
+}
+.launcher:focus-visible, .panel button:focus-visible { outline: 3px solid #2dd4bf; outline-offset: 4px; }
+:global(.dark) .launcher { color: #edfff9; border-color: #ffffff40; background: radial-gradient(ellipse at 80% 95%,#a0cfcf18,transparent 60%),linear-gradient(155deg,#ffffff26,#ffffff08 48%,#ffffff12); box-shadow: 0 8px 28px #00000026,inset 0 2px 3px #ffffff59,inset 2px 0 4px #ffffff26,inset -1px -3px 5px #a9d8d326; }
+:global(.dark) .launcher::after { opacity: .48; }
+:global(.dark) .launcherIcon { filter: drop-shadow(0 1px 2px #00000026); }
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .launcher { background: #f1f7f5; }
+  :global(.dark) .launcher { background: #243c3a; }
+}
+.mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 32%;
+  color: #d6fff6;
+  background: radial-gradient(circle at 25% 15%,#73ddc0 0%,#277c72 43%,#174342 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), inset 0 -1px 0 rgba(0,0,0,.14);
+}
+.panel { isolation: isolate; background: var(--background); box-shadow: 0 24px 80px #071f2529, 0 0 0 1px #0f383310; }
+.header { background: linear-gradient(120deg,rgba(45,212,191,.08),transparent 85%); }
+.welcome { padding-top: 8px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 6px; color: #148575; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 22px; }
+.shortcut { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 17px; background: var(--card); text-align: left; transition: border-color .2s, background .2s, transform .2s; }
+.shortcut:hover:not(:disabled) { border-color: #34a893; background: color-mix(in srgb,var(--card) 94%,#2dd4bf); transform: translateY(-2px); }
+.shortcut:disabled { opacity: .5; }
+.shortcutIcon { display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 10px; color: #148575; background: #2dd4bf16; }
+.trust { display: flex; gap: 9px; align-items: flex-start; margin-top: 18px; padding: 12px 0; color: var(--muted-foreground); font-size: 11px; line-height: 18px; }
+.composer { padding-bottom: max(16px,env(safe-area-inset-bottom)); background: var(--background); }
+.input { box-shadow: 0 2px 8px #00000004; }
+.input:focus-within { border-color: #34a893; box-shadow: 0 0 0 3px #2dd4bf12; }
+.send { background: #176e61; color: #fff; }
+.send:hover:not(:disabled) { background: #11594f; }
+:global(.dark) .eyebrow, :global(.dark) .shortcutIcon { color: #7be0c7; }
+@media(max-width:639px) {
+  .launcher { right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); border-radius: 25px; }
+  .panel { height: 100dvh; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .launcher, .launcher::after, .launcherLabel, .shortcut { transition: none; transition-delay: 0s; }
+  .shortcut:hover:not(:disabled) { transform: none; }
+}
