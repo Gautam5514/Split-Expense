@@ -15,7 +15,7 @@ settle in the fewest payments, and let **Autopilot** do the admin for you, alway
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Good first issues](https://img.shields.io/github/issues/Gautam5514/Split-Expense/good%20first%20issue?label=good%20first%20issues)](https://github.com/Gautam5514/Split-Expense/labels/good%20first%20issue)
 
-**[Web app](https://splitease.tech)** · **[Android app](https://play.google.com/store/apps/details?id=com.kunal.splitapp)** · **[Mobile repo](https://github.com/Gautam5514/splitApp)** · **[API docs](docs/API.md)** · **[Autopilot docs](docs/autopilot/README.md)**
+**[Web app](https://split.elitecrew.online)** · **[Android app](https://play.google.com/store/apps/details?id=com.kunal.splitapp)** · **[Mobile repo](https://github.com/Gautam5514/splitApp)** · **[API docs](docs/API.md)** · **[Autopilot docs](docs/autopilot/README.md)**
 
 </div>
 
@@ -108,7 +108,7 @@ assistants can securely read your SplitEase data. Every request gets a fresh ser
 authenticated user, running through the same models and permission checks as the REST API.
 
 ```jsonc
-{ "mcpServers": { "splitease": { "url": "https://api.splitease.tech/mcp" } } }
+{ "mcpServers": { "splitease": { "url": "https://api.split.elitecrew.online/mcp" } } }
 ```
 
 Add the URL as a custom connector in Claude, Cursor or ChatGPT; OAuth 2.1 handles sign-in.
