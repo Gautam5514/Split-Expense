@@ -15,6 +15,6 @@ export const RULES = {
 // Push images must be public https URLs, so a local dev origin falls back to the live site.
 export function assetOrigin(env = process.env) {
   const candidates = [env.APP_PUBLIC_URL, ...(env.FRONTEND_URL || "").split(",")].map(s => String(s || "").trim().replace(/\/+$/, ""));
-  return candidates.find(u => /^https:\/\//.test(u) && !/localhost|127\.0\.0\.1/.test(u)) || "https://splitease.tech";
+  return candidates.find(u => /^https:\/\//.test(u) && !/localhost|127\.0\.0\.1/.test(u)) || "https://split.elitecrew.online";
 }
 export const imageUrl = (file, env) => `${assetOrigin(env)}/notifications/${file}`;

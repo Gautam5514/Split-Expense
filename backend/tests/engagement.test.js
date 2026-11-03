@@ -122,7 +122,7 @@ describe("defaults need no env setup", () => {
     expect(RULES).toMatchObject({ tripPerMonth: 2, perDay: 1, per30Days: 5, requireOptIn: false, androidChannel: "alerts" });
   });
   test("push images always use a public https site", () => {
-    expect(assetOrigin({})).toBe("https://splitease.tech");
+    expect(assetOrigin({})).toBe("https://split.elitecrew.online");
     expect(assetOrigin({ FRONTEND_URL: "http://localhost:3000,https://app.example.in/" })).toBe("https://app.example.in");
     expect(assetOrigin({ APP_PUBLIC_URL: "https://splitease.tech", FRONTEND_URL: "https://x.in" })).toBe("https://splitease.tech");
   });
