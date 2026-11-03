@@ -25,6 +25,32 @@ jobs:
 
             cd /var/www/split-backend/Split-Expense
 
+            # Show disk usage up front so a full disk is obvious in the logs.
+            echo "=== Disk usage before cleanup ==="
+            df -h /
+
+            # The deploy was failing with:
+            #   fatal: unable to write loose object file: No space left on device
+            # Free up space before fetching. All of these are safe to remove:
+            # npm's cache, old pm2 logs, apt caches, and dangling git objects.
+            npm cache clean --force 2>/dev/null || true
+            pm2 flush 2>/dev/null || true
+            sudo journalctl --vacuum-time=3d 2>/dev/null || true
+            sudo apt-get clean 2>/dev/null || true
+
+            # Compact the local git repo and drop unreachable objects.
+            git gc --prune=now --aggressive 2>/dev/null || true
+
+            echo "=== Disk usage after cleanup ==="
+            df -h /
+
+            # Abort early with a clear message if the disk is still nearly full.
+            USED_PCT=$(df --output=pcent / | tail -1 | tr -dc '0-9')
+            if [ "${USED_PCT:-0}" -ge 95 ]; then
+              echo "ERROR: root disk is ${USED_PCT}% full; free space before deploying." >&2
+              exit 1
+            fi
+
             git fetch origin main
             git reset --hard origin/main
 
