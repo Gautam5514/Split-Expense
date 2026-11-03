@@ -107,7 +107,7 @@ The MCP server speaks the **Streamable HTTP** transport, so any MCP host can
 reach it at a plain URL — no local install:
 
 ```
-https://api.splitease.tech/mcp     # hosted
+https://api.split.elitecrew.online/mcp     # hosted
 http://localhost:5000/mcp          # local dev
 ```
 
@@ -121,7 +121,7 @@ scoped to your account. No manual token handling.
 {
   "mcpServers": {
     "splitease": {
-      "url": "https://api.splitease.tech/mcp"
+      "url": "https://api.split.elitecrew.online/mcp"
     }
   }
 }
@@ -131,7 +131,7 @@ scoped to your account. No manual token handling.
 Bearer header. Grab a fresh one from the `/mcp-login` page.
 
 ```bash
-curl -s https://api.splitease.tech/mcp \
+curl -s https://api.split.elitecrew.online/mcp \
   -H "Authorization: Bearer <YOUR_SPLITEASE_TOKEN>" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
