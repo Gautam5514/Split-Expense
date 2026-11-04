@@ -213,3 +213,81 @@ export const getMyBalanceSummary = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+/*
+ * GET /balances/widget - everything the home-screen widget shows, in one call:
+ * totals, the people to settle with (largest first), this month's spend and the
+ * latest expense. Same maths as the per-group balances, so the widget never
+ * disagrees with the group screen it opens.
+ */
+export const getWidgetSummary = async (req, res) => {
+  try {
+    const uid = req.user?.id;
+    if (!uid) return res.status(401).json({ message: "Unauthorized" });
+    const me = String(uid);
+    const groups = await Group.find({ members: new mongoose.Types.ObjectId(uid), isCompleted: { $ne: true } })
+      .populate("members", "name").select("_id name members").lean();
+    const groupIds = groups.map((g) => g._id);
+    const names = new Map();
+    for (const g of groups) for (const m of g.members || []) if (m?._id) names.set(String(m._id), m.name);
+    const groupName = new Map(groups.map((g) => [String(g._id), g.name]));
+
+    const expenses = groupIds.length
+      ? await Expense.find({ groupId: { $in: groupIds } }).select(`${BALANCE_FIELDS} description date isSettlement createdAt`).sort({ date: -1 }).lean()
+      : [];
+    const byGroup = new Map();
+    for (const exp of expenses) {
+      const key = String(exp.groupId);
+      if (!byGroup.has(key)) byGroup.set(key, []);
+      byGroup.get(key).push(exp);
+    }
+
+    // Per-person: net up the minimal settlement of every group by counterpart.
+    const perPerson = new Map(); // otherId -> { amount (+ they owe me), groupId }
+    let totalOwed = 0, totalOwe = 0;
+    for (const g of groups) {
+      const members = (g.members || []).map((m) => String(m._id || m));
+      const active = new Set(members);
+      const bal = {};
+      for (const id of members) bal[id] = 0;
+      applyExpenses(bal, active, byGroup.get(String(g._id)) || []);
+      const mine = bal[me] || 0;
+      if (mine > 0.01) totalOwed += mine; else if (mine < -0.01) totalOwe += Math.abs(mine);
+      for (const t of buildSettlement(bal)) {
+        const other = t.to === me ? t.from : t.from === me ? t.to : null;
+        if (!other) continue;
+        const signed = t.to === me ? t.amount : -t.amount;
+        const cur = perPerson.get(other) || { amount: 0, groupId: String(g._id), groupAmount: 0 };
+        cur.amount = to2(cur.amount + signed);
+        if (Math.abs(signed) > Math.abs(cur.groupAmount)) { cur.groupId = String(g._id); cur.groupAmount = signed; }
+        perPerson.set(other, cur);
+      }
+    }
+    const people = [...perPerson].filter(([, p]) => Math.abs(p.amount) > 0.01)
+      .map(([id, p]) => ({ userId: id, name: names.get(id) || "Someone", amount: Math.abs(p.amount), direction: p.amount > 0 ? "owed" : "owe", groupId: p.groupId, group: groupName.get(p.groupId) || "" }))
+      .sort((a, b) => b.amount - a.amount).slice(0, 5);
+
+    // This month: my share of non-settlement expenses since the 1st (IST).
+    const istNow = new Date(Date.now() + 330 * 60_000);
+    const monthStart = new Date(Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), 1) - 330 * 60_000);
+    let monthSpend = 0, monthCount = 0;
+    for (const exp of expenses) {
+      if (exp.isSettlement || !exp.date || exp.date < monthStart) continue;
+      const share = (exp.splits || []).find((s) => String(s.userId) === me);
+      if (share) { monthSpend += Number(share.share || 0); monthCount += 1; }
+    }
+    const latest = expenses.find((e) => !e.isSettlement && ((e.splits || []).some((s) => String(s.userId) === me) || String(e.paidBy) === me));
+
+    res.json({
+      totalOwed: to2(totalOwed), totalOwe: to2(totalOwe), net: to2(totalOwed - totalOwe),
+      people,
+      month: { spend: to2(monthSpend), count: monthCount },
+      latest: latest ? { description: latest.description, amount: to2(latest.amount), group: groupName.get(String(latest.groupId)) || "", groupId: String(latest.groupId), date: latest.date } : null,
+      groups: groups.length,
+      updatedAt: new Date(),
+    });
+  } catch (err) {
+    console.error("❌ getWidgetSummary:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
