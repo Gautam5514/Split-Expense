@@ -24,7 +24,7 @@ import {
   updateApplicationStatus,
 } from "../controllers/careerController.js";
 
-import { engagementStatus, sendEngagementTest, updateEngagement } from "../modules/engagement/admin.js";
+import { engagementStatus, sendEngagementTest, updateEngagement, createBroadcast, cancelBroadcast } from "../modules/engagement/admin.js";
 
 const router = express.Router();
 
@@ -48,6 +48,8 @@ router.get("/stats", getAdminStats);
 router.get("/engagement", engagementStatus);
 router.patch("/engagement", updateEngagement);
 router.post("/engagement/test", sendEngagementTest);
+router.post("/engagement/broadcast", createBroadcast);
+router.delete("/engagement/broadcast/:id", cancelBroadcast);
 
 router.get("/contact-messages", listContactMessages);
 router.patch("/contact-messages/:id", updateContactMessageStatus);

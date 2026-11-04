@@ -488,7 +488,8 @@ export const sendEngagementNotifications = async (items) => {
   if (!items.length) return { stored: 0 };
   const saved = await Notification.insertMany(items.map((it) => ({
     userId: it.userId, type: "promo", message: it.body, title: it.title, image: it.image || undefined,
-    link: "/dashboard", cta: { label: it.cta, link: it.webLink }, campaign: it.campaign,
+    // Nudges about one group open that group; everything else opens the dashboard (or Autopilot via cta.link).
+    link: /^\/groups\/[a-f0-9]{24}$/.test(it.webLink || "") ? it.webLink : "/dashboard", cta: { label: it.cta, link: it.webLink }, campaign: it.campaign,
   })));
   saved.forEach((doc) => {
     const socketId = onlineUsers.get(String(doc.userId));

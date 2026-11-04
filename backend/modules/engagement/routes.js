@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import User from "../../models/userModel.js";
 import Notification from "../../models/notification.model.js";
 import { authMiddleware } from "../../middleware/authMiddleware.js";
-import { EngagementSend } from "./models.js";
+import { EngagementSend, EngagementState } from "./models.js";
 import { upcomingSlots } from "./schedule.js";
 import { RULES } from "./config.js";
 
@@ -46,6 +46,8 @@ router.post("/engagement/opened", authMiddleware, async (req, res) => {
     if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid notification." });
     const n = await Notification.findOneAndUpdate({ _id: id, userId: req.user.id, type: "promo" }, { $set: { isRead: true } }).lean();
     if (n?.campaign) await EngagementSend.updateOne({ key: n.campaign, userId: req.user.id, openedAt: null }, { $set: { openedAt: new Date() } });
+    // An open proves the tips are welcome: the fatigue counter starts again from zero.
+    await EngagementState.updateOne({ _id: req.user.id }, { $set: { streak: 0, lastOpenedAt: new Date() } });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ message: err.message });
