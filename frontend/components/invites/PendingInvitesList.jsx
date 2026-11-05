@@ -4,6 +4,7 @@ import { useEffect, useState, createElement } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Ban, Loader2, MailOpen } from "lucide-react";
 import { api } from "@/lib/api";
+import { useRealtime } from "@/lib/useRealtime";
 import toast from "@/lib/toast";
 import { groupTypeMeta } from "@/lib/groupPresets";
 import { getGroupIcon } from "@/lib/groupIcons";
@@ -22,6 +23,8 @@ export default function PendingInvitesList({ compact = false, onChanged }) {
 
   const load = () => api.get("/invites").then((r) => setInvites(r.data || [])).catch(() => setInvites([]));
   useEffect(() => { load(); }, []);
+  // A new invite (or one cancelled by the sender) shows up without a refresh.
+  useRealtime({ event: "dashboardUpdate", onChange: () => load() });
 
   const respond = async (inv, action, block = false) => {
     try {

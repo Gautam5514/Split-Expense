@@ -504,4 +504,20 @@ describe("getPendingSettlements enrichment", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body[0].toUpi).toEqual({ upiId: null, upiQrUrl: null });
   });
+
+  test("a group member who is NOT the payer or payee never sees the pending request", async () => {
+    const { group, debtor, creditor } = seedGroupWithDebt(500);
+    const bystander = oid();
+    group.members.push(bystander);
+    await requestSettlement(makeReq({
+      user: { id: debtor, name: "Debtor" },
+      body: { groupId: group._id, fromUserId: debtor, toUserId: creditor, amount: 500, method: "cash" },
+    }), makeRes());
+
+    const res = makeRes();
+    await getPendingSettlements(makeReq({ user: { id: String(bystander) }, params: { groupId: group._id } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveLength(0);
+  });
 });

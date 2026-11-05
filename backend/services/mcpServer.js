@@ -2,285 +2,129 @@
  * MCP server factory for the remote (HTTP) SplitEase MCP endpoint.
  *
  * Builds a per-request McpServer whose tools are scoped to one authenticated
- * user (`authedUser` — the same shape authMiddleware puts on req.user). Tools
- * read/write through the existing Mongoose models and the shared balance
- * computation, so behaviour matches the REST API exactly (including membership
- * checks). Nothing here trusts client-supplied identity — the user is fixed by
- * the verified Firebase token at the transport layer.
+ * user (`authedUser` - the same shape authMiddleware puts on req.user). Lets
+ * ChatGPT, Claude, Gemini and any other MCP client run SplitEase end to end:
+ * create and manage groups, add bills, settle up, handle invites and monthly
+ * bills.
+ *
+ * Design:
+ *  - Write tools call the SAME controllers the web and app use
+ *    (services/mcp/bridge.js), so every rule, notification and live update is
+ *    identical - a bill added from a chat shows up instantly in the app.
+ *  - Groups and people can be named the way a person talks ("Goa trip",
+ *    "Rahul", "me"); ambiguity comes back as a question, never a guess.
+ *  - Identity comes only from the verified credential at the transport layer.
+ *    No tool accepts a user id to act as.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import mongoose from "mongoose";
-import Group from "../models/groupModel.js";
-import Expense from "../models/expenseModel.js";
-import User from "../models/userModel.js";
-import { computeGroupBalances, buildSettlement } from "../controllers/balanceController.js";
+import { invokeController, loadControllers } from "./mcp/bridge.js";
+import { resolveGroup } from "./mcp/resolve.js";
+import { fail, internalFail } from "./mcp/helpers.js";
+import { registerAccountTools } from "./mcp/tools/account.js";
+import { registerGroupTools } from "./mcp/tools/groups.js";
+import { registerExpenseTools } from "./mcp/tools/expenses.js";
+import { registerSettlementTools } from "./mcp/tools/settlements.js";
+import { registerInviteTools } from "./mcp/tools/invites.js";
+import { registerRecurringTools } from "./mcp/tools/recurring.js";
 
-const isObjectId = (v) => mongoose.Types.ObjectId.isValid(v);
-const sameId = (a, b) => String(a) === String(b);
+export const SERVER_VERSION = "2.0.0";
 
-/** Standard MCP text result. */
-const ok = (data) => ({
-  content: [
-    { type: "text", text: typeof data === "string" ? data : JSON.stringify(data, null, 2) },
-  ],
-});
-const fail = (message) => ({ content: [{ type: "text", text: message }], isError: true });
+export const SERVER_INSTRUCTIONS = `SplitEase tracks shared expenses in groups (trips, flatmates, teams) and works out who owes whom.
 
-/**
- * Unexpected failure: log the real error server-side, tell the client only a
- * generic message (Mongo/Mongoose errors can leak schema + internals).
- */
-const internalFail = (tool, e) => {
-  console.error(`❌ MCP tool ${tool} failed:`, e?.message || e);
-  return fail("Something went wrong while running this tool. Please try again.");
-};
-
-const MAX_EXPENSES = 500;
-const DEFAULT_EXPENSES = 200;
-const SUMMARY_CONCURRENCY = 5;
-
-/** Load a group the user is a member of, or return null. */
-async function memberGroup(groupId, userId) {
-  if (!isObjectId(groupId)) return null;
-  const group = await Group.findById(groupId).populate("members", "name email").lean();
-  if (!group) return null;
-  const member = (group.members || []).some((m) => sameId(m._id, userId));
-  return member ? group : null;
-}
+How to use these tools well:
+- Refer to groups and people the way the user does. Every "group" argument takes a group name or id, and member arguments take a name, an email or "me". If a tool says a name is ambiguous, ask the user which one they meant. Don't guess.
+- If you're unsure which group the user means, call list_groups first.
+- add_expense always records the signed-in user as the payer. Nobody can log a bill in someone else's name. If someone else paid, they add it from their own account. To record money changing hands, use settle_up.
+- Amounts are in the group's currency (get_group shows it). For a bill in another currency, pass currency, originalAmount and fxRate. Don't invent an exchange rate; ask the user for it.
+- With no split details, a bill uses the group's default split across all members. Use splitWith for a subset of people, and splitType + splitDetails for exact amounts, percentages or shares.
+- People join with consent. add_members adds known contacts directly, sends other SplitEase users an invite they must accept, and emails a join link to unknown addresses. Report exactly what the tool says happened.
+- settle_up: if the user says they paid someone, that person must confirm, so the payment stays pending until they do. If the user says someone paid them, it is recorded straight away.
+- Confirm with the user before destructive tools: delete_group, remove_member, leave_group, delete_recurring_bill.
+- Write tools return a "summary" sentence you can relay as-is. Changes show up live in the SplitEase web and mobile apps.`;
 
 /**
- * @param {{ id: string, email: string, name: string }} authedUser
+ * @param {{ id: string, email: string, name: string, firebaseUid?: string }} authedUser
  * @returns {McpServer}
  */
 export function buildSplitEaseMcpServer(authedUser) {
-  const server = new McpServer({ name: "splitease-mcp", version: "1.0.0" });
-  const uid = authedUser.id;
-
-  const objectId = z
-    .string()
-    .regex(/^[a-fA-F0-9]{24}$/, "Must be a 24-character MongoDB ObjectId.");
-
-  // ── whoami ──────────────────────────────────────────────────────────────
-  server.registerTool(
-    "get_me",
-    {
-      title: "Get current user",
-      description: "Get the authenticated SplitEase user's account (id, name, email).",
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const user = await User.findById(uid).select("name email createdAt").lean();
-        if (!user) return fail("User not found.");
-        return ok({ id: user._id, name: user.name, email: user.email, createdAt: user.createdAt });
-      } catch (e) {
-        return internalFail("get_me", e);
-      }
-    },
+  const server = new McpServer(
+    { name: "splitease-mcp", version: SERVER_VERSION },
+    { instructions: SERVER_INSTRUCTIONS },
   );
+  const uid = String(authedUser.id);
 
-  // ── groups ──────────────────────────────────────────────────────────────
-  server.registerTool(
-    "list_groups",
-    {
-      title: "List groups",
-      description: "List all expense-sharing groups the current user belongs to.",
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const groups = await Group.find({ members: uid })
-          .populate("members", "name email")
-          .sort({ updatedAt: -1 })
-          .lean();
-        return ok(
-          groups.map((g) => ({
-            id: g._id,
-            name: g.name,
-            groupType: g.groupType,
-            isCompleted: g.isCompleted,
-            memberCount: (g.members || []).length,
-            members: (g.members || []).map((m) => ({ id: m._id, name: m.name, email: m.email })),
-            updatedAt: g.updatedAt,
-          })),
-        );
-      } catch (e) {
-        return internalFail("list_groups", e);
-      }
-    },
-  );
+  const ctx = {
+    server,
+    z,
+    uid,
+    user: authedUser,
 
-  server.registerTool(
-    "get_group",
-    {
-      title: "Get group details",
-      description: "Get one group (members included) if you are a member.",
-      inputSchema: { groupId: objectId },
-    },
-    async ({ groupId }) => {
-      try {
-        const group = await memberGroup(groupId, uid);
-        if (!group) return fail("Group not found, or you are not a member.");
-        return ok({
-          id: group._id,
-          name: group.name,
-          groupType: group.groupType,
-          isCompleted: group.isCompleted,
-          members: (group.members || []).map((m) => ({ id: m._id, name: m.name, email: m.email })),
-        });
-      } catch (e) {
-        return internalFail("get_group", e);
-      }
-    },
-  );
+    /** Accepts a group name or id. */
+    groupRef: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .describe('Group name (e.g. "Goa trip") or its id.'),
 
-  server.registerTool(
-    "create_group",
-    {
-      title: "Create group",
-      description: "Create a new group owned by the current user.",
-      inputSchema: {
-        name: z.string().trim().min(2).max(100).describe("Group name."),
-        groupType: z.enum(["trip", "roommate", "general"]).optional(),
-      },
-    },
-    async ({ name, groupType }) => {
-      try {
-        const group = await Group.create({
-          name: name.trim(),
-          createdBy: uid,
-          members: [uid],
-          groupType: groupType || "general",
-        });
-        const populated = await Group.findById(group._id).populate("members", "name email").lean();
-        return ok({ id: populated._id, name: populated.name, groupType: populated.groupType });
-      } catch (e) {
-        if (e?.code === 11000) return fail("You already have a group with this name.");
-        return internalFail("create_group", e);
-      }
-    },
-  );
+    memberRef: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .describe('A member: their name, email, or "me".'),
 
-  // ── expenses ────────────────────────────────────────────────────────────
-  server.registerTool(
-    "list_expenses",
-    {
-      title: "List group expenses",
-      description:
-        "List expenses (newest first) in a group you belong to. Returns up to `limit` items (default 200, max 500).",
-      inputSchema: {
-        groupId: objectId,
-        limit: z.number().int().min(1).max(MAX_EXPENSES).optional().describe("Max expenses to return."),
-      },
-    },
-    async ({ groupId, limit }) => {
-      try {
-        const group = await memberGroup(groupId, uid);
-        if (!group) return fail("Group not found, or you are not a member.");
-        const expenses = await Expense.find({ groupId })
-          .populate("paidBy", "name email")
-          .sort({ date: -1 })
-          .limit(limit ?? DEFAULT_EXPENSES)
-          .lean();
-        return ok(
-          expenses.map((x) => ({
-            id: x._id,
-            description: x.description,
-            amount: x.amount,
-            category: x.category,
-            splitType: x.splitType,
-            paidBy: x.paidBy ? { id: x.paidBy._id, name: x.paidBy.name } : null,
-            date: x.date,
-            isSettlement: x.isSettlement,
-          })),
-        );
-      } catch (e) {
-        return internalFail("list_expenses", e);
-      }
-    },
-  );
+    objectId: z.string().regex(/^[a-fA-F0-9]{24}$/, "Must be a 24-character id."),
 
-  // ── balances ────────────────────────────────────────────────────────────
-  server.registerTool(
-    "get_balances",
-    {
-      title: "Get group balances",
-      description:
-        "Get per-member net balances plus the minimal settle-up suggestions (who pays whom) for a group.",
-      inputSchema: { groupId: objectId },
-    },
-    async ({ groupId }) => {
-      try {
-        const group = await memberGroup(groupId, uid);
-        if (!group) return fail("Group not found, or you are not a member.");
-        const computed = await computeGroupBalances(groupId);
-        if (!computed) return fail("Group not found.");
-        const { uniqueMembers, balances } = computed;
-        const readable = uniqueMembers.map((m) => ({
-          userId: m._id.toString(),
-          name: m.name,
-          email: m.email,
-          balance: Number((balances[m._id.toString()] || 0).toFixed(2)),
-        }));
-        const suggestions = buildSettlement(balances).map((t) => {
-          const from = uniqueMembers.find((m) => m._id.toString() === t.from);
-          const to = uniqueMembers.find((m) => m._id.toString() === t.to);
-          return {
-            from: { name: from?.name, email: from?.email },
-            to: { name: to?.name, email: to?.email },
-            amount: t.amount,
-          };
-        });
-        return ok({ balances: readable, suggestions });
-      } catch (e) {
-        return internalFail("get_balances", e);
-      }
-    },
-  );
-
-  // ── overall summary across all groups ─────────────────────────────────────
-  server.registerTool(
-    "get_overall_summary",
-    {
-      title: "Get overall balance summary",
-      description:
-        "Summarise the current user's net balance across every group they belong to " +
-        "(total you are owed, total you owe, and a per-group breakdown).",
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const groups = await Group.find({ members: uid }).select("_id name").lean();
-        let totalOwedToYou = 0;
-        let totalYouOwe = 0;
-        const perGroup = [];
-        // Bounded concurrency: much faster than one-by-one for users with many
-        // groups, without hammering MongoDB with an unbounded fan-out.
-        for (let i = 0; i < groups.length; i += SUMMARY_CONCURRENCY) {
-          const batch = groups.slice(i, i + SUMMARY_CONCURRENCY);
-          const results = await Promise.all(batch.map((g) => computeGroupBalances(g._id)));
-          batch.forEach((g, idx) => {
-            const computed = results[idx];
-            if (!computed) return;
-            const bal = Number((computed.balances[uid] || 0).toFixed(2));
-            if (bal > 0) totalOwedToYou += bal;
-            else if (bal < 0) totalYouOwe += -bal;
-            if (Math.abs(bal) >= 0.01) perGroup.push({ group: g.name, groupId: g._id, yourBalance: bal });
-          });
+    /**
+     * Register a tool with uniform error handling: an unexpected throw is
+     * logged and reported generically, never leaked.
+     */
+    tool(name, def, handler) {
+      server.registerTool(name, def, async (args, extra) => {
+        try {
+          return await handler(args || {}, extra);
+        } catch (e) {
+          return internalFail(name, e);
         }
-        return ok({
-          totalOwedToYou: Number(totalOwedToYou.toFixed(2)),
-          totalYouOwe: Number(totalYouOwe.toFixed(2)),
-          net: Number((totalOwedToYou - totalYouOwe).toFixed(2)),
-          groups: perGroup,
-        });
-      } catch (e) {
-        return internalFail("get_overall_summary", e);
-      }
+      });
     },
-  );
+
+    /** Resolve a group the user belongs to, or a ready-made error result. */
+    async group(ref) {
+      const r = await resolveGroup(ref, uid);
+      return r.error ? { error: fail(r.error) } : r;
+    },
+
+    /**
+     * Run a REST controller as this user. 4xx -> { error } carrying the
+     * controller's own (user-safe) message; 5xx -> thrown (logged, generic).
+     */
+    async call(name, { params = {}, body = {}, query = {} } = {}) {
+      const controllers = await loadControllers();
+      const handler = controllers[name];
+      if (typeof handler !== "function") throw new Error(`Unknown controller ${name}`);
+      const { status, data } = await invokeController(handler, { user: authedUser, params, body, query });
+      if (status >= 500) throw new Error(`${name} -> ${status}: ${data?.message || "server error"}`);
+      if (status >= 400) {
+        return { error: fail(data?.message || "That request was not accepted."), status, data };
+      }
+      return { status, data };
+    },
+
+    async controllers() {
+      return loadControllers();
+    },
+  };
+
+  registerAccountTools(ctx);
+  registerGroupTools(ctx);
+  registerExpenseTools(ctx);
+  registerSettlementTools(ctx);
+  registerInviteTools(ctx);
+  registerRecurringTools(ctx);
 
   return server;
 }

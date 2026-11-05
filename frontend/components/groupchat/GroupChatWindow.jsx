@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { api } from "@/lib/api";
-import socket, { connectSocket } from "@/lib/socket";
+import socket, { connectSocket, joinGroupRoom, leaveGroupRoom, onResync } from "@/lib/socket";
 import ChatInput from "./ChatInput";
 import VoicePlayer from "../chat/VoicePlayer";
 import MediaLightbox from "../chat/MediaLightbox";
@@ -92,12 +92,13 @@ export default function GroupChatWindow({ activeGroup, onBack, detailsOpen, onTo
   useEffect(() => {
     if (!activeGroup) return;
     connectSocket();
-    socket.emit("joinGroup", activeGroup._id);
+    const groupId = activeGroup._id;
+    joinGroupRoom(groupId);
 
     // Automatically mark all messages in this group as seen on open
     api.post(`/groups/${activeGroup._id}/mark-seen`).catch(console.error);
 
-    socket.on("newGroupMessage", (msg) => {
+    const onNew = (msg) => {
       if (msg.groupId === activeGroup._id) {
         setMessages((prev) => {
           // Remove any local optimistic message matching text and sender to avoid duplicates
@@ -119,10 +120,10 @@ export default function GroupChatWindow({ activeGroup, onBack, detailsOpen, onTo
           api.post(`/groups/${activeGroup._id}/mark-seen`).catch(console.error);
         }
       }
-    });
+    };
 
-    socket.on("groupMessagesSeen", ({ groupId, userId }) => {
-      if (groupId === activeGroup._id) {
+    const onSeen = ({ groupId: seenGroupId, userId }) => {
+      if (seenGroupId === activeGroup._id) {
         setMessages((prev) =>
           prev.map((m) => {
             const currentSeenBy = m.seenBy || [];
@@ -133,12 +134,23 @@ export default function GroupChatWindow({ activeGroup, onBack, detailsOpen, onTo
           })
         );
       }
+    };
+
+    socket.on("newGroupMessage", onNew);
+    socket.on("groupMessagesSeen", onSeen);
+    // Reconnected / tab back after a while: pull anything sent meanwhile.
+    const stopResync = onResync(() => {
+      api.get(`/groups/${groupId}/messages`)
+        .then((res) => setMessages(res.data || []))
+        .catch(() => {});
     });
 
     return () => {
-      socket.emit("leaveGroup", activeGroup._id);
-      socket.off("newGroupMessage");
-      socket.off("groupMessagesSeen");
+      stopResync();
+      // Ref-counted: other components watching this group keep their updates.
+      leaveGroupRoom(groupId);
+      socket.off("newGroupMessage", onNew);
+      socket.off("groupMessagesSeen", onSeen);
     };
   }, [activeGroup, me]);
 

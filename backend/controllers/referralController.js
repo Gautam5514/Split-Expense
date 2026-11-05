@@ -2,7 +2,7 @@ import User from "../models/userModel.js";
 import UserProfile from "../models/userProfileModel.js";
 import Referral from "../models/referralModel.js";
 import CoinTransaction from "../models/coinTransactionModel.js";
-import { MILESTONES, ELITE_TIERS } from "../config/referralConfig.js";
+import { MILESTONES, ELITE_TIERS, REWARDS } from "../config/referralConfig.js";
 import { STORE_ITEMS } from "../config/storeConfig.js";
 import { ensureReferralCode } from "../utils/referralService.js";
 
@@ -26,6 +26,8 @@ const buildEliteClub = (coins) => {
     tier: { key: current.key, name: current.name, perks: current.perks, minCoins: current.minCoins },
     nextTier: next ? { key: next.key, name: next.name, perks: next.perks, minCoins: next.minCoins } : null,
     coinsToNext: next ? Math.max(next.minCoins - coins, 0) : 0,
+    // How many more referrals reach the next tier - a concrete, motivating goal.
+    friendsToNext: next ? Math.ceil(Math.max(next.minCoins - coins, 0) / Math.max(REWARDS.REFERRER_COINS, 1)) : 0,
     // Lifetime-earned coins the tier was computed from (>= spendable balance).
     basisCoins: coins,
     allTiers: ELITE_TIERS,
@@ -101,6 +103,8 @@ export const getMyReferralData = async (req, res) => {
       successfulReferrals,
       totalEarned,
       invited,
+      // What a referral is worth, so the UI never hardcodes (or omits) amounts.
+      rewards: { referrerCoins: REWARDS.REFERRER_COINS, referredCoins: REWARDS.REFERRED_COINS },
       unlockedItems: user.unlockedItems || [],
       eliteClub: buildEliteClub(tierBasis(user)),
     });

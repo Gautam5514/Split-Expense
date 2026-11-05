@@ -15,9 +15,12 @@ import Group from "./models/groupModel.js";
 import { mongoSanitize } from "./middleware/sanitize.js";
 import { buildAllowedOrigins, makeCorsOriginCallback } from "./utils/corsConfig.js";
 import { canRelayToRoom } from "./utils/socketGuards.js";
+import { setRealtimeIO } from "./utils/realtime.js";
 import { assertSecurityConfiguration } from "./utils/securityConfig.js";
 import { isValidObjectId } from "./middleware/validate.js";
 import { sanitizeServerErrors } from "./middleware/errorSanitizer.js";
+import { emitPresence } from "./utils/presence.js";
+import { installProcessGuards, createShutdown, healthHandlers, globalApiLimiter } from "./utils/resilience.js";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -111,6 +114,11 @@ app.use(cors(corsOptions));
 
 app.use(sanitizeServerErrors);
 
+// Liveness/readiness probes (registered before rate limiting and body parsing).
+healthHandlers(app);
+// Per-IP ceiling for the whole API so one noisy client cannot starve everyone.
+app.use("/api", globalApiLimiter());
+
 // HTTP response compression. Skipped for the MCP endpoint and any
 // streamed (SSE) response, since buffering would stall event delivery.
 app.use(
@@ -136,6 +144,9 @@ app.use(mongoSanitize);
 //  SOCKET.IO INIT
 // -----------------------------------------
 export const io = new Server(server, {
+  pingInterval: 25000,
+  pingTimeout: 30000, // tolerate flaky mobile networks without dropping users
+  maxHttpBufferSize: 1e6, // 1MB cap per socket message
   cors: {
     origin: corsOptions.origin,
     methods: ["GET", "POST"],
@@ -143,8 +154,31 @@ export const io = new Server(server, {
   },
 });
 
-// Make socket instance available to controllers
+// Multi-server support: when REDIS_URL is set, Socket.IO rooms/events are shared
+// across every API instance through Redis pub/sub, so users connected to
+// different servers still receive each other's messages and presence.
+// Without REDIS_URL everything runs single-instance exactly as before.
+if (process.env.REDIS_URL) {
+  try {
+    const [{ createAdapter }, { createClient }] = await Promise.all([
+      import("@socket.io/redis-adapter"),
+      import("redis"),
+    ]);
+    const pubClient = createClient({ url: process.env.REDIS_URL });
+    const subClient = pubClient.duplicate();
+    pubClient.on("error", (e) => console.error("❌ Redis pub:", e.message));
+    subClient.on("error", (e) => console.error("❌ Redis sub:", e.message));
+    await Promise.all([pubClient.connect(), subClient.connect()]);
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log("🔗 Socket.IO Redis adapter enabled (multi-server mode)");
+  } catch (err) {
+    console.error("⚠️ Redis adapter unavailable, running single-instance:", err.message);
+  }
+}
+
+// Make socket instance available to controllers (and to background jobs)
 app.set("io", io);
+setRealtimeIO(io);
 
 // Track online users
 export const onlineUsers = new Map();
@@ -208,7 +242,7 @@ io.on("connection", (socket) => {
       });
 
       // Broadcast online
-      io.emit("userStatus", {
+      await emitPresence(io, { Conversation, Group }, userId, {
         userId,
         online: true,
         lastActive: null,
@@ -317,20 +351,29 @@ io.on("connection", (socket) => {
   // -----------------------------------------
   socket.on("disconnect", async () => {
     console.log("🔴 Client disconnected:", socket.id);
+    try {
+      for (const [userId, id] of onlineUsers.entries()) {
+        if (id !== socket.id) continue;
 
-    for (const [userId, id] of onlineUsers.entries()) {
-      if (id === socket.id) {
+        // Another tab/device of the same user may still be connected: if so,
+        // hand the "online" slot to it instead of marking the user offline.
+        const stillOn = await io.in(`user:${userId}`).fetchSockets();
+        const remaining = stillOn.find((s) => s.id !== socket.id);
+        if (remaining) {
+          onlineUsers.set(userId, remaining.id);
+          continue;
+        }
         onlineUsers.delete(userId);
 
-        // 🔥 Save lastActive timestamp in DB
+        // Save lastActive timestamp in DB
         const lastActiveTime = new Date();
         await User.findByIdAndUpdate(userId, {
           isOnline: false,
           lastActive: lastActiveTime,
         });
 
-        // 🔴 Broadcast offline + lastActive
-        io.emit("userStatus", {
+        // Broadcast offline + lastActive
+        await emitPresence(io, { Conversation, Group }, userId, {
           userId,
           online: false,
           lastActive: lastActiveTime,
@@ -338,6 +381,9 @@ io.on("connection", (socket) => {
 
         console.log(`🔻 User ${userId} is OFFLINE`);
       }
+    } catch (err) {
+      // Never let a DB hiccup become an unhandled rejection that kills the process.
+      console.error("❌ disconnect handler error:", err.message);
     }
   });
 });
@@ -395,6 +441,11 @@ app.use((err, req, res, next) => {
 //  START SERVER
 // -----------------------------------------
 const PORT = process.env.PORT || 8080;
+// Keep-alive must outlive the load balancer's idle timeout (AWS ALB = 60s) or
+// the LB reuses a socket we just closed and users see random 502s.
+server.keepAliveTimeout = 65_000;
+server.headersTimeout = 66_000;
+installProcessGuards(createShutdown({ server, io }));
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   // Monthly bills (Roommates groups). Skipped under tests.

@@ -46,7 +46,11 @@ const matchesOne = (fieldValue, cond) => {
 };
 
 const matches = (doc, filter = {}) =>
-  Object.entries(filter).every(([key, cond]) => matchesOne(doc[key], cond));
+  Object.entries(filter).every(([key, cond]) =>
+    key === "$or"
+      ? cond.some((sub) => matches(doc, sub))
+      : matchesOne(doc[key], cond)
+  );
 
 const resolveRef = (id, refModel) => {
   if (!refModel || id == null) return id;

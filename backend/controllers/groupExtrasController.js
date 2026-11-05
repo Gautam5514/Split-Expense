@@ -11,6 +11,7 @@ import { buildGroupSettingsUpdate, applyExpenseLock, SETTINGS_LOCKED_MESSAGE } f
 import { EXPENSE_CATEGORIES } from "../utils/groupPresets.js";
 import { computeGroupBalances, to2 } from "./balanceController.js";
 import { nextRunDate } from "../utils/recurringRunner.js";
+import { notifyGroupChange } from "../utils/realtime.js";
 
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
 const isMember = (group, userId) =>
@@ -89,6 +90,7 @@ export const updateGroupSettings = async (req, res) => {
       .populate("members", "name email")
       .populate("createdBy", "name email")
       .lean();
+    void notifyGroupChange(req.app?.get?.("io"), group._id, "settings", group.members.map(String));
     res.json({ ...updated, hasExpenses });
   } catch (err) {
     console.error("updateGroupSettings error:", err.message);
@@ -289,6 +291,7 @@ export const createRecurring = async (req, res) => {
       nextRunAt: nextRunDate(value.dayOfMonth),
     });
     const populated = await RecurringExpense.findById(rule._id).populate("paidBy", "name email").lean();
+    void notifyGroupChange(req.app?.get?.("io"), group._id, "recurring", group.members.map(String));
     res.status(201).json(populated);
   } catch (err) {
     console.error("createRecurring error:", err.message);
@@ -329,6 +332,7 @@ export const updateRecurring = async (req, res) => {
     }
     await rule.save();
     const populated = await RecurringExpense.findById(rule._id).populate("paidBy", "name email").lean();
+    void notifyGroupChange(req.app?.get?.("io"), group._id, "recurring", group.members.map(String));
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -346,6 +350,7 @@ export const deleteRecurring = async (req, res) => {
     if (String(rule.createdBy) !== String(asId(req.user)) && !isCreator(group, req.user))
       return res.status(403).json({ message: "Only whoever set up this bill or the group creator can delete it." });
     await rule.deleteOne();
+    void notifyGroupChange(req.app?.get?.("io"), group._id, "recurring", group.members.map(String));
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -17,7 +17,7 @@ import { generateInviteCode, isShortInviteCode, normalizeInviteCode } from "../u
 import { searchContacts, lookupUserByEmail } from "./peopleController.js";
 import { getContactIds, isBlockedBetween, inviteLinkExpiry, INVITE_TTL_MS } from "../utils/contacts.js";
 import cloudinary from "../config/cloudinary.js";
-import { notifyGroupChange } from "../utils/realtime.js";
+import { notifyGroupChange, notifyUsers } from "../utils/realtime.js";
 import { uploadRejectionReason, IMAGE_MIME_TYPES } from "../utils/uploadSecurity.js";
 
 // Helper utilities
@@ -80,6 +80,8 @@ export const createGroup = async (req, res) => {
       "members",
       "name email"
     );
+    // The creator's other devices (phone + web) show the new group right away.
+    void notifyGroupChange(req.app?.get?.("io"), group._id, "created", [uid]);
     res.status(201).json(populated);
   } catch (err) {
     if (err?.code === 11000) {
@@ -357,6 +359,8 @@ export async function addMembersCore({ group, actor, emails = [], userIds = [], 
           { upsert: true, new: true, setDefaultsOnInsert: true, ...opts }
         )
       ));
+      effect(() => notifyUsers(io, toInvite.map((u) => u._id), { groupId: String(groupId), kind: "invite" }));
+      effect(() => notifyGroupChange(io, groupId, "invite"));
       effect(() => createNotification(
         toInvite.map((u) => u._id),
         `${actor.name} invited you to join "${group.name}"`,
@@ -639,6 +643,7 @@ export const updateGroupIcon = async (req, res) => {
     }
     group.photo = { url: "", public_id: "" };
     await group.save();
+    void notifyGroupChange(req.app?.get?.("io"), group._id, "settings", group.members.map(String));
 
     res.json({ success: true, group });
   } catch (err) {
@@ -677,6 +682,7 @@ export const uploadGroupPhoto = async (req, res) => {
     // A photo takes over the avatar slot, so clear the picked icon too.
     group.icon = null;
     await group.save();
+    void notifyGroupChange(req.app?.get?.("io"), group._id, "settings", group.members.map(String));
 
     res.json({ success: true, group });
   } catch (err) {
@@ -701,6 +707,7 @@ export const removeGroupPhoto = async (req, res) => {
     }
     group.photo = { url: "", public_id: "" };
     await group.save();
+    void notifyGroupChange(req.app?.get?.("io"), group._id, "settings", group.members.map(String));
 
     res.json({ success: true, group });
   } catch (err) {
@@ -812,6 +819,8 @@ export const joinGroupByInvite = async (req, res) => {
         { $set: { kind: "request", invitedBy: null, expiresAt: new Date(Date.now() + INVITE_TTL_MS) } },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
+      // Creator's pending-requests list updates live.
+      void notifyGroupChange(req.app?.get?.("io"), group._id, "invite");
       if (mongoose.Types.ObjectId.isValid(String(group.createdBy))) {
         void createNotification(
           [group.createdBy],

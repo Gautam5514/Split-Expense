@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import socket, { connectSocket } from "@/lib/socket";
+import socket, { connectSocket, onResync } from "@/lib/socket";
 import { Search, MoreVertical, MessageSquarePlus, Users, Trash2, X, Check } from "lucide-react";
 import toast from "@/lib/toast";
 import AddContactModal from "@/components/chat/AddContactModal";
@@ -61,14 +61,14 @@ export default function ChatList({ onSelect, activeFriend, openUserId }) {
 
     connectSocket();
 
-    socket.on("userStatus", ({ userId, online: isOnline }) => {
+    const onStatus = ({ userId, online: isOnline }) => {
       setOnline((prev) => {
         if (isOnline) return [...new Set([...prev, userId])];
         return prev.filter((id) => id !== userId);
       });
-    });
+    };
 
-    socket.on("newMessage", (msg) => {
+    const onNewMessage = (msg) => {
       setFriends((prev) => {
         const updated = prev.map((u) =>
           u._id === msg.sender || u._id === msg.receiver
@@ -87,11 +87,18 @@ export default function ChatList({ onSelect, activeFriend, openUserId }) {
             new Date(a.lastMessageAt || 0)
         );
       });
-    });
+    };
 
+    socket.on("userStatus", onStatus);
+    socket.on("newMessage", onNewMessage);
+    // Reconnected / tab back after a while: refresh previews + unread counts.
+    const stopResync = onResync(() => load());
+
+    // Remove only OUR listeners - the open chat window has its own.
     return () => {
-      socket.off("userStatus");
-      socket.off("newMessage");
+      stopResync();
+      socket.off("userStatus", onStatus);
+      socket.off("newMessage", onNewMessage);
     };
   }, []);
 

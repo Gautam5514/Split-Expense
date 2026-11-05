@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { connectSocket } from "@/lib/socket";
+import { useRealtime } from "@/lib/useRealtime";
 import { Search, MessageSquarePlus, Trash2, X, Check } from "lucide-react";
 import toast from "@/lib/toast";
 import GroupAvatar from "./GroupAvatar";
@@ -34,6 +35,16 @@ export default function GroupChatList({ onSelect, activeGroup, openGroupId }) {
 
     connectSocket();
   }, []);
+
+  // A group created, deleted or joined anywhere shows up live.
+  useRealtime({
+    event: "dashboardUpdate",
+    onChange: () => {
+      api.get("/groups", { params: { context: "chat" } })
+        .then((res) => setGroups(res.data || []))
+        .catch(() => {});
+    },
+  });
 
   // Deep-link: when navigated to /groupchat?open=<groupId>, auto-open it.
   useEffect(() => {

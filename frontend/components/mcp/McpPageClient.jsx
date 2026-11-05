@@ -157,17 +157,47 @@ const CAPABILITIES = [
   },
   {
     title: "Create groups",
-    desc: "Ask for a new group by name and it is ready in the app.",
+    desc: "Set up a trip, flat or team group with budget, dates and members in one message.",
     rgb: "167,139,250",
-    chat: { q: "Create a group called Flatmates", ok: "Flatmates is ready" },
+    chat: { q: "Create a Goa trip group, budget ₹40k, add riya@mail.com", ok: "Goa Trip is ready, Riya invited" },
+  },
+  {
+    title: "Add bills",
+    desc: "Equal, exact, percent or shares, even in another currency. It shows up live in the app.",
+    rgb: "244,114,182",
+    chat: { q: "Add ₹1,800 dinner in Goa Trip, split with Riya and Aman", ok: "Added, ₹600 each" },
+  },
+  {
+    title: "Settle up",
+    desc: "Record who paid whom. Payments you send wait for the other person to confirm.",
+    rgb: "45,212,191",
+    chat: { q: "Aman paid me back for the cab", ok: "Recorded ₹640, settled" },
+  },
+  {
+    title: "Invites & members",
+    desc: "Invite people, share a join link, accept invites and join groups by code.",
+    rgb: "96,165,250",
+    chat: { q: "Get me the invite link for Flatmates", ok: "Here's the link to share" },
+  },
+  {
+    title: "Monthly bills",
+    desc: "Rent, WiFi and other monthly bills get added on their day. Pause or change them any time.",
+    rgb: "250,204,21",
+    rows: [
+      { a: "R", l: "Rent · 1st", r: "₹30,000" },
+      { a: "W", l: "WiFi · 5th", r: "₹999" },
+      { a: "M", l: "Maid · 10th", r: "Paused" },
+    ],
   },
 ];
 
 const PROMPTS = [
   "How much do I owe across all my groups?",
-  "Show the last 5 expenses in my Goa trip group",
-  "Create a group called Flatmates",
-  "Who still has to settle up in the roommates group?",
+  "Add ₹2,400 for groceries in Flatmates, split equally",
+  "I paid Riya ₹500 back for the movie tickets",
+  "Create a trip group Manali from 20 to 25 Dec and invite aman@mail.com",
+  "Add rent ₹30,000 every month on the 1st in Flatmates",
+  "What did we spend most on in the Goa trip?",
 ];
 
 const TRUST = [
@@ -401,7 +431,7 @@ export default function McpPageClient() {
       <section className="mx-auto max-w-6xl px-6 pt-24 sm:pt-32">
         <Eyebrow>What you can do</Eyebrow>
         <h2 className="font-serif-premium max-w-xl text-3xl font-normal tracking-tight sm:text-4xl">
-          Ask about your money, in your own words
+          Run your groups from the chat, in your own words
         </h2>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {CAPABILITIES.map((item, i) => (

@@ -8,7 +8,7 @@ import { createNotification } from "./notificationController.js";
 import { computeGroupBalances, invalidateBalanceCache } from "./balanceController.js";
 import { isValidObjectId } from "../middleware/validate.js";
 import { maskEmail } from "../utils/contacts.js";
-import { notifyGroupChange } from "../utils/realtime.js";
+import { notifyGroupChange, notifyUsers } from "../utils/realtime.js";
 import { io } from "../index.js";
 
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
@@ -119,6 +119,9 @@ export const declineInvite = async (req, res) => {
         { $set: { status: "declined", respondedAt: new Date() } }
       );
     }
+    // Creator's pending list + the decliner's other devices.
+    void notifyGroupChange(io, invite.groupId, "invite");
+    notifyUsers(io, [uid], { groupId: String(invite.groupId), kind: "invite" });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -196,6 +199,8 @@ export const cancelGroupInvite = async (req, res) => {
       { $set: { status: "cancelled", respondedAt: new Date() } }
     );
     if (!r) return res.status(404).json({ message: "Already answered." });
+    void notifyGroupChange(io, groupId, "invite");
+    notifyUsers(io, [r.userId], { groupId: String(groupId), kind: "invite" });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: err.message });

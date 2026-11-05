@@ -151,7 +151,8 @@ export default function Footer() {
                   { label: "OCR Receipt Scan", href: "/features/ocr-receipt-scan" },
                   { label: "Group Chat Hub", href: "/features/group-chat-hub" },
                   { label: "QR & Link Invites", href: "/features/qr-invites" },
-                  { label: "Secure OTP Login", href: "/features/secure-login" }
+                  { label: "Secure OTP Login", href: "/features/secure-login" },
+                  { label: "Autopilot", href: "/features/autopilot" }
                 ].map((link) => (
                   <li key={link.label}>
                     <Link

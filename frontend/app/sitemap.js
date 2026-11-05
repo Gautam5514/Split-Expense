@@ -13,6 +13,7 @@ export default function sitemap() {
     { path: "/features/group-chat-hub", priority: 0.7, changeFrequency: "monthly" },
     { path: "/features/qr-invites", priority: 0.6, changeFrequency: "monthly" },
     { path: "/features/secure-login", priority: 0.6, changeFrequency: "monthly" },
+    { path: "/features/autopilot", priority: 0.7, changeFrequency: "monthly" },
     { path: "/how-it-works", priority: 0.8, changeFrequency: "monthly" },
     { path: "/blog", priority: 0.8, changeFrequency: "weekly" },
     { path: "/platforms", priority: 0.7, changeFrequency: "monthly" },

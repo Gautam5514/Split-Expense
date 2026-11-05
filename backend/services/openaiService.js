@@ -2,7 +2,10 @@ import OpenAI from "openai";
 import dotenv from "dotenv";
 dotenv.config();
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Created lazily: a missing OPENAI_API_KEY must not stop the whole API from
+// booting (AI is optional) - it just makes AI calls fail gracefully.
+let _client = null;
+const getClient = () => (_client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
 
 const MODEL_PRIORITY = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"];
 
@@ -17,7 +20,7 @@ export const generateWithRetry = async (prompt) => {
   for (const model of MODEL_PRIORITY) {
     try {
       console.log(`Trying OpenAI model: ${model}`);
-      const completion = await client.chat.completions.create({
+      const completion = await getClient().chat.completions.create({
         model,
         messages: [{ role: "user", content: prompt }],
         // Low temperature: answers involve money math, where consistency

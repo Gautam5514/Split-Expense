@@ -5,7 +5,8 @@ import { PlayStoreButton } from "@/components/PlayStoreLink";
 
 /* Shared shell for every standalone feature page (AI Expense Splitter,
    Smart Settlements, OCR Receipt Scan, Group Chat Hub, QR & Link Invites,
-   Secure OTP Login). Same dark landing-page theme as the rest of the
+   Secure OTP Login). Autopilot has its own richer page
+   (components/features/AutopilotFeatureClient.jsx) in the same theme. Same dark landing-page theme as the rest of the
    marketing site: hero + real product render, a use-case narrative, a
    capability checklist, a "how it works" walkthrough, and cross-links to
    the other features so visitors can browse the whole set. */
@@ -17,6 +18,7 @@ const FEATURE_PAGES = [
   { label: "Group Chat Hub", href: "/features/group-chat-hub" },
   { label: "QR & Link Invites", href: "/features/qr-invites" },
   { label: "Secure OTP Login", href: "/features/secure-login" },
+  { label: "Autopilot", href: "/features/autopilot" },
 ];
 
 // Every feature page must say plainly whether what it describes is live,

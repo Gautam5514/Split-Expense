@@ -1,10 +1,9 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { io } from "socket.io-client";
+import socket, { connectSocket, disconnectSocket } from "@/lib/socket";
 import toast from "@/lib/toast";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
-import { API_URL } from "@/lib/config";
 import { BellRing, Clock3, ReceiptText, UsersRound, HandCoins, Sparkles } from "lucide-react";
 import { getNotificationPermission, onForegroundMessage } from "@/lib/firebaseMessaging";
 
@@ -285,17 +284,19 @@ export function NotificationProvider({ children }) {
 
   // Real-time socket notifications.
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      // Logged out: drop the connection so this browser stops getting the
+      // previous account's live updates.
+      disconnectSocket();
+      return;
+    }
 
-    const socket = io(API_URL, {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-    });
+    // Shares the app-wide socket: it reconnects forever and re-registers with
+    // a fresh token every time. The old private socket registered once, so
+    // after any reconnect the server stopped delivering notifications to it.
+    connectSocket();
 
-    socket.emit("register", token);
-
-    socket.on("notification", (notif) => {
+    const onNotification = (notif) => {
       const key = notif._id || notif.message;
       if (seenNotifsRef.current.has(key)) return;
 
@@ -309,9 +310,10 @@ export function NotificationProvider({ children }) {
         (t) => <NotificationToast notif={notif} visible={t.visible} />,
         { position: "top-right", duration: 5200 }
       );
-    });
+    };
 
-    return () => socket.disconnect();
+    socket.on("notification", onNotification);
+    return () => socket.off("notification", onNotification);
   }, [token]);
 
   const markAllAsRead = async () => {

@@ -1,6 +1,27 @@
 # MCP and Autopilot capability contracts
 
-Existing `backend/services/mcpServer.js` registers `get_me`, `list_groups`, `get_group`, `create_group`, `list_expenses`, `get_balances`, `get_overall_summary`. The names in the proposed PRD (`get_group_details`, `get_budget_status`, `create_expense`, etc.) are illustrative and do not all exist as remote tools. Existing remote `create_group` is not an Autopilot approval path and has not been expanded here.
+## Remote MCP server (`/mcp`)
+
+`backend/services/mcpServer.js` builds a per-request, user-scoped server (v2.0.0) with server `instructions` and 29 tools in `backend/services/mcp/tools/`:
+
+| Area | Tools |
+|---|---|
+| Account | `get_me`, `get_overall_summary`, `get_spending_insights`, `ping` |
+| Groups | `list_groups`, `get_group`, `create_group`, `update_group_settings`, `add_members`, `remove_member`, `get_invite_link`, `join_group`, `complete_group`, `leave_group`, `delete_group` |
+| Expenses | `add_expense`, `list_expenses`, `get_expense`, `get_group_summary` |
+| Settling | `get_balances`, `settle_up`, `list_pending_settlements`, `respond_to_settlement` |
+| Invites | `list_my_invites`, `respond_to_invite` |
+| Monthly bills | `list_recurring_bills`, `add_recurring_bill`, `update_recurring_bill`, `delete_recurring_bill` |
+
+Contracts:
+- **Identity** comes only from the verified credential (`routes/mcpRoutes.js`, incl. `firebaseUid` for legacy creator ids). No tool takes a user id to act as.
+- **Writes reuse the REST controllers** via `services/mcp/bridge.js` (in-process fake req/res). Validation, permissions, settings lock, receipt policy, consent rules for adding people, notifications and live updates are therefore identical to the app. 4xx messages are passed to the client; 5xx are logged and reported generically.
+- **References**: `group` accepts a name (exact, then contains) or id, resolved only among the user's own groups (`services/mcp/resolve.js`); members accept name / first name / email / "me". Ambiguity returns the candidates as an error instead of guessing.
+- **Safety**: every tool has annotations (`readOnlyHint` / `destructiveHint`); `delete_group` requires `confirmName` equal to the group name; `add_expense` refuses an identical bill (same group, payer, description, amount) within 10 minutes unless `allowDuplicate: true`; receipt-required groups are refused (no photo upload over MCP); expenses cannot be edited or deleted (no REST endpoint exists).
+- **Results** are one JSON text block; write tools include a `summary` sentence.
+- Tests: `tests/mcpServer.test.js` (unit, fake models), `tests/mcpTools.int.test.js` (real MCP client + controllers + MongoDB, part of `npm run test:int`).
+
+## Autopilot
 
 MCP uses authenticated per-request server instances and JSON text content/error responses; group reads enforce membership. HTTP transport/auth is `routes/mcpRoutes.js` and OAuth services. Raw MCP does not currently provide the new transactional expense approval contract.
 

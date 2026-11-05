@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { api } from "@/lib/api";
-import socket, { connectSocket } from "@/lib/socket";
+import socket, { connectSocket, onResync } from "@/lib/socket";
 import ChatInput from "./ChatInput";
 import VoicePlayer from "./VoicePlayer";
 import MediaLightbox from "./MediaLightbox";
@@ -108,7 +108,7 @@ export default function ChatWindow({ activeFriend, onBack, detailsOpen, onToggle
     if (!conversationId) return;
     socket.emit("joinConversation", conversationId);
 
-    socket.on("newMessage", (msg) => {
+    const onNewMessage = (msg) => {
       if (msg.conversationId === conversationId) {
         setMessages((prev) => {
           // Remove any local optimistic message matching text and sender to avoid duplicates
@@ -130,9 +130,9 @@ export default function ChatWindow({ activeFriend, onBack, detailsOpen, onToggle
           api.post("/chat/reset-unread", { otherUserId: activeFriend._id }).catch(console.error);
         }
       }
-    });
+    };
 
-    socket.on("messagesSeen", ({ conversationId: seenConvoId, seenBy }) => {
+    const onSeen = ({ conversationId: seenConvoId, seenBy }) => {
       if (seenConvoId === conversationId) {
         setMessages((prev) =>
           prev.map((m) => {
@@ -147,19 +147,33 @@ export default function ChatWindow({ activeFriend, onBack, detailsOpen, onToggle
           })
         );
       }
-    });
+    };
 
-    socket.on("userStatus", ({ userId, online, lastActive }) => {
+    const onStatus = ({ userId, online, lastActive }) => {
       if (activeFriend && userId === activeFriend._id) {
         setIsOnline(online);
         if (!online) setLastActive(lastActive);
       }
+    };
+
+    socket.on("newMessage", onNewMessage);
+    socket.on("messagesSeen", onSeen);
+    socket.on("userStatus", onStatus);
+    // Reconnected / tab back after a while: the server forgot our room and
+    // messages may have arrived meanwhile - rejoin and refetch.
+    const stopResync = onResync(() => {
+      socket.emit("joinConversation", conversationId);
+      api.get(`/chat/messages/${conversationId}`)
+        .then((res) => setMessages(res.data || []))
+        .catch(() => {});
     });
 
+    // Remove only OUR listeners - the chat list keeps its own "newMessage" handler.
     return () => {
-      socket.off("newMessage");
-      socket.off("messagesSeen");
-      socket.off("userStatus");
+      stopResync();
+      socket.off("newMessage", onNewMessage);
+      socket.off("messagesSeen", onSeen);
+      socket.off("userStatus", onStatus);
     };
   }, [conversationId, activeFriend, me]);
 

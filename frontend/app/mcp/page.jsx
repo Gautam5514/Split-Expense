@@ -5,7 +5,7 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://splitease.tech";
 export const metadata = {
   title: "SplitEase MCP Server — Connect Claude, ChatGPT & Gemini",
   description:
-    "Connect your SplitEase account to Claude, ChatGPT or Gemini with one link. Ask about balances, expenses and groups in plain language. Free, secure sign-in.",
+    "Connect SplitEase to Claude, ChatGPT or Gemini with one link. Create groups, add bills, settle up and check balances in plain language. Free, secure sign-in.",
   keywords: ["SplitEase MCP", "MCP server", "Claude connector", "ChatGPT connector", "Gemini MCP", "expense splitting AI"],
   alternates: { canonical: `${siteUrl}/mcp` },
   openGraph: {

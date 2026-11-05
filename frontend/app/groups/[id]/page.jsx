@@ -71,6 +71,9 @@ const fmtDate = new Intl.DateTimeFormat("en-IN", {
   month: "short",
 });
 
+// Live-update kinds that only change expenses/balances, never the group record.
+const MONEY_ONLY_KINDS = new Set(["expense", "requested", "confirmed", "rejected", "cancelled"]);
+
 export default function GroupDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -205,7 +208,9 @@ export default function GroupDetailPage() {
       fetchExpenses();
       fetchPendingSettlements();
       fetchSummary();
-      if (payload?.kind === "member" || payload?.kind === "completed" || payload?.kind === "reconnect") {
+      // Expense/settlement events only move money; anything else (members,
+      // settings, photo, invites, completed, reconnect) can change the group itself.
+      if (!MONEY_ONLY_KINDS.has(payload?.kind)) {
         fetchGroup({ silent: true });
         fetchPendingMembers();
       }

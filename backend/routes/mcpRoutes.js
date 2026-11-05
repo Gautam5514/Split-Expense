@@ -51,6 +51,15 @@ function rpcError(res, status, code, message, id = null) {
 
 const authError = (message, status) => Object.assign(new Error(message), { status });
 
+// Same shape authMiddleware gives the REST controllers. firebaseUid matters:
+// some older groups store their creator by Firebase uid.
+const toAuthedUser = (user, firebaseUid) => ({
+  id: user._id.toString(),
+  email: user.email,
+  name: user.name,
+  ...(user.firebaseUid || firebaseUid ? { firebaseUid: user.firebaseUid || firebaseUid } : {}),
+});
+
 export function createMcpRouter({ oauth = defaultOAuth, rateLimitMax = 300, anonRateLimitMax = 60 } = {}) {
   const router = express.Router();
 
@@ -110,9 +119,9 @@ export function createMcpRouter({ oauth = defaultOAuth, rateLimitMax = 300, anon
       if (!info.resource || info.resource.href.replace(/\/$/, "") !== want) {
         throw authError("Token was not issued for this resource.", 401);
       }
-      const user = await User.findById(info.extra.userId).select("_id name email").lean();
+      const user = await User.findById(info.extra.userId).select("_id name email firebaseUid").lean();
       if (!user) throw authError("No SplitEase account found for this token.", 401);
-      return { id: user._id.toString(), email: user.email, name: user.name };
+      return toAuthedUser(user);
     }
 
     // ── legacy Firebase ID token ─────────────────────────────────────────
@@ -123,9 +132,9 @@ export function createMcpRouter({ oauth = defaultOAuth, rateLimitMax = 300, anon
       throw authError("Invalid or expired token. Get a fresh one from /mcp-login.", 401);
     }
     if (!decoded?.email) throw authError("Invalid or expired token. Get a fresh one from /mcp-login.", 401);
-    const user = await User.findOne({ email: decoded.email }).select("_id name email").lean();
+    const user = await User.findOne({ email: decoded.email }).select("_id name email firebaseUid").lean();
     if (!user) throw authError("No SplitEase account found for this token.", 403);
-    return { id: user._id.toString(), email: user.email, name: user.name };
+    return toAuthedUser(user, decoded.uid);
   }
 
   // A GET/DELETE to /mcp with no session is not used in stateless mode; respond

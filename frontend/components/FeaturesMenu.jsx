@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ChevronDown, ArrowRight, Sparkles, ScanLine, Handshake,
-  MessagesSquare, QrCode, ShieldCheck, Smartphone, Plug, Layers,
+  MessagesSquare, QrCode, ShieldCheck, Smartphone, Plug, Layers, Wand2,
 } from "lucide-react";
 import styles from "./FeaturesMenu.module.css";
 
@@ -17,6 +17,7 @@ const FEATURES = [
   { href: "/features/group-chat-hub",      icon: MessagesSquare, label: "Group Chat Hub",      desc: "Chat right next to your expenses" },
   { href: "/features/qr-invites",          icon: QrCode,         label: "QR & Link Invites",   desc: "Add friends with a scan or a link" },
   { href: "/features/secure-login",        icon: ShieldCheck,    label: "Secure OTP Login",    desc: "Passwordless, verified sign-in" },
+  { href: "/features/autopilot",           icon: Wand2,          label: "Autopilot",           desc: "Ask once, review, approve" },
 ];
 
 const PLATFORMS = [
@@ -66,7 +67,7 @@ export default function FeaturesMenu() {
         initial={{ opacity: 0, y: reduced ? 0 : 7 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduced ? 0 : 4 }} transition={{ duration: reduced ? 0 : .16 }}>
         <nav id="features-navigation" aria-label="Features and platforms" className={styles.panel}>
           <div className={styles.features}>
-            <div className={styles.sectionLabel}><span className={styles.accentDot} /> BUILT FOR SHARING <span>06 FEATURES</span></div>
+            <div className={styles.sectionLabel}><span className={styles.accentDot} /> BUILT FOR SHARING <span>{String(FEATURES.length).padStart(2, "0")} FEATURES</span></div>
             <div className={styles.intro}>A little less to keep track of.</div>
             <ul className={styles.featureGrid}>
               {FEATURES.map(({ href, icon: Icon, label, desc }) => <li key={href}>

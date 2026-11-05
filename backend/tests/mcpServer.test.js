@@ -35,6 +35,18 @@ jest.unstable_mockModule("@modelcontextprotocol/sdk/server/mcp.js", () => ({
 jest.unstable_mockModule("../models/userModel.js", () => ({ default: fakeUserModel }));
 jest.unstable_mockModule("../models/groupModel.js", () => ({ default: fakeGroupModel }));
 jest.unstable_mockModule("../models/expenseModel.js", () => ({ default: fakeExpenseModel }));
+// Write tools run the REST controllers through services/mcp/bridge.js; here a
+// fake controller module stands in (tests/mcpTools.int.test.js covers the real
+// controllers against MongoDB).
+const fakeCreateGroup = jest.fn(async (req, res) => {
+  const { name, groupType } = req.body;
+  if (fakeGroupModel._docs.some((g) => g.name === name && String(g.createdBy) === req.user.id)) {
+    return res.status(409).json({ message: "You already have a group with this name. Please choose another name." });
+  }
+  const group = await fakeGroupModel.create({ name, groupType, createdBy: req.user.id, members: [req.user.id], settings: {} });
+  return res.status(201).json(group);
+});
+jest.unstable_mockModule("../services/mcp/controllers.js", () => ({ createGroup: fakeCreateGroup }));
 jest.unstable_mockModule("../controllers/balanceController.js", () => ({
   computeGroupBalances: fakeComputeGroupBalances,
   buildSettlement: fakeBuildSettlement,
@@ -61,20 +73,35 @@ beforeEach(() => {
 });
 
 describe("tool registration", () => {
-  test("registers exactly the expected 7 tools", () => {
+  test("registers the full SplitEase tool set", () => {
     registered.clear();
     buildSplitEaseMcpServer({ id: String(oid()), email: "u@e.com", name: "U" });
     expect([...registered.keys()].sort()).toEqual(
       [
-        "create_group",
-        "get_balances",
-        "get_group",
-        "get_me",
-        "get_overall_summary",
-        "list_expenses",
-        "list_groups",
+        "get_me", "get_overall_summary", "get_spending_insights", "ping",
+        "list_groups", "get_group", "create_group", "update_group_settings", "add_members", "remove_member",
+        "get_invite_link", "join_group", "complete_group", "leave_group", "delete_group",
+        "add_expense", "list_expenses", "get_expense", "get_group_summary",
+        "get_balances", "settle_up", "list_pending_settlements", "respond_to_settlement",
+        "list_my_invites", "respond_to_invite",
+        "list_recurring_bills", "add_recurring_bill", "update_recurring_bill", "delete_recurring_bill",
       ].sort(),
     );
+  });
+
+  test("every tool declares annotations; destructive ones are flagged", () => {
+    registered.clear();
+    buildSplitEaseMcpServer({ id: String(oid()), email: "u@e.com", name: "U" });
+    for (const [name, { def }] of registered) {
+      expect(def.annotations).toBeDefined();
+      expect(typeof def.description).toBe("string");
+      // get_invite_link creates (or resets) the link, so it is rightly a write.
+      const readName = (name.startsWith("get_") || name.startsWith("list_")) && name !== "get_invite_link";
+      if (readName) expect(def.annotations.readOnlyHint).toBe(true);
+    }
+    for (const name of ["delete_group", "remove_member", "leave_group", "delete_recurring_bill"]) {
+      expect(registered.get(name).def.annotations.destructiveHint).toBe(true);
+    }
   });
 });
 
@@ -121,7 +148,7 @@ describe("get_group", () => {
     const uid = oid();
     const gid = oid();
     fakeGroupModel.__addDoc({ _id: gid, name: "Trip", members: [uid], groupType: "trip", isCompleted: false });
-    const res = await callTool(uid, "get_group", { groupId: gid.toString() });
+    const res = await callTool(uid, "get_group", { group: gid.toString() });
     expect(res.isError).toBeFalsy();
     expect(payload(res).name).toBe("Trip");
   });
@@ -129,23 +156,25 @@ describe("get_group", () => {
   test("rejects a non-member with a clean error (no data leak)", async () => {
     const gid = oid();
     fakeGroupModel.__addDoc({ _id: gid, name: "Secret", members: [oid()] });
-    const res = await callTool(oid(), "get_group", { groupId: gid.toString() });
+    const res = await callTool(oid(), "get_group", { group: gid.toString() });
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toMatch(/not a member|not found/i);
   });
 
   test("errors on an unknown group id", async () => {
-    const res = await callTool(oid(), "get_group", { groupId: oid().toString() });
+    const res = await callTool(oid(), "get_group", { group: oid().toString() });
     expect(res.isError).toBe(true);
   });
 });
 
 describe("create_group", () => {
-  test("creates a group owned by the current user", async () => {
+  test("creates a group owned by the current user (through the createGroup controller)", async () => {
     const uid = oid();
     const res = await callTool(uid, "create_group", { name: "New Trip", groupType: "trip" });
     expect(res.isError).toBeFalsy();
     expect(payload(res).name).toBe("New Trip");
+    expect(payload(res).summary).toMatch(/Created trip group "New Trip"/);
+    expect(fakeCreateGroup.mock.calls[0][0].user.id).toBe(String(uid));
     // stored with the user as creator + member
     expect(fakeGroupModel._docs).toHaveLength(1);
     expect(String(fakeGroupModel._docs[0].createdBy)).toBe(String(uid));
@@ -154,7 +183,7 @@ describe("create_group", () => {
 
   test("surfaces a friendly duplicate-name error", async () => {
     const uid = oid();
-    fakeGroupModel.create.mockRejectedValueOnce(Object.assign(new Error("dup"), { code: 11000 }));
+    await callTool(uid, "create_group", { name: "Dup" });
     const res = await callTool(uid, "create_group", { name: "Dup" });
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toMatch(/already have a group/i);
@@ -167,7 +196,7 @@ describe("list_expenses", () => {
     const gid = oid();
     fakeGroupModel.__addDoc({ _id: gid, name: "Trip", members: [uid] });
     fakeExpenseModel.__addDoc({ _id: oid(), groupId: gid, description: "Dinner", amount: 900, category: "food", splitType: "equal", paidBy: uid, date: new Date(), isSettlement: false });
-    const res = await callTool(uid, "list_expenses", { groupId: gid.toString() });
+    const res = await callTool(uid, "list_expenses", { group: gid.toString() });
     const list = payload(res);
     expect(list).toHaveLength(1);
     expect(list[0].description).toBe("Dinner");
@@ -177,7 +206,7 @@ describe("list_expenses", () => {
   test("rejects a non-member", async () => {
     const gid = oid();
     fakeGroupModel.__addDoc({ _id: gid, name: "Trip", members: [oid()] });
-    const res = await callTool(oid(), "list_expenses", { groupId: gid.toString() });
+    const res = await callTool(oid(), "list_expenses", { group: gid.toString() });
     expect(res.isError).toBe(true);
   });
 });
@@ -196,7 +225,7 @@ describe("get_balances", () => {
       balances: { [uid.toString()]: 450, [other.toString()]: -450 },
     });
     fakeBuildSettlement.mockReturnValue([{ from: other.toString(), to: uid.toString(), amount: 450 }]);
-    const res = await callTool(uid, "get_balances", { groupId: gid.toString() });
+    const res = await callTool(uid, "get_balances", { group: gid.toString() });
     const out = payload(res);
     expect(out.balances).toHaveLength(2);
     expect(out.suggestions[0].amount).toBe(450);
@@ -206,7 +235,7 @@ describe("get_balances", () => {
   test("rejects a non-member before computing", async () => {
     const gid = oid();
     fakeGroupModel.__addDoc({ _id: gid, name: "Trip", members: [oid()] });
-    const res = await callTool(oid(), "get_balances", { groupId: gid.toString() });
+    const res = await callTool(oid(), "get_balances", { group: gid.toString() });
     expect(res.isError).toBe(true);
     expect(fakeComputeGroupBalances).not.toHaveBeenCalled();
   });
@@ -265,14 +294,17 @@ describe("tool hardening", () => {
     expect(limit.safeParse(undefined).success).toBe(true);
   });
 
-  test("rejects a malformed group id at the schema level (no DB query)", () => {
+  test("group arguments accept a name or id but are bounded strings (no objects / operators)", () => {
     registered.clear();
     buildSplitEaseMcpServer({ id: String(oid()), email: "u@e.com", name: "U" });
-    const gid = registered.get("get_group").def.inputSchema.groupId;
-    for (const bad of ["", "123", "zzzzzzzzzzzzzzzzzzzzzzzz", "{\"$ne\":null}", "a".repeat(25)]) {
-      expect(gid.safeParse(bad).success).toBe(false);
+    const ref = registered.get("get_group").def.inputSchema.group;
+    for (const bad of ["", "   ", { $ne: null }, ["a"], "a".repeat(201)]) {
+      expect(ref.safeParse(bad).success).toBe(false);
     }
-    expect(gid.safeParse("a".repeat(24)).success).toBe(true);
+    expect(ref.safeParse("Goa Trip").success).toBe(true);
+    expect(ref.safeParse("a".repeat(24)).success).toBe(true);
+    const expenseId = registered.get("get_expense").def.inputSchema.expenseId;
+    expect(expenseId.safeParse("123").success).toBe(false);
   });
 
   test("get_overall_summary handles many groups (batched) and skips groups with no data", async () => {

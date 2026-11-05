@@ -9,6 +9,7 @@ import { buildSplits } from "../controllers/expenseController.js";
 import { defaultSplitFor } from "./defaultSplit.js";
 import { invalidateBalanceCache } from "../controllers/balanceController.js";
 import { createNotification } from "../controllers/notificationController.js";
+import { notifyGroupChange } from "./realtime.js";
 
 const RUN_HOUR = 6; // bills land at 06:00 server time on their day
 
@@ -79,6 +80,8 @@ export const runDueRecurringExpenses = async (now = new Date()) => {
       });
       invalidateBalanceCache(group._id);
       created++;
+      // Live update for anyone with the group or their dashboard open.
+      void notifyGroupChange(null, group._id, "expense", memberIds);
 
       await createNotification(
         memberIds,

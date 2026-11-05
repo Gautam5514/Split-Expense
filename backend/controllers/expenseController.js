@@ -631,7 +631,13 @@ export const getPendingSettlements = async (req, res) => {
       return res.status(403).json({ message: "You are not a member of this group." });
 
     const pending = await populateRequest(
-      SettlementRequest.find({ groupId, status: "pending" }).sort({ createdAt: -1 })
+      // Only the two people involved (payer / payee) may see a pending
+      // settlement - other group members must not be asked to confirm it.
+      SettlementRequest.find({
+        groupId,
+        status: "pending",
+        $or: [{ fromUserId: uid }, { toUserId: uid }],
+      }).sort({ createdAt: -1 })
     );
 
     // Attach each creditor's UPI details so the client can render a "Pay"

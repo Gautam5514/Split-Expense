@@ -313,7 +313,9 @@ export default function ReferralSection() {
               </button>
             </div>
             <p className="text-[11px] text-muted-foreground mt-3 text-center">
-              The moment a friend joins with your link, you both earn coins instantly.
+              {data?.rewards
+                ? `The moment a friend joins with your link, you earn ${data.rewards.referrerCoins} coins and they get ${data.rewards.referredCoins}.`
+                : "The moment a friend joins with your link, you both earn coins instantly."}
             </p>
           </div>
         </div>
@@ -342,6 +344,12 @@ export default function ReferralSection() {
               )}
             </div>
 
+            {eliteClub.nextTier && eliteClub.friendsToNext > 0 && (
+              <p className="mb-2 text-xs text-muted-foreground">
+                Invite <span className="font-semibold text-foreground">{eliteClub.friendsToNext}</span>{" "}
+                more {eliteClub.friendsToNext === 1 ? "friend" : "friends"} to reach {eliteClub.nextTier.name}.
+              </p>
+            )}
             {eliteClub.nextTier && (
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 <div

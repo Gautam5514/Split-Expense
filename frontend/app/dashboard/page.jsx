@@ -2,6 +2,7 @@
 
 import { useEffect, useState, createElement } from "react";
 import { api } from "@/lib/api";
+import { useRealtime } from "@/lib/useRealtime";
 import { useAuth } from "@/context/AuthContext";
 import toast from "@/lib/toast";
 import Link from "next/link";
@@ -34,13 +35,13 @@ export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [inviteGroupId, setInviteGroupId] = useState(null);
 
-  const fetchGroups = () => {
+  const fetchGroups = ({ silent = false } = {}) => {
     api
       .get("/groups")
       .then((res) => {
         setGroups(res.data || []);
       })
-      .catch(() => toast.error("Failed to fetch groups"))
+      .catch(() => { if (!silent) toast.error("Failed to fetch groups"); })
       .finally(() => setLoading(false));
   };
 
@@ -48,6 +49,10 @@ export default function DashboardPage() {
     if (!token) return;
     fetchGroups();
   }, [token]);
+
+  // Live: groups created/deleted/completed or joined anywhere (app, another
+  // tab) and expense changes update this list without a refresh.
+  useRealtime({ event: "dashboardUpdate", enabled: !!token, onChange: () => fetchGroups({ silent: true }) });
 
   // The wizard already handled members + invite link, so go straight in.
   const handleGroupCreated = (created) => {
@@ -101,7 +106,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Invites waiting for my yes/no */}
-        <PendingInvitesList compact onChanged={fetchGroups} />
+        <PendingInvitesList compact onChanged={() => fetchGroups()} />
 
         {/* Segmented glass tabs */}
         {!loading && groups.length > 0 && (

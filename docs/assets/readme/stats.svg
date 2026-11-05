@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="150" viewBox="0 0 1280 150" role="img" aria-label="800+ tests, 29 MCP tools, 10 Autopilot actions, 3 platforms">
+  <title>800+ tests, 29 MCP tools, 10 Autopilot actions, 3 platforms</title>
+  <defs>
+    <radialGradient id="glowV" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(250 120) scale(520 360)">
+      <stop stop-color="#7c3aed" stop-opacity=".34"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowC" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1060 380) scale(520 340)">
+      <stop stop-color="#06b6d4" stop-opacity=".26"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#c4b5fd"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#67e8f9"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffffff" stop-opacity=".16"/><stop offset=".5" stop-color="#ffffff" stop-opacity=".04"/><stop offset="1" stop-color="#67e8f9" stop-opacity=".22"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity=".035"/>
+    </pattern>
+  </defs>
+  <style></style>
+<rect width="1280" height="150" rx="24" fill="#07070b"/><rect width="1280" height="150" rx="24" fill="url(#glowV)" opacity=".6"/><rect x=".5" y=".5" width="1279" height="149" rx="23.5" fill="none" stroke="url(#edge)"/><text x="160.0" y="78" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="-1.5" fill="url(#brand)">800+</text><text x="160.0" y="108" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="14.5" fill="#ffffff" fill-opacity=".5">automated tests</text><line x1="320.0" y1="34" x2="320.0" y2="116" stroke="#ffffff" stroke-opacity=".08"/><text x="480.0" y="78" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="-1.5" fill="url(#brand)">29</text><text x="480.0" y="108" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="14.5" fill="#ffffff" fill-opacity=".5">MCP tools for AI apps</text><line x1="640.0" y1="34" x2="640.0" y2="116" stroke="#ffffff" stroke-opacity=".08"/><text x="800.0" y="78" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="-1.5" fill="url(#brand)">10</text><text x="800.0" y="108" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="14.5" fill="#ffffff" fill-opacity=".5">Autopilot actions</text><line x1="960.0" y1="34" x2="960.0" y2="116" stroke="#ffffff" stroke-opacity=".08"/><text x="1120.0" y="78" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="-1.5" fill="url(#brand)">3</text><text x="1120.0" y="108" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="14.5" fill="#ffffff" fill-opacity=".5">platforms, one live ledger</text>
+</svg>

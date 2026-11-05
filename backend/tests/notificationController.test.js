@@ -52,16 +52,16 @@ describe("createNotification", () => {
     expect(fakeNotificationModel._docs.every((d) => d.message === "hello")).toBe(true);
   });
 
-  test("emits over the socket only to recipients who are currently online", async () => {
-    const online = oid();
-    const offline = oid();
-    onlineUsers.set(String(online), "socket-abc");
+  test("emits over the socket to each recipient's personal room (every open device)", async () => {
+    const u1 = oid();
+    const u2 = oid();
 
-    await createNotification([online, offline], "hi", "/x", "group", {});
+    await createNotification([u1, u2], "hi", "/x", "group", {});
 
-    expect(fakeIoTo).toHaveBeenCalledTimes(1);
-    expect(fakeIoTo).toHaveBeenCalledWith("socket-abc");
-    expect(fakeIoEmit).toHaveBeenCalledWith("notification", expect.objectContaining({ userId: online }));
+    expect(fakeIoTo).toHaveBeenCalledTimes(2);
+    expect(fakeIoTo).toHaveBeenCalledWith(`user:${u1}`);
+    expect(fakeIoTo).toHaveBeenCalledWith(`user:${u2}`);
+    expect(fakeIoEmit).toHaveBeenCalledWith("notification", expect.objectContaining({ userId: u1 }));
   });
 
   test("Expo push (app) uses the rich, context-aware title/subtitle/channel from buildPushContent", async () => {

@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1256" height="372" viewBox="0 0 1256 372" role="img" aria-label="Highlights: Exact splits, Groups that fit, Fewest payments, Live everywhere, Autopilot AI, MCP server, Smart nudges, Secure by default">
+  <title>Highlights: Exact splits, Groups that fit, Fewest payments, Live everywhere, Autopilot AI, MCP server, Smart nudges, Secure by default</title>
+  <defs>
+    <radialGradient id="glowV" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(250 120) scale(520 360)">
+      <stop stop-color="#7c3aed" stop-opacity=".34"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowC" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1060 380) scale(520 340)">
+      <stop stop-color="#06b6d4" stop-opacity=".26"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#c4b5fd"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#67e8f9"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffffff" stop-opacity=".16"/><stop offset=".5" stop-color="#ffffff" stop-opacity=".04"/><stop offset="1" stop-color="#67e8f9" stop-opacity=".22"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity=".035"/>
+    </pattern>
+  </defs>
+  <style></style>
+
+  <clipPath id="card0"><rect x="0" y="0" width="302" height="178" rx="22"/></clipPath>
+  <g>
+    <rect x="0" y="0" width="302" height="178" rx="22" fill="#0b0b10"/>
+    <circle cx="272" cy="24" r="70" fill="#a78bfa" fill-opacity=".07" clip-path="url(#card0)"/>
+    <rect x="0.5" y="0.5" width="301" height="177" rx="21.5" fill="none" stroke="#ffffff" stroke-opacity=".09"/>
+    <rect x="22" y="22" width="42" height="42" rx="13" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-opacity=".35"/>
+    <text x="43" y="48" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="700" fill="#a78bfa">01</text>
+    <text x="22" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Exact splits</text>
+    <text x="22" y="128" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">Equal, exact, percent, shares or</text>
+    <text x="22" y="148" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">itemised. Every share adds up.</text>
+  </g>
+  <clipPath id="card1"><rect x="318" y="0" width="302" height="178" rx="22"/></clipPath>
+  <g>
+    <rect x="318" y="0" width="302" height="178" rx="22" fill="#0b0b10"/>
+    <circle cx="590" cy="24" r="70" fill="#22d3ee" fill-opacity=".07" clip-path="url(#card1)"/>
+    <rect x="318.5" y="0.5" width="301" height="177" rx="21.5" fill="none" stroke="#ffffff" stroke-opacity=".09"/>
+    <rect x="340" y="22" width="42" height="42" rx="13" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-opacity=".35"/>
+    <text x="361" y="48" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="700" fill="#22d3ee">02</text>
+    <text x="340" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Groups that fit</text>
+    <text x="340" y="128" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">Trip, flatmates, business or general,</text>
+    <text x="340" y="148" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">each with its own rules.</text>
+  </g>
+  <clipPath id="card2"><rect x="636" y="0" width="302" height="178" rx="22"/></clipPath>
+  <g>
+    <rect x="636" y="0" width="302" height="178" rx="22" fill="#0b0b10"/>
+    <circle cx="908" cy="24" r="70" fill="#34d399" fill-opacity=".07" clip-path="url(#card2)"/>
+    <rect x="636.5" y="0.5" width="301" height="177" rx="21.5" fill="none" stroke="#ffffff" stroke-opacity=".09"/>
+    <rect x="658" y="22" width="42" height="42" rx="13" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-opacity=".35"/>
+    <text x="679" y="48" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="700" fill="#34d399">03</text>
+    <text x="658" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Fewest payments</text>
+    <text x="658" y="128" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">Balances netted into the minimum</text>
+    <text x="658" y="148" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">number of transfers. UPI on mobile.</text>
+  </g>
+  <clipPath id="card3"><rect x="954" y="0" width="302" height="178" rx="22"/></clipPath>
+  <g>
+    <rect x="954" y="0" width="302" height="178" rx="22" fill="#0b0b10"/>
+    <circle cx="1226" cy="24" r="70" fill="#f472b6" fill-opacity=".07" clip-path="url(#card3)"/>
+    <rect x="954.5" y="0.5" width="301" height="177" rx="21.5" fill="none" stroke="#ffffff" stroke-opacity=".09"/>
+    <rect x="976" y="22" width="42" height="42" rx="13" fill="#f472b6" fill-opacity=".14" stroke="#f472b6" stroke-opacity=".35"/>
+    <text x="997" y="48" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="700" fill="#f472b6">04</text>
+    <text x="976" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Live everywhere</text>
+    <text x="976" y="128" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">Add a bill and every phone and tab</text>
+    <text x="976" y="148" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">updates instantly. No refresh.</text>
+  </g>
+  <clipPath id="card4"><rect x="0" y="194" width="302" height="178" rx="22"/></clipPath>
+  <g>
+    <rect x="0" y="194" width="302" height="178" rx="22" fill="#0b0b10"/>
+    <circle cx="272" cy="218" r="70" fill="#c4b5fd" fill-opacity=".07" clip-path="url(#card4)"/>
+    <rect x="0.5" y="194.5" width="301" height="177" rx="21.5" fill="none" stroke="#ffffff" stroke-opacity=".09"/>
+    <rect x="22" y="216" width="42" height="42" rx="13" fill="#c4b5fd" fill-opacity=".14" stroke="#c4b5fd" stroke-opacity=".35"/>
+    <text x="43" y="242" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="700" fill="#c4b5fd">05</text>
+    <text x="22" y="294" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Autopilot AI</text>
+    <text x="22" y="322" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">Plain English or Hinglish in, a plan</text>
+    <text x="22" y="342" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">out. Nothing runs until you approve.</text>
+  </g>
+  <clipPath id="card5"><rect x="318" y="194" width="302" height="178" rx="22"/></clipPath>
+  <g>
+    <rect x="318" y="194" width="302" height="178" rx="22" fill="#0b0b10"/>
+    <circle cx="590" cy="218" r="70" fill="#67e8f9" fill-opacity=".07" clip-path="url(#card5)"/>
+    <rect x="318.5" y="194.5" width="301" height="177" rx="21.5" fill="none" stroke="#ffffff" stroke-opacity=".09"/>
+    <rect x="340" y="216" width="42" height="42" rx="13" fill="#67e8f9" fill-opacity=".14" stroke="#67e8f9" stroke-opacity=".35"/>
+    <text x="361" y="242" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="700" fill="#67e8f9">06</text>
+    <text x="340" y="294" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">MCP server</text>
+    <text x="340" y="322" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">ChatGPT, Claude and Gemini can run</text>
+    <text x="340" y="342" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">your groups over OAuth 2.1.</text>
+  </g>
+  <clipPath id="card6"><rect x="636" y="194" width="302" height="178" rx="22"/></clipPath>
+  <g>
+    <rect x="636" y="194" width="302" height="178" rx="22" fill="#0b0b10"/>
+    <circle cx="908" cy="218" r="70" fill="#fbbf24" fill-opacity=".07" clip-path="url(#card6)"/>
+    <rect x="636.5" y="194.5" width="301" height="177" rx="21.5" fill="none" stroke="#ffffff" stroke-opacity=".09"/>
+    <rect x="658" y="216" width="42" height="42" rx="13" fill="#fbbf24" fill-opacity=".14" stroke="#fbbf24" stroke-opacity=".35"/>
+    <text x="679" y="242" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="700" fill="#fbbf24">07</text>
+    <text x="658" y="294" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Smart nudges</text>
+    <text x="658" y="322" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">Push and web tips with caps, quiet</text>
+    <text x="658" y="342" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">hours and holdouts. Never spammy.</text>
+  </g>
+  <clipPath id="card7"><rect x="954" y="194" width="302" height="178" rx="22"/></clipPath>
+  <g>
+    <rect x="954" y="194" width="302" height="178" rx="22" fill="#0b0b10"/>
+    <circle cx="1226" cy="218" r="70" fill="#86efac" fill-opacity=".07" clip-path="url(#card7)"/>
+    <rect x="954.5" y="194.5" width="301" height="177" rx="21.5" fill="none" stroke="#ffffff" stroke-opacity=".09"/>
+    <rect x="976" y="216" width="42" height="42" rx="13" fill="#86efac" fill-opacity=".14" stroke="#86efac" stroke-opacity=".35"/>
+    <text x="997" y="242" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="700" fill="#86efac">08</text>
+    <text x="976" y="294" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Secure by default</text>
+    <text x="976" y="322" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">Firebase auth, Zod, Helmet, rate</text>
+    <text x="976" y="342" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif" font-size="13.5" fill="#ffffff" fill-opacity=".52">limits, CodeQL, OpenSSF practices.</text>
+  </g>
+</svg>

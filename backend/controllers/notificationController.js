@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Notification from "../models/notification.model.js";
 import User from "../models/userModel.js";
-import { io, onlineUsers } from "../index.js";
+import { io } from "../index.js";
 import admin from "../config/firebaseAdmin.js";
 import { RULES } from "../modules/engagement/config.js";
 
@@ -28,11 +28,10 @@ export const createNotification = async (userIds, message, link, type = "group",
     const savedNotifications = await Notification.insertMany(notifications);
 
     // 🔥 Emit to online users immediately
+    // The personal room reaches every device the user has open (phone + web),
+    // not just the one that connected last.
     recipientIds.forEach((userId, index) => {
-      const socketId = onlineUsers.get(String(userId));
-      if (socketId) {
-        io.to(socketId).emit("notification", savedNotifications[index]);
-      }
+      io.to(`user:${userId}`).emit("notification", savedNotifications[index]);
     });
 
     const data = { link, type, groupId: meta.groupId ? String(meta.groupId) : undefined };
@@ -492,8 +491,7 @@ export const sendEngagementNotifications = async (items) => {
     link: /^\/groups\/[a-f0-9]{24}$/.test(it.webLink || "") ? it.webLink : "/dashboard", cta: { label: it.cta, link: it.webLink }, campaign: it.campaign,
   })));
   saved.forEach((doc) => {
-    const socketId = onlineUsers.get(String(doc.userId));
-    if (socketId) io.to(socketId).emit("notification", doc);
+    io.to(`user:${doc.userId}`).emit("notification", doc);
   });
   const byUser = new Map(items.map((it, i) => [String(it.userId), { ...it, notificationId: String(saved[i]._id) }]));
   const users = await User.find({ _id: { $in: [...byUser.keys()] } }, "expoPushTokens webPushTokens").lean();
