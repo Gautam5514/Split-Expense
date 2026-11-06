@@ -35,6 +35,82 @@ const makeMark = (src) =>
 const ClaudeMark = makeMark("/mcp/claude.png");
 const ChatGPTMark = makeMark("/mcp/chatgpt.png");
 const GeminiMark = makeMark("/mcp/gemini.png");
+const GrokMark = makeMark("/mcp/grok.svg");
+function AnyAppMark({ className = "h-7 w-7" }) {
+  return (
+    <span aria-hidden="true" className={`flex items-center justify-center rounded-lg bg-cyan-400/15 text-cyan-300 ${className}`}>
+      <Plug className="h-[58%] w-[58%]" strokeWidth={2.4} />
+    </span>
+  );
+}
+
+/* Setup for MCP apps beyond the big chat assistants. Every one of these
+   speaks remote MCP (Streamable HTTP) and runs the same OAuth sign-in, so
+   the only difference is where the link goes. */
+const json = (obj) => JSON.stringify(obj, null, 2);
+const OTHER_CLIENTS = [
+  {
+    id: "claude-code",
+    name: "Claude Code",
+    steps: [
+      "Run the command below in your terminal.",
+      "Start claude, type /mcp, pick splitease and choose Authenticate.",
+    ],
+    snippet: `claude mcp add --transport http splitease ${MCP_URL}`,
+  },
+  {
+    id: "cursor",
+    name: "Cursor",
+    steps: [
+      "Open Cursor Settings, then Tools & MCP, and click New MCP Server.",
+      "Paste the config below into mcp.json and save.",
+      "Click Connect next to splitease and sign in.",
+    ],
+    file: "~/.cursor/mcp.json",
+    snippet: json({ mcpServers: { splitease: { url: MCP_URL } } }),
+  },
+  {
+    id: "vscode",
+    name: "VS Code",
+    steps: [
+      "Add the config below to .vscode/mcp.json (or run MCP: Add Server).",
+      "Click Start above the server entry and sign in when asked.",
+      "Open Copilot Chat in Agent mode and ask away.",
+    ],
+    file: ".vscode/mcp.json",
+    snippet: json({ servers: { splitease: { type: "http", url: MCP_URL } } }),
+  },
+  {
+    id: "windsurf",
+    name: "Windsurf",
+    steps: [
+      "Open Windsurf Settings, then Cascade, and click Manage MCPs.",
+      "Choose View raw config and add the entry below.",
+      "Refresh the server list and sign in when asked.",
+    ],
+    file: "~/.codeium/windsurf/mcp_config.json",
+    snippet: json({ mcpServers: { splitease: { serverUrl: MCP_URL } } }),
+  },
+  {
+    id: "codex",
+    name: "Codex CLI",
+    steps: [
+      "Run the commands below in your terminal.",
+      "The login command opens your browser to sign in to SplitEase.",
+    ],
+    snippet: `codex mcp add splitease --url ${MCP_URL}\ncodex mcp login splitease`,
+  },
+  {
+    id: "any",
+    name: "Any other app",
+    steps: [
+      "If the app accepts a remote MCP URL, paste the link and sign in when asked.",
+      "If it only runs local (stdio) servers, add the bridge config below instead. It needs Node.js.",
+    ],
+    file: "mcpServers config",
+    snippet: json({ mcpServers: { splitease: { command: "npx", args: ["-y", "mcp-remote", MCP_URL] } } }),
+  },
+];
 
 const ASSISTANTS = [
   {
@@ -119,6 +195,55 @@ const ASSISTANTS = [
     note: "The Gemini mobile and web apps do not accept custom MCP servers yet. Gemini CLI does.",
     href: "https://github.com/google-gemini/gemini-cli",
     cta: "Get Gemini CLI",
+  },
+  {
+    id: "grok",
+    name: "Grok",
+    maker: "xAI",
+    Mark: GrokMark,
+    glow: "bg-white/10",
+    theme: {
+      bg: "linear-gradient(160deg, #1C1C1C 0%, #0A0A0A 100%)",
+      border: "rgba(255,255,255,0.2)",
+      glow: "rgba(255,255,255,0.09)",
+      text: "#F4F4F4",
+      muted: "rgba(244,244,244,0.62)",
+      accent: "#E4E4E4",
+      btnBg: "#FFFFFF",
+      btnText: "#000000",
+      chip: "rgba(255,255,255,0.1)",
+    },
+    steps: [
+      "Open grok.com and go to Connectors.",
+      "Click New Connector, then choose Custom.",
+      "Name it SplitEase and paste the link you copied above.",
+      "Save, then sign in to SplitEase in the window that opens.",
+    ],
+    note: "Custom connectors work in Grok on the web.",
+    href: "https://grok.com",
+    cta: "Open Grok",
+  },
+  {
+    id: "other",
+    name: "Any MCP app",
+    maker: "Cursor, VS Code & more",
+    Mark: AnyAppMark,
+    glow: "bg-cyan-500/15",
+    theme: {
+      bg: "linear-gradient(160deg, #0B1F26 0%, #070F12 100%)",
+      border: "rgba(34,211,238,0.32)",
+      glow: "rgba(34,211,238,0.2)",
+      text: "#E6FAFD",
+      muted: "rgba(230,250,253,0.62)",
+      accent: "#22D3EE",
+      btnBg: "#22D3EE",
+      btnText: "#031317",
+      chip: "rgba(34,211,238,0.12)",
+    },
+    clients: OTHER_CLIENTS,
+    note: "SplitEase works with any app that supports remote MCP servers with OAuth sign-in.",
+    href: "https://modelcontextprotocol.io/clients",
+    cta: "See all MCP apps",
   },
 ];
 
@@ -240,8 +365,12 @@ export default function McpPageClient() {
   const reducedMotion = useReducedMotion();
   const [active, setActive] = useState("claude");
   const [copied, copy] = useCopy();
+  const [clientId, setClientId] = useState(OTHER_CLIENTS[0].id);
   const current = ASSISTANTS.find((a) => a.id === active);
   const t = current.theme;
+  const client = current.clients?.find((c) => c.id === clientId) || current.clients?.[0];
+  const steps = client ? client.steps : current.steps;
+  const snippet = client ? client.snippet : current.command;
   const float = (delay) =>
     reducedMotion
       ? {}
@@ -274,7 +403,7 @@ export default function McpPageClient() {
           Connect SplitEase to your favourite AI
         </h1>
         <p className="relative z-10 mx-auto mt-5 max-w-2xl text-sm font-medium leading-relaxed text-white/60 sm:text-base">
-          Paste one link into Claude, ChatGPT or Gemini, sign in once, and ask about your groups, balances and expenses in plain language.
+          Paste one link into Claude, ChatGPT, Gemini, Grok or any MCP app, sign in once, and ask about your groups, balances and expenses in plain language.
         </p>
 
         {/* Assistant logos */}
@@ -370,8 +499,28 @@ export default function McpPageClient() {
                   </h3>
                 </div>
 
+                {current.clients && (
+                  <div role="tablist" aria-label="App" className="mt-6 flex flex-wrap gap-2">
+                    {current.clients.map((c) => {
+                      const on = c.id === client.id;
+                      return (
+                        <button
+                          key={c.id}
+                          role="tab"
+                          aria-selected={on}
+                          onClick={() => setClientId(c.id)}
+                          style={on ? { background: t.accent, color: t.btnText, borderColor: t.accent } : { borderColor: t.border, color: t.muted }}
+                          className="clickable rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors duration-200 hover:bg-white/[0.06]"
+                        >
+                          {c.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <ol className="mt-6 space-y-4">
-                  {current.steps.map((step, i) => (
+                  {steps.map((step, i) => (
                     <li key={step} className="flex items-start gap-3 text-sm leading-relaxed" style={{ color: t.muted }}>
                       <span
                         className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold"
@@ -384,18 +533,23 @@ export default function McpPageClient() {
                   ))}
                 </ol>
 
-                {current.command && (
-                  <div className="mt-5 flex items-start gap-2 rounded-xl border border-white/10 bg-black/50 p-3">
-                    <code className="min-w-0 flex-1 break-all font-mono text-[11px] leading-relaxed" style={{ color: t.accent }}>
-                      {current.command}
-                    </code>
+                {snippet && (
+                  <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-black/50">
+                    {client?.file && (
+                      <div className="border-b border-white/10 px-3 py-1.5 font-mono text-[10px] text-white/40">{client.file}</div>
+                    )}
+                    <div className="flex items-start gap-2 p-3">
+                    <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed" style={{ color: t.accent }}>
+                      {snippet}
+                    </pre>
                     <button
-                      onClick={() => copy("cmd", current.command, "Command copied.")}
+                      onClick={() => copy("cmd", snippet, client?.file ? "Config copied." : "Command copied.")}
                       aria-label="Copy command"
                       className="clickable shrink-0 rounded-lg border border-white/10 p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
                     >
                       {copied === "cmd" ? <Check size={14} className="text-emerald-300" /> : <Copy size={14} />}
                     </button>
+                    </div>
                   </div>
                 )}
 

@@ -97,8 +97,8 @@ export default function HowItWorksSection() {
       `}</style>
 
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] rounded-full blur-[150px]" style={{ background: "rgba(150,168,60,0.06)" }} />
-        <div className="absolute bottom-1/4 right-1/5 w-[500px] h-[500px] rounded-full blur-[140px]" style={{ background: "rgba(120,140,50,0.05)" }} />
+        <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] rounded-full blur-[150px]" style={{ background: "rgba(34,211,238,0.06)" }} />
+        <div className="absolute bottom-1/4 right-1/5 w-[500px] h-[500px] rounded-full blur-[140px]" style={{ background: "rgba(8,145,178,0.05)" }} />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8">

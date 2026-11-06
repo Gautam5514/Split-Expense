@@ -20,7 +20,7 @@ export default function HeroSection() {
     <section className="relative w-full min-h-[100svh] overflow-hidden flex flex-col bg-black text-white pt-24 sm:pt-28 pb-12 sm:pb-20">
 
       {/* Background Gradients matching obsidianos.com */}
-      <div className="absolute inset-x-0 top-0 -bottom-[164px] z-0" style={{ background: "linear-gradient(180deg, #000 0%, #2F2C2A 67%)" }} />
+      <div className="absolute inset-x-0 top-0 -bottom-[164px] z-0" style={{ background: "linear-gradient(180deg, #000 0%, #0f1a1d 67%)" }} />
       <div className="pointer-events-none absolute top-[656px] -bottom-[42px] -left-[218px] -right-[218px] z-[4]" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, #000 83.35%)" }} />
       <div className="absolute inset-0 bg-radial-gradient(circle_at_center,rgba(8,145,178,0.03)_0%,transparent_70%) z-[1]" />
 

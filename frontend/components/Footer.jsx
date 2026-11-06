@@ -152,7 +152,8 @@ export default function Footer() {
                   { label: "Group Chat Hub", href: "/features/group-chat-hub" },
                   { label: "QR & Link Invites", href: "/features/qr-invites" },
                   { label: "Secure OTP Login", href: "/features/secure-login" },
-                  { label: "Autopilot", href: "/features/autopilot" }
+                  { label: "Autopilot", href: "/features/autopilot" },
+                  { label: "MCP Server", href: "/mcp" }
                 ].map((link) => (
                   <li key={link.label}>
                     <Link

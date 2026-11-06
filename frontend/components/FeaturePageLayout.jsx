@@ -19,6 +19,7 @@ const FEATURE_PAGES = [
   { label: "QR & Link Invites", href: "/features/qr-invites" },
   { label: "Secure OTP Login", href: "/features/secure-login" },
   { label: "Autopilot", href: "/features/autopilot" },
+  { label: "MCP Server", href: "/mcp" },
 ];
 
 // Every feature page must say plainly whether what it describes is live,

@@ -6,8 +6,9 @@ import styles from "./IntelligenceSection.module.css";
 
 const VERTEX = "attribute vec2 position; void main(){gl_Position=vec4(position,0.0,1.0);}";
 const COLORS = new Float32Array([
-  .090, .090, .090, .569, .773, 1.000, .227, .506, .965,
-  .145, .388, .937, .102, .306, .855, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  // dark base, then the site's cyan ramp: #a5f3fc, #22d3ee, #0891B2, #0E7490
+  .090, .090, .090, .647, .953, .988, .133, .827, .933,
+  .031, .569, .698, .055, .455, .565, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ]);
 
 export default function MeshDriftBackground({ sectionRef, running, reduced }) {

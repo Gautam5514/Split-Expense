@@ -2,6 +2,8 @@
 // pages and the sitemap can share one source of truth. Every post is written
 // around a real search query (the `keywords`) with FAQ schema for rich results.
 
+import { AI_BLOG_POSTS } from "@/lib/blogPostsAI";
+
 export const BLOG_POSTS = [
   {
     slug: "splitease-ultimate-group-expense-splitter-guide",
@@ -981,6 +983,7 @@ export const BLOG_POSTS = [
       { q: "How often should you review a wedding budget?", a: "Review it monthly early in planning, then weekly during the final six to eight weeks. Always update the tracker immediately after signing a contract or making a payment." },
     ],
   },
+  ...AI_BLOG_POSTS,
 ];
 
 export const getPostBySlug = (slug) => BLOG_POSTS.find((p) => p.slug === slug);

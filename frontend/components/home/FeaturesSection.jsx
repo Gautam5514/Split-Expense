@@ -129,8 +129,8 @@ function RailwayBufferStop({ position = "bottom" }) {
             patternTransform="rotate(45)"
           >
             <rect width="8" height="8" fill="#09090b" />
-            <rect x="0" y="0" width="4" height="8" fill="#f59e0b" />
-            <line x1="0" y1="0" x2="0" y2="8" stroke="#fde047" strokeWidth="0.6" />
+            <rect x="0" y="0" width="4" height="8" fill="#0891B2" />
+            <line x1="0" y1="0" x2="0" y2="8" stroke="#67e8f9" strokeWidth="0.6" />
           </pattern>
 
           {/* Metallic hydraulic cylinder gradient */}
@@ -303,19 +303,19 @@ function RailwayBufferStop({ position = "bottom" }) {
 
         {/* --- CENTRAL RED DANGER STOP SIGNAL LANTERN --- */}
         {/* Outer dark bezel & reflective silver ring */}
-        <circle cx="32" cy="29" r="6" fill="#030712" stroke="#e2e8f0" strokeWidth="0.9" />
+        <circle cx="32" cy="29" r="6" fill="#030a0c" stroke="#e2e8f0" strokeWidth="0.9" />
         {/* Red beacon glow backdrop */}
-        <circle cx="32" cy="29" r="9" fill="#ef4444" opacity="0.35" filter="blur(3px)" />
+        <circle cx="32" cy="29" r="9" fill="#22d3ee" opacity="0.35" filter="blur(3px)" />
         {/* Red lens core with luminous beacon filter */}
         <circle
           cx="32"
           cy="29"
           r="4.2"
-          fill="#ef4444"
+          fill="#22d3ee"
           filter={`url(#red-beacon-glow-${position})`}
         />
         {/* Center bright core */}
-        <circle cx="32" cy="29" r="2.2" fill="#ff6b6b" />
+        <circle cx="32" cy="29" r="2.2" fill="#a5f3fc" />
         {/* Specular highlight glint */}
         <ellipse cx="30.8" cy="27.8" rx="1.2" ry="0.7" fill="#ffffff" opacity="0.95" />
       </svg>

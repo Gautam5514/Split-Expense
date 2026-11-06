@@ -95,7 +95,7 @@ export default function TestimonialsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.7, delay: i * 0.08, ease: "easeOut" }}
-              className="break-inside-avoid mb-6 relative group min-w-0 flex flex-col p-5 sm:p-7 rounded-[22px] border border-white/[0.06] bg-[#0A0A0F]/45 backdrop-blur-xl hover:border-cyan-500/20 hover:bg-[#0E0E15]/75 hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+              className="break-inside-avoid mb-6 relative group min-w-0 flex flex-col p-5 sm:p-7 rounded-[22px] border border-white/[0.06] bg-[#0a0d0e]/45 backdrop-blur-xl hover:border-cyan-500/20 hover:bg-[#0e1214]/75 hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
             >
               {/* Card Header (Avatar, Name, Role) */}
               <div className="flex items-center gap-3.5">

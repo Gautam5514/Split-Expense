@@ -22,6 +22,7 @@ import { motion } from "framer-motion";
 import Loader3D from "@/components/Loader3D";
 import CreateGroupModal from "@/components/CreateGroupModal";
 import QuickSplitModal from "@/components/QuickSplitModal";
+import AddExpenseModal from "@/components/AddExpenseModal";
 import { getGroupIcon } from "@/lib/groupIcons";
 
 const COLORS = ["#0891B2", "#0E7490", "#22D3EE", "#14b8a6", "#f59e0b", "#0284C7"];
@@ -87,6 +88,7 @@ export default function UserDashboardPage() {
   const [showQuickSplit, setShowQuickSplit] = useState(false);
   const [quickSplits, setQuickSplits] = useState([]);
   const [openQuickSplitId, setOpenQuickSplitId] = useState(null);
+  const [expenseGroup, setExpenseGroup] = useState(null); // group whose quick "+" was tapped
   const [activePieIndex, setActivePieIndex] = useState(-1);
   const [mounted, setMounted]               = useState(false);
 
@@ -420,6 +422,16 @@ export default function UserDashboardPage() {
                         </div>
                       )}
 
+                      <button
+                        type="button"
+                        aria-label={`Add expense to ${group.name}`}
+                        title="Add expense"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpenseGroup(group); }}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors duration-200 hover:bg-primary hover:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      >
+                        <Plus className="h-4 w-4" strokeWidth={2.5} />
+                      </button>
+
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition-[transform,background-color,color,box-shadow] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/card:scale-[1.3] group-hover/card:bg-primary group-hover/card:text-white group-hover/card:shadow-[0_6px_14px_-4px_rgba(8,145,178,0.6)]">
                         <ChevronRight className="h-4 w-4 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/card:translate-x-0.5" />
                       </span>
@@ -718,6 +730,18 @@ export default function UserDashboardPage() {
             .catch(() => {});
         }}
       />
+      {expenseGroup && (
+        <AddExpenseModal
+          group={expenseGroup}
+          meId={meId}
+          onClose={() => setExpenseGroup(null)}
+          onSuccess={() => {
+            toast.success(`Expense added to ${expenseGroup.name}`);
+            setExpenseGroup(null);
+            fetchData(true);
+          }}
+        />
+      )}
     </div>
   );
 }

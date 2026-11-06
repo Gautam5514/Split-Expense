@@ -19,7 +19,7 @@ const SETTLEMENTS = [
 ];
 
 const tile =
-  "group relative overflow-hidden border border-white/[0.06] bg-[#0e0e0e]";
+  "group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0e0e0e] transition-colors duration-300 hover:border-cyan-400/30";
 
 const fadeUp = (i = 0) => ({
   initial: { opacity: 0, y: 28 },
@@ -67,12 +67,12 @@ function ReceivedTile() {
             transition={{ duration: 0.45 }}
             className="relative flex items-center gap-3 rounded-xl border border-white/10 bg-[#171717] p-2.5 text-left shadow-xl"
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 text-lg sm:h-11 sm:w-11 sm:text-xl">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-600 to-cyan-400 text-lg sm:h-11 sm:w-11 sm:text-xl">
               {s.emoji}
             </span>
             <div className="min-w-0">
               <p className="text-[clamp(13px,1.5cqw,19px)] font-medium tabular-nums text-white">
-                <span className="text-[#2d5df6]">+</span> ₹{s.amount}
+                <span className="text-[#22d3ee]">+</span> ₹{s.amount}
               </p>
               <p className="truncate text-[clamp(9px,0.9cqw,12px)] text-white/50">{s.text}</p>
             </div>
@@ -94,26 +94,26 @@ const PhoneArt = () => (
     <defs>
       <linearGradient id="phBody" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="#ffffff" />
-        <stop offset="1" stopColor="#d9d4c7" />
+        <stop offset="1" stopColor="#d4dadb" />
       </linearGradient>
       <linearGradient id="phGlass" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#1b1b22" />
+        <stop offset="0" stopColor="#1a1d1f" />
         <stop offset="1" stopColor="#050507" />
       </linearGradient>
     </defs>
     <rect x="2" y="2" width="60" height="96" rx="14" fill="url(#phBody)" />
     <rect x="9" y="15" width="46" height="17" rx="8.5" fill="url(#phGlass)" />
-    <circle cx="20" cy="23.5" r="4.6" fill="#2a2a38" />
-    <circle cx="31" cy="23.5" r="4.6" fill="#2a2a38" />
-    <circle cx="20" cy="23.5" r="1.6" fill="#6b7cff" opacity=".7" />
-    <circle cx="44" cy="21" r="2.4" fill="#e8e1cf" />
-    <circle cx="44" cy="27" r="2" fill="#9a968a" />
-    <text x="32" y="64" textAnchor="middle" fontSize="15" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" fill="#b9b5a8">G</text>
+    <circle cx="20" cy="23.5" r="4.6" fill="#262a2c" />
+    <circle cx="31" cy="23.5" r="4.6" fill="#262a2c" />
+    <circle cx="20" cy="23.5" r="1.6" fill="#67e8f9" opacity=".7" />
+    <circle cx="44" cy="21" r="2.4" fill="#e3e8e9" />
+    <circle cx="44" cy="27" r="2" fill="#8f9799" />
+    <text x="32" y="64" textAnchor="middle" fontSize="15" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" fill="#aab3b5">G</text>
   </svg>
 );
 
 const WebArt = () => (
-  <svg viewBox="0 0 100 100" className="h-[62%] drop-shadow-[0_6px_14px_rgba(77,123,255,0.45)]" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+  <svg viewBox="0 0 100 100" className="h-[62%] drop-shadow-[0_6px_14px_rgba(34,211,238,0.45)]" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
     <circle cx="46" cy="48" r="36" />
     <ellipse cx="46" cy="48" rx="15" ry="36" />
     <path d="M10 48h72M17 28q29 9 58 0M17 68q29-9 58 0M46 12v72" />
@@ -122,7 +122,7 @@ const WebArt = () => (
 );
 
 const McpArt = () => (
-  <svg viewBox="0 0 195 195" className="h-[62%] drop-shadow-[0_6px_14px_rgba(77,123,255,0.45)]" fill="none" stroke="#fff" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg viewBox="0 0 195 195" className="h-[62%] drop-shadow-[0_6px_14px_rgba(34,211,238,0.45)]" fill="none" stroke="#fff" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M18 103L92 29a17 17 0 0 1 24 24L58 111" />
     <path d="M60 109L121 48a17 17 0 0 1 24 24L83 134a6 6 0 0 0 9 9l54-54" />
   </svg>
@@ -144,8 +144,8 @@ function PlatformsTile() {
         backgroundSize: "100% 100%, 15% 15%, 15% 15%",
       }}
     >
-      {/* soft blue light under the fan */}
-      <div className="pointer-events-none absolute left-1/2 top-[48%] h-[40%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2f5bff]/25 blur-3xl" />
+      {/* soft cyan light under the fan */}
+      <div className="pointer-events-none absolute left-1/2 top-[48%] h-[40%] w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#0891B2]/25 blur-3xl" />
       <span />
       <div className="relative h-[34%] w-full">
         {cards.map(({ label, Art, rot, x, y, z, delay }) => (
@@ -178,7 +178,7 @@ function PlatformsTile() {
 /* 3 — map (wide) */
 function MapTile() {
   return (
-    <div className="relative h-full overflow-hidden bg-[radial-gradient(ellipse_at_20%_80%,rgba(45,93,246,0.4),transparent_60%)]">
+    <div className="relative h-full overflow-hidden bg-[radial-gradient(ellipse_at_20%_80%,rgba(8,145,178,0.4),transparent_60%)]">
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_40%,#0e0e0e)]" />
       <h3 className="absolute left-[4.5%] top-[9%] z-10 max-w-[55%] text-[clamp(20px,3.2cqw,44px)] font-bold leading-[0.98] tracking-tight text-white">
         Expanding horizons. Splitting everywhere.
@@ -201,8 +201,8 @@ function MapTile() {
           </defs>
           <motion.path
             d="M92 8 L104 6 L114 16 L112 28 L124 34 L136 32 L142 44 L158 48 L172 52 L186 58 L184 66 L170 66 L160 72 L150 70 L142 64 L138 74 L126 78 L124 90 L118 98 L112 112 L108 130 L104 150 L98 166 L92 182 L86 190 L80 176 L74 156 L68 138 L56 124 L48 110 L36 100 L22 94 L30 86 L40 80 L46 68 L58 62 L66 48 L78 40 L84 28 L90 18 Z"
-            fill="rgba(45,93,246,0.14)"
-            stroke="#2d5df6"
+            fill="rgba(34,211,238,0.14)"
+            stroke="#22d3ee"
             strokeWidth="2.2"
             strokeLinejoin="round"
             filter="url(#bentoGlow)"
@@ -212,7 +212,7 @@ function MapTile() {
             transition={{ duration: 2.2, ease: "easeInOut" }}
           />
           <circle cx="54" cy="126" r="3.5" fill="#fff" />
-          <circle cx="54" cy="126" r="3.5" fill="none" stroke="#6d93ff" strokeWidth="1.5">
+          <circle cx="54" cy="126" r="3.5" fill="none" stroke="#67e8f9" strokeWidth="1.5">
             <animate attributeName="r" values="3.5;16" dur="2.2s" repeatCount="indefinite" />
             <animate attributeName="opacity" values="0.9;0" dur="2.2s" repeatCount="indefinite" />
           </circle>
@@ -236,7 +236,7 @@ function TrustTile() {
       className="relative h-full overflow-hidden"
       style={{
         background:
-          "radial-gradient(ellipse 95% 70% at 50% 0%, #2d5df6 0%, #244ce3 30%, #162d98 55%, #03040a 100%)",
+          "radial-gradient(ellipse 95% 70% at 50% 0%, #0891B2 0%, #0E7490 30%, #164E63 55%, #03090b 100%)",
       }}
     >
       <div className="pointer-events-none absolute inset-0 opacity-30 mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
@@ -247,7 +247,7 @@ function TrustTile() {
       </p>
 
       <div className="absolute inset-x-0 top-[34%] z-0 text-center font-extrabold leading-none tracking-tighter text-[clamp(110px,19cqw,270px)]">
-        <span className="bg-gradient-to-b from-[#0b0b10] to-[#101835] bg-clip-text text-transparent [-webkit-text-stroke:1.5px_rgba(255,255,255,0.12)]">
+        <span className="bg-gradient-to-b from-[#0b0b10] to-[#0c2a33] bg-clip-text text-transparent [-webkit-text-stroke:1.5px_rgba(255,255,255,0.12)]">
           {Math.round(n)}%
         </span>
       </div>
@@ -286,12 +286,12 @@ function StandardTile() {
       className="relative flex h-full flex-col items-center justify-between py-[10%] text-center"
       style={{
         background:
-          "radial-gradient(ellipse 85% 42% at 50% 112%, #2d5df6 0%, #244ce3 38%, rgba(36,76,227,0) 78%), linear-gradient(90deg, rgba(36,76,227,0.85) 0%, rgba(36,76,227,0) 30%, rgba(36,76,227,0) 70%, rgba(36,76,227,0.85) 100%), linear-gradient(180deg, rgba(22,45,152,0.7) 0%, rgba(22,45,152,0) 22%), #03040a",
+          "radial-gradient(ellipse 85% 42% at 50% 112%, #0891B2 0%, #0E7490 38%, rgba(14,116,144,0) 78%), linear-gradient(90deg, rgba(14,116,144,0.85) 0%, rgba(14,116,144,0) 30%, rgba(14,116,144,0) 70%, rgba(14,116,144,0.85) 100%), linear-gradient(180deg, rgba(22,78,99,0.7) 0%, rgba(22,78,99,0) 22%), #03090b",
       }}
     >
       {/* static mark: solid disc overlapping an outlined ring */}
       <span className="flex items-center" aria-hidden="true">
-        <span className="h-[clamp(22px,3.4cqw,40px)] w-[clamp(22px,3.4cqw,40px)] rounded-full bg-[#e4e9ff] shadow-[0_0_18px_rgba(160,185,255,0.45)]" />
+        <span className="h-[clamp(22px,3.4cqw,40px)] w-[clamp(22px,3.4cqw,40px)] rounded-full bg-[#cffafe] shadow-[0_0_18px_rgba(103,232,249,0.45)]" />
         <span className="-ml-[clamp(7px,1.1cqw,13px)] h-[clamp(22px,3.4cqw,40px)] w-[clamp(22px,3.4cqw,40px)] rounded-full border-2 border-white/80" />
       </span>
       <h3 className="px-3 text-[clamp(18px,2.6cqw,36px)] font-bold leading-[1.02] tracking-tight text-white">
@@ -316,7 +316,7 @@ function CounterTile() {
         <div className="absolute -left-[22%] top-[10%] h-[80%] w-[22%] rounded-l-xl bg-white/[0.03]" />
         <div className="absolute -right-[22%] top-[10%] h-[80%] w-[22%] rounded-r-xl bg-white/[0.03]" />
         <div className="relative grid h-[clamp(70px,10cqw,140px)] min-w-[clamp(70px,10cqw,140px)] place-items-center rounded-[22px] border border-white/10 bg-gradient-to-b from-[#1b1b1f] to-[#0c0c0e] px-4 shadow-2xl">
-          <span className="text-[clamp(34px,5.4cqw,76px)] font-semibold tabular-nums leading-none text-[#2d5df6]">
+          <span className="text-[clamp(34px,5.4cqw,76px)] font-semibold tabular-nums leading-none text-[#22d3ee]">
             {Math.round(n)}
           </span>
           <span className="absolute inset-x-0 top-1/2 h-px bg-black/60" />
@@ -341,20 +341,20 @@ function GrowthTile() {
   return (
     <div
       ref={ref}
-      className="relative flex h-full items-end bg-[radial-gradient(ellipse_at_90%_0%,rgba(45,93,246,0.28),transparent_55%)] p-[4.5%]"
+      className="relative flex h-full items-end bg-[radial-gradient(ellipse_at_90%_0%,rgba(8,145,178,0.28),transparent_55%)] p-[4.5%]"
     >
       <span className="absolute left-[4.5%] top-[9%] text-[clamp(34px,5cqw,70px)] font-light leading-none text-white">✻</span>
       <p className="max-w-[40%] text-[clamp(14px,2.1cqw,30px)] leading-tight text-white/90">
         Balances that stay in sync, everywhere.
       </p>
 
-      <div className="absolute inset-y-[7%] right-[5%] w-[44%] overflow-hidden rounded-2xl border border-[#2d5df6]/40 bg-gradient-to-b from-[#2d5df6] to-[#162d98]">
+      <div className="absolute inset-y-[7%] right-[5%] w-[44%] overflow-hidden rounded-2xl border border-[#22d3ee]/40 bg-gradient-to-b from-[#0891B2] to-[#164E63]">
         <p className="absolute left-[7%] top-[9%] text-[clamp(10px,1.1cqw,15px)] text-white/85">Total Settled</p>
         <svg viewBox="0 0 300 130" preserveAspectRatio="none" className="absolute inset-x-0 top-[18%] h-[48%] w-full" aria-hidden="true">
           <defs>
             <linearGradient id="bentoArea" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#4d7bff" stopOpacity="0.5" />
-              <stop offset="1" stopColor="#4d7bff" stopOpacity="0" />
+              <stop offset="0" stopColor="#67e8f9" stopOpacity="0.5" />
+              <stop offset="1" stopColor="#67e8f9" stopOpacity="0" />
             </linearGradient>
           </defs>
           <line x1="215" y1="0" x2="215" y2="130" stroke="rgba(255,255,255,0.35)" strokeDasharray="3 4" />
@@ -362,7 +362,7 @@ function GrowthTile() {
           <motion.path
             d={line}
             fill="none"
-            stroke="#5f86ff"
+            stroke="#67e8f9"
             strokeWidth="2.5"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
@@ -371,8 +371,8 @@ function GrowthTile() {
             transition={{ duration: 2, ease: "easeInOut" }}
           />
         </svg>
-        <span className="absolute left-[71.6%] top-[34%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-white bg-[#162d98]" />
-        <p className="absolute bottom-[8%] left-[7%] text-[clamp(26px,4cqw,58px)] font-semibold leading-none tabular-nums tracking-tight text-[#2d5df6]">
+        <span className="absolute left-[71.6%] top-[34%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-white bg-[#164E63]" />
+        <p className="absolute bottom-[8%] left-[7%] text-[clamp(26px,4cqw,58px)] font-semibold leading-none tabular-nums tracking-tight text-[#22d3ee]">
           +₹{n.toFixed(1)}L
         </p>
       </div>
@@ -382,14 +382,14 @@ function GrowthTile() {
 
 export default function BentoSection() {
   return (
-    <section className="relative bg-[#050505] px-4 py-16 text-white sm:px-6 sm:py-20 lg:px-10">
+    <section className="relative bg-[#030303] px-4 py-14 text-white sm:px-6 sm:py-16 lg:px-10">
       <div className="mx-auto max-w-[1120px]">
         <motion.div {...fadeUp()}>
 <SectionHeading eyebrow="SplitEase at a glance" title="Numbers that" secondary="speak for themselves." />
 </motion.div>
 
         {/* 2 cols on mobile, exact 4x3 bento (4:3) from md up */}
-        <div className="grid auto-rows-[minmax(190px,44vw)] grid-cols-2 gap-3 [container-type:inline-size] md:aspect-[4/3] md:auto-rows-auto md:grid-cols-4 md:grid-rows-3 md:gap-4">
+        <div className="grid auto-rows-[minmax(190px,44vw)] grid-cols-2 gap-3 [container-type:inline-size] md:aspect-[16/10] md:auto-rows-auto md:grid-cols-4 md:grid-rows-3 md:gap-4">
           <motion.div {...fadeUp(0)} className={tile}><ReceivedTile /></motion.div>
           <motion.div {...fadeUp(1)} className={`${tile}`}><PlatformsTile /></motion.div>
           <motion.div {...fadeUp(2)} className={`${tile} col-span-2`}><MapTile /></motion.div>
