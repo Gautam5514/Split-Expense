@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ChevronDown, ArrowRight, Sparkles, ScanLine, Handshake,
-  MessagesSquare, QrCode, ShieldCheck, Smartphone, Plug, Layers, Wand2,
+  MessagesSquare, QrCode, ShieldCheck, Layers, Wand2,
 } from "lucide-react";
 import styles from "./FeaturesMenu.module.css";
 
@@ -20,9 +20,44 @@ const FEATURES = [
   { href: "/features/autopilot",           icon: Wand2,          label: "Autopilot",           desc: "Ask once, review, approve" },
 ];
 
+/* Android robot in Android's own green. */
+const ANDROID_GREEN = "#3DDC84";
+function AndroidMark() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill={ANDROID_GREEN} aria-hidden="true">
+      <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.43 11.43 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.81 10.81 0 0 0 1 18h22a10.81 10.81 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z" />
+    </svg>
+  );
+}
+
+/* The assistants the MCP server connects to, as a small overlapping stack. */
+const AI_MARKS = [
+  { src: "/mcp/claude.png", name: "Claude" },
+  { src: "/mcp/chatgpt.png", name: "ChatGPT" },
+  { src: "/mcp/gemini.png", name: "Gemini" },
+];
+function AiMarks() {
+  return (
+    <span style={{ display: "flex" }} aria-label="Claude, ChatGPT and Gemini">
+      {AI_MARKS.map((m, i) => (
+        <span
+          key={m.name}
+          title={m.name}
+          style={{
+            display: "grid", placeItems: "center", width: 24, height: 24, borderRadius: "50%",
+            background: "#0b0e11", border: "1px solid #ffffff1f", marginLeft: i ? -7 : 0, position: "relative", zIndex: AI_MARKS.length - i,
+          }}
+        >
+          <img src={m.src} alt="" width={14} height={14} style={{ objectFit: "contain" }} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
 const PLATFORMS = [
-  { href: "/mobile-app", icon: Smartphone, label: "Mobile App", badge: "Android", desc: "Every group and settlement in your pocket" },
-  { href: "/mcp",  icon: Plug,       label: "MCP Server", badge: "AI",      desc: "Connect Claude, ChatGPT, Gemini & more" },
+  { href: "/mobile-app", icon: AndroidMark, label: "Mobile App", badge: "Android", badgeColor: ANDROID_GREEN, desc: "Every group and settlement in your pocket" },
+  { href: "/mcp",        icon: AiMarks,     label: "MCP Server", badge: "AI",      desc: "Connect Claude, ChatGPT, Gemini & more" },
 ];
 
 export default function FeaturesMenu() {
@@ -83,8 +118,11 @@ export default function FeaturesMenu() {
           <div className={styles.platforms}>
             <div className={styles.sectionLabel}>BEYOND YOUR BROWSER</div>
             <div className={styles.platformList}>
-              {PLATFORMS.map(({ href, icon: Icon, label, badge, desc }) => <Link key={href} href={href} onClick={close} className={styles.platformLink} aria-current={pathname === href ? "page" : undefined}>
-                <div className={styles.platformTop}><span className={styles.platformIcon}><Icon size={18} strokeWidth={1.6} /></span><span className={styles.badge}>{badge}</span></div>
+              {PLATFORMS.map(({ href, icon: Icon, label, badge, badgeColor, desc }) => <Link key={href} href={href} onClick={close} className={styles.platformLink} aria-current={pathname === href ? "page" : undefined}>
+                <div className={styles.platformTop}>
+                  <span className={styles.platformIcon}><Icon /></span>
+                  <span className={styles.badge} style={badgeColor ? { color: badgeColor, borderColor: `${badgeColor}40`, background: `${badgeColor}0f` } : undefined}>{badge}</span>
+                </div>
                 <span className={styles.platformTitle}>{label}<ArrowRight size={13} /></span>
                 <span className={styles.description}>{desc}</span>
               </Link>)}
