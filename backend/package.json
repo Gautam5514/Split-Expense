@@ -9,7 +9,7 @@
     "seed:user": "node scripts/seed-password-user.js",
     "user:otp-bypass": "node scripts/set-user-otp-bypass.js",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand",
-    "test:int": "node --experimental-vm-modules node_modules/.bin/jest --runInBand tests/groupSecurity.int.test.js tests/settingsLock.int.test.js tests/mcpTools.int.test.js"
+    "test:int": "node --experimental-vm-modules node_modules/.bin/jest --runInBand tests/groupSecurity.int.test.js tests/settingsLock.int.test.js tests/mcpTools.int.test.js tests/statementOutbox.int.test.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -29,6 +29,7 @@
     "mongoose": "^8.3.1",
     "nodemailer": "^10.0.13",
     "openai": "^6.45.0",
+    "pdfkit": "^0.20.2",
     "redis": "^6.3.1",
     "socket.io": "^4.8.1",
     "tesseract.js": "^6.0.1",

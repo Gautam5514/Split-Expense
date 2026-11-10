@@ -7,11 +7,13 @@ export const STORE_ITEMS = {
   // Midnight Black was removed from sale: the landing page look is now the
   // free built-in "SplitEase Default" theme. Existing owners keep the item
   // in unlockedItems; it simply no longer gates anything.
+  // `colors` = the accent ("ink") colour the app and web use for this theme in
+  // light and dark mode. A theme without colours is not offered in the store.
   "theme:glass": { type: "theme", name: "Aurora Glass", cost: 1000 },
-  "theme:royal-amethyst": { type: "theme", name: "Royal Amethyst", cost: 450 },
-  "theme:emerald-noir": { type: "theme", name: "Emerald Noir", cost: 550 },
-  "theme:crimson-velvet": { type: "theme", name: "Crimson Velvet", cost: 600 },
-  "theme:aurum-gold": { type: "theme", name: "Aurum Gold", cost: 700 },
+  "theme:royal-amethyst": { type: "theme", name: "Royal Amethyst", cost: 450, colors: { light: "#6D28D9", dark: "#A78BFA" } },
+  "theme:emerald-noir": { type: "theme", name: "Emerald Noir", cost: 550, colors: { light: "#047857", dark: "#34D399" } },
+  "theme:crimson-velvet": { type: "theme", name: "Crimson Velvet", cost: 600, colors: { light: "#BE123C", dark: "#FB7185" } },
+  "theme:aurum-gold": { type: "theme", name: "Aurum Gold", cost: 700, colors: { light: "#B45309", dark: "#FBBF24" } },
 
   // Premium fonts (inter is free and not listed)
   "font:poppins": { type: "font", name: "Poppins", cost: 100 },

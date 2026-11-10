@@ -2,6 +2,7 @@ import User from "../models/userModel.js";
 import { isValidEmail, isValidObjectId } from "../middleware/validate.js";
 import { searchContacts, lookupUserByEmail } from "./peopleController.js";
 import { getContactIds, maskEmail } from "../utils/contacts.js";
+import { eliteTierKey } from "../utils/storeAccess.js";
 
 // GET /api/users?q= - used by "new chat". Name search covers known contacts
 // only; a stranger is returned only for an exact email match (masked). It
@@ -36,10 +37,12 @@ export const getMe = async (req, res) => {
     const userId = req.user?.id; // set by auth middleware
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const user = await User.findById(userId, "name email createdAt").lean();
+    const user = await User.findById(userId, "name email createdAt coins lifetimeCoinsEarned").lean();
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.json(user);
+    // Elite tier = the referral badge shown next to the name.
+    const { coins: _coins, lifetimeCoinsEarned: _earned, ...me } = user;
+    res.json({ ...me, eliteTier: eliteTierKey(user) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

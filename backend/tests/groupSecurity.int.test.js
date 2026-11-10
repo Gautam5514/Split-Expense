@@ -23,7 +23,7 @@ const User = (await import("../models/userModel.js")).default;
 const Group = (await import("../models/groupModel.js")).default;
 const Conversation = (await import("../models/conversationModel.js")).default;
 const GroupInvite = (await import("../models/groupInviteModel.js")).default;
-const { createGroup, addMembersByEmail, listAvailableUsers, joinGroupByInvite, generateInviteLink, resetInviteLink } =
+const { createGroup, addMembersByEmail, listAvailableUsers, joinGroupByInvite, generateInviteLink, resetInviteLink, previewInvite } =
   await import("../controllers/groupController.js");
 const { listUsers, getUserById } = await import("../controllers/userController.js");
 const { lookupByEmail, getContacts, updatePrivacy, blockUser } = await import("../controllers/peopleController.js");
@@ -266,6 +266,11 @@ d("group membership security (real MongoDB)", () => {
     const link = await call(generateInviteLink, { user: U(me), params: { groupId: g._id } });
     expect(link.body.inviteCode).toMatch(/^[A-HJ-KM-NP-Z2-9]{6}$/);
     expect(link.body.joinLink.endsWith(`/join/${link.body.inviteCode}`)).toBe(true);
+    expect(link.body.joinLink).toMatch(/^https:\/\//); // never a localhost link
+    expect(link.body.links).toMatchObject({
+      app: `${link.body.joinLink}?via=app`, web: `${link.body.joinLink}?via=web`, qr: `${link.body.joinLink}?via=qr`,
+      scheme: `splitapp://join/${link.body.inviteCode}`,
+    });
     expect(link.body.groupName).toBe(g.name);
 
     const typed = `${link.body.inviteCode.slice(0, 3).toLowerCase()} ${link.body.inviteCode.slice(3).toLowerCase()}`;
@@ -275,6 +280,36 @@ d("group membership security (real MongoDB)", () => {
 
     const old = await call(joinGroupByInvite, { user: U(joiner), params: { inviteCode: "7f39dc25c3109b3bc1446ae89ba181e1" } });
     expect(old.statusCode).toBe(404);
+  });
+
+  test("invite preview before sign-in, pasted links join, re-joining is harmless", async () => {
+    const me = await mkUser("Meera");
+    const joiner = await mkUser("Joiner");
+    const g = await mkGroup(me, { groupType: "trip" });
+    const link = await call(generateInviteLink, { user: U(me), params: { groupId: g._id } });
+    const code = link.body.inviteCode;
+
+    // Public preview: no user at all.
+    const pv = await call(previewInvite, { params: { inviteCode: code.toLowerCase() } });
+    expect(pv.statusCode).toBe(200);
+    expect(pv.body).toMatchObject({ code, invitedBy: "Meera", joinApproval: false, group: { name: g.name, type: "trip", memberCount: 1 } });
+    expect(JSON.stringify(pv.body)).not.toContain("@"); // no member emails leak
+
+    // The whole shared message pasted into the code box still works.
+    const pasted = `Join "${g.name}" on SplitEase: ${link.body.joinLink} (code ${code})`;
+    const j1 = await call(joinGroupByInvite, { user: U(joiner), params: { inviteCode: pasted } });
+    expect(j1.statusCode).toBe(200);
+    expect(j1.body).toMatchObject({ status: "joined", alreadyMember: false });
+    const j2 = await call(joinGroupByInvite, { user: U(joiner), params: { inviteCode: code } });
+    expect(j2.body).toMatchObject({ status: "already_member", alreadyMember: true });
+    expect((await Group.findById(g._id).lean()).members.map(String).filter((m) => m === String(joiner._id))).toHaveLength(1);
+
+    // Dead and expired links explain themselves with a stable code.
+    expect((await call(previewInvite, { params: { inviteCode: "ZZZZZZ" } })).body.code).toBe("INVITE_INVALID");
+    await Group.updateOne({ _id: g._id }, { $set: { inviteExpiresAt: new Date(Date.now() - 1000) } });
+    const exp = await call(previewInvite, { params: { inviteCode: code } });
+    expect(exp.statusCode).toBe(410);
+    expect(exp.body.code).toBe("INVITE_EXPIRED");
   });
 
   test("expenses: only your own, split the group's way", async () => {

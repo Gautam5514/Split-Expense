@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { X, Search, UserPlus, QrCode, Users, Crown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import TierBadge from "@/components/ui/TierBadge";
 
 /* ── Full member roster: search + scroll + safe remove.
    Reached from the "Active Group Size" stat card on every breakpoint,
@@ -118,9 +119,10 @@ export default function MembersModal({ group, isCreator, onClose, onAdd, onInvit
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate flex items-center gap-1.5">
-                          {m.name || "Unnamed"}
+                        <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                          <span className="truncate">{m.name || "Unnamed"}</span>
                           {isMemberCreator && <Crown size={11} className="text-primary shrink-0" />}
+                          <TierBadge tier={m.eliteTier} />
                         </p>
                         <p className="text-[11px] text-muted-foreground break-all">{m.email}</p>
                       </div>

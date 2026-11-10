@@ -13,6 +13,7 @@ import { captureReferralFromLocation, getStoredReferralCode, clearStoredReferral
 import AuthVisual from "@/components/AuthVisual";
 import McpConnectGate from "@/components/McpConnectGate";
 import { hasMcpRequest, notifyMcpSignedIn } from "@/lib/mcpConnect";
+import { afterAuthPath } from "@/lib/pendingInvite";
 
 const expenseCards = [
   {
@@ -198,13 +199,7 @@ export default function LoginPage() {
     toast.success("Login successful!");
     if (notifyMcpSignedIn()) return;
 
-    const pendingInvite = localStorage.getItem("pendingInvite");
-    if (pendingInvite) {
-      localStorage.removeItem("pendingInvite");
-      router.push(`/join/${pendingInvite}`);
-    } else {
-      router.push("/users");
-    }
+    router.push(afterAuthPath("/users"));
   };
 
   // ── Email/password login ─────────────────────────────────────────────────
@@ -297,13 +292,7 @@ export default function LoginPage() {
       clearStoredReferralCode();
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
       if (notifyMcpSignedIn()) return;
-      const pendingInvite = localStorage.getItem("pendingInvite");
-      if (pendingInvite) {
-        localStorage.removeItem("pendingInvite");
-        router.push(`/join/${pendingInvite}`);
-      } else {
-        router.push("/users");
-      }
+      router.push(afterAuthPath("/users"));
     } catch (err) {
       if (err.code === "auth/unauthorized-domain" || err.message?.includes("auth/unauthorized-domain")) {
         toast.error(

@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
 import toast from "@/lib/toast";
 import { playCoinEarn } from "@/lib/coinSound";
 import {
-  Coins, Copy, Share2, Gift, Users, Trophy, CheckCircle2,
-  Clock, Check, Loader2, Sparkles, AlertCircle, MessageCircle,
+  Copy, Share2, Gift, Users, Trophy, CheckCircle2,
+  Clock, Check, Loader2, Sparkles, AlertCircle, MessageCircle, Palette, ArrowRight,
 } from "lucide-react";
+import CoinIcon from "@/components/ui/CoinIcon";
 
 /* Eased count-up for the wallet balance - rolls from the previous value to
    the new one like a real wallet app instead of snapping. */
@@ -107,6 +109,15 @@ export default function ReferralSection() {
     fetchData();
   }, [fetchData]);
 
+  // Arriving via /profile#rewards (e.g. "Earn coins" on the Appearance page):
+  // this section renders after its data loads, so the browser's own hash
+  // scroll has nothing to land on yet - do it once the section exists.
+  const hasData = !!data;
+  useEffect(() => {
+    if (!hasData || window.location.hash !== "#rewards") return;
+    document.getElementById("rewards")?.scrollIntoView({ block: "start" });
+  }, [hasData]);
+
   const copyToClipboard = async (text, label, key) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -191,7 +202,7 @@ export default function ReferralSection() {
     : 100;
 
   return (
-    <div>
+    <div id="rewards" className="scroll-mt-24">
       <div className="mb-6">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-cyan-700 dark:text-cyan-300">03 / Earn together</p>
         <div className="mt-1 flex items-center gap-2">
@@ -225,21 +236,20 @@ export default function ReferralSection() {
               {/* Coin stack - a pile, not one flat icon */}
               <div className="relative h-20 w-24 shrink-0 sm:h-24 sm:w-28">
                 {/* back coin */}
-                <div className="absolute right-0 top-2 h-11 w-11 -rotate-[18deg] rounded-full border-2 border-amber-200/35 bg-gradient-to-br from-amber-400 to-yellow-700 shadow-md sm:h-12 sm:w-12">
-                  <div className="absolute inset-1 rounded-full border border-amber-900/15" />
+                <div className="absolute right-0 top-2 h-11 w-11 -rotate-[18deg] opacity-80 sm:h-12 sm:w-12">
+                  <CoinIcon size="100%" />
                 </div>
                 {/* middle coin */}
-                <div className="absolute right-5 top-0 h-12 w-12 rotate-[10deg] rounded-full border-2 border-amber-100/45 bg-gradient-to-br from-amber-300 to-amber-600 shadow-md sm:h-14 sm:w-14">
-                  <div className="absolute inset-1 rounded-full border border-amber-900/15" />
+                <div className="absolute right-5 top-0 h-12 w-12 rotate-[10deg] opacity-90 sm:h-14 sm:w-14">
+                  <CoinIcon size="100%" />
                 </div>
                 {/* front coin - the one that's alive */}
                 <motion.div
                   animate={{ y: [0, -6, 0], rotate: [-3, 3, -3] }}
                   transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute bottom-0 left-0 flex h-16 w-16 items-center justify-center rounded-full border-2 border-amber-100/70 bg-gradient-to-br from-amber-200 via-amber-400 to-yellow-600 shadow-[0_10px_28px_-4px_rgba(245,158,11,0.55)] sm:h-[4.5rem] sm:w-[4.5rem]"
+                  className="absolute bottom-0 left-0 h-16 w-16 drop-shadow-[0_10px_18px_rgba(245,158,11,0.45)] sm:h-[4.5rem] sm:w-[4.5rem]"
                 >
-                  <div className="absolute inset-1.5 rounded-full border border-amber-900/20" />
-                  <Coins size={28} className="relative text-amber-900 drop-shadow" />
+                  <CoinIcon size="100%" />
                   <Sparkles size={13} className="absolute -top-1.5 -right-1 text-amber-100 drop-shadow" />
                 </motion.div>
               </div>
@@ -366,6 +376,18 @@ export default function ReferralSection() {
                 </span>
               ))}
             </div>
+
+            <Link
+              href="/theme"
+              className="group flex items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground transition hover:text-foreground"
+            >
+              <Palette size={13} className="shrink-0 text-cyan-600 dark:text-cyan-400" />
+              <span className="min-w-0 flex-1">
+                Unlock and apply accent themes on the{" "}
+                <span className="font-semibold text-foreground">Appearance</span> page
+              </span>
+              <ArrowRight size={13} className="shrink-0 transition group-hover:translate-x-0.5" />
+            </Link>
           </section>
 
           {/* Invited friends */}

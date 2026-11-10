@@ -8,13 +8,18 @@ import {
   removeMember,
   listAvailableUsers,
   markGroupCompleted,
+  downloadGroupReport,
+  resendGroupReport,
+  getGroupReportStatus,
+  retryGroupReport,
   updateGroupIcon,
   uploadGroupPhoto,
   removeGroupPhoto,
   deleteGroup,
   generateInviteLink,
   resetInviteLink,
-  joinGroupByInvite
+  joinGroupByInvite,
+  previewInvite,
 } from "../controllers/groupController.js";
 import {
   getGroupInvites,
@@ -62,6 +67,16 @@ const joinLimiter = rateLimit({
   message: { message: "Too many join attempts. Please try again in 15 minutes." },
 });
 
+// Public invite preview (no sign-in needed), throttled per IP so codes
+// can't be enumerated through it.
+const previewLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests. Please try again in a few minutes." },
+});
+
 router.post("/", authMiddleware, createGroup);
 router.get("/", authMiddleware, getGroups);
 // Must sit above "/:groupId" so "recent-contacts" isn't read as a group id.
@@ -76,6 +91,10 @@ router.get("/:groupId/available-users", authMiddleware, listAvailableUsers);
 router.post("/:groupId/members", authMiddleware, inviteEmailLimiter, addMembersByEmail); // body { emails: [] }
 router.delete("/:groupId/members/:userId", authMiddleware, removeMember);
 router.put("/:groupId/complete", authMiddleware, markGroupCompleted);
+router.get("/:groupId/report.pdf", authMiddleware, downloadGroupReport);
+router.post("/:groupId/report/send", authMiddleware, resendGroupReport);
+router.get("/:groupId/report/status", authMiddleware, getGroupReportStatus);
+router.post("/:groupId/report/retry", authMiddleware, retryGroupReport);
 router.put("/:groupId/icon", authMiddleware, updateGroupIcon); // body { icon: "plane" }
 router.post("/:groupId/photo", authMiddleware, uploadGroupPhoto); // body { file: "data:image/..." }
 router.delete("/:groupId/photo", authMiddleware, removeGroupPhoto);
@@ -101,6 +120,7 @@ router.post("/:groupId/invites/:inviteId/approve", authMiddleware, approveJoinRe
 router.delete("/:groupId/invites/:inviteId", authMiddleware, cancelGroupInvite);
 router.post("/:groupId/leave", authMiddleware, leaveGroup);
 router.post("/join/:inviteCode", authMiddleware, joinLimiter, joinGroupByInvite);
+router.get("/invite/:inviteCode", previewLimiter, previewInvite);
 
 
 

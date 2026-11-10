@@ -49,8 +49,12 @@ const isTransient = (err) => {
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export const sendEmail = async ({ to, subject, html, text }, { retries = 2 } = {}) => {
-  const message = { from: process.env.SMTP_FROM, to, subject, html, text };
+export const sendEmail = async ({ to, subject, html, text, attachments, headers }, { retries = 2 } = {}) => {
+  const message = {
+    from: process.env.SMTP_FROM, to, subject, html, text,
+    ...(attachments ? { attachments } : {}),
+    ...(headers ? { headers } : {}),
+  };
 
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {

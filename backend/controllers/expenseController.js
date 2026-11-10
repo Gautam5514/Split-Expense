@@ -13,6 +13,7 @@ import { io } from "../index.js";
 import { notifyGroupChange } from "../utils/realtime.js";
 import { isTrustedCloudinaryUrl } from "../utils/uploadSecurity.js";
 import { defaultSplitFor } from "../utils/defaultSplit.js";
+import { queueGroupStatement } from "../services/statementOutbox.js";
 
 import { EXPENSE_CATEGORIES, SPLIT_TYPES, SUPPORTED_CURRENCIES } from "../utils/groupPresets.js";
 
@@ -399,6 +400,8 @@ export const requestSettlement = async (req, res) => {
       );
       io.to(`group:${groupId}`).emit("settlementUpdate", { groupId: String(groupId), kind: "confirmed" });
       void notifyGroupChange(io, groupId, "confirmed");
+      // Last debt cleared? Email everyone the final statement (no-op otherwise).
+      void queueGroupStatement(groupId, { reason: "settled", triggeredBy: { userId: uid, name: req.user.name }, onlyIfSettled: true });
       const populatedDone = await populateRequest(SettlementRequest.findById(done._id));
       return res.status(201).json(populatedDone);
     }
@@ -536,6 +539,8 @@ export const confirmSettlementRequest = async (req, res) => {
     );
     io.to(`group:${request.groupId}`).emit("settlementUpdate", { groupId: String(request.groupId), kind: "confirmed" });
     void notifyGroupChange(io, request.groupId, "confirmed");
+    // Last debt cleared? Email everyone the final statement (no-op otherwise).
+    void queueGroupStatement(request.groupId, { reason: "settled", triggeredBy: { userId: uid, name: req.user.name }, onlyIfSettled: true });
 
     const populated = await populateRequest(SettlementRequest.findById(request._id));
     res.json({ request: populated, expense });

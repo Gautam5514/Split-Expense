@@ -9,6 +9,7 @@ import toast from "@/lib/toast";
 import { api } from "@/lib/api";
 import { groupTypeMeta } from "@/lib/groupPresets";
 import GroupTypeIcon from "@/components/group/GroupTypeIcon";
+import { qrLink, webShareLink } from "@/lib/inviteCode";
 
 const fmtDay = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" });
 
@@ -41,7 +42,11 @@ export default function InviteModal({ groupId, onClose }) {
   }, [groupId]);
 
   const code = data?.inviteCode || "";
-  const joinLink = data?.joinLink || "";
+  // Shared from the website -> opens on the web. The QR is usually scanned by a
+  // phone camera -> opens the app when it's installed, else the web.
+  const joinLink = webShareLink(data);
+  const qrValue = qrLink(data);
+  const displayLink = (data?.joinLink || joinLink).replace(/^https?:\/\//, "");
   const meta = groupTypeMeta(data?.groupType);
   const shareText = `Join "${data?.groupName || "my group"}" on SplitEase to split expenses. Code: ${code} - or tap: ${joinLink}`;
 
@@ -178,7 +183,7 @@ export default function InviteModal({ groupId, onClose }) {
               <div className="grid grid-cols-[auto_1fr] gap-4 items-center">
                 <div ref={qrWrapperRef} className="rounded-2xl p-[1.5px] bg-gradient-to-br from-primary/60 via-primary/15 to-primary/50 shadow-sm leading-none">
                   <div className="bg-white rounded-[14px] p-2">
-                    <QRCodeSVG value={joinLink} size={96} bgColor="#ffffff" fgColor="#0b6b82" level="H" includeMargin={false}
+                    <QRCodeSVG value={qrValue} size={96} bgColor="#ffffff" fgColor="#0b6b82" level="H" includeMargin={false}
                       imageSettings={{ src: QR_LOGO, width: 22, height: 22, excavate: true }} />
                   </div>
                 </div>
@@ -188,7 +193,7 @@ export default function InviteModal({ groupId, onClose }) {
                     className="w-full flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-left hover:border-primary/40 transition cursor-pointer">
                     <Link2 size={14} className="text-muted-foreground shrink-0" />
                     <span className="flex-1 min-w-0 truncate text-xs font-mono text-muted-foreground">
-                      {joinLink.replace(/^https?:\/\//, "")}
+                      {displayLink}
                     </span>
                     {copied === "link" ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Copy size={14} className="text-muted-foreground shrink-0" />}
                   </button>

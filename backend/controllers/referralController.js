@@ -5,11 +5,7 @@ import CoinTransaction from "../models/coinTransactionModel.js";
 import { MILESTONES, ELITE_TIERS, REWARDS } from "../config/referralConfig.js";
 import { STORE_ITEMS } from "../config/storeConfig.js";
 import { ensureReferralCode } from "../utils/referralService.js";
-
-// Tier badges are computed from lifetime coins earned, never the spendable
-// balance - so spending coins in the store can never demote a badge.
-const tierBasis = (user) =>
-  Math.max(user.lifetimeCoinsEarned || 0, user.coins || 0);
+import { buildThemeStore, themeAccess, tierBasisCoins as tierBasis } from "../utils/storeAccess.js";
 
 const buildEliteClub = (coins) => {
   let current = ELITE_TIERS[0];
@@ -107,6 +103,8 @@ export const getMyReferralData = async (req, res) => {
       rewards: { referrerCoins: REWARDS.REFERRER_COINS, referredCoins: REWARDS.REFERRED_COINS },
       unlockedItems: user.unlockedItems || [],
       eliteClub: buildEliteClub(tierBasis(user)),
+      // Themes this user can use / unlock, with today's price for them.
+      store: buildThemeStore(user),
     });
   } catch (err) {
     console.error("getMyReferralData error:", err.message);
@@ -132,36 +130,54 @@ export const purchaseStoreItem = async (req, res) => {
         coins: existing.coins || 0,
         unlockedItems: existing.unlockedItems,
         alreadyOwned: true,
+        store: buildThemeStore(existing),
       });
     }
 
-    // Atomic: only succeeds if the balance still covers the cost and the item
+    // What it costs THIS user: a tier can make a theme free (see storeAccess).
+    const access = item.type === "theme" ? themeAccess(existing, itemId) : null;
+    const price = access ? access.price : item.cost;
+    // Bronze's free theme is one pick only - the filter below makes a second
+    // concurrent free pick fail instead of handing out two.
+    const freePickGuard =
+      access?.access === "free-pick"
+        ? { unlockedItems: { $not: { $elemMatch: { $regex: /^theme:/ } } } }
+        : { unlockedItems: { $ne: itemId } };
+
+    // Atomic: only succeeds if the balance still covers the price and the item
     // isn't already owned - safe under double-clicks / concurrent requests.
     const user = await User.findOneAndUpdate(
-      { _id: userId, coins: { $gte: item.cost }, unlockedItems: { $ne: itemId } },
-      { $inc: { coins: -item.cost }, $addToSet: { unlockedItems: itemId } },
+      { _id: userId, coins: { $gte: price }, ...freePickGuard },
+      { $inc: { coins: -price }, $addToSet: { unlockedItems: itemId } },
       { new: true }
     );
 
+    if (!user && access?.access === "free-pick") {
+      return res.status(400).json({ message: "Your free Bronze theme has already been used." });
+    }
+
     if (!user) {
-      const shortBy = item.cost - (existing.coins || 0);
+      const shortBy = price - (existing.coins || 0);
       return res.status(400).json({
         message: `Not enough coins - you need ${Math.max(shortBy, 0)} more to unlock ${item.name}.`,
       });
     }
 
-    await CoinTransaction.create({
-      userId: user._id,
-      amount: -item.cost,
-      balanceAfter: user.coins,
-      reason: "store_purchase",
-    });
+    if (price > 0) {
+      await CoinTransaction.create({
+        userId: user._id,
+        amount: -price,
+        balanceAfter: user.coins,
+        reason: "store_purchase",
+      });
+    }
 
     res.json({
       coins: user.coins,
       unlockedItems: user.unlockedItems,
-      item: { id: itemId, name: item.name, cost: item.cost },
+      item: { id: itemId, name: item.name, cost: price },
       eliteClub: buildEliteClub(tierBasis(user)),
+      store: buildThemeStore(user),
     });
   } catch (err) {
     console.error("purchaseStoreItem error:", err.message);

@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Coins, Loader2, Lock, Sparkles, X } from "lucide-react";
+import { Loader2, Lock, Sparkles, X } from "lucide-react";
+import CoinIcon from "@/components/ui/CoinIcon";
 
 /* Confirm-purchase modal for coin store items (premium themes & fonts).
    Fully controlled: `item` null = closed. The caller owns the API call -
@@ -120,7 +121,7 @@ export default function PurchaseModal({ item, balance, busy, onConfirm, onCancel
                   </>
                 ) : (
                   <>
-                    <Coins size={14} /> Unlock · {item.cost}
+                    <CoinIcon size={16} /> Unlock · {item.cost}
                   </>
                 )}
               </button>
@@ -144,7 +145,7 @@ function Row({ label, value, negative, bold }) {
         }`}
       >
         {negative ? value : value}
-        <Coins size={12} className={negative ? "text-rose-500" : "text-amber-500"} />
+        <CoinIcon size={14} />
       </span>
     </div>
   );

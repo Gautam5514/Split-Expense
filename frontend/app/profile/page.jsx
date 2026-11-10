@@ -14,6 +14,7 @@ import ReferralSection from "@/components/profile/ReferralSection";
 import { auth } from "@/lib/firebaseClient";
 import CoinBadge from "@/components/CoinBadge";
 import useCoins from "@/hooks/useCoins";
+import TierBadge from "@/components/ui/TierBadge";
 
 const TIMEZONES = [
   "Pacific Time (PT)", "Mountain Time (MT)", "Central Time (CT)",
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [uploadingQr, setUploadingQr] = useState(false);
   const coins = useCoins();
+  const [eliteTier, setEliteTier] = useState(null);
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setFirebaseUser);
@@ -58,6 +60,17 @@ export default function ProfilePage() {
   useEffect(() => {
     if (token) fetchProfile();
   }, [token, fetchProfile]);
+
+  // Elite Club tier for the badge beside the name. Same request useCoins and
+  // ReferralSection make, so lib/api shares the one network call.
+  useEffect(() => {
+    if (!token) return;
+    let alive = true;
+    api.get("/referrals/me")
+      .then((res) => alive && setEliteTier(res.data?.eliteClub?.tier?.key || null))
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [token]);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -214,7 +227,10 @@ export default function ProfilePage() {
 
               <div className="min-w-0 flex-1 pb-1">
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-100/70">SplitEase member</p>
-                <p className="mt-2 text-2xl font-black leading-tight tracking-[-0.035em] lg:text-3xl">{profile.name || "Add your name"}</p>
+                <p className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-2xl font-black leading-tight tracking-[-0.035em] lg:text-3xl">
+                  <span className="min-w-0 break-words">{profile.name || "Add your name"}</span>
+                  <TierBadge tier={eliteTier} variant="solid" className="tracking-wide" />
+                </p>
                 <p className="mt-1 flex items-center gap-1.5 text-sm text-white/70"><Mail size={13} /> {profile.email || "-"}</p>
 
                 {chips.length > 0 && (

@@ -34,6 +34,8 @@ jest.unstable_mockModule("../models/userProfileModel.js", () => ({ default: fake
 jest.unstable_mockModule("../controllers/notificationController.js", () => ({
   createNotification: fakeCreateNotification,
 }));
+const fakeSendReport = jest.fn(async () => ({ sent: 0, failed: [] }));
+jest.unstable_mockModule("../services/statementOutbox.js", () => ({ queueGroupStatement: fakeSendReport }));
 jest.unstable_mockModule("../utils/ocrService.js", () => ({ runOcr: jest.fn(async () => null) }));
 jest.unstable_mockModule("../utils/referralService.js", () => ({ incrementExpenseCount: jest.fn(async () => {}) }));
 
@@ -235,6 +237,8 @@ describe("confirmSettlementRequest", () => {
       "settlement",
       expect.objectContaining({ kind: "confirmed" })
     );
+    // Asks the report service to email the final statement if this cleared the group.
+    expect(fakeSendReport).toHaveBeenCalledWith(group._id, expect.objectContaining({ reason: "settled", onlyIfSettled: true }));
   });
 
   test("the initiator cannot confirm their own settlement request", async () => {

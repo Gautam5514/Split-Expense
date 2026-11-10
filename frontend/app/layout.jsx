@@ -219,10 +219,11 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        {/* Inline script to apply dark/light class before first paint - prevents flash */}
+        {/* Inline script to apply dark/light class (and the saved accent theme,
+            see ThemeContext) before first paint - prevents flash */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&d)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}if(localStorage.getItem('appMono')==='1'){document.documentElement.classList.add('app-mono');}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&d)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}if(localStorage.getItem('appMono')==='1'){document.documentElement.classList.add('app-mono');}}catch(e){}try{var a=JSON.parse(localStorage.getItem('seAccent')),h=/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i,r=document.documentElement;if(a&&typeof a.key==='string'&&a.key&&h.test(a.light)&&h.test(a.dark)){r.style.setProperty('--se-accent-light',a.light);r.style.setProperty('--se-accent-dark',a.dark);r.setAttribute('data-accent',a.key);}}catch(e){}})();`,
           }}
         />
         <ErrorBoundary>

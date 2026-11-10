@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { captureReferralFromLocation, getStoredReferralCode, clearStoredReferralCode } from "@/lib/referral";
 import AuthVisual from "@/components/AuthVisual";
+import { afterAuthPath } from "@/lib/pendingInvite";
 
 const OTP_LENGTH = 6;
 
@@ -243,13 +244,7 @@ export default function RegisterPage() {
       clearStoredReferralCode();
       toast.success("Account created successfully!");
       if (notifyMcpSignedIn()) return;
-      const pendingInvite = localStorage.getItem("pendingInvite");
-      if (pendingInvite) {
-        localStorage.removeItem("pendingInvite");
-        router.push(`/join/${pendingInvite}`);
-      } else {
-        router.push("/users");
-      }
+      router.push(afterAuthPath("/users"));
     } catch (err) {
       const data = err?.response?.data;
       if (data?.field === "email") {
@@ -289,13 +284,7 @@ export default function RegisterPage() {
       clearStoredReferralCode();
       toast.success(`Welcome, ${result.user.displayName || "User"}!`);
       if (notifyMcpSignedIn()) return;
-      const pendingInvite = localStorage.getItem("pendingInvite");
-      if (pendingInvite) {
-        localStorage.removeItem("pendingInvite");
-        router.push(`/join/${pendingInvite}`);
-      } else {
-        router.push("/users");
-      }
+      router.push(afterAuthPath("/users"));
     } catch (err) {
       console.error("Google Sign-Up error:", err);
       if (err.code === "auth/unauthorized-domain" || err.message?.includes("auth/unauthorized-domain")) {

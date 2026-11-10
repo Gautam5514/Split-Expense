@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Group from "../models/groupModel.js";
-import { isValidEmail, isValidObjectId, escapeRegExp, escapeHtml, normalizeEmail } from "../middleware/validate.js";
+import { isValidEmail, isValidObjectId, escapeRegExp, normalizeEmail } from "../middleware/validate.js";
 import Expense from "../models/expenseModel.js";
 import GroupMessage from "../models/groupMessageModel.js";
 import Notepad from "../models/notepadModel.js";
@@ -9,6 +9,13 @@ import User from "../models/userModel.js";
 import { createNotification } from "../controllers/notificationController.js";
 import UserProfile from "../models/userProfileModel.js";
 import { sendEmail, sendEmailsSafely } from "../utils/emailService.js";
+import { loadGroupReport, reportFileName } from "../services/groupReportService.js";
+import { buildInviteEmail } from "../services/inviteEmail.js";
+import { inviteLinks } from "../utils/publicUrl.js";
+import {
+  queueGroupStatement, getGroupStatementStatus, retryFailedStatement, recentManualStatement, cancelGroupStatements,
+} from "../services/statementOutbox.js";
+import { renderReportPdf } from "../utils/settlementReport.js";
 import { isValidGroupIcon } from "../utils/groupIcons.js";
 import { GROUP_TYPES, presetFor } from "../utils/groupPresets.js";
 import { buildGroupSettingsUpdate, unflatten } from "../utils/groupSettings.js";
@@ -19,6 +26,7 @@ import { getContactIds, isBlockedBetween, inviteLinkExpiry, INVITE_TTL_MS } from
 import cloudinary from "../config/cloudinary.js";
 import { notifyGroupChange, notifyUsers } from "../utils/realtime.js";
 import { uploadRejectionReason, IMAGE_MIME_TYPES } from "../utils/uploadSecurity.js";
+import { eliteTierKey } from "../utils/storeAccess.js";
 
 // Helper utilities
 const asId = (u) => (typeof u === "string" ? u : u?.id || u?._id?.toString());
@@ -97,14 +105,21 @@ export const createGroup = async (req, res) => {
  * Build photoURL Maps for a set of member IDs using 2 batched queries.
  * Returns a Map<userId_string, photoURL|null> for O(1) lookup.
  */
-const buildPhotoMap = async (memberIds) => {
+const buildPhotoMap = async (memberIds) => (await buildMemberMaps(memberIds)).photoMap;
+
+/**
+ * Same two queries, plus each member's Elite tier (the referral badge shown
+ * next to their name). Coin numbers themselves never leave the server.
+ */
+const buildMemberMaps = async (memberIds) => {
   const ids = [...new Set(memberIds.map(String))];
-  if (ids.length === 0) return new Map();
+  if (ids.length === 0) return { photoMap: new Map(), tierMap: new Map() };
 
   const [profiles, users] = await Promise.all([
     UserProfile.find({ userId: { $in: ids } }).select("userId profileImage.url").lean(),
-    User.find({ _id: { $in: ids } }).select("photoURL").lean(),
+    User.find({ _id: { $in: ids } }).select("photoURL coins lifetimeCoinsEarned").lean(),
   ]);
+  const tierMap = new Map((users || []).map((u) => [String(u._id), eliteTierKey(u)]));
 
   const profileMap = new Map(profiles.map((p) => [String(p.userId), p.profileImage?.url || null]));
   const photoMap   = new Map(users.map((u) => [String(u._id), u.photoURL || null]));
@@ -113,7 +128,7 @@ const buildPhotoMap = async (memberIds) => {
   for (const [id, url] of profileMap) {
     if (!photoMap.get(id)) photoMap.set(id, url);
   }
-  return photoMap;
+  return { photoMap, tierMap };
 };
 
 /**
@@ -202,13 +217,14 @@ export const getGroupById = async (req, res) => {
 
     // Photo lookup and the "has expenses" check are independent - run together.
     // (Settings that define how expenses work lock after the first expense.)
-    const [photoMap, existingExpense] = await Promise.all([
-      buildPhotoMap((group.members || []).map((m) => m._id)),
+    const [{ photoMap, tierMap }, existingExpense] = await Promise.all([
+      buildMemberMaps((group.members || []).map((m) => m._id)),
       Expense.exists({ groupId: group._id }),
     ]);
     const enrichedMembers = (group.members || []).map((m) => ({
       ...m,
       photoURL: photoMap.get(String(m._id)) || null,
+      eliteTier: tierMap.get(String(m._id)) || "starter",
     }));
     const hasExpenses = !!existingExpense;
 
@@ -380,8 +396,7 @@ export async function addMembersCore({ group, actor, emails = [], userIds = [], 
       effect(() => sendEmailsSafely(
         unregisteredEmails.map((email) => ({
           to: email,
-          subject: `${String(inviterName).replace(/[\r\n]+/g, " ").slice(0, 80)} invited you to split expenses on SplitEase`,
-          html: buildInviteEmailHtml({ inviterName, groupName: group.name, joinLink, email }),
+          ...buildInviteEmail({ inviterName, groupName: group.name, joinLink: inviteLinks(group.inviteCode).email, email, expiresAt: group.inviteExpiresAt }),
         }))
       ));
     }
@@ -413,112 +428,8 @@ const ensureInviteLink = async (group, { reset = false } = {}) => {
     group.inviteExpiresAt = inviteLinkExpiry(group.groupType);
     await group.save();
   }
-  const frontendUrl = (process.env.FRONTEND_URL || "https://splitease.app").split(",")[0].trim();
-  return `${frontendUrl}/join/${group.inviteCode}`;
+  return inviteLinks(group.inviteCode).url;
 };
-
-function buildInviteEmailHtml(params) {
-  // Every interpolated value is user-controlled (display name, group name,
-  // invitee address), so escape all of them - this email goes to arbitrary
-  // addresses from our domain and must not be usable to inject links/HTML.
-  const inviterName = escapeHtml(params.inviterName);
-  const groupName = escapeHtml(params.groupName);
-  const joinLink = escapeHtml(params.joinLink);
-  const email = escapeHtml(params.email);
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>You're invited to SplitEase</title>
-</head>
-<body style="margin:0;padding:0;background:#F4F7FB;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F7FB;padding:40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(8,145,178,0.08);">
-
-          <!-- Header -->
-          <tr>
-            <td style="background:linear-gradient(135deg,#0891B2,#14b8a6);padding:32px 36px;text-align:center;">
-              <div style="font-size:28px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">
-                💸 SplitEase
-              </div>
-              <div style="color:rgba(255,255,255,0.85);font-size:13px;margin-top:6px;">
-                Split expenses. Stay friends.
-              </div>
-            </td>
-          </tr>
-
-          <!-- Body -->
-          <tr>
-            <td style="padding:36px 36px 24px;">
-              <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#0B1929;">
-                You've been invited! 🎉
-              </h2>
-              <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.6;">
-                <strong style="color:#0B1929;">${inviterName}</strong> invited you to join the group
-                <strong style="color:#0891B2;">"${groupName}"</strong> on SplitEase - the easiest way to track and split shared expenses with friends.
-              </p>
-
-              <!-- Group card -->
-              <div style="background:#EEF6F9;border:1px solid #DCE5F0;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
-                <div style="font-size:12px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Group</div>
-                <div style="font-size:18px;font-weight:800;color:#0B1929;">${groupName}</div>
-                <div style="font-size:12px;color:#64748B;margin-top:2px;">Invited by ${inviterName}</div>
-              </div>
-
-              <!-- CTA button -->
-              <div style="text-align:center;margin:28px 0;">
-                <a href="${joinLink}" style="display:inline-block;background:linear-gradient(135deg,#0891B2,#14b8a6);color:#ffffff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 36px;border-radius:12px;box-shadow:0 4px 14px rgba(8,145,178,0.3);">
-                  Join "${groupName}" →
-                </a>
-              </div>
-
-              <p style="margin:0 0 8px;font-size:13px;color:#64748B;line-height:1.6;">
-                Click the button above to create your free account and you'll be automatically added to the group. No credit card required.
-              </p>
-
-              <!-- What is SplitEase -->
-              <div style="border-top:1px solid #DCE5F0;margin-top:24px;padding-top:20px;">
-                <div style="font-size:13px;font-weight:700;color:#0B1929;margin-bottom:10px;">What is SplitEase?</div>
-                <table width="100%" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="padding:4px 0;font-size:13px;color:#475569;">✅ &nbsp;Track group expenses in real-time</td>
-                  </tr>
-                  <tr>
-                    <td style="padding:4px 0;font-size:13px;color:#475569;">💡 &nbsp;Smart settlements - pay the fewest people</td>
-                  </tr>
-                  <tr>
-                    <td style="padding:4px 0;font-size:13px;color:#475569;">📊 &nbsp;See exactly who owes what</td>
-                  </tr>
-                  <tr>
-                    <td style="padding:4px 0;font-size:13px;color:#475569;">💬 &nbsp;Group chat built in</td>
-                  </tr>
-                </table>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background:#F4F7FB;padding:20px 36px;text-align:center;border-top:1px solid #DCE5F0;">
-              <p style="margin:0 0 6px;font-size:12px;color:#94A3B8;">
-                This invitation was sent to <strong>${email}</strong> by ${inviterName}.
-              </p>
-              <p style="margin:0;font-size:11px;color:#CBD5E1;">
-                If you didn't expect this email, you can safely ignore it.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-}
 
 export const removeMember = async (req, res) => {
   try {
@@ -595,8 +506,12 @@ export const markGroupCompleted = async (req, res) => {
       return res.status(403).json({ message: "Only the creator can mark as completed" });
     }
 
+    const wasCompleted = group.isCompleted === true;
     group.isCompleted = true;
     await group.save();
+    // Queue the settlement statement (PDF) for every member - only on the
+    // first completion so re-clicking never spams the group.
+    if (!wasCompleted) void queueGroupStatement(groupId, { reason: "completed", triggeredBy: { userId: uid, name: req.user.name } });
     void notifyGroupChange(req.app?.get?.("io"), groupId, "completed", group.members.map(String));
 
     // Notify other members
@@ -615,6 +530,95 @@ export const markGroupCompleted = async (req, res) => {
   } catch (err) {
     console.error("markGroupCompleted error:", err.message);
     res.status(500).json({ message: "Server error", expose: true });
+  }
+};
+
+// Statement PDF for any member, any time (live numbers).
+export const downloadGroupReport = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+    const group = await Group.findById(groupId, "members createdBy");
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!isMember(group, req.user.id) && !isCreator(group, req.user))
+      return res.status(403).json({ message: "Not a member of this group." });
+
+    const data = await loadGroupReport(groupId);
+    const pdf = await renderReportPdf(data, { viewerId: String(req.user.id) });
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${reportFileName(data)}"`,
+      "Content-Length": pdf.length,
+      "Cache-Control": "private, no-store",
+    });
+    res.send(pdf);
+  } catch (err) {
+    console.error("downloadGroupReport error:", err.message);
+    res.status(500).json({ message: "Could not generate the report." });
+  }
+};
+
+// Creator re-sends the statement to everyone now (e.g. after final settlements).
+const MANUAL_COOLDOWN_MS = 5 * 60 * 1000;
+export const resendGroupReport = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+    const group = await Group.findById(groupId, "members createdBy isCompleted");
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!isCreator(group, req.user)) return res.status(403).json({ message: "Only the creator can send the statement." });
+
+    if (!group.isCompleted) {
+      const data = await loadGroupReport(groupId);
+      if (!data?.fullySettled)
+        return res.status(400).json({ message: "Mark the group as completed or settle all balances first." });
+    }
+    if (await recentManualStatement(group._id, MANUAL_COOLDOWN_MS))
+      return res.status(429).json({ message: "The statement was just sent. Please wait a few minutes before sending again." });
+
+    const r = await queueGroupStatement(groupId, { reason: "manual", triggeredBy: { userId: req.user.id, name: req.user.name } });
+    if (!r.queued) {
+      const why = { "no-expenses": "This group has no expenses yet.", "no-recipients": "No member has an email address." }[r.skipped];
+      return res.status(why ? 400 : 500).json({ message: why || "Could not queue the statement." });
+    }
+    res.status(202).json({ success: true, batchId: r.batchId, recipients: r.recipients, message: `Statement is being emailed to ${r.recipients} member(s).` });
+  } catch (err) {
+    console.error("resendGroupReport error:", err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Delivery status of the group's statement emails. Every member can see who
+// has received it; only the creator sees addresses and error details.
+export const getGroupReportStatus = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+    const group = await Group.findById(groupId, "members createdBy");
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    const creator = isCreator(group, req.user);
+    if (!creator && !isMember(group, req.user.id)) return res.status(403).json({ message: "Not a member of this group." });
+    res.json(await getGroupStatementStatus(group._id, { includeEmails: creator }));
+  } catch (err) {
+    console.error("getGroupReportStatus error:", err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Creator retries the members the last statement could not reach.
+export const retryGroupReport = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (!isValidObjectId(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+    const group = await Group.findById(groupId, "members createdBy");
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!isCreator(group, req.user)) return res.status(403).json({ message: "Only the creator can retry the statement." });
+    const retried = await retryFailedStatement(group._id);
+    if (!retried) return res.status(400).json({ message: "There are no failed statement emails to retry." });
+    res.status(202).json({ success: true, retried, message: `Retrying ${retried} email(s).` });
+  } catch (err) {
+    console.error("retryGroupReport error:", err.message);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -748,6 +752,8 @@ export const deleteGroup = async (req, res) => {
 
     const memberIdsBeforeDelete = group.members.map(String);
     await deleteGroupCore(groupId);
+    // Unsent statement emails for a deleted group are dropped.
+    void cancelGroupStatements(groupId);
 
     void notifyGroupChange(req.app?.get?.("io"), groupId, "deleted", memberIdsBeforeDelete);
     res.json({ success: true, message: "Trip deleted successfully" });
@@ -773,6 +779,8 @@ export const generateInviteLink = async (req, res) => {
       success: true,
       inviteCode: group.inviteCode,
       joinLink,
+      // Ready-made links per channel (see utils/publicUrl.js). Older clients keep using joinLink.
+      links: inviteLinks(group.inviteCode),
       expiresAt: group.inviteExpiresAt,
       joinApproval: !!group.settings?.joinApproval,
       groupName: group.name,
@@ -791,17 +799,64 @@ export const resetInviteLink = async (req, res) => {
   return generateInviteLink(req, res);
 };
 
+// Machine-readable reasons so web and app can show the right screen without
+// parsing message text.
+const INVITE_INVALID = { code: "INVITE_INVALID", message: "This invite link is invalid or has been reset. Ask for a new one." };
+const INVITE_EXPIRED = { code: "INVITE_EXPIRED", message: "This invite link has expired. Ask for a new one." };
+
+// GET /api/groups/invite/:inviteCode - public. What an invite points to, so
+// the join screen can show "Gautam invited you to Goa Trip" before sign-in,
+// and say up front when a link is dead. Only what the invite itself reveals:
+// no member names, no amounts.
+export const previewInvite = async (req, res) => {
+  try {
+    const inviteCode = normalizeInviteCode(req.params.inviteCode);
+    if (typeof inviteCode !== "string" || !/^[A-Za-z0-9_-]{4,64}$/.test(inviteCode))
+      return res.status(404).json(INVITE_INVALID);
+
+    const group = await Group.findOne({ inviteCode })
+      .select("name groupType icon photo members createdBy inviteExpiresAt settings.joinApproval isCompleted")
+      .lean();
+    if (!group) return res.status(404).json(INVITE_INVALID);
+    if (group.inviteExpiresAt && group.inviteExpiresAt < new Date()) return res.status(410).json(INVITE_EXPIRED);
+
+    const creatorId = String(group.createdBy || "");
+    const creator = mongoose.Types.ObjectId.isValid(creatorId)
+      ? await User.findById(creatorId).select("name").lean().catch(() => null)
+      : null;
+
+    res.setHeader("Cache-Control", "no-store");
+    res.json({
+      code: inviteCode,
+      group: {
+        name: group.name,
+        type: group.groupType || "general",
+        icon: group.icon || null,
+        photo: group.photo?.url || "",
+        memberCount: (group.members || []).length,
+        completed: !!group.isCompleted,
+      },
+      invitedBy: String(creator?.name || "").trim().slice(0, 60) || null,
+      expiresAt: group.inviteExpiresAt || null,
+      joinApproval: !!group.settings?.joinApproval,
+    });
+  } catch (err) {
+    console.error("previewInvite error:", err.message);
+    res.status(500).json({ message: "Server error", expose: true });
+  }
+};
+
 export const joinGroupByInvite = async (req, res) => {
   try {
     const inviteCode = normalizeInviteCode(req.params.inviteCode);
     const uid = req.user.id;
     if (typeof inviteCode !== "string" || !/^[A-Za-z0-9_-]{4,64}$/.test(inviteCode))
-      return res.status(404).json({ message: "Invalid invite link" });
+      return res.status(404).json(INVITE_INVALID);
 
     let group = await Group.findOne({ inviteCode });
-    if (!group) return res.status(404).json({ message: "Invalid invite link" });
+    if (!group) return res.status(404).json(INVITE_INVALID);
     if (group.inviteExpiresAt && group.inviteExpiresAt < new Date())
-      return res.status(410).json({ message: "This invite link has expired. Ask for a new one." });
+      return res.status(410).json(INVITE_EXPIRED);
 
     const wasAlreadyMember = group.members.map(String).includes(String(uid));
 
@@ -809,7 +864,7 @@ export const joinGroupByInvite = async (req, res) => {
     if (!wasAlreadyMember) {
       const creator = await User.findById(group.createdBy).select("blockedUsers").lean().catch(() => null);
       if ((creator?.blockedUsers || []).map(String).includes(String(uid)))
-        return res.status(404).json({ message: "Invalid invite link" });
+        return res.status(404).json(INVITE_INVALID);
     }
 
     // Approval-required groups: file a join request instead of joining.
@@ -833,6 +888,7 @@ export const joinGroupByInvite = async (req, res) => {
       return res.status(202).json({
         success: true,
         pending: true,
+        status: "requested",
         message: "Request sent. You'll be added once the group creator approves.",
         group: { _id: group._id, name: group.name },
       });
@@ -863,7 +919,9 @@ export const joinGroupByInvite = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Joined group successfully",
+      status: wasAlreadyMember ? "already_member" : "joined",
+      alreadyMember: wasAlreadyMember,
+      message: wasAlreadyMember ? "You're already in this group" : "Joined group successfully",
       group: populated,
     });
   } catch (err) {

@@ -77,6 +77,26 @@ export default function FeatureMindMap() {
   const [active, setActive] = useState(0);
   const reduced = useReducedMotion();
   const markers = useRef([]);
+  const cardsRef = useRef(null);
+
+  // Every card pins at the same spot, so they must be the same height or a
+  // taller one shows from behind the card on top of it. Titles wrap
+  // differently, so measure and give them all the tallest card's height.
+  useEffect(() => {
+    const root = cardsRef.current;
+    if (!root) return undefined;
+    const equalise = () => {
+      const bodies = [...root.querySelectorAll("[data-card-body]")];
+      bodies.forEach((el) => { el.style.minHeight = ""; });
+      if (!window.matchMedia("(min-width: 1024px)").matches) return;
+      const tallest = Math.max(...bodies.map((el) => el.offsetHeight));
+      bodies.forEach((el) => { el.style.minHeight = `${tallest}px`; });
+    };
+    equalise();
+    window.addEventListener("resize", equalise);
+    document.fonts?.ready?.then(equalise).catch(() => {});
+    return () => window.removeEventListener("resize", equalise);
+  }, []);
 
   // The card whose top marker has passed the pin line is the active one.
   // Markers are plain (non-sticky) divs, so their position is the real
@@ -165,12 +185,16 @@ export default function FeatureMindMap() {
             </ul>
           </nav>
 
-          {/* Cards: each one pins and the next slides up over it */}
-          <div className="space-y-6 lg:space-y-0">
+          {/* Cards: each one pins and the next slides up over it. The gap
+              after a card is a plain spacer, not a margin on the card, and the
+              last card has one too: that way the last card also pins and holds
+              like the others, and the whole stack lets go together. */}
+          <div ref={cardsRef} className="space-y-6 lg:space-y-0">
             {AUDIENCES.map((a, i) => (
               <Fragment key={a.tab}>
                 <div ref={(el) => { markers.current[i] = el; }} aria-hidden="true" />
-                <AudienceCard a={a} index={i} reduced={reduced} last={i === AUDIENCES.length - 1} />
+                <AudienceCard a={a} index={i} reduced={reduced} />
+                <div aria-hidden="true" className={`hidden lg:block ${i === AUDIENCES.length - 1 ? "h-[20vh]" : "h-[28vh]"}`} />
               </Fragment>
             ))}
           </div>
@@ -180,7 +204,7 @@ export default function FeatureMindMap() {
   );
 }
 
-function AudienceCard({ a, index, reduced, last }) {
+function AudienceCard({ a, index, reduced }) {
   const [c1, c2, c3] = a.tint;
   return (
     <motion.article
@@ -189,10 +213,10 @@ function AudienceCard({ a, index, reduced, last }) {
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       aria-label={a.tab}
-      className={`overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0A0A0C] shadow-[0_-30px_60px_-30px_rgba(0,0,0,0.9)] lg:sticky ${last ? "" : "lg:mb-[28vh]"}`}
+      className={`overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0A0A0C] shadow-[0_-30px_60px_-30px_rgba(0,0,0,0.9)] lg:sticky`}
       style={{ top: STICK_TOP, zIndex: index + 1 }}
     >
-      <div className="grid items-center gap-8 p-6 sm:p-10 lg:min-h-[500px] lg:grid-cols-[0.9fr_1.2fr] lg:gap-10 lg:p-12">
+      <div data-card-body className="grid items-center gap-8 p-6 sm:p-10 lg:min-h-[500px] lg:grid-cols-[0.9fr_1.2fr] lg:gap-10 lg:p-12">
         {/* Copy */}
         <div className="lg:self-end lg:pb-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-400/80">{a.tab}</p>

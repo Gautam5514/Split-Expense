@@ -65,6 +65,7 @@ import { groupTypeMeta, categoryMeta } from "@/lib/groupPresets";
 import GroupTypeCard from "@/components/group/GroupTypeCard";
 import GroupSettingsModal from "@/components/group/GroupSettingsModal";
 import CategoryBreakdown from "@/components/group/CategoryBreakdown";
+import TierBadge from "@/components/ui/TierBadge";
 
 const fmtDate = new Intl.DateTimeFormat("en-IN", {
   day: "2-digit",
@@ -1478,7 +1479,10 @@ function MembersCard({ group, isCreator, onAdd, onInvite, onRemove, onViewAll })
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{m.name || "Unnamed"}</p>
+                <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <span className="truncate">{m.name || "Unnamed"}</span>
+                  <TierBadge tier={m.eliteTier} />
+                </p>
                 <p className="text-[11px] text-muted-foreground truncate">{m.email}</p>
               </div>
               <div className="shrink-0">

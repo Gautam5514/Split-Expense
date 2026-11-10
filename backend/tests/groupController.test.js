@@ -35,6 +35,15 @@ jest.unstable_mockModule("../utils/emailService.js", () => ({
   sendEmailsSafely: jest.fn(async () => {}),
 }));
 
+const fakeSendReport = jest.fn(async () => ({ sent: 0, failed: [] }));
+jest.unstable_mockModule("../services/statementOutbox.js", () => ({
+  queueGroupStatement: fakeSendReport,
+  getGroupStatementStatus: jest.fn(),
+  retryFailedStatement: jest.fn(),
+  recentManualStatement: jest.fn(),
+  cancelGroupStatements: jest.fn(),
+}));
+
 const {
   createGroup,
   removeMember,
@@ -190,6 +199,17 @@ describe("markGroupCompleted", () => {
       "group",
       expect.objectContaining({ groupName: "Trip" })
     );
+    expect(fakeSendReport).toHaveBeenCalledWith(group._id, { reason: "completed", triggeredBy: { userId: creator, name: "Creator" } });
+  });
+
+  test("completing an already-completed group does not re-send the statement", async () => {
+    const creator = oid();
+    const group = fakeGroupModel.__addDoc({ _id: oid(), name: "Trip", createdBy: creator, members: [creator], isCompleted: true });
+    fakeSendReport.mockClear();
+    const res = makeRes();
+    await markGroupCompleted(makeReq({ user: { id: creator, name: "C" }, params: { groupId: group._id } }), res);
+    expect(res.statusCode).toBe(200);
+    expect(fakeSendReport).not.toHaveBeenCalled();
   });
 
   test("non-creator is forbidden from marking a group completed", async () => {

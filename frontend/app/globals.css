@@ -423,6 +423,23 @@ main:has(.h-screen) {
   --menu-solid: #121214;
 }
 
+/* Accent theme (Appearance page). ThemeContext puts data-accent on <html>
+   plus --se-accent-light / --se-accent-dark; here they replace the ink. Only
+   the primary colour changes - surfaces, text and borders stay monochrome.
+   Text on the accent: white on the light-mode colour, near-black on the
+   dark-mode one. Without data-accent the palettes above apply untouched. */
+.app-mono[data-accent] {
+  --primary: var(--se-accent-light, #141414);
+  --primary-foreground: #FFFFFF;
+  --ring: var(--se-accent-light, #141414);
+}
+
+.dark.app-mono[data-accent] {
+  --primary: var(--se-accent-dark, #FFFFFF);
+  --primary-foreground: #141414;
+  --ring: var(--se-accent-dark, #FFFFFF);
+}
+
 /* ── Premium coin wallet shine sweep ── */
 @keyframes coin-shine-sweep {
   0%        { transform: translateX(-160%) skewX(-18deg); }

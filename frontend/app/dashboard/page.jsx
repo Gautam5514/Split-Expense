@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   LayoutGrid,
   Sparkles,
+  KeyRound,
 } from "lucide-react";
 import InviteModal from "@/components/InviteModal";
 import CreateGroupModal from "@/components/CreateGroupModal";
@@ -86,6 +87,14 @@ export default function DashboardPage() {
             </p>
           </div>
 
+          <div className="flex shrink-0 items-center gap-2.5">
+          <Link
+            href="/join"
+            className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
+          >
+            <KeyRound size={15} className="text-primary" />
+            Join with code
+          </Link>
           <div className="relative shrink-0 w-fit rounded-full p-[2px] overflow-hidden">
             <span
               aria-hidden
@@ -102,6 +111,7 @@ export default function DashboardPage() {
               </span>
               <span className="relative">New Group</span>
             </button>
+          </div>
           </div>
         </div>
 

@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { auth } from "../lib/firebaseClient";
 import { onIdTokenChanged } from "firebase/auth";
 import { setAuthToken } from "@/lib/api";
+import { useThemeContext } from "@/context/ThemeContext";
 
 const AuthContext = createContext();
 
@@ -12,6 +13,8 @@ export const AuthProvider = ({ children }) => {
   // so this value is always fresh and the interceptor in api.js can rely on it.
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Stable callback from ThemeProvider (undefined if rendered without one).
+  const setAccent = useThemeContext()?.setAccent;
 
   useEffect(() => {
     // Safety net: if Firebase never fires onIdTokenChanged (bad/missing config,
@@ -34,6 +37,9 @@ export const AuthProvider = ({ children }) => {
       } else {
         setAuthToken(null);
         setToken(null);
+        // Signed out: drop the accent theme so the next person on this
+        // browser doesn't inherit a theme they don't own.
+        setAccent?.(null);
       }
       clearTimeout(failSafe);
       setLoading(false);
@@ -43,7 +49,7 @@ export const AuthProvider = ({ children }) => {
       clearTimeout(failSafe);
       unsubscribe();
     };
-  }, []);
+  }, [setAccent]);
 
   // IMPORTANT: never blank `children` while auth restores. Returning null here
   // wipes the server-rendered HTML of EVERY page (blog, landing, login…) —

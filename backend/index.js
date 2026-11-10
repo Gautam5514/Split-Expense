@@ -48,6 +48,7 @@ import quickSplitRoutes from "./routes/quickSplitRoutes.js";
 import { startRecurringRunner } from "./utils/recurringRunner.js";
 import engagementRoutes from "./modules/engagement/routes.js";
 import { startEngagementRunner } from "./modules/engagement/runner.js";
+import { startStatementRunner } from "./services/statementOutbox.js";
 
 dotenv.config();
 assertSecurityConfiguration();
@@ -452,4 +453,6 @@ server.listen(PORT, () => {
   if (process.env.NODE_ENV !== "test") startRecurringRunner();
   // Monthly / weekend / trip-season tips. Pause or resume from Admin → Notifications.
   if (process.env.NODE_ENV !== "test") startEngagementRunner();
+  // Settlement-statement emails (durable outbox: queued, retried, never lost on restart).
+  if (process.env.NODE_ENV !== "test") startStatementRunner();
 });

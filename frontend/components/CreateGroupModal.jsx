@@ -17,6 +17,7 @@ import { GROUP_ICONS, getGroupIcon } from "@/lib/groupIcons";
 import {
   GROUP_TYPES, PRIMARY_GROUP_TYPES, groupTypeMeta, suggestGroupName, CURRENCIES,
 } from "@/lib/groupPresets";
+import { webShareLink } from "@/lib/inviteCode";
 
 // New groups are Roommates unless the user picks something else.
 const DEFAULT_TYPE = "roommate";
@@ -172,7 +173,7 @@ export default function CreateGroupModal({ isOpen, onClose, onCreated }) {
 
       setCreated(group);
       setStep(3);
-      api.post(`/groups/${group._id}/invite`).then((r) => setJoinLink(r.data?.joinLink || "")).catch(() => {});
+      api.post(`/groups/${group._id}/invite`).then((r) => setJoinLink(webShareLink(r.data))).catch(() => {});
     } catch (err) {
       const data = err?.response?.data;
       if (data?.field === "name") { setNameError(data.message); setStep(1); }
