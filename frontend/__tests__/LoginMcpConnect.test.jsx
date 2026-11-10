@@ -98,10 +98,27 @@ describe("normal logins are unchanged", () => {
   });
 
   test("a pending group invite still wins for normal logins", async () => {
-    localStorage.setItem("pendingInvite", "INV123");
+    localStorage.setItem("pendingInvite", JSON.stringify({ code: "K7M2QX", at: Date.now() }));
     const user = userEvent.setup();
     render(<LoginPage />);
     await user.click(await googleButton());
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/join/INV123"));
+    // ?web=1: someone who signed in on the website joins on the website.
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/join/K7M2QX?web=1"));
+  });
+
+  test("an invite saved by the older site (plain code) still works", async () => {
+    localStorage.setItem("pendingInvite", "K7M2QX");
+    const user = userEvent.setup();
+    render(<LoginPage />);
+    await user.click(await googleButton());
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/join/K7M2QX?web=1"));
+  });
+
+  test("an invite remembered more than a day ago is ignored", async () => {
+    localStorage.setItem("pendingInvite", JSON.stringify({ code: "K7M2QX", at: Date.now() - 25 * 60 * 60 * 1000 }));
+    const user = userEvent.setup();
+    render(<LoginPage />);
+    await user.click(await googleButton());
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/users"));
   });
 });
