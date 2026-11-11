@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { ANDROID_PACKAGE, normalizeInviteCode } from "@/lib/inviteCode";
 import { clearPendingInvite, savePendingInvite } from "@/lib/pendingInvite";
 
+import BrandLogo from "@/components/BrandLogo";
 // One invite link for everyone:
 //  - Android with the app installed -> opens the app's own join screen
 //  - Android without the app, iPhone, desktop -> joins right here on the web
@@ -163,7 +164,7 @@ export default function JoinGroupPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <img src="/logo-icon.png" alt="" className="w-9 h-9 rounded-xl" />
+          <BrandLogo alt="" className="w-9 h-9 rounded-xl" />
           <span className="text-xl font-extrabold text-foreground" style={{ fontFamily: "var(--font-brand)" }}>SplitEase</span>
         </div>
 

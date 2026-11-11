@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Share, SquarePlus, X } from "lucide-react";
 
+import BrandLogo from "@/components/BrandLogo";
 /* First-visit "install the app" banner.
    - Chrome/Edge/Android: captures `beforeinstallprompt` and triggers the
      native install dialog from our button (manifest.json drives the rest).
@@ -107,8 +108,7 @@ export default function InstallPrompt() {
           className="fixed inset-x-3 bottom-20 z-[70] sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[360px]"
         >
           <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-[0_16px_48px_rgba(0,0,0,0.35)] p-2.5">
-            <img
-              src="/logo-concept-app.svg"
+            <BrandLogo
               alt=""
               className="w-9 h-9 rounded-lg border border-border shrink-0"
             />

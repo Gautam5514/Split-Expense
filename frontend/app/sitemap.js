@@ -1,10 +1,12 @@
 import { BLOG_POSTS } from "@/lib/blogPosts";
+import { SEO_PAGES, SEO_LAST_UPDATED } from "@/lib/seoPages";
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://splitease.tech";
 
 export default function sitemap() {
   const pages = [
     { path: "", priority: 1, changeFrequency: "weekly" },
+    { path: "/solutions", priority: 0.9, changeFrequency: "weekly" },
     { path: "/about", priority: 0.9, changeFrequency: "weekly" },
     { path: "/what-we-offer", priority: 0.9, changeFrequency: "monthly" },
     { path: "/features/ai-expense-splitter", priority: 0.7, changeFrequency: "monthly" },
@@ -28,10 +30,22 @@ export default function sitemap() {
     { path: "/cookies", priority: 0.2, changeFrequency: "yearly" },
   ];
 
+  // A fixed date: a sitemap that claims everything changed "now" on every
+  // request teaches crawlers to ignore lastmod.
+  const lastModified = new Date(SEO_LAST_UPDATED);
+
   const staticEntries = pages.map(({ path, ...page }) => ({
     url: `${siteUrl}${path}`,
-    lastModified: new Date(),
+    lastModified,
     ...page,
+  }));
+
+  // Keyword landing pages for bill-splitting searches.
+  const solutionEntries = SEO_PAGES.map((p) => ({
+    url: `${siteUrl}/solutions/${p.slug}`,
+    lastModified,
+    priority: 0.85,
+    changeFrequency: "monthly",
   }));
 
   const blogEntries = BLOG_POSTS.map((post) => ({
@@ -41,5 +55,5 @@ export default function sitemap() {
     changeFrequency: "monthly",
   }));
 
-  return [...staticEntries, ...blogEntries];
+  return [...staticEntries, ...solutionEntries, ...blogEntries];
 }

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { getAdminToken, clearAdminToken } from "@/lib/adminApi";
 
+import BrandLogo from "@/components/BrandLogo";
 const NAV_GROUPS = [
   {
     label: "Overview",
@@ -30,7 +31,7 @@ const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 function Logo() {
   return (
     <span className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-[9px] ring-1 ring-white/[0.1] shadow-[0_6px_16px_-6px_rgba(34,211,238,0.45)]">
-      <img src="/logo-concept-app.svg" alt="SplitEase" className="h-full w-full object-cover" />
+      <BrandLogo alt="SplitEase" className="h-full w-full object-cover" />
     </span>
   );
 }

@@ -14,6 +14,7 @@ import { captureReferralFromLocation, getStoredReferralCode, clearStoredReferral
 import AuthVisual from "@/components/AuthVisual";
 import { afterAuthPath } from "@/lib/pendingInvite";
 
+import BrandLogo from "@/components/BrandLogo";
 const OTP_LENGTH = 6;
 
 // ── OTP input: 6 individual boxes ──────────────────────────────────────────
@@ -311,7 +312,7 @@ export default function RegisterPage() {
         <div className="flex items-center gap-2.5 mt-2 mb-6 justify-center lg:justify-start">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center border border-white/10 group-hover:scale-105 transition-transform duration-200 bg-zinc-950 shrink-0">
-              <img src="/logo-concept-app.svg" className="w-full h-full object-cover" alt="SplitEase Logo" />
+              <BrandLogo className="w-full h-full object-cover" alt="SplitEase Logo" />
             </div>
             <span className="font-extrabold text-xl tracking-tight text-white font-serif-premium lowercase text-2xl">
               SplitEase

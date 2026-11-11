@@ -95,7 +95,7 @@ export default async function BlogPostPage({ params }) {
           "@type": "Organization",
           "@id": `${siteUrl}/#organization`,
           name: "SplitEase",
-          logo: { "@type": "ImageObject", url: `${siteUrl}/logo-concept-app.svg` },
+          logo: { "@type": "ImageObject", url: `${siteUrl}/logo-icon.png` },
         },
         image: `${siteUrl}${post.cover.image}`,
       },

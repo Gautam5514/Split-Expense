@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, ClipboardPaste, KeyRound } from "lucide-react";
 import { normalizeInviteCode } from "@/lib/inviteCode";
 
+import BrandLogo from "@/components/BrandLogo";
 // Join a group by typing the 6-character code, or pasting the link or the whole
 // invite message - the code is pulled out of whatever is pasted.
 export default function JoinWithCodePage() {
@@ -45,7 +46,7 @@ export default function JoinWithCodePage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <img src="/logo-icon.png" alt="" className="w-9 h-9 rounded-xl" />
+          <BrandLogo alt="" className="w-9 h-9 rounded-xl" />
           <span className="text-xl font-extrabold text-foreground" style={{ fontFamily: "var(--font-brand)" }}>SplitEase</span>
         </div>
 

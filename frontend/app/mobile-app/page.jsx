@@ -23,7 +23,7 @@ export const metadata = {
     description:
       "Groups, AI-assisted splitting, receipt attachments, chat and settlements - free on Android, no paywall.",
     siteName: "SplitEase",
-    images: [{ url: "/logo-concept-app.svg", width: 512, height: 512, alt: "SplitEase" }],
+    images: [{ url: "/logo-icon.png", width: 512, height: 512, alt: "SplitEase" }],
   },
   twitter: {
     card: "summary_large_image",

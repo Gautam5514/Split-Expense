@@ -14,7 +14,7 @@ export const metadata = {
     title: "SplitEase MCP Server — Connect your AI assistant",
     description: "One link connects SplitEase to Claude, ChatGPT, Gemini, Grok and any MCP app.",
     siteName: "SplitEase",
-    images: [{ url: "/logo-concept-app.svg", width: 512, height: 512, alt: "SplitEase" }],
+    images: [{ url: "/logo-icon.png", width: 512, height: 512, alt: "SplitEase" }],
   },
 };
 

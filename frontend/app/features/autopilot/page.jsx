@@ -14,7 +14,7 @@ export const metadata = {
     title: "SplitEase Autopilot — ask, review, approve",
     description: "An AI assistant that plans your group expenses and waits for your yes.",
     siteName: "SplitEase",
-    images: [{ url: "/logo-concept-app.svg", width: 512, height: 512, alt: "SplitEase" }],
+    images: [{ url: "/logo-icon.png", width: 512, height: 512, alt: "SplitEase" }],
   },
 };
 

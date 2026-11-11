@@ -225,9 +225,11 @@ const loadAssets = () => {
         fonts[k] = null;
       }
     }
-    let logo = null;
+    // Dark logo for the dark cover band, light logo for the white running header.
+    let logo = null, logoLight = null;
     try { logo = fs.readFileSync(path.join(ASSETS, "brand/logo-160.png")); } catch { /* optional */ }
-    assetCache = { fonts, logo };
+    try { logoLight = fs.readFileSync(path.join(ASSETS, "brand/logo-light-160.png")); } catch { /* optional */ }
+    assetCache = { fonts, logo, logoLight };
   }
   return assetCache;
 };
@@ -272,7 +274,7 @@ const avatarColors = (name) => {
  */
 export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
   return new Promise((resolve, reject) => {
-    const { fonts, logo } = loadAssets();
+    const { fonts, logo, logoLight } = loadAssets();
     const doc = new PDFDocument({
       size: "A4", margin: 0, bufferPages: true,
       info: { Title: `${clean(data.group.name)} - Settlement statement`, Author: "SplitEase", Creator: "SplitEase" },
@@ -341,7 +343,7 @@ export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
 
     let y = 0;
     const runningHeader = () => {
-      if (logo) doc.image(logo, M, 22, { width: 20, height: 20 });
+      if (logoLight || logo) doc.image(logoLight || logo, M, 22, { width: 20, height: 20 });
       doc.font(font.BRAND).fontSize(12).fillColor(K.ink).text("SplitEase", M + 27, 27, { lineBreak: false });
       T(data.group.name, M + 200, 24, { size: 8.5, weight: "SB", color: K.ink, width: CW - 200, align: "right" });
       T("Settlement statement", M + 200, 35, { size: 7.5, color: K.mute, width: CW - 200, align: "right" });

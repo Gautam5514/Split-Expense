@@ -132,8 +132,8 @@ messaging.onBackgroundMessage((payload) => {
   if (type === "promo") {
     return self.registration.showNotification(notificationTitle, {
       body: notificationBody,
-      icon: "/logo-concept-app.svg",
-      badge: "/logo-concept-app.svg",
+      icon: "/logo-icon.png",
+      badge: "/logo-icon.png",
       ...(payload.data?.image && { image: payload.data.image }),
       tag: "splitease-tip",
       renotify: false,
@@ -148,8 +148,8 @@ messaging.onBackgroundMessage((payload) => {
 
   return self.registration.showNotification(notificationTitle, {
     body: notificationBody,
-    icon: "/logo-concept-app.svg",
-    badge: "/logo-concept-app.svg",
+    icon: "/logo-icon.png",
+    badge: "/logo-icon.png",
     tag,
     requireInteraction: true,
     vibrate: [200, 100, 200],

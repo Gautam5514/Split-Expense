@@ -5,6 +5,7 @@ import { Loader2, Gift } from "lucide-react";
 import { captureReferralCode } from "@/lib/referral";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
+import BrandLogo from "@/components/BrandLogo";
 export default function InvitePage() {
   const { code } = useParams();
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function InvitePage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm text-center">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <img src="/logo-concept-app.svg" alt="SplitEase" className="w-8 h-8 rounded-xl" />
+          <BrandLogo alt="SplitEase" className="w-8 h-8 rounded-xl" />
           <span className="text-xl font-extrabold text-foreground">SplitEase</span>
         </div>
 

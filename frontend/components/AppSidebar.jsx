@@ -20,6 +20,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useSidebar } from "@/context/SidebarContext";
 
+import BrandLogo from "@/components/BrandLogo";
 const LINKS = [
   { href: "/users", icon: Home, label: "Home" },
   { href: "/chat", icon: MessageCircle, label: "Messages" },
@@ -82,8 +83,7 @@ export default function AppSidebar() {
             aria-label="Expand sidebar"
             title="Expand sidebar"
           >
-            <img
-              src="/logo-concept-app.svg"
+            <BrandLogo
               alt="SplitEase"
               className="sidebar-logo absolute h-8 w-8 object-contain transition-opacity duration-150 group-hover/brand:opacity-0"
             />
@@ -96,7 +96,7 @@ export default function AppSidebar() {
         ) : (
           <>
             <Link href="/users" className="flex min-w-0 items-center gap-2.5" aria-label="SplitEase home">
-              <img src="/logo-concept-app.svg" alt="" className="sidebar-logo h-8 w-8 shrink-0 object-contain" />
+              <BrandLogo alt="" className="sidebar-logo h-8 w-8 shrink-0 object-contain" />
               <span className="truncate font-brand text-[19px] font-medium tracking-wide text-foreground">
                 SplitEase
               </span>
