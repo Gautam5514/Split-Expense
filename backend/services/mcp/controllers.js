@@ -18,6 +18,9 @@ export {
   deleteGroup,
   generateInviteLink,
   joinGroupByInvite,
+  resendGroupReport,
+  getGroupReportStatus,
+  retryGroupReport,
 } from "../../controllers/groupController.js";
 
 export {

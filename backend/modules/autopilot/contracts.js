@@ -57,12 +57,15 @@ export const intentSchema = z.object({
     // Destructive: always previewed, approved with the button, one per plan.
     z.object({ type: z.literal("delete_expense"), title: z.string().trim().max(200).nullable(), expenseId: objectId.nullable().optional() }).strict(),
     z.object({ type: z.literal("delete_group") }).strict(),
+    // Creator-only: mark the group completed (members are notified and get the statement), or re-send the statement email.
+    z.object({ type: z.literal("complete_group") }).strict(),
+    z.object({ type: z.literal("send_statement") }).strict(),
     z.object({ type: z.literal("monitor_budget"), thresholds: z.array(z.number().int().min(1).max(100)).min(1).max(5) }).strict(),
   ])).max(12),
   clarification: z.string().max(500).nullable(),
 }).strict();
 const split = z.object({ memberId: objectId, name: z.string(), shareMinor: z.number().int().nonnegative() }).strict();
-export const STEP_TYPES = ["create_group", "add_members", "set_group_budget", "create_expense", "read_summary", "monitor_budget", "read_overall", "list_expenses", "delete_expense", "delete_group"];
+export const STEP_TYPES = ["create_group", "add_members", "set_group_budget", "create_expense", "read_summary", "monitor_budget", "read_overall", "list_expenses", "delete_expense", "delete_group", "complete_group", "send_statement"];
 export const DELETE_STEPS = ["delete_expense", "delete_group"];
 export const READ_STEPS = ["read_summary", "read_overall", "list_expenses"];
 export const stepSchema = z.object({

@@ -2,7 +2,7 @@
 
 ## Remote MCP server (`/mcp`)
 
-`backend/services/mcpServer.js` builds a per-request, user-scoped server (v2.0.0) with server `instructions` and 29 tools in `backend/services/mcp/tools/`:
+`backend/services/mcpServer.js` builds a per-request, user-scoped server (v2.1.0) with server `instructions`, 33 tools and 5 prompts in `backend/services/mcp/tools/`:
 
 | Area | Tools |
 |---|---|
@@ -11,7 +11,10 @@
 | Expenses | `add_expense`, `list_expenses`, `get_expense`, `get_group_summary` |
 | Settling | `get_balances`, `settle_up`, `list_pending_settlements`, `respond_to_settlement` |
 | Invites | `list_my_invites`, `respond_to_invite` |
+| Smart | `get_action_items` (what to pay / confirm / answer, with the next tool), `send_group_statement`, `get_statement_status`, `retry_failed_statements` |
 | Monthly bills | `list_recurring_bills`, `add_recurring_bill`, `update_recurring_bill`, `delete_recurring_bill` |
+
+Prompts (one-click starters in clients that support them): `catch_me_up`, `split_a_bill`, `settle_up`, `wrap_up_trip`, `monthly_review`.
 
 Contracts:
 - **Identity** comes only from the verified credential (`routes/mcpRoutes.js`, incl. `firebaseUid` for legacy creator ids). No tool takes a user id to act as.
@@ -25,7 +28,7 @@ Contracts:
 
 MCP uses authenticated per-request server instances and JSON text content/error responses; group reads enforce membership. HTTP transport/auth is `routes/mcpRoutes.js` and OAuth services. Raw MCP does not currently provide the new transactional expense approval contract.
 
-Autopilot's internal in-process allowlist is strict: `create_group`, `set_group_budget`, `create_expense`, `read_summary`, `monitor_budget`. Extraction cannot supply actor IDs, SQL, arbitrary tool names or arbitrary fields. `contracts.js` is the authoritative JSON schema implementation. `domain.js` authorizes each write and uses shared business validators/persistence; it is never exposed directly to an LLM.
+Autopilot's internal in-process allowlist is strict: `create_group`, `add_members`, `set_group_budget`, `create_expense`, `read_summary`, `read_overall`, `list_expenses`, `monitor_budget`, `delete_expense`, `delete_group`, `complete_group` (creator only; emails the final statement) and `send_statement` (creator only; completed or fully settled groups). Extraction cannot supply actor IDs, SQL, arbitrary tool names or arbitrary fields. `contracts.js` is the authoritative JSON schema implementation. `domain.js` authorizes each write and uses shared business validators/persistence; it is never exposed directly to an LLM.
 
 Run routes under `/api/agent` require normal Firebase auth. POST `/runs` accepts `{message,groupId?,requestKey:UUID}`; GET `/runs`, GET `/runs/:id`, GET `/runs/:id/events`, POST `/runs/:id/cancel`, POST `/runs/:id/resume` operate only on owned accessible runs. POST `/runs/:id/decision` requires `{decision,planVersion,payloadHash,approvedStepIds}`. Approval requires all mutation step IDs and the exact displayed hash/version. Unsupported fields return 400; unavailable identity/scope returns 404; stale/replayed approval returns 409; disabled execution returns 403. The overall feature returns 404 when off or in production.
 

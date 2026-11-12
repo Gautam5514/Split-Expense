@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Bell, CheckCircle2, ExternalLink, Loader2, Mail, PiggyBank, Receipt, Scale, UserCheck, UserPlus, Users, CircleDashed, Wallet, List, Pencil, Globe2, Trash2, AlertTriangle } from "lucide-react";
 import { PEOPLE_COLORS, initials, money } from "./format";
 
-const ICONS = { create_group: Users, add_members: UserPlus, set_group_budget: PiggyBank, create_expense: Receipt, monitor_budget: Bell, read_summary: Scale, read_overall: Globe2, list_expenses: List, delete_expense: Trash2, delete_group: Trash2 };
+const ICONS = { create_group: Users, add_members: UserPlus, set_group_budget: PiggyBank, create_expense: Receipt, monitor_budget: Bell, read_summary: Scale, read_overall: Globe2, list_expenses: List, delete_expense: Trash2, delete_group: Trash2, complete_group: CheckCircle2, send_statement: Mail };
 const DELETES = ["delete_expense", "delete_group"];
 
 // What a delete will remove, stated plainly before anyone approves it.

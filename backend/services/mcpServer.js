@@ -28,13 +28,15 @@ import { registerExpenseTools } from "./mcp/tools/expenses.js";
 import { registerSettlementTools } from "./mcp/tools/settlements.js";
 import { registerInviteTools } from "./mcp/tools/invites.js";
 import { registerRecurringTools } from "./mcp/tools/recurring.js";
+import { registerSmartTools, registerSmartPrompts } from "./mcp/tools/smart.js";
 
-export const SERVER_VERSION = "2.0.0";
+export const SERVER_VERSION = "2.1.0";
 
 export const SERVER_INSTRUCTIONS = `SplitEase tracks shared expenses in groups (trips, flatmates, teams) and works out who owes whom.
 
 How to use these tools well:
 - Refer to groups and people the way the user does. Every "group" argument takes a group name or id, and member arguments take a name, an email or "me". If a tool says a name is ambiguous, ask the user which one they meant. Don't guess.
+- For open-ended questions ("catch me up", "anything I need to pay?") call get_action_items first: it lists what to pay, confirm or answer, with the tool to use next.
 - If you're unsure which group the user means, call list_groups first.
 - add_expense always records the signed-in user as the payer. Nobody can log a bill in someone else's name. If someone else paid, they add it from their own account. To record money changing hands, use settle_up.
 - Amounts are in the group's currency (get_group shows it). For a bill in another currency, pass currency, originalAmount and fxRate. Don't invent an exchange rate; ask the user for it.
@@ -42,6 +44,7 @@ How to use these tools well:
 - People join with consent. add_members adds known contacts directly, sends other SplitEase users an invite they must accept, and emails a join link to unknown addresses. Report exactly what the tool says happened.
 - settle_up: if the user says they paid someone, that person must confirm, so the payment stays pending until they do. If the user says someone paid them, it is recorded straight away.
 - Confirm with the user before destructive tools: delete_group, remove_member, leave_group, delete_recurring_bill.
+- When a group is completed or fully settled, SplitEase emails every member a PDF statement automatically. send_group_statement only re-sends it; get_statement_status shows who received it.
 - Write tools return a "summary" sentence you can relay as-is. Changes show up live in the SplitEase web and mobile apps.`;
 
 /**
@@ -125,6 +128,8 @@ export function buildSplitEaseMcpServer(authedUser) {
   registerSettlementTools(ctx);
   registerInviteTools(ctx);
   registerRecurringTools(ctx);
+  registerSmartTools(ctx);
+  registerSmartPrompts(ctx);
 
   return server;
 }

@@ -15,6 +15,7 @@ const oid = () => new mongoose.Types.ObjectId();
 const fakeUserModel = makeFakeModel([]);
 const fakeGroupModel = makeFakeModel([], { members: fakeUserModel, paidBy: fakeUserModel });
 const fakeExpenseModel = makeFakeModel([], { paidBy: fakeUserModel });
+const fakeSettlementModel = makeFakeModel([], { fromUserId: fakeUserModel, toUserId: fakeUserModel, groupId: fakeGroupModel });
 
 // balanceController is mocked so we control computeGroupBalances/buildSettlement
 const fakeComputeGroupBalances = jest.fn();
@@ -22,9 +23,11 @@ const fakeBuildSettlement = jest.fn(() => []);
 
 // ── capture tools as the factory registers them on McpServer ─────────────────
 const registered = new Map();
+const registeredPrompts = new Map();
 class StubMcpServer {
   constructor(info) { this.info = info; }
   registerTool(name, def, handler) { registered.set(name, { def, handler }); }
+  registerPrompt(name, def, handler) { registeredPrompts.set(name, { def, handler }); }
   connect() {}
   close() {}
 }
@@ -35,6 +38,7 @@ jest.unstable_mockModule("@modelcontextprotocol/sdk/server/mcp.js", () => ({
 jest.unstable_mockModule("../models/userModel.js", () => ({ default: fakeUserModel }));
 jest.unstable_mockModule("../models/groupModel.js", () => ({ default: fakeGroupModel }));
 jest.unstable_mockModule("../models/expenseModel.js", () => ({ default: fakeExpenseModel }));
+jest.unstable_mockModule("../models/settlementRequestModel.js", () => ({ default: fakeSettlementModel }));
 // Write tools run the REST controllers through services/mcp/bridge.js; here a
 // fake controller module stands in (tests/mcpTools.int.test.js covers the real
 // controllers against MongoDB).
@@ -46,7 +50,8 @@ const fakeCreateGroup = jest.fn(async (req, res) => {
   const group = await fakeGroupModel.create({ name, groupType, createdBy: req.user.id, members: [req.user.id], settings: {} });
   return res.status(201).json(group);
 });
-jest.unstable_mockModule("../services/mcp/controllers.js", () => ({ createGroup: fakeCreateGroup }));
+const fakeGetMyInvites = jest.fn(async (req, res) => res.json([]));
+jest.unstable_mockModule("../services/mcp/controllers.js", () => ({ createGroup: fakeCreateGroup, getMyInvites: fakeGetMyInvites }));
 jest.unstable_mockModule("../controllers/balanceController.js", () => ({
   computeGroupBalances: fakeComputeGroupBalances,
   buildSettlement: fakeBuildSettlement,
@@ -67,7 +72,7 @@ const callTool = async (userId, name, args = {}) => {
 const payload = (res) => JSON.parse(res.content[0].text);
 
 beforeEach(() => {
-  [fakeUserModel, fakeGroupModel, fakeExpenseModel].forEach((m) => { m._docs.length = 0; });
+  [fakeUserModel, fakeGroupModel, fakeExpenseModel, fakeSettlementModel].forEach((m) => { m._docs.length = 0; });
   fakeComputeGroupBalances.mockReset();
   fakeBuildSettlement.mockReset().mockReturnValue([]);
 });
@@ -85,8 +90,17 @@ describe("tool registration", () => {
         "get_balances", "settle_up", "list_pending_settlements", "respond_to_settlement",
         "list_my_invites", "respond_to_invite",
         "list_recurring_bills", "add_recurring_bill", "update_recurring_bill", "delete_recurring_bill",
+        "get_action_items", "send_group_statement", "get_statement_status", "retry_failed_statements",
       ].sort(),
     );
+  });
+
+  test("registers ready-made prompts", () => {
+    registeredPrompts.clear();
+    buildSplitEaseMcpServer({ id: String(oid()), email: "u@e.com", name: "U" });
+    expect([...registeredPrompts.keys()].sort()).toEqual(["catch_me_up", "monthly_review", "settle_up", "split_a_bill", "wrap_up_trip"]);
+    const text = registeredPrompts.get("split_a_bill").handler({ details: "Dinner 900 in Goa" }).messages[0].content.text;
+    expect(text).toContain("Dinner 900 in Goa");
   });
 
   test("every tool declares annotations; destructive ones are flagged", () => {
@@ -335,5 +349,35 @@ describe("tool hardening", () => {
     fakeGroupModel.__addDoc({ _id: oid(), name: "VictimGroup", members: [victim] });
     const res = await callTool(me, "list_groups", { userId: String(victim) });
     expect(payload(res)).toEqual([]);
+  });
+});
+
+describe("get_action_items", () => {
+  test("says what to pay, what is owed, and what to confirm, most urgent first", async () => {
+    const uid = oid(); const bob = oid(); const cara = oid(); const gid = oid();
+    fakeUserModel.__addDoc({ _id: uid, name: "Alice" });
+    fakeUserModel.__addDoc({ _id: bob, name: "Bob" });
+    fakeUserModel.__addDoc({ _id: cara, name: "Cara" });
+    fakeGroupModel.__addDoc({ _id: gid, name: "Goa", members: [uid, bob, cara], createdBy: bob, settings: { currency: "INR" } });
+    fakeComputeGroupBalances.mockResolvedValue({
+      uniqueMembers: [{ _id: uid, name: "Alice" }, { _id: bob, name: "Bob" }, { _id: cara, name: "Cara" }],
+      balances: { [uid]: -200, [bob]: 500, [cara]: -300 },
+    });
+    fakeBuildSettlement.mockReturnValue([
+      { from: String(uid), to: String(bob), amount: 200 },
+      { from: String(cara), to: String(bob), amount: 300 },
+    ]);
+    fakeSettlementModel.__addDoc({ _id: oid(), status: "pending", fromUserId: bob, toUserId: uid, groupId: gid, initiatedBy: bob, amount: 50 });
+    const out = payload(await callTool(uid, "get_action_items"));
+    expect(out.needsAttention).toBe(2);
+    expect(out.items[0].next.tool).toBe("respond_to_settlement");
+    expect(out.items[1].what).toContain("You owe Bob");
+    expect(out.items[1].next.args).toMatchObject({ with: "Bob", direction: "i_paid_them", amount: 200 });
+  });
+
+  test("an empty account is all caught up", async () => {
+    const out = payload(await callTool(oid(), "get_action_items"));
+    expect(out.needsAttention).toBe(0);
+    expect(out.summary).toMatch(/caught up/i);
   });
 });

@@ -248,3 +248,35 @@ describe("quick corrections to a waiting plan", () => {
     expect(readCorrection("make it 4000", { steps: [] })).toBeNull();
   });
 });
+
+describe("complete the group and email the statement", () => {
+  test("offline grammar understands English and Hinglish", () => {
+    for (const t of ["mark this trip as completed", "mark as done", "complete this group", "trip complete kar do", "close the group"])
+      expect(parseLocal(t).actions).toEqual([{ type: "complete_group" }]);
+    for (const t of ["email everyone the statement", "send the settlement statement", "send statement again", "statement bhej do", "mail me the report"])
+      expect(parseLocal(t).actions).toEqual([{ type: "send_statement" }]);
+    // The old behaviour is untouched.
+    expect(parseLocal("delete this group").actions).toEqual([{ type: "delete_group" }]);
+  });
+  test("complete_group is creator-only, previewed, and needs approval", () => {
+    const plan = buildPlan(intent({ type: "complete_group" }), { actorId, group: groupOf(), members });
+    expect(plan.steps[0]).toMatchObject({ type: "complete_group", requiresApproval: true });
+    expect(plan.notes.join(" ")).toMatch(/statement/);
+    const notMine = buildPlan(intent({ type: "complete_group" }), { actorId: aman, group: groupOf(), members });
+    expect(notMine.steps).toEqual([]);
+    expect(notMine.clarifications.join(" ")).toMatch(/Only the person who created/);
+    const done = buildPlan(intent({ type: "complete_group" }), { actorId, group: groupOf({ isCompleted: true }), members });
+    expect(done.clarifications.join(" ")).toMatch(/already completed/);
+  });
+  test("send_statement is creator-only and rides alone", () => {
+    expect(buildPlan(intent({ type: "send_statement" }), { actorId, group: groupOf(), members }).steps[0]).toMatchObject({ type: "send_statement", requiresApproval: true });
+    expect(buildPlan(intent({ type: "send_statement" }), { actorId: aman, group: groupOf(), members }).steps).toEqual([]);
+    const mixed = buildPlan(intent({ type: "send_statement" }, expense()), { actorId, group: groupOf(), members });
+    expect(mixed.steps.some(s => s.type === "send_statement")).toBe(false);
+  });
+  test("model output for the new actions validates", () => {
+    const n = normalizeIntent({ actions: [{ type: "complete_group", extra: 1 }, { type: "send_statement" }] });
+    expect(n.actions).toEqual([{ type: "complete_group" }, { type: "send_statement" }]);
+    expect(intentSchema.safeParse(n).success).toBe(true);
+  });
+});

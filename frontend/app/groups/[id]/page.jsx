@@ -64,6 +64,7 @@ import { getGroupIcon } from "@/lib/groupIcons";
 import { groupTypeMeta, categoryMeta } from "@/lib/groupPresets";
 import GroupTypeCard from "@/components/group/GroupTypeCard";
 import GroupSettingsModal from "@/components/group/GroupSettingsModal";
+import StatementCard from "@/components/group/StatementCard";
 import CategoryBreakdown from "@/components/group/CategoryBreakdown";
 import TierBadge from "@/components/ui/TierBadge";
 
@@ -830,6 +831,7 @@ export default function GroupDetailPage() {
                       onRemove={requestRemoveMember}
                       onViewAll={() => setShowMembersModal(true)} />
                     {isCreator && <PendingMembers groupId={groupId} pending={pendingMembers} onChanged={() => { fetchPendingMembers(); fetchGroup(); fetchBalances(); }} />}
+                    <StatementCard groupId={groupId} isCreator={isCreator} reloadKey={group.isCompleted ? 1 : 0} />
                   </div>
                 </motion.div>
               )}
@@ -850,6 +852,7 @@ export default function GroupDetailPage() {
               onRemove={requestRemoveMember}
               onViewAll={() => setShowMembersModal(true)} />
             {isCreator && <PendingMembers groupId={groupId} pending={pendingMembers} onChanged={() => { fetchPendingMembers(); fetchGroup(); fetchBalances(); }} />}
+            <StatementCard groupId={groupId} isCreator={isCreator} reloadKey={group.isCompleted ? 1 : 0} />
           </div>
         </div>
       </div>

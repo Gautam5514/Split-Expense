@@ -187,6 +187,10 @@ function parseClauses(message) {
       if (a) actions.push({ type: "monitor_budget", thresholds });
     } else if ((m = clause.match(/^(?:delete|remove|hata(?:o| do)?)\s+(?:the\s+|my\s+)?(?:(last|latest|recent)\s+expense|expense\s+(.{1,200})|(.{1,200}?)\s+expense)$/i))) {
       actions.push({ type: "delete_expense", title: m[1] ? null : (m[2] || m[3]).trim(), expenseId: null });
+    } else if (/^(?:mark\s+(?:this\s+|the\s+|my\s+)?(?:group\s+|trip\s+)?(?:as\s+)?(?:completed?|done|finished)|(?:complete|finish|close)\s+(?:this\s+|the\s+|my\s+)?(?:group|trip)|(?:group|trip|ye group|ye trip)\s+(?:complete|khatam|done)\s*(?:kar\s*do|ho gaya)?)$/i.test(clause)) {
+      actions.push({ type: "complete_group" });
+    } else if (/^(?:email|e-mail|mail|send)\s+(?:me\s+|everyone\s+|all\s+)?(?:the\s+|a\s+|my\s+)?(?:final\s+|settlement\s+|group\s+)*(?:statement|report|pdf)(?:\s+(?:again|to\s+(?:everyone|all|the group|all members)))?$/i.test(clause) || /^(?:statement|report)\s+(?:email\s+|mail\s+)?(?:bhej\s*do|bhejo|send\s+kar\s*do)$/i.test(clause)) {
+      actions.push({ type: "send_statement" });
     } else if (/^(?:delete|remove)\s+(?:this|the|my)?\s*(?:group|trip)$/i.test(clause) || /^(?:group|trip|is group|ye group)\s+(?:ko\s+)?delete\s+kar(?:\s+do)?$/i.test(clause)) {
       actions.push({ type: "delete_group" });
     } else if (/\b(?:my|overall|total)\s+balances?\b|\bhow much do i owe\b|\bowes? me\b|\bacross (?:all )?(?:my )?groups\b|\bmera hisaab\b/i.test(clause)) {
@@ -241,7 +245,7 @@ export function normalizeIntent(raw) {
       case "add_members": return { type, members: strings(a.members) };
       case "set_group_budget": return { type, amount: amountText(a.amount) };
       case "read_summary": case "read_overall": return { type };
-      case "delete_group": return { type };
+      case "delete_group": case "complete_group": case "send_statement": return { type };
       case "delete_expense": {
         // "dinner wala expense" -> "dinner"; "last"/"this" mean the most recent one.
         const t = typeof a.title === "string" ? a.title.replace(/\b(wala|waala|vala|wali|wale|waali|expense|expenses|kharcha|ka|ki|ke|the|my|bill)\b/gi, " ").replace(/\s+/g, " ").trim() : "";
@@ -282,6 +286,8 @@ Action is one of (no other keys, no other types):
 {"type":"list_expenses","query":string|null}
 {"type":"delete_expense","title":string|null}
 {"type":"delete_group"}
+{"type":"complete_group"}
+{"type":"send_statement"}
 {"type":"monitor_budget","thresholds":number[]}
 
 Rules:
@@ -299,6 +305,7 @@ Rules:
 - read_overall for the user's own position across all groups: "my total balance", "how much do I owe overall", "who owes me", "mera hisaab".
 - list_expenses for "show recent expenses", "what did we spend on food"; query is a short keyword from the request or null.
 - delete_expense: "delete the dinner expense", "last expense hata do" (title null = the most recent one). delete_group only when the user clearly says the group/trip itself ("delete this group", "Goa trip delete kar do"). If they say "delete this/isko delete karo" without saying group or expense, ask which in "clarification". Never combine a delete with other actions.
+- complete_group: "mark this trip as completed", "trip complete kar do", "we are done with this group" (creator only; it also emails everyone the final statement). send_statement: "email everyone the statement", "statement bhej do" (re-sends the PDF statement email). Neither deletes anything.
 - category: one of ${EXPENSE_CATEGORIES.join(", ")}; null if unsure.
 - groupType: "roommate" for flats/homes, "trip" for travel or when a budget is set, "business" for work; null if unclear.
 - People: use create_group.members for people named while creating a group, and add_members for "add Sagar to this group". Keep each person exactly as written (a name like "Sagar" or an email like "ravi@x.com"); never invent emails. Do not include the user ("me") in members.
@@ -462,6 +469,21 @@ export function buildPlan(intent, { actorId, group, members = [], hasExpenses = 
       if (action.type === "add_members") { addPeopleStep(action.members); continue; }
       if ((action.type === "set_group_budget" || action.type === "monitor_budget") && !budgetAllowed()) {
         clarifications.push(`Budgets are only available in trip groups, and ${group?.name ? `“${group.name}”` : "this group"} is a ${group?.groupType || "different"} group.`);
+        continue;
+      }
+      if (action.type === "complete_group" || action.type === "send_statement") {
+        const label = action.type === "complete_group" ? "mark it as completed" : "email the statement";
+        if (String(group.createdBy) !== actorId) { clarifications.push(`Only the person who created “${group.name}” can ${label}.`); continue; }
+        if (intent.actions.length > 1) { clarifications.push(`Do this on its own. Send “${label}” as a separate request.`); continue; }
+        if (action.type === "complete_group") {
+          if (group.isCompleted) { clarifications.push(`“${group.name}” is already completed.`); continue; }
+          payload.name = group.name; step.title = `Mark “${group.name}” as completed`;
+          notes.push("Every member is told, and everyone is emailed the final settlement statement (PDF). New expenses can't be added to a completed group.");
+        } else {
+          payload.name = group.name; step.title = `Email the settlement statement for “${group.name}”`;
+          notes.push("Every member with an email gets the PDF. It works once the group is completed or fully settled, and can be sent again after a few minutes.");
+        }
+        steps.push(step);
         continue;
       }
       if (action.type === "delete_group" || action.type === "delete_expense") {

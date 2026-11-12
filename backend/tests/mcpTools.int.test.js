@@ -171,6 +171,43 @@ d("MCP tools against real controllers + MongoDB", () => {
     expect(bal.data.summary).toMatch(/Everyone is settled up/);
   });
 
+  test("get_action_items: shows what to pay and confirm, and when a group can be completed", async () => {
+    await tripWithFarah("Goa Trip");
+    await me.call("add_expense", { group: "Goa Trip", description: "Dinner", amount: 1000 });
+
+    // Farah owes Meera 500; Farah sees it as something to pay, Meera as money owed.
+    const farahItems = await friend.call("get_action_items");
+    expect(farahItems.data.items[0].what).toMatch(/You owe Meera/);
+    expect(farahItems.data.items[0].next).toMatchObject({ tool: "settle_up", args: { with: "Meera", direction: "i_paid_them", amount: 500 } });
+    const meeraItems = await me.call("get_action_items");
+    expect(meeraItems.data.items.some((i) => /Farah owes you/.test(i.what))).toBe(true);
+
+    // Farah pays: Meera now has a payment to confirm, listed first.
+    await friend.call("settle_up", { group: "Goa Trip", with: "Meera", direction: "i_paid_them", amount: 500 });
+    const afterPay = await me.call("get_action_items");
+    expect(afterPay.data.items[0].next.tool).toBe("respond_to_settlement");
+    expect((await friend.call("get_action_items")).data.waitingOnOthers).toHaveLength(1);
+
+    // Once confirmed and settled, the creator is offered completing the group.
+    await me.call("respond_to_settlement", { requestId: String((await me.call("list_pending_settlements")).data[0].requestId), action: "confirm" });
+    const done = await me.call("get_action_items");
+    expect(done.data.items.some((i) => i.next?.tool === "complete_group")).toBe(true);
+    expect((await outsider.call("get_action_items")).data.summary).toMatch(/caught up/i);
+  });
+
+  test("statement tools: creator-only send, status for members", async () => {
+    await tripWithFarah("Goa Trip");
+    const none = await friend.call("get_statement_status", { group: "Goa Trip" });
+    expect(none.data.sent).toBe(false);
+    const early = await me.call("send_group_statement", { group: "Goa Trip" });
+    expect(early.isError).toBe(true); // no expenses yet / not settled
+    const notCreator = await friend.call("send_group_statement", { group: "Goa Trip" });
+    expect(notCreator.isError).toBe(true);
+    expect(notCreator.text).toMatch(/Only the creator/);
+    const nothingToRetry = await me.call("retry_failed_statements", { group: "Goa Trip" });
+    expect(nothingToRetry.isError).toBe(true);
+  });
+
   test("names are scoped to the user's own groups; ambiguity becomes a question", async () => {
     await tripWithFarah("Goa Trip");
     await me.call("create_group", { name: "Goa Office", groupType: "business" });

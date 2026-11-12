@@ -14,6 +14,8 @@ import { addMembersCore, deleteGroupCore } from "../../controllers/groupControll
 import { createNotification } from "../../controllers/notificationController.js";
 import { notifyGroupChange } from "../../utils/realtime.js";
 import { incrementExpenseCount } from "../../utils/referralService.js";
+import { queueGroupStatement, recentManualStatement } from "../../services/statementOutbox.js";
+import { loadGroupReport } from "../../services/groupReportService.js";
 
 // Socket.io server, set by the routes from the Express app (null in tests).
 export const realtime = { io: null };
@@ -33,7 +35,7 @@ export async function applyStep(step, run, session, after = []) {
     return { groupId: String(group._id), recordId: String(group._id), href: `/groups/${group._id}`, verified: true };
   }
   const group = await memberGroup(actorId, groupId, session);
-  if (group.isCompleted && step.type !== "delete_group") throw fail(409, "GROUP_COMPLETED", "This group is marked as completed. Reopen it before making changes.");
+  if (group.isCompleted && !["delete_group", "send_statement"].includes(step.type)) throw fail(409, "GROUP_COMPLETED", "This group is marked as completed. Reopen it before making changes.");
   if ((group.settings?.currency || "INR") !== p.currency) throw fail(409, "STALE_PLAN", "The group currency changed; prepare a new plan.");
   // Lock the group during this transaction, serializing Autopilot changes and
   // conflicting membership/settings edits. Snapshot checks also cover expenses.
@@ -112,6 +114,36 @@ export async function applyStep(step, run, session, after = []) {
       await notifyGroupChange(realtime.io, groupId, "expense", memberIds);
     });
     return { groupId: String(groupId), recordId: String(doc._id), href: `/groups/${groupId}`, verified: true, deleted: { title: doc.description, amountMinor: Math.round(doc.amount * 100) } };
+  }
+  if (step.type === "complete_group") {
+    if (String(group.createdBy) !== actorId) throw fail(403, "FORBIDDEN", "Only the group creator can mark it as completed.");
+    await Group.updateOne({ _id: groupId }, { $set: { isCompleted: true } }, { session });
+    const actual = await Group.findById(groupId).select("isCompleted").session(session).lean();
+    if (!actual?.isCompleted) throw fail(409, "VERIFICATION_FAILED", "The group could not be marked as completed; nothing changed.");
+    const memberIds = group.members.map(String);
+    const others = memberIds.filter(id => id !== actorId);
+    after.push(async () => {
+      const actor = await User.findById(actorId).select("name").lean();
+      // Same follow-ups as the Complete button: the statement email, live update, notification.
+      void queueGroupStatement(groupId, { reason: "completed", triggeredBy: { userId: actorId, name: actor?.name || "" } });
+      await notifyGroupChange(realtime.io, groupId, "completed", memberIds);
+      if (others.length) await createNotification(others, `"${group.name}" has been marked as completed by ${actor?.name || "the creator"}`, `/groups/${groupId}`, "group", { groupName: group.name, groupId });
+    });
+    return { groupId: String(groupId), recordId: String(groupId), href: `/groups/${groupId}`, verified: true, completed: true, title: group.name };
+  }
+  if (step.type === "send_statement") {
+    if (String(group.createdBy) !== actorId) throw fail(403, "FORBIDDEN", "Only the group creator can send the statement.");
+    if (await recentManualStatement(group._id, 5 * 60 * 1000)) throw fail(429, "TOO_SOON", "The statement was just sent. Please wait a few minutes before sending it again.");
+    const report = await loadGroupReport(groupId);
+    if (!report?.totals?.expenseCount) throw fail(400, "NO_EXPENSES", "This group has no expenses yet, so there is nothing to send.");
+    if (!group.isCompleted && !report.fullySettled) throw fail(400, "NOT_SETTLED", "Mark the group as completed or settle all balances first.");
+    const recipients = (report.members || []).filter(m => m.email).length;
+    if (!recipients) throw fail(400, "NO_RECIPIENTS", "No member has an email address.");
+    after.push(async () => {
+      const actor = await User.findById(actorId).select("name").lean();
+      await queueGroupStatement(groupId, { reason: "manual", triggeredBy: { userId: actorId, name: actor?.name || "" } });
+    });
+    return { groupId: String(groupId), recordId: String(groupId), href: `/groups/${groupId}`, verified: true, statementQueued: true, recipients, title: group.name };
   }
   if (step.type === "delete_group") {
     if (String(group.createdBy) !== actorId) throw fail(403, "FORBIDDEN", "Only the group creator can delete it.");

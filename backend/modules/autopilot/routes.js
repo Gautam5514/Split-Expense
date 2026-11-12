@@ -41,7 +41,7 @@ const present = run => {
   const stale = ["planning", "running"].includes(data.status) && Date.now() - new Date(data.updatedAt).getTime() > STALE_MS;
   return { ...data, runId: String(run._id), writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true", stale };
 };
-router.get("/capabilities", (req,res) => res.json({ enabled: true, writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true", ai: describeProviders(), provider: describeProviders().provider, monitoring: "on_demand", features: ["edit_plan", "read_overall", "list_expenses", "group_types", "delete"] }));
+router.get("/capabilities", (req,res) => res.json({ enabled: true, writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true", ai: describeProviders(), provider: describeProviders().provider, monitoring: "on_demand", features: ["edit_plan", "read_overall", "list_expenses", "group_types", "delete", "complete_group", "send_statement"] }));
 router.get("/groups", route(async (req,res) => res.json(await Group.find({ members: req.user.id }).select("name settings.currency groupType photo.url").limit(100).lean())));
 router.post("/runs", route(async (req,res) => {
   const run = await createRun(req.user, req.body);
