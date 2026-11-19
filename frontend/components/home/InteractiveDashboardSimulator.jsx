@@ -413,32 +413,32 @@ export default function InteractiveDashboardSimulator() {
         </div>
 
         {/* App layout */}
-        <div className="flex bg-[#050505] text-[#F5F5F5] h-[480px] tracking-[-0.01em]">
+        <div className="flex bg-[#050505] text-[#F5F5F5] h-[560px] lg:h-[640px] tracking-[-0.01em]">
 
           {/* Sidebar */}
-          <aside className="w-[200px] lg:w-[220px] xl:w-[248px] flex-shrink-0 flex flex-col bg-[#111111] border-r border-white/[0.06]">
-            <div className="h-16 px-5 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-2.5">
-                <img src="/logo-icon-light.png" className="w-8 h-8 object-contain" alt="SplitEase" />
-                <span className="text-[19px] font-medium tracking-wide">SplitEase</span>
+          <aside className="w-[188px] lg:w-[208px] xl:w-[224px] flex-shrink-0 flex flex-col bg-[#111111] border-r border-white/[0.06]">
+            <div className="h-14 px-4 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <img src="/logo-icon-light.png" className="w-7 h-7 object-contain" alt="SplitEase" />
+                <span className="text-[17px] font-medium tracking-wide">SplitEase</span>
               </div>
-              <PanelLeft className="w-[18px] h-[18px] text-[#A1A1AA]" />
+              <PanelLeft className="w-4 h-4 text-[#A1A1AA]" />
             </div>
 
-            <nav className="flex flex-col gap-1.5 px-3 flex-1 pt-2">
+            <nav className="flex flex-col gap-1 px-2.5 flex-1 pt-2">
               {NAV_ITEMS.map(({ id, icon: Icon, label }) => {
                 const isActive = navActive(id);
                 return (
                   <button
                     key={id}
                     onClick={() => goTab(id)}
-                    className={`h-12 rounded-full px-4 flex items-center gap-3.5 text-left transition-colors cursor-pointer ${
+                    className={`h-10 rounded-full px-3.5 flex items-center gap-3 text-left transition-colors cursor-pointer ${
                       isActive ? "bg-white/[0.06] text-[#F5F5F5] font-bold" : "text-[#A1A1AA] font-medium hover:bg-white/[0.035]"
                     }`}
                   >
-                    <Icon className="w-[19px] h-[19px] shrink-0" strokeWidth={1.75} />
-                    <span className="text-[14px] flex-1">{label}</span>
-                    {isActive && <ChevronRight className="w-4 h-4 text-[#A1A1AA]" />}
+                    <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={1.75} />
+                    <span className="text-[13px] flex-1">{label}</span>
+                    {isActive && <ChevronRight className="w-3.5 h-3.5 text-[#A1A1AA]" />}
                   </button>
                 );
               })}
@@ -446,9 +446,9 @@ export default function InteractiveDashboardSimulator() {
 
             <div className="p-3">
               <div className="flex items-center gap-2.5 rounded-2xl p-2 hover:bg-white/[0.035] transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-[#F5F5F5] text-[#050505] flex items-center justify-center font-bold text-sm shrink-0">F</div>
+                <div className="w-8 h-8 rounded-lg bg-[#F5F5F5] text-[#050505] flex items-center justify-center font-bold text-[13px] shrink-0">F</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12.5px] font-bold truncate leading-tight">Felix Kumar</p>
+                  <p className="text-[12px] font-bold truncate leading-tight">Felix Kumar</p>
                   <p className="text-[10.5px] text-[#A1A1AA] truncate">felix@gmail.com</p>
                 </div>
                 <button onClick={() => toast.success("Felix profile active!")} className="p-1 text-[#A1A1AA] hover:text-white">
@@ -462,9 +462,9 @@ export default function InteractiveDashboardSimulator() {
           <main className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
 
             {/* Top navbar */}
-            <header className="h-16 flex items-center justify-between px-5 bg-[#111111] border-b border-white/[0.08] flex-shrink-0">
-              <h2 className="text-[19px] font-bold truncate">{pageTitle}</h2>
-              <div className="flex items-center gap-2">
+            <header className="h-14 flex items-center justify-between px-5 bg-[#111111] border-b border-white/[0.08] flex-shrink-0">
+              <h2 className="text-[17px] font-bold truncate">{pageTitle}</h2>
+              <div className="flex items-center gap-1.5">
                 {searchOpen ? (
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400" />
@@ -475,28 +475,28 @@ export default function InteractiveDashboardSimulator() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
-                      className="h-10 w-56 lg:w-72 pl-9 pr-3 rounded-full text-[13px] bg-white/[0.05] border border-cyan-500/60 outline-none text-[#F5F5F5] placeholder:text-[#A1A1AA]"
+                      className="h-9 w-56 lg:w-72 pl-9 pr-3 rounded-full text-[13px] bg-white/[0.05] border border-cyan-500/60 outline-none text-[#F5F5F5] placeholder:text-[#A1A1AA]"
                     />
                   </div>
                 ) : (
-                  <button onClick={() => setSearchOpen(true)} className="w-10 h-10 rounded-full flex items-center justify-center text-[#A1A1AA] hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer">
-                    <Search className="w-[18px] h-[18px]" />
+                  <button onClick={() => setSearchOpen(true)} className="w-9 h-9 rounded-full flex items-center justify-center text-[#A1A1AA] hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer">
+                    <Search className="w-4 h-4" />
                   </button>
                 )}
                 <button
                   onClick={() => toast.success("Dark mode is on in this demo")}
-                  className="relative h-8 w-14 rounded-full border border-white/10 bg-white/[0.07] flex items-center justify-between px-[7px] cursor-pointer"
+                  className="relative h-7 w-[50px] rounded-full border border-white/10 bg-white/[0.07] flex items-center justify-between px-[6px] cursor-pointer"
                   aria-label="Theme"
                 >
-                  <span className="absolute left-[5px] top-1/2 -translate-y-1/2 h-[22px] w-[22px] rounded-full bg-white shadow" />
-                  <Moon className="relative w-3.5 h-3.5 text-[#050505]" />
-                  <Sun className="relative w-3.5 h-3.5 text-[#A1A1AA]" />
+                  <span className="absolute left-[3px] top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-white shadow" />
+                  <Moon className="relative w-3 h-3 text-[#050505]" />
+                  <Sun className="relative w-3 h-3 text-[#A1A1AA]" />
                 </button>
-                <button onClick={() => toast.success("You're all caught up!")} className="relative w-10 h-10 rounded-full flex items-center justify-center text-[#A1A1AA] hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer">
-                  <Bell className="w-[18px] h-[18px]" />
-                  <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-[#F87171] ring-2 ring-[#111111]" />
+                <button onClick={() => toast.success("You're all caught up!")} className="relative w-9 h-9 rounded-full flex items-center justify-center text-[#A1A1AA] hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer">
+                  <Bell className="w-4 h-4" />
+                  <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#F87171] ring-2 ring-[#111111]" />
                 </button>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-sm font-bold text-white">FK</div>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-[12px] font-bold text-white ring-2 ring-white/10">FK</div>
               </div>
             </header>
 
@@ -504,7 +504,7 @@ export default function InteractiveDashboardSimulator() {
             <div className="flex-1 overflow-y-auto custom-scrollbar relative">
               <div className="pointer-events-none absolute -left-10 top-0 h-48 w-72 rounded-full bg-violet-500/5 blur-3xl" />
               <div className="pointer-events-none absolute right-0 top-0 h-48 w-72 rounded-full bg-cyan-500/5 blur-3xl" />
-              <div className="relative p-5">
+              <div className="relative p-5 lg:px-6">
                 <AnimatePresence mode="wait">
                   {activeTab === "dashboard" && renderDashboardView(calculatedData)}
                   {activeTab === "groups" && renderGroupsView(calculatedData)}
@@ -514,6 +514,9 @@ export default function InteractiveDashboardSimulator() {
                 </AnimatePresence>
               </div>
             </div>
+            {(activeTab === "dashboard" || activeTab === "groups") && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#050505] to-transparent" />
+            )}
           </main>
         </div>
       </div>
@@ -534,7 +537,7 @@ export default function InteractiveDashboardSimulator() {
         </div>
 
         <div className="flex-1 bg-[#050505] text-[#F5F5F5] overflow-y-auto custom-scrollbar flex flex-col pb-12">
-          <div className="px-4 py-2 border-b border-white/5 bg-[#111111] flex items-center justify-between">
+          <div className="sticky top-0 z-10 px-3.5 py-2 border-b border-white/5 bg-[#111111] flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <img src="/logo-icon-light.png" className="w-5 h-5 object-contain" alt="" />
               <span className="text-sm font-bold truncate">{pageTitle}</span>
@@ -587,70 +590,73 @@ export default function InteractiveDashboardSimulator() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="space-y-6 text-left"
+        className={`${isMobileFlow ? "space-y-4" : "space-y-5"} text-left`}
       >
         {/* Hero */}
-        <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div className={isMobileFlow ? "space-y-3" : "flex items-end justify-between gap-3 flex-wrap"}>
           <div>
             <div className="flex items-center gap-2.5">
-              <Hand className="w-7 h-7 text-amber-400 -rotate-12" />
-              <span className="text-[2.6rem] leading-none font-normal" style={{ fontFamily: "var(--font-satisfy), cursive" }}>Felix</span>
+              <Hand className={`${isMobileFlow ? "w-5 h-5" : "w-6 h-6"} text-amber-400 -rotate-12`} />
+              <span className={`${isMobileFlow ? "text-[1.7rem]" : "text-[2.1rem]"} leading-none font-normal`} style={{ fontFamily: "var(--font-satisfy), cursive" }}>Felix</span>
             </div>
-            <p className="mt-2 text-sm text-slate-400">Every rupee tracked. Every balance settled.</p>
+            <p className={`mt-1.5 ${isMobileFlow ? "text-[11px]" : "text-[13px]"} text-slate-400`}>Every rupee tracked. Every balance settled.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowAddExpenseModal(true)} className="h-11 px-4 rounded-xl border border-cyan-600/25 bg-cyan-500/10 text-cyan-300 text-sm font-semibold flex items-center gap-2 hover:bg-cyan-500/15 transition cursor-pointer">
-              <Split className="w-4 h-4" /> Quick Split
+          <div className={`flex items-center gap-2 ${isMobileFlow ? "[&>button]:flex-1 [&>button]:justify-center [&>button]:h-8 [&>button]:px-2 [&>button]:text-[12px] [&>button]:rounded-[10px]" : ""}`}>
+            <button onClick={() => setShowAddExpenseModal(true)} className="h-9 px-3.5 rounded-xl border border-cyan-600/25 bg-cyan-500/10 text-cyan-300 text-[13px] font-semibold flex items-center gap-1.5 hover:bg-cyan-500/15 transition cursor-pointer">
+              <Split className="w-3.5 h-3.5" /> Quick Split
             </button>
-            <button onClick={() => setShowAddGroupModal(true)} className="h-11 px-4 rounded-xl bg-gradient-to-br from-cyan-600 to-teal-700 text-white text-sm font-semibold flex items-center gap-2 shadow-[0_8px_20px_-10px_rgba(8,145,178,0.9)] hover:brightness-110 transition cursor-pointer">
-              <Plus className="w-4 h-4" /> New group
+            <button onClick={() => setShowAddGroupModal(true)} className="h-9 px-3.5 rounded-xl bg-gradient-to-br from-cyan-600 to-teal-700 text-white text-[13px] font-semibold flex items-center gap-1.5 shadow-[0_8px_20px_-10px_rgba(8,145,178,0.9)] hover:brightness-110 transition cursor-pointer">
+              <Plus className="w-3.5 h-3.5" /> New group
             </button>
           </div>
         </div>
 
         {/* Stats */}
-        <div className={`grid ${isMobileFlow ? "grid-cols-2" : "grid-cols-4"} gap-3`}>
-          <StatCard icon={Users} tile="bg-blue-400/10 text-blue-300" label="Total Groups" value={String(data.groups.length)} sub={`${activeGroups.length} currently active`} />
-          <StatCard icon={Calendar} tile="bg-violet-400/10 text-violet-300" label="Spent This Month" value={fmt(12450 + addedSpend)} sub="Mostly Food & Dining" />
-          <StatCard icon={ArrowUpRight} tile="bg-rose-400/10 text-rose-300" label="You Have to Pay" value={fmt(data.youOwe)} valueClass="text-rose-400" sub="Pending across your groups" />
-          <StatCard icon={Landmark} tile="bg-emerald-400/10 text-emerald-300" label="You're Owed" value={fmt(data.owed)} valueClass="text-emerald-400" sub="Waiting to come back to you" />
+        <div className={`grid ${isMobileFlow ? "grid-cols-2 gap-2" : "grid-cols-4 gap-3"}`}>
+          <StatCard compact={isMobileFlow} icon={Users} tile="bg-blue-400/10 text-blue-300" label="Total Groups" value={String(data.groups.length)} sub={isMobileFlow ? `${activeGroups.length} active now` : `${activeGroups.length} currently active`} />
+          <StatCard compact={isMobileFlow} icon={Calendar} tile="bg-violet-400/10 text-violet-300" label="Spent This Month" value={fmt(12450 + addedSpend)} sub={isMobileFlow ? "Mostly Food" : "Mostly Food & Dining"} />
+          <StatCard compact={isMobileFlow} icon={ArrowUpRight} tile="bg-rose-400/10 text-rose-300" label="You Have to Pay" value={fmt(data.youOwe)} valueClass="text-rose-400" sub={isMobileFlow ? "Pending in groups" : "Pending across your groups"} />
+          <StatCard compact={isMobileFlow} icon={Landmark} tile="bg-emerald-400/10 text-emerald-300" label="You're Owed" value={fmt(data.owed)} valueClass="text-emerald-400" sub={isMobileFlow ? "Coming back to you" : "Waiting to come back to you"} />
         </div>
 
         {/* Active Groups */}
-        <section className="space-y-3">
+        <section className={isMobileFlow ? "space-y-2" : "space-y-3"}>
           <SectionHeader
+            compact={isMobileFlow}
             icon={Users}
             tile="from-cyan-500/15 to-teal-500/10 text-[#0891B2] ring-[#0891B2]/15"
             title="Active Groups"
             subtitle="Quick access to your recent groups"
             onLink={() => goTab("groups")}
           />
-          <div className={`grid ${isMobileFlow ? "grid-cols-1" : "grid-cols-2"} gap-2.5`}>
+          <div className={`grid ${isMobileFlow ? "grid-cols-1 gap-1.5" : "grid-cols-2 gap-2.5"}`}>
             {activeGroups.slice(0, 6).map((g, i) => {
               const [a, b] = GROUP_GRADIENTS[i % GROUP_GRADIENTS.length];
               return (
                 <div
                   key={g.id}
                   onClick={() => { setSelectedGroupId(g.id); setActiveTab("group-detail"); }}
-                  className="group flex items-center gap-2.5 rounded-2xl border border-[#232323]/70 bg-[#111111] p-2.5 hover:border-[#0891B2]/40 transition cursor-pointer"
+                  className="group flex items-center gap-2.5 rounded-xl border border-[#232323]/70 bg-[#111111] p-2 hover:border-[#0891B2]/40 hover:bg-[#141414] transition cursor-pointer"
                 >
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ background: `linear-gradient(135deg, ${a}, ${b})` }}>
-                    {renderIcon(g.icon, "w-[18px] h-[18px]")}
+                  <div className="h-9 w-9 rounded-[10px] flex items-center justify-center shrink-0 text-white" style={{ background: `linear-gradient(135deg, ${a}, ${b})` }}>
+                    {renderIcon(g.icon, "w-4 h-4")}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold truncate">{g.name}</p>
-                    <p className="text-xs text-[#A1A1AA]">{g.members.length} members</p>
+                    <p className="text-[13px] font-bold truncate leading-tight">{g.name}</p>
+                    <p className="text-[11px] text-[#A1A1AA]">{g.members.length} members</p>
                   </div>
-                  <AvatarStack names={g.members} size={22} max={2} text="text-[8px]" ring="ring-[#111111]" />
+                  <AvatarStack names={g.members} size={20} max={2} text="text-[8px]" ring="ring-[#111111]" />
                   <button
                     onClick={(e) => { e.stopPropagation(); setExpGroup(g.id); setShowAddExpenseModal(true); }}
-                    className="h-7 w-7 rounded-full bg-[#0891B2]/10 text-[#0891B2] flex items-center justify-center shrink-0 hover:bg-[#0891B2] hover:text-white transition"
+                    className="h-6 w-6 rounded-full bg-[#0891B2]/10 text-[#0891B2] flex items-center justify-center shrink-0 hover:bg-[#0891B2] hover:text-white transition"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-3 h-3" />
                   </button>
-                  <span className="h-7 w-7 rounded-full bg-[#1A1A1A]/60 text-[#A1A1AA] group-hover:bg-[#0891B2] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
-                    <ChevronRight className="w-3.5 h-3.5" />
+                  {!isMobileFlow && (
+                  <span className="h-6 w-6 rounded-full bg-[#1A1A1A]/60 text-[#A1A1AA] group-hover:bg-[#0891B2] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                    <ChevronRight className="w-3 h-3" />
                   </span>
+                  )}
                 </div>
               );
             })}
@@ -658,21 +664,22 @@ export default function InteractiveDashboardSimulator() {
         </section>
 
         {/* Quick Splits */}
-        <section className="space-y-3">
+        <section className={isMobileFlow ? "space-y-2" : "space-y-3"}>
           <SectionHeader
+            compact={isMobileFlow}
             icon={Split}
             tile="from-cyan-500/15 to-sky-500/10 text-cyan-300 ring-cyan-500/15"
             title="Quick Splits"
             subtitle="One-off bills you split with friends"
           />
-          <div className="overflow-hidden rounded-2xl border border-[#232323] bg-[#111111]">
+          <div className="overflow-hidden rounded-xl border border-[#232323] bg-[#111111]">
             {QUICK_SPLITS.map((q) => (
-              <div key={q.title} className="flex items-center gap-3 px-4 py-3 border-b border-[#232323]/70 last:border-b-0 hover:bg-[#1A1A1A]/50 transition">
-                <div className="h-11 w-11 rounded-xl bg-cyan-500/10 text-cyan-300 flex items-center justify-center shrink-0">
-                  <Split className="w-5 h-5" />
+              <div key={q.title} className="flex items-center gap-3 px-3.5 py-2.5 border-b border-[#232323]/70 last:border-b-0 hover:bg-[#1A1A1A]/50 transition">
+                <div className="h-9 w-9 rounded-[10px] bg-cyan-500/10 text-cyan-300 flex items-center justify-center shrink-0">
+                  <Split className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold truncate">{q.title}</p>
+                  <p className="text-[13px] font-bold truncate">{q.title}</p>
                   <div className="mt-1 flex items-center gap-2 text-[11px] text-[#A1A1AA]">
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#1A1A1A] px-2 py-0.5"><Users className="w-2.5 h-2.5" />{q.people} people</span>
                     <span className="truncate">{q.name} owes you</span>
@@ -688,14 +695,15 @@ export default function InteractiveDashboardSimulator() {
         </section>
 
         {/* Recent Activity */}
-        <section className="space-y-3">
+        <section className={isMobileFlow ? "space-y-2" : "space-y-3"}>
           <SectionHeader
+            compact={isMobileFlow}
             icon={Receipt}
             tile="from-amber-500/15 to-orange-500/10 text-amber-400 ring-amber-500/15"
             title="Recent Activity"
             subtitle="Your latest expenses across every group"
           />
-          <div className="overflow-hidden rounded-2xl border border-[#232323] bg-[#111111]">
+          <div className="overflow-hidden rounded-xl border border-[#232323] bg-[#111111]">
             {expenses.filter((e) => e.kind !== "settlement").slice(0, 5).map((e, i) => {
               const acc = CATEGORY_ACCENT[e.category] || CATEGORY_ACCENT.general;
               const Icon = acc.icon;
@@ -707,16 +715,16 @@ export default function InteractiveDashboardSimulator() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
                   onClick={() => { setSelectedGroupId(e.groupId); setActiveTab("group-detail"); }}
-                  className="flex items-center gap-3 px-4 py-3 border-b border-[#232323]/70 last:border-b-0 hover:bg-[#1A1A1A]/50 transition cursor-pointer"
+                  className="flex items-center gap-3 px-3.5 py-2.5 border-b border-[#232323]/70 last:border-b-0 hover:bg-[#1A1A1A]/50 transition cursor-pointer"
                 >
-                  <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${acc.color}1A`, color: acc.color }}>
-                    <Icon className="w-5 h-5" />
+                  <div className="h-9 w-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: `${acc.color}1A`, color: acc.color }}>
+                    <Icon className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold truncate">{e.name}</p>
+                    <p className="text-[13px] font-bold truncate">{e.name}</p>
                     <div className="mt-1 flex items-center gap-2 text-[11px] text-[#A1A1AA] min-w-0">
                       <span className="inline-flex items-center gap-1 rounded-full bg-[#1A1A1A] px-2 py-0.5 shrink-0"><Users className="w-2.5 h-2.5" />{groupName}</span>
-                      <span className="inline-flex items-center gap-1 shrink-0"><Clock3 className="w-2.5 h-2.5" />{e.time}</span>
+                      {!isMobileFlow && <span className="inline-flex items-center gap-1 shrink-0"><Clock3 className="w-2.5 h-2.5" />{e.time}</span>}
                       <span className="truncate">{e.person === "Felix" ? "You paid" : `${e.person} paid`}</span>
                     </div>
                   </div>
@@ -928,7 +936,7 @@ export default function InteractiveDashboardSimulator() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="grid grid-cols-12 gap-3 h-[360px] text-left"
+        className={`grid grid-cols-12 gap-3 text-left ${isMobileFlow ? "h-[360px]" : "h-[460px] lg:h-[540px]"}`}
       >
         {!isMobileFlow && (
           <div className="col-span-4 rounded-2xl border border-[#232323] bg-[#111111] p-2 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
@@ -1023,7 +1031,7 @@ export default function InteractiveDashboardSimulator() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="flex flex-col h-[360px] bg-[#111111] border border-[#232323] rounded-2xl overflow-hidden relative text-left"
+        className={`flex flex-col bg-[#111111] border border-[#232323] rounded-2xl overflow-hidden relative text-left ${isMobileFlow ? "h-[360px]" : "h-[460px] lg:h-[540px]"}`}
       >
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar min-h-0">
           {aiMessages.map((m) => {
@@ -1362,33 +1370,68 @@ function AvatarStack({ names, size, max, text, ring, overlap = "-space-x-1.5", s
   );
 }
 
-function StatCard({ icon: Icon, tile, label, value, valueClass = "", sub }) {
+function StatCard({ icon: Icon, tile, label, value, valueClass = "", sub, compact = false }) {
+  if (compact) {
+    return (
+      <div className="relative overflow-hidden rounded-xl border border-[#232323] bg-gradient-to-b from-[#141414] to-[#0F0F0F] p-2.5">
+        <div className="pointer-events-none absolute -right-8 -top-8 h-16 w-16 rounded-full bg-cyan-400/[0.08] blur-2xl" />
+        <div className="relative flex items-start justify-between gap-1.5">
+          <div className="min-w-0">
+            <p className="text-[9.5px] font-semibold text-[#A1A1AA] whitespace-nowrap">{label}</p>
+            <p className={`mt-0.5 text-[17px] font-extrabold tracking-[-0.035em] leading-tight ${valueClass}`}>{value}</p>
+          </div>
+          <div className={`h-6 w-6 rounded-lg flex items-center justify-center shrink-0 ${tile}`}>
+            <Icon className="w-3 h-3" />
+          </div>
+        </div>
+        <p className="relative mt-1.5 text-[9px] text-[#A1A1AA] truncate">{sub}</p>
+      </div>
+    );
+  }
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[#232323] bg-[#111111] p-3.5">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-cyan-400/[0.07] blur-2xl" />
+    <div className="group/stat relative overflow-hidden rounded-xl border border-[#232323] bg-gradient-to-b from-[#141414] to-[#0F0F0F] p-3 transition-colors hover:border-white/15">
+      <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-cyan-400/[0.07] blur-2xl transition group-hover/stat:bg-cyan-400/[0.12]" />
       <div className="relative flex items-center gap-2.5">
-        <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${tile}`}>
-          <Icon className="w-5 h-5" />
+        <div className={`h-9 w-9 rounded-[10px] flex items-center justify-center shrink-0 ${tile}`}>
+          <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold text-[#A1A1AA] truncate">{label}</p>
-          <p className={`text-2xl font-extrabold tracking-[-0.035em] leading-tight truncate ${valueClass}`}>{value}</p>
+          <p className="text-[10.5px] font-semibold text-[#A1A1AA] truncate">{label}</p>
+          <p className={`text-xl font-extrabold tracking-[-0.035em] leading-tight truncate ${valueClass}`}>{value}</p>
         </div>
       </div>
-      <p className="relative mt-2.5 border-t border-white/[0.07] pt-2.5 text-[11px] text-[#A1A1AA] truncate">{sub}</p>
+      <p className="relative mt-2 border-t border-white/[0.07] pt-2 text-[10.5px] text-[#A1A1AA] truncate">{sub}</p>
     </div>
   );
 }
 
-function SectionHeader({ icon: Icon, tile, title, subtitle, onLink }) {
+function SectionHeader({ icon: Icon, tile, title, subtitle, onLink, compact = false }) {
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className={`h-7 w-7 rounded-lg bg-gradient-to-br ring-1 flex items-center justify-center shrink-0 ${tile}`}>
+          <Icon className="w-3.5 h-3.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[13px] font-bold tracking-tight leading-tight truncate">{title}</h3>
+          <p className="text-[9.5px] text-[#A1A1AA] truncate">{subtitle}</p>
+        </div>
+        {onLink && (
+          <button onClick={onLink} className="text-[10.5px] font-semibold text-[#0891B2] flex items-center gap-0.5 shrink-0 cursor-pointer">
+            View all <ArrowRight className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="flex items-center gap-3">
-      <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ring-1 flex items-center justify-center shrink-0 ${tile}`}>
-        <Icon className="w-5 h-5" />
+      <div className={`h-9 w-9 rounded-[10px] bg-gradient-to-br ring-1 flex items-center justify-center shrink-0 ${tile}`}>
+        <Icon className="w-[18px] h-[18px]" />
       </div>
       <div className="min-w-0 flex-1">
-        <h3 className="text-base font-bold tracking-tight">{title}</h3>
-        <p className="text-xs text-[#A1A1AA]">{subtitle}</p>
+        <h3 className="text-[15px] font-bold tracking-tight leading-tight">{title}</h3>
+        <p className="text-[11.5px] text-[#A1A1AA]">{subtitle}</p>
       </div>
       {onLink && (
         <button onClick={onLink} className="text-xs font-semibold text-[#0891B2] flex items-center gap-1 hover:underline shrink-0 cursor-pointer">
