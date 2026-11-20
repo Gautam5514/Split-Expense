@@ -64,7 +64,8 @@ export default async function BlogPostPage({ params }) {
   if (!post) notFound();
 
   const allPosts = await getAllPosts();
-  const related = allPosts.filter((p) => p.slug !== post.slug).slice(0, 3);
+  const candidates = allPosts.filter((p) => p.slug !== post.slug);
+  const related = [...candidates.filter((p) => p.category === post.category), ...candidates.filter((p) => p.category !== post.category)].slice(0, 3);
 
   const authorSchema = post.author
     ? {
@@ -180,11 +181,11 @@ export default async function BlogPostPage({ params }) {
 
       {/* ── Article body ── */}
       <article className="relative z-10 w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-6 -mt-14 sm:-mt-20 pb-6">
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0A0A0A]">
+        <div>
           {/* Original editorial cover art, unique to this guide. */}
-          <BlogCover post={post} />
+          <BlogCover post={post} editorial />
 
-          <div className="px-5 py-8 sm:px-11 sm:py-11 lg:px-16 lg:py-13">
+          <div className="relative px-2 pt-2 pb-8 sm:px-8 sm:pt-3 sm:pb-11 lg:px-12">
           {post.intro.map((para, i) => (
             <p
               key={i}
@@ -231,6 +232,26 @@ export default async function BlogPostPage({ params }) {
             </div>
           )}
 
+          {post.comparison && (
+            <section className="mt-10" aria-labelledby="comparison-heading">
+              <h2 id="comparison-heading" className="font-serif-premium text-2xl text-white mb-4">At a glance</h2>
+              <div className="overflow-x-auto rounded-2xl border border-cyan-400/20" tabIndex={0} role="region" aria-label={post.comparison.caption}>
+                <table className="w-full min-w-[560px] text-left text-sm leading-relaxed">
+                  <caption className="sr-only">{post.comparison.caption}</caption>
+                  <thead className="bg-cyan-400/[0.08] text-cyan-100">
+                    <tr>{post.comparison.columns.map((column) => <th key={column} scope="col" className="px-5 py-4">{column}</th>)}</tr>
+                  </thead>
+                  <tbody>{post.comparison.rows.map(([label, ...cells]) => (
+                    <tr key={label} className="border-t border-white/10">
+                      <th scope="row" className="px-5 py-4 align-top font-medium text-white/85">{label}</th>
+                      {cells.map((cell, i) => <td key={i} className={`px-5 py-4 align-top ${i === 0 ? "bg-cyan-400/[0.025] text-white/80" : "text-white/60"}`}>{cell}</td>)}
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
           {post.sections.map((section) => (
             <section key={section.h2} className="mt-10">
               <h2 className="font-serif-premium text-2xl sm:text-[1.7rem] text-white leading-snug mb-4">
@@ -253,6 +274,16 @@ export default async function BlogPostPage({ params }) {
               )}
             </section>
           ))}
+
+          {post.sources?.length > 0 && (
+            <aside className="mt-10 rounded-2xl border border-white/10 bg-white/[0.025] p-5" aria-label="Article sources">
+              <h2 className="text-sm font-semibold text-white">Sources & editorial note</h2>
+              <p className="mt-2 text-sm leading-relaxed text-white/55">Written by the SplitEase team. Competitor information reviewed on November 20, 2026; features and plans may change. Cover artwork is an original conceptual illustration.</p>
+              <ul className="mt-3 space-y-2">
+                {post.sources.map((source) => <li key={source.href}><a href={source.href} target="_blank" rel="noopener noreferrer" className="text-sm text-cyan-300 underline underline-offset-4 hover:text-cyan-100">{source.label}</a></li>)}
+              </ul>
+            </aside>
+          )}
 
           {/* FAQ (matches the FAQPage schema above) */}
           <section className="mt-12 border-t border-white/[0.08] pt-9">

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import AutopilotMark from "@/components/autopilot/AutopilotMark";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ChevronDown, ArrowRight, Sparkles, ScanLine, Handshake,
-  MessagesSquare, QrCode, ShieldCheck, Layers, Wand2,
+  MessagesSquare, QrCode, ShieldCheck, Layers,
 } from "lucide-react";
 import styles from "./FeaturesMenu.module.css";
 
@@ -17,7 +18,7 @@ const FEATURES = [
   { href: "/features/group-chat-hub",      icon: MessagesSquare, label: "Group Chat Hub",      desc: "Chat right next to your expenses" },
   { href: "/features/qr-invites",          icon: QrCode,         label: "QR & Link Invites",   desc: "Add friends with a scan or a link" },
   { href: "/features/secure-login",        icon: ShieldCheck,    label: "Secure OTP Login",    desc: "Passwordless, verified sign-in" },
-  { href: "/features/autopilot",           icon: Wand2,          label: "Autopilot",           desc: "Ask once, review, approve" },
+  { href: "/features/autopilot",           icon: AutopilotMark,  label: "Autopilot",           desc: "Ask once, review, approve" },
 ];
 
 /* Android robot in Android's own green. */

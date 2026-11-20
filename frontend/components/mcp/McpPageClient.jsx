@@ -305,6 +305,38 @@ const CAPABILITIES = [
     chat: { q: "Get me the invite link for Flatmates", ok: "Here's the link to share" },
   },
   {
+    title: "Many bills at once",
+    desc: "Paste a whole list or an itemised restaurant bill. Each item is split between the people who had it.",
+    rgb: "251,146,60",
+    rows: [
+      { a: "P", l: "Pizza · You, Riya", r: "₹600" },
+      { a: "W", l: "Wine · Riya", r: "₹300" },
+      { a: "S", l: "Service · Everyone", r: "₹100" },
+    ],
+  },
+  {
+    title: "Any currency",
+    desc: "Paid in dollars or baht on a trip? Today's exchange rate is applied for you.",
+    rgb: "56,189,248",
+    chat: { q: "Add $50 museum tickets to Goa Trip", ok: "Added ₹4,200 at today's rate" },
+  },
+  {
+    title: "Fix mistakes",
+    desc: "Rename a bill, change its category, or delete one you added. Balances update right away.",
+    rgb: "248,113,113",
+    chat: { q: "Delete the cab bill I added twice", ok: "Deleted, balances updated" },
+  },
+  {
+    title: "Quick split",
+    desc: "A one-off bill with people who are not in a group. Tick them off as they pay you back.",
+    rgb: "163,230,53",
+    rows: [
+      { a: "A", l: "Aman", r: "Paid", tone: "pos" },
+      { a: "R", l: "Riya", r: "₹1,050", tone: "neg" },
+      { a: "K", l: "Karan", r: "₹1,050", tone: "neg" },
+    ],
+  },
+  {
     title: "Monthly bills",
     desc: "Rent, WiFi and other monthly bills get added on their day. Pause or change them any time.",
     rgb: "250,204,21",
@@ -323,6 +355,12 @@ const PROMPTS = [
   "Create a trip group Manali from 20 to 25 Dec and invite aman@mail.com",
   "Add rent ₹30,000 every month on the 1st in Flatmates",
   "What did we spend most on in the Goa trip?",
+  "Add these to Goa Trip: cab 640, hotel 9500, scuba 3000 split with Aman",
+  "Split a ₹4,200 team lunch between me, Aman, Riya and Karan",
+  "Who has asked to join Book Club? Approve Omar",
+  "Add 'Day 2: Old Goa and the spice farm' to the Goa trip plan",
+  "Export the Goa trip expenses as a CSV",
+  "Anything new in my notifications?",
 ];
 
 const TRUST = [

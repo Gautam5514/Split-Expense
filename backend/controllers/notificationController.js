@@ -3,6 +3,7 @@ import Notification from "../models/notification.model.js";
 import User from "../models/userModel.js";
 import { io } from "../index.js";
 import admin from "../config/firebaseAdmin.js";
+import { MAX_WEB_PUSH_TOKENS, describePushReview, reviewPushResults } from "../utils/webPushTokens.js";
 import { RULES } from "../modules/engagement/config.js";
 
 
@@ -356,9 +357,10 @@ export const registerWebPushToken = async (req, res) => {
       { $pull: { webPushTokens: fcmToken } }
     );
 
-    // Add to this user if not already present
+    // Add it as this user's newest token, keeping only their most recent few so
+    // old browsers and rotated tokens don't pile up.
     await User.findByIdAndUpdate(uid, {
-      $addToSet: { webPushTokens: fcmToken },
+      $push: { webPushTokens: { $each: [fcmToken], $slice: -MAX_WEB_PUSH_TOKENS } },
     });
 
     res.json({ success: true });
@@ -442,27 +444,16 @@ const sendFCMWebPushNotifications = async (userIds, payload) => {
     );
 
     if (response.failureCount > 0) {
-      const staleTokens = [];
-      response.responses.forEach((resp, idx) => {
-        if (!resp.success) {
-          const code = resp.error?.code;
-          console.error(`❌ FCM token[${idx}] failed: ${code} - ${resp.error?.message}`);
-          if (
-            code === "messaging/invalid-registration-token" ||
-            code === "messaging/registration-token-not-registered"
-          ) {
-            staleTokens.push(tokens[idx]);
-          }
-        }
-      });
-
-      if (staleTokens.length) {
+      // Dead tokens are expected (cleared site data, revoked permission): clean up, say it once.
+      const review = reviewPushResults(response.responses, tokens);
+      if (review.drop.length) {
         await User.updateMany(
-          { webPushTokens: { $in: staleTokens } },
-          { $pull: { webPushTokens: { $in: staleTokens } } }
+          { webPushTokens: { $in: review.drop } },
+          { $pull: { webPushTokens: { $in: review.drop } } }
         );
-        console.log(`🧹 Removed ${staleTokens.length} stale FCM token(s)`);
       }
+      const needsAttention = review.kept > 0 || Object.keys(review.other).length > 0;
+      (needsAttention ? console.error : console.log)(`${needsAttention ? "❌" : "🧹"} FCM web push failures: ${describePushReview(review)}`);
     }
   } catch (err) {
     console.error("❌ FCM web push error:", err.message);
@@ -564,10 +555,7 @@ const sendEngagementWeb = async (users, byUser) => {
   for (const batch of chunk(messages, 500)) {
     try {
       const response = await admin.messaging().sendEach(batch);
-      response.responses.forEach((r, i) => {
-        const code = r.error?.code;
-        if (code === "messaging/invalid-registration-token" || code === "messaging/registration-token-not-registered") stale.push(batch[i].token);
-      });
+      stale.push(...reviewPushResults(response.responses, batch.map((msg) => msg.token)).drop);
     } catch (err) {
       console.error("❌ Engagement web push error:", err.message);
     }

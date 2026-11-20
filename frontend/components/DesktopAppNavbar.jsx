@@ -37,12 +37,17 @@ import { useNotifications } from "@/context/NotificationContext";
 import { useSidebar } from "@/context/SidebarContext";
 import useDebounce from "@/hooks/useDebounce";
 import ThemeToggle from "@/components/ThemeToggle";
+import { notificationTime, notificationTimeFull } from "@/lib/notificationTime";
+import { useAutopilotAvailable } from "@/components/autopilot/useAutopilotSession";
+import AutopilotMark from "@/components/autopilot/AutopilotMark";
+import { launchOnClick } from "@/components/autopilot/AutopilotLaunch";
 
 const SEARCH_ITEMS = [
   { href: "/users", label: "Home", description: "Overview, balances and recent activity", icon: Home },
   { href: "/chat", label: "Messages", description: "Direct conversations with friends", icon: MessageCircle },
   { href: "/dashboard", label: "Groups", description: "Create and manage expense groups", icon: PlusCircle },
   { href: "/groupchat", label: "Chatroom", description: "Conversations inside your groups", icon: MessageCircleMore },
+  { href: "/autopilot", label: "Autopilot", description: "Plan trips, split bills and settle up by asking", icon: AutopilotMark },
   { href: "/ai", label: "SplitEase AI", description: "Ask questions about your expenses", icon: Bot },
   { href: "/profile", label: "Profile", description: "Personal details and referrals", icon: User },
   { href: "/settings", label: "Settings", description: "Privacy and account preferences", icon: Settings },
@@ -56,6 +61,7 @@ const PAGE_TITLES = [
   { href: "/dashboard", title: "Groups" },
   { href: "/groups", title: "Group" },
   { href: "/groupchat", title: "Chatroom" },
+  { href: "/autopilot", title: "Autopilot" },
   { href: "/ai", title: "SplitEase AI" },
   { href: "/profile", title: "Profile" },
   { href: "/settings", title: "Settings" },
@@ -95,6 +101,7 @@ export default function DesktopAppNavbar() {
   const pathname = usePathname();
   const { token, setToken } = useAuth();
   const { collapsed } = useSidebar();
+  const autopilot = useAutopilotAvailable();
   const { notifications, hasUnread, setHasUnread, markAllAsRead, markOneAsRead, openPromo } = useNotifications();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -596,6 +603,24 @@ export default function DesktopAppNavbar() {
           </AnimatePresence>
         </div>
 
+        {autopilot && (
+          <Link
+            href="/autopilot"
+            onClick={launchOnClick}
+            aria-current={pathname === "/autopilot" ? "page" : undefined}
+            title="Plan, split and settle by asking"
+            className={`group relative flex h-10 items-center gap-2 overflow-hidden rounded-full px-4 text-[13px] font-semibold text-white outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-teal-400/60 active:scale-95 ${
+              pathname === "/autopilot"
+                ? "bg-[#176e61]"
+                : "bg-gradient-to-r from-[#176e61] to-[#0e8f86] shadow-[0_8px_22px_-12px_#0f766e] hover:shadow-[0_10px_26px_-10px_#0f766e]"
+            }`}
+          >
+            <span className="pointer-events-none absolute inset-y-0 -left-10 w-10 -skew-x-12 bg-white/25 opacity-0 transition-all duration-700 group-hover:left-[110%] group-hover:opacity-100" aria-hidden="true" />
+            <AutopilotMark size={24} />
+            Autopilot
+          </Link>
+        )}
+
         <ThemeToggle className="h-8 w-[56px]" />
 
         <div className="relative">
@@ -614,7 +639,7 @@ export default function DesktopAppNavbar() {
               <motion.div initial={{ opacity: 0, y: 6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.98 }} transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }} className="absolute right-0 top-[50px] w-[340px] max-w-[calc(100vw-1.5rem)] origin-top-right overflow-hidden rounded-2xl border border-border bg-menu-solid shadow-[0_18px_50px_-18px_rgba(0,0,0,0.35)]">
                 <div className="flex items-center justify-between border-b border-border px-4 py-3"><div><p className="text-[13px] font-bold text-foreground">Notifications</p><p className="mt-0.5 text-[11px] text-muted-foreground">{unreadCount ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}` : "You're all caught up"}</p></div>{notifications.length > 0 && <button type="button" onClick={markAllAsRead} className="text-xs font-bold text-cyan-600 hover:text-cyan-500 dark:text-cyan-400">Clear all</button>}</div>
                 {notifications.length ? (
-                  <div className="max-h-[340px] overflow-y-auto p-2 custom-scrollbar">{notifications.slice(0, 8).map((item, index) => { const ExpenseIcon = item.type === "promo" ? Sparkles : item.type === "expense" ? ReceiptText : UsersRound; return <button key={item._id || index} type="button" onClick={() => { setNotificationsOpen(false); if (item.type === "promo") return openPromo(item); markOneAsRead(item._id); router.push(item.link || "/dashboard"); }} className="flex w-full gap-3 rounded-xl p-3 text-left transition hover:bg-foreground/[0.045]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"><ExpenseIcon size={17} /></span><span className="min-w-0 flex-1"><span className="line-clamp-2 text-xs font-semibold leading-5 text-foreground/85">{item.title ? `${item.title} ${item.message}` : item.message}</span><span className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground"><Clock3 size={10} /> Recent update</span></span></button>; })}</div>
+                  <div className="max-h-[340px] overflow-y-auto p-2 custom-scrollbar">{notifications.slice(0, 8).map((item, index) => { const ExpenseIcon = item.type === "promo" ? Sparkles : item.type === "expense" ? ReceiptText : UsersRound; return <button key={item._id || index} type="button" onClick={() => { setNotificationsOpen(false); if (item.type === "promo") return openPromo(item); markOneAsRead(item._id); router.push(item.link || "/dashboard"); }} className="flex w-full gap-3 rounded-xl p-3 text-left transition hover:bg-foreground/[0.045]"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"><ExpenseIcon size={17} /></span><span className="min-w-0 flex-1"><span className="line-clamp-2 text-xs font-semibold leading-5 text-foreground/85">{item.title ? `${item.title} ${item.message}` : item.message}</span><span className="mt-1 flex items-center gap-1 text-[11px] tabular-nums text-muted-foreground" title={notificationTimeFull(item.createdAt)}><Clock3 size={11} /> {notificationTime(item.createdAt) || "Just now"}</span></span></button>; })}</div>
                 ) : (
                   <div className="flex items-center gap-3 px-4 py-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"><CheckCircle2 size={17} /></span><div><p className="text-[13px] font-semibold text-foreground">Nothing new</p><p className="text-[11px] text-muted-foreground">Updates from your groups will appear here.</p></div></div>
                 )}

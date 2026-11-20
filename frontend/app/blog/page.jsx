@@ -39,7 +39,7 @@ export default async function BlogPage() {
 
   // Only card-level fields cross the server→client boundary; shipping full
   // article bodies (sections, faqs) in the hydration payload would bloat the page.
-  // Ensure the Founder Story post stays at the head (featured post)
+  // Permanently pin the founder story. New posts must never replace it.
   const mappedPosts = allPosts.map(
     ({ slug, category, title, description, date, readTime, cover, author }) => ({
       slug, category, title, description, date, readTime, cover, author,
@@ -47,7 +47,7 @@ export default async function BlogPage() {
   );
 
   const featuredIndex = mappedPosts.findIndex(
-    (p) => p.slug === "gautam-pandit-founder-splitease-story" || p.category === "Founder Story"
+    (p) => p.slug === "gautam-pandit-founder-splitease-story"
   );
 
   let featured;

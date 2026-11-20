@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { notificationTime } from "@/lib/notificationTime";
 import socket, { connectSocket, disconnectSocket } from "@/lib/socket";
 import toast from "@/lib/toast";
 import { useAuth } from "@/context/AuthContext";
@@ -42,10 +43,7 @@ const getNotificationMeta = (type) => {
   };
 };
 
-const formatToastTime = (value) => {
-  if (!value) return "Just now";
-  return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-};
+const formatToastTime = (value) => notificationTime(value) || "Just now";
 
 const isMongoObjectId = (value) =>
   typeof value === "string" && /^[a-f\d]{24}$/i.test(value);
@@ -303,7 +301,8 @@ export function NotificationProvider({ children }) {
       seenNotifsRef.current.add(key);
       setTimeout(() => seenNotifsRef.current.delete(key), 3500);
 
-      setNotifications((prev) => [notif, ...prev]);
+      // Every notification carries when it arrived; stamp a live one that came without it.
+      setNotifications((prev) => [notif.createdAt ? notif : { ...notif, createdAt: new Date().toISOString() }, ...prev]);
       setHasUnread(true);
       playNotificationTune();
       toast.custom(

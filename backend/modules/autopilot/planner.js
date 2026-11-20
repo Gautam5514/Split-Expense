@@ -152,6 +152,133 @@ export function readCorrection(text, plan) {
   return null;
 }
 
+// ── Follow-ups to a group plan that is waiting ───────────────────────────────
+// A plan that creates a group (or adds people) is on screen, not approved yet, and
+// the user keeps talking about it: "add one more, x@y.com isko bhi add karo isme",
+// "Riya bhi", "remove Aman", "budget 4 lakh kar do", "call it Team Offsite",
+// "same group, the one we just made". The group does not exist yet, so read as a
+// fresh request these have nowhere to go and only produce "which group?" questions.
+// Here they patch the waiting request instead. Returns the new intent, or null when
+// the message is something else.
+const EMAILS = /[^\s<>,;:()]+@[^\s<>,;:()]+\.[a-z]{2,}/gi;
+const ADD_WORDS = /\b(add|include|invite|jod\w*|daal\w*|dal\s?do|shamil|bhi|also|too|one more|ek aur|aur ek)\b/i;
+const REMOVE_WORDS = /\b(remove|drop|exclude|without|hata\w*|nikal\w*)\b/i;
+const FOLLOWUP_FILLER = /\b(please|plz|pls|one more|ek aur|aur ek|isko|isse|inko|usko|unko|isme|ismein|is ?me|in (?:it|this|that|here)|(?:in|to) (?:the |this |that )?(?:same |new )?group|to (?:it|this|that)|as well|also|too|kar ?do|kar ?dena|karo|kro|krdo|kr do|person|member|people)\b/gi;
+const SAME_PLAN_WORDS = new Set(["in", "is", "isi", "issi", "usi", "same", "the", "this", "that", "wala", "wale", "wali", "group", "plan", "mai", "me", "mein", "main", "abhi", "jo", "banaya", "banaye", "bnaya", "bnaye", "bnye", "banya", "bana", "hai", "one", "we", "i", "just", "made", "created", "new", "it", "to", "ka", "ke", "ki", "yahi", "wahi", "haan", "yes", "only", "hi"]);
+const sameRef = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+export function readGroupFollowUp(text, intent) {
+  const raw = String(text || "").trim();
+  if (!raw || raw.length > 300 || !intent?.actions) return null;
+  const create = intent.actions.findIndex(a => a.type === "create_group");
+  const adding = intent.actions.findIndex(a => a.type === "add_members");
+  if (create < 0 && adding < 0) return null;
+  const next = structuredClone(intent);
+  const lists = next.actions.filter(a => a.type === "create_group" || a.type === "add_members").map(a => a.members);
+  const target = lists[0];
+  const known = (ref) => lists.some(list => list.some(m => sameRef(m, ref)));
+  const done = () => { const parsed = intentSchema.safeParse(next); return parsed.success ? parsed.data : null; };
+
+  const emails = [...new Set((raw.match(EMAILS) || []).map(e => e.replace(/[.!?,]+$/, "").toLowerCase()))];
+  // What is left once addresses and punctuation are gone, for reading the words around them.
+  const words = raw.replace(EMAILS, " ").replace(/[“”"'`]/g, "").replace(/[.!?…,;:()]+/g, " ").replace(/\s+/g, " ").trim();
+  const removeMatching = (refs) => {
+    let removed = 0;
+    for (const list of lists) for (let i = list.length - 1; i >= 0; i--) {
+      if (refs.some(r => sameRef(list[i], r) || list[i].trim().toLowerCase().split(/\s+/)[0] === r.trim().toLowerCase())) { list.splice(i, 1); removed++; }
+    }
+    return removed;
+  };
+
+  // 1. Email addresses: add them, unless the words say remove.
+  if (emails.length) {
+    if (/\d/.test(words.replace(/\b\d{1,2}\b/g, ""))) return null; // an amount alongside: not just about people
+    if (REMOVE_WORDS.test(words)) return removeMatching(emails) ? done() : null;
+    const rest = words.replace(FOLLOWUP_FILLER, " ").replace(ADD_WORDS, " ").replace(/\s+/g, " ").trim();
+    if (rest.split(" ").filter(Boolean).length > 6) return null; // a longer sentence: let it be read properly
+    emails.filter(e => !known(e)).forEach(e => target.push(e));
+    return done();
+  }
+
+  // 2. Budget.
+  let m;
+  if (/\bbudget\b/i.test(words) && (m = raw.match(/(?:₹|rs\.?\s*|inr\s*)?(\d[\d,]*(?:\.\d{1,2})?)\s*(k|l|lakhs?|lacs?)?\b/i)) && !/\b(alert|notify|monitor)\b/i.test(words)) {
+    const amount = toAmount(m[1], m[2] ? (/^k$/i.test(m[2]) ? "k" : "l") : undefined);
+    const budget = next.actions.find(a => a.type === "set_group_budget");
+    if (budget) budget.amount = amount; else next.actions.push({ type: "set_group_budget", amount });
+    return done();
+  }
+
+  // 3. The group's name.
+  if (create >= 0 && (m = raw.replace(/[.!]+$/, "").match(/^(?:call it|rename(?: it| the group)? to|name it|group (?:ka )?name(?: is| rakho)?)\s+(.{2,100})$/i))) {
+    next.actions[create].name = capitalise(m[1].replace(/^["“']|["”']$/g, ""));
+    return done();
+  }
+
+  // 4. People by name.
+  const personNames = (chunk) => {
+    const names = namesOf(chunk.replace(FOLLOWUP_FILLER, " ").replace(/\s+/g, " ").trim());
+    return names.length && names.every(n => n.length <= 40 && n.split(" ").length <= 3 && !/\d/.test(n) && !ADD_WORDS.test(n) && !REMOVE_WORDS.test(n)) ? names : null;
+  };
+  if ((m = words.match(/^(?:remove|drop|exclude)\s+(.+)$/i) || words.match(/^(.+?)\s+ko\s+(?:hata|nikal)\w*(?:\s+(?:do|dena|de))?$/i))) {
+    const names = personNames(m[1]);
+    return names && removeMatching(names) ? done() : null;
+  }
+  if ((m = words.match(/^(?:also\s+)?(?:add|include|invite)\s+(.+)$/i) || words.match(/^(.+?)\s+(?:ko\s+)?bhi(?:\s+(?:add|jod\w*|daal\w*|shamil)\b.*)?$/i))) {
+    const names = personNames(m[1]);
+    if (!names) return null;
+    names.filter(n => !known(n)).forEach(n => target.push(n));
+    return done();
+  }
+
+  // 5. "Same group, the one we just made": nothing to change, show the plan again.
+  const nameWords = new Set(next.actions.flatMap(a => (a.type === "create_group" ? a.name.toLowerCase().split(/\s+/) : [])));
+  const said = words.toLowerCase().split(" ").filter(Boolean);
+  const pointing = said.some(w => ["same", "isi", "issi", "usi", "this", "that", "abhi", "yahi", "wahi", "just"].includes(w) || nameWords.has(w));
+  if (said.length && said.length <= 12 && pointing && said.every(w => SAME_PLAN_WORDS.has(w) || nameWords.has(w))) return done();
+  return null;
+}
+
+// ── "What should the group be called?" → the reply is the name ───────────────
+// Autopilot asked for a group name and the user typed one ("my-own"). That reply is
+// the answer; it must never be read as a new instruction or lead to the same
+// question again. readNameAnswer recognises the situation and returns the name;
+// applyGroupName puts it into whatever was understood from the original request.
+const ASKED_FOR_NAME = /\bname\b[^.?!]*\b(group|trip|plan|it)\b|\b(group|trip|plan)\b[^.?!]*\bname\b|\bwhat (?:should|shall|do) (?:i|we|you) (?:call|name)\b|\bcall (?:it|the group|this group)\b|\bnaam\b/i;
+const NOT_A_NAME = /^(no|nope|nah|cancel|stop|nahi|nahin|skip|leave it|rehne do|yes|ok|okay|haan|ha|ji|what|why|kya|kyu|kyun|help)$/i;
+export function readNameAnswer(text, parent) {
+  if (parent?.status !== "clarification_required") return null;
+  const asked = [parent.intent?.clarification, ...(parent.plan?.clarifications || [])].filter(Boolean).join(" ");
+  if (!ASKED_FOR_NAME.test(asked)) return null;
+  // A structured question (pick a person, give an email) is answered another way.
+  if ((parent.plan?.questions || []).length) return null;
+  let name = String(text || "").trim().replace(/\s+/g, " ");
+  name = name.replace(/^(?:(?:the\s+)?(?:group(?:'s)?\s+)?name\s*(?:is|:|=|rakho|rakh do|hoga)?|call it|name it|it(?:'s| is)|naam\s*(?:hai|rakho|:)?)\s+/i, "");
+  name = name.replace(/\s+(?:hai|rakho|rakh do|is the name|naam hai)$/i, "").replace(/^["“'`]+|["”'`.!]+$/g, "").trim();
+  if (name.length < 2 || name.length > 100 || name.split(" ").length > 8) return null;
+  if (name.includes("@") || name.includes("?") || /\n/.test(name) || NOT_A_NAME.test(name)) return null;
+  return name;
+}
+export function applyGroupName(intent, name, originalMessage = "") {
+  const next = structuredClone(intent);
+  let group = next.actions.find(a => a.type === "create_group");
+  if (group) {
+    group.name = name;
+    if (next.clarification && ASKED_FOR_NAME.test(next.clarification)) next.clarification = null;
+  } else {
+    // Nothing was built yet because the name was missing: build it from what the request did say.
+    const adding = next.actions.filter(a => a.type === "add_members");
+    group = { type: "create_group", name, members: adding.flatMap(a => a.members), groupType: null };
+    next.actions = [group, ...next.actions.filter(a => a.type !== "add_members")];
+    next.clarification = null;
+  }
+  if (!group.members.length) {
+    // The people named by email in the request are never dropped on the way.
+    group.members = [...new Set((String(originalMessage).match(EMAILS) || []).map(e => e.replace(/[.!?,]+$/, "").toLowerCase()))].slice(0, 20);
+  }
+  next.groupName = null; // the name belongs to the new group, not to an existing one to look up
+  return intentSchema.parse(next);
+}
+
 // Deliberately narrow offline grammar; unsupported language must clarify, never guess.
 // It covers the widget's own example prompts so a provider outage still feels useful.
 export function parseLocal(message) {
@@ -310,6 +437,7 @@ Rules:
 - groupType: "roommate" for flats/homes, "trip" for travel or when a budget is set, "business" for work; null if unclear.
 - People: use create_group.members for people named while creating a group, and add_members for "add Sagar to this group". Keep each person exactly as written (a name like "Sagar" or an email like "ravi@x.com"); never invent emails. Do not include the user ("me") in members.
 - The request may have several lines. Later lines are the user's answers or corrections to earlier ones and override them (e.g. a line "Ravi: ravi@x.com" gives Ravi's email; "make it 9000" changes the amount). Output the final merged intent.
+- Group names: when the user asks to create a group/trip/plan without spelling out a name, use their own words as the name ("create a business plan" -> name "Business plan"; "make a group for the Goa trip" -> "Goa trip"). Only ask for a name when they gave no words at all to use. A line like Group name: "my-own" is the user's answer to that question: use it exactly as the name and do not ask again.
 - Greetings or questions about what you can do: no actions, and a friendly one-sentence "clarification" that says what you can do.
 - Unsupported (payments, editing old expenses, deleting other people's expenses, receipts, recurring schedules, currency conversion): return no action for it and explain in "clarification" (one short sentence, max 400 chars).
 - If a needed fact is missing (no amount, ambiguous request), add a short "clarification" question instead of guessing.

@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import PDFDocument from "pdfkit";
+import { loadStatementAvatars } from "./statementAvatars.js";
+import { publicWebUrl } from "./publicUrl.js";
 import { drawIcon, drawIconBadge } from "./brandIcons.js";
 import { buildSettlement, to2 } from "../controllers/balanceController.js";
 
@@ -37,7 +39,7 @@ export function buildReportData({ group, members, expenses, completedByName = ""
     members.map((m) => [
       sid(m),
       {
-        userId: sid(m), name: label(sid(m)), email: m.email || "",
+        userId: sid(m), name: label(sid(m)), email: m.email || "", photoURL: m.photoURL || "",
         paid: 0, share: 0, settlementsSent: 0, settlementsReceived: 0,
         paidCount: 0, biggestPaid: null,
       },
@@ -272,7 +274,8 @@ const avatarColors = (name) => {
  * @param {string} [o.viewerId] member the copy is for - adds their "Your position" card
  * @param {string} [o.refId]    reference shown in the header/footer
  */
-export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
+export async function renderReportPdf(data, { viewerId = null, refId = "", avatarImages = null } = {}) {
+  const photos = avatarImages ?? await loadStatementAvatars(data.members);
   return new Promise((resolve, reject) => {
     const { fonts, logo, logoLight } = loadAssets();
     const doc = new PDFDocument({
@@ -321,7 +324,17 @@ export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
       doc.fontSize(size);
       return Math.min(doc.heightOfString(s, { width, lineGap: 1.5 }), lines * size * 1.42);
     };
-    const avatar = (name, cx, cy, d) => {
+    const avatar = (name, cx, cy, d, userId) => {
+      const photo = photos.get(userId);
+      if (photo) {
+        doc.save();
+        try {
+          doc.circle(cx, cy, d / 2).clip();
+          doc.image(photo, cx - d / 2, cy - d / 2, { cover: [d, d], align: "center", valign: "center" });
+          doc.restore();
+          return;
+        } catch { doc.restore(); }
+      }
       const [bg, fg] = avatarColors(name);
       doc.circle(cx, cy, d / 2).fill(bg);
       const s = d * 0.4;
@@ -364,7 +377,10 @@ export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
     const band = doc.linearGradient(0, 0, W, 132);
     band.stop(0, K.night).stop(1, K.night2);
     doc.rect(0, 0, W, 132).fill(band);
-    if (logo) doc.image(logo, M - 4, 36, { width: 58, height: 58 });
+    if (logoLight || logo) {
+      doc.roundedRect(M - 2, 36, 58, 58, 14).fill("#FFFFFF");
+      doc.image(logoLight || logo, M + 3, 41, { width: 48, height: 48 });
+    }
     doc.font(font.BRAND).fontSize(24).fillColor("#FFFFFF").text("SplitEase", M + 64, 44, { lineBreak: false });
     T("SETTLEMENT STATEMENT", M + 65, 76, { size: 8, weight: "SB", color: "#67E8F9", spacing: 1.6 });
     const meta = [
@@ -405,7 +421,7 @@ export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
     // ── Status hero ──
     {
       const ok = data.fullySettled;
-      const h = 96;
+      const h = 104;
       doc.roundedRect(M, y, CW, h, 14).fillAndStroke(ok ? K.greenSoft : K.cyanSoft, ok ? K.greenLine : K.cyanLine);
       drawIconBadge(doc, ok ? "check" : "clock", M + 38, y + 38, 40, { bg: ok ? K.green : K.cyan, fg: "#FFFFFF", ratio: 0.5 });
       const tx = M + 74, tw = CW - 74 - 22;
@@ -415,49 +431,43 @@ export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
         : `${data.remaining.length} payment${data.remaining.length === 1 ? "" : "s"} will clear every balance. See "Settle up" below.`,
         tx, y + 43, { size: 9.5, color: K.body, width: tw });
       // progress of paying back
-      const by = y + 70, pct = Math.max(0, Math.min(100, data.totals.settledPct));
+      const by = y + 72, pct = Math.max(0, Math.min(100, data.totals.settledPct ?? (ok ? 100 : 0)));
       doc.roundedRect(tx, by, tw - 80, 6, 3).fill("#FFFFFF");
       if (pct > 0) doc.roundedRect(tx, by, Math.max(6, ((tw - 80) * pct) / 100), 6, 3).fill(ok ? K.green : K.cyan);
-      T(`${pct}% paid back`, tx + tw - 74, by - 3, { size: 8.5, weight: "SB", color: ok ? K.green : K.cyanDark, width: 74, align: "right" });
+      T(`${pct}% settled`, tx + tw - 74, by - 3, { size: 8.5, weight: "SB", color: ok ? K.green : K.cyanDark, width: 74, align: "right" });
+      T(`${money(data.totals.settledAmount)} confirmed · ${money(data.totals.outstanding)} remaining`, tx, by + 12, { size: 7.5, color: K.mute, width: tw });
       y += h + 18;
     }
 
-    // ── Your position (personal copy) ──
+    // ── Personal balance: plain ledger hierarchy, no decorative gradient card.
     if (me) {
       const pays = data.remaining.filter((t) => t.fromId === me.userId);
       const gets = data.remaining.filter((t) => t.toId === me.userId);
-      const todo = [...pays.map((t) => ["Pay", t.to, t.amount, K.red]), ...gets.map((t) => ["From", t.from, t.amount, K.green])];
+      const todo = [...pays.map((t) => ["Pay", t.to, t.amount]), ...gets.map((t) => ["Receive from", t.from, t.amount])];
       const shown = todo.slice(0, 4);
-      const h = Math.max(104, 62 + shown.length * 20 + (todo.length > 4 ? 14 : 0));
-      ensure(h + 18);
-      doc.roundedRect(M, y, CW, h, 14).fillAndStroke("#FFFFFF", K.line);
-      doc.save(); doc.roundedRect(M, y, CW, h, 14).clip(); gradientBar(M, y, 4, h); doc.restore();
-      drawIconBadge(doc, "user", M + 30, y + 26, 24, { bg: K.violetSoft, fg: K.violet, ratio: 0.55 });
-      T("YOUR POSITION", M + 48, y + 21, { size: 7.5, weight: "SB", color: K.mute, spacing: 1.2 });
+      const h = 116 + shown.length * 18 + (todo.length > 4 ? 14 : 0);
+      ensure(h + 16);
+      T("YOUR BALANCE", M, y, { size: 7.5, weight: "SB", color: K.mute, spacing: 1.2 });
       const bal = me.finalBalance;
       const settledMe = data.fullySettled || Math.abs(bal) < 0.01;
-      T(settledMe ? "You're all square" : bal < 0 ? `You pay ${money(-bal)}` : `You receive ${money(bal)}`,
-        M + 20, y + 42, { size: 18, weight: "B", color: settledMe ? K.green : bal < 0 ? K.red : K.green, width: CW * 0.55 });
-      let ly = y + 70;
-      for (const [verb, who, amt, col] of shown) {
-        drawIcon(doc, "arrowRight", M + 20, ly + 1, 10, col);
-        T(`${verb} ${clean(who)}`, M + 36, ly, { size: 9.5, weight: "M", color: K.body, width: CW * 0.3 });
-        T(money(amt), M + 36 + CW * 0.3, ly, { size: 9.5, weight: "SB", color: K.ink, width: CW * 0.62 - 36 - CW * 0.3 - 34, align: "right" });
-        ly += 20;
+      T(settledMe ? "Nothing left to settle" : bal < 0 ? `You owe ${money(-bal)}` : `You're owed ${money(bal)}`,
+        M, y + 19, { size: 23, weight: "B", color: K.ink, width: CW });
+      let ly = y + 55;
+      if (!shown.length) T("Your payments and shares are balanced.", M, ly, { size: 9, color: K.mute });
+      for (const [verb, who, amt] of shown) {
+        T(`${verb} ${clean(who)}`, M, ly, { size: 9.5, color: K.body, width: CW - 120 });
+        T(money(amt), W - M - 115, ly, { size: 10, weight: "SB", width: 115, align: "right" });
+        ly += 18;
       }
-      if (todo.length > 4) T(`and ${todo.length - 4} more in "Settle up"`, M + 36, ly, { size: 8.5, color: K.mute });
-      if (!todo.length) T("Nothing left for you to pay or collect.", M + 20, ly, { size: 9.5, color: K.body });
-      // right column: the numbers behind it
-      const rx = M + CW * 0.62, rw = CW * 0.38 - 20;
-      doc.moveTo(rx - 14, y + 18).lineTo(rx - 14, y + h - 18).lineWidth(0.6).strokeColor(K.line).stroke();
-      [["You paid", money(me.paid)], ["Your share", money(me.share)],
-        ["Settled", me.settlementsSent || me.settlementsReceived ? `${me.settlementsSent ? `sent ${money(me.settlementsSent)}` : ""}${me.settlementsSent && me.settlementsReceived ? " · " : ""}${me.settlementsReceived ? `got ${money(me.settlementsReceived)}` : ""}` : "none yet"]]
-        .forEach(([k, v], i) => {
-          const ry = y + 18 + i * 28;
-          T(k, rx, ry, { size: 8, color: K.mute, width: rw });
-          T(v, rx, ry + 10, { size: 10.5, weight: "SB", color: K.ink, width: rw });
-        });
-      y += h + 18;
+      if (todo.length > 4) { T(`See Settle up for ${todo.length - 4} more payments.`, M, ly, { size: 8, color: K.mute }); ly += 14; }
+      const sy = y + h - 32;
+      doc.moveTo(M, sy - 10).lineTo(W - M, sy - 10).lineWidth(0.6).strokeColor(K.line).stroke();
+      [["YOU PAID", money(me.paid)], ["YOUR SHARE", money(me.share)], ["CONFIRMED", `Sent ${money(me.settlementsSent)} / received ${money(me.settlementsReceived)}`]].forEach(([label, value], i) => {
+        const x = M + i * CW / 3;
+        T(label, x, sy, { size: 7, weight: "SB", color: K.mute, spacing: 0.6 });
+        T(value, x, sy + 13, { size: i === 2 ? 8 : 11, weight: "SB", width: CW / 3 - 12 });
+      });
+      y += h + 16;
     }
 
     // ── KPI cards ──
@@ -493,11 +503,11 @@ export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
         ensure(46);
         const mine = me && (t.fromId === me.userId || t.toId === me.userId);
         doc.roundedRect(M, y, CW, 40, 10).fillAndStroke(mine ? K.violetSoft : "#FFFFFF", mine ? "#DDD6FE" : K.line);
-        avatar(t.from, M + 24, y + 20, 24);
+        avatar(t.from, M + 24, y + 20, 24, t.fromId);
         T(t.from, M + 42, y + 14, { size: 10, weight: "SB", color: K.ink, width: 140 });
         drawIcon(doc, "arrowRight", M + 192, y + 13, 14, K.faint);
-        avatar(t.to, M + 230, y + 20, 24);
-        T(t.to, M + 248, y + 14, { size: 10, weight: "SB", color: K.ink, width: 140 });
+        avatar(t.to, M + 230, y + 20, 24, t.toId);
+        T(t.to, M + 248, y + 14, { size: 10, weight: "SB", color: K.ink, width: 120 });
         T(money(t.amount), M + CW - 130, y + 13, { size: 11.5, weight: "B", color: K.ink, width: 114, align: "right" });
         y += 46;
       }
@@ -521,7 +531,7 @@ export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
         if (y + 46 > BOTTOM) { newPage(); head(); }
         if (i % 2 === 0) doc.roundedRect(M, y, CW, 44, 8).fill(K.page);
         const isMe = me && r.userId === me.userId;
-        avatar(r.name, M + 26, y + 22, 26);
+        avatar(r.name, M + 26, y + 22, 26, r.userId);
         T(r.name, M + 46, y + 10, { size: 10, weight: "SB", color: K.ink, width: isMe ? 110 : 150 });
         if (isMe) {
           setFont("SB", r.name); doc.fontSize(10);
@@ -549,40 +559,37 @@ export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
       data.categories.forEach((c, i) => {
         ensure(26);
         const pct = data.totals.totalSpent ? (c.amount / data.totals.totalSpent) * 100 : 0;
-        T(cap(c.name), M, y + 1, { size: 9.5, weight: "M", color: K.ink, width: 110 });
-        const bx = M + 118, bw = CW - 118 - 150;
-        doc.roundedRect(bx, y + 3, bw, 8, 4).fill(K.wash);
-        doc.roundedRect(bx, y + 3, Math.max(8, (bw * pct) / 100), 8, 4).fill(BARS[i % BARS.length]);
-        T(`${pct.toFixed(pct >= 10 ? 0 : 1)}%`, bx + bw + 10, y + 1, { size: 9, weight: "SB", color: K.ink, width: 44, align: "right" });
-        T(money(c.amount), bx + bw + 58, y + 1, { size: 9, color: K.mute, width: 92, align: "right" });
+        const label = cap(c.name);
+        T(label, M, y + 1, { size: 9.5, weight: "M", color: K.ink, width: 145 });
+        setFont("M", clean(label));
+        doc.fontSize(9.5);
+        const leaderX = M + Math.min(doc.widthOfString(clean(label)), 145) + 12;
+        // A short dotted leader follows the label, never spans the whole row.
+        doc.save().moveTo(leaderX, y + 8).lineTo(leaderX + 36, y + 8)
+          .lineWidth(0.7).dash(1, { space: 3 }).strokeColor(K.line).stroke().restore();
+        T(`${pct.toFixed(pct >= 10 ? 0 : 1)}%`, M + 215, y + 1, { size: 8.5, color: K.mute, width: 80 });
+        T(money(c.amount), W - M - 125, y, { size: 10, weight: "SB", color: K.ink, width: 125, align: "right" });
         y += 24;
       });
+      doc.moveTo(M, y + 2).lineTo(W - M, y + 2).lineWidth(0.5).strokeColor(K.line).stroke();
       y += 8;
     }
 
-    // ── Insights ──
+    // Two useful details, without repeating the category and member tables.
     const ins = data.insights || {};
-    const cards = [
-      ins.biggestExpense && ["receipt", "Biggest expense", ins.biggestExpense.description, `${money(ins.biggestExpense.amount)} · paid by ${clean(ins.biggestExpense.paidBy)}`],
-      ins.topContributor && ["award", "Top contributor", ins.topContributor.name, `${money(ins.topContributor.amount)} · ${ins.topContributor.pct}% of all spending`],
-      ins.busiestDay && ["calendar", "Busiest day", fmtDate(ins.busiestDay.date), `${money(ins.busiestDay.amount)} across ${ins.busiestDay.count} expense${ins.busiestDay.count === 1 ? "" : "s"}`],
-      ins.topCategory && ["trendingUp", "Top category", cap(ins.topCategory.name), `${money(ins.topCategory.amount)} · ${ins.topCategory.pct}% of spending`],
+    const highlights = [
+      ins.biggestExpense && ["LARGEST BILL", ins.biggestExpense.description, `${money(ins.biggestExpense.amount)} · paid by ${clean(ins.biggestExpense.paidBy)}`],
+      ins.busiestDay && ["BUSIEST DAY", fmtDate(ins.busiestDay.date), `${money(ins.busiestDay.amount)} across ${ins.busiestDay.count} expense${ins.busiestDay.count === 1 ? "" : "s"}`],
     ].filter(Boolean);
-    if (cards.length) {
-      section("Highlights", "sparkles");
-      const gap = 12, cw = (CW - gap) / 2, h = 62;
-      cards.forEach((c, i) => {
-        if (i % 2 === 0) ensure(h + 12);
-        const x = M + (i % 2) * (cw + gap);
-        const [icon, label, value, sub] = c;
-        doc.roundedRect(x, y, cw, h, 12).fillAndStroke("#FFFFFF", K.line);
-        drawIconBadge(doc, icon, x + 26, y + 31, 30, { bg: K.violetSoft, fg: K.violet, ratio: 0.5 });
-        T(label.toUpperCase(), x + 50, y + 13, { size: 6.8, weight: "SB", color: K.mute, spacing: 0.8, width: cw - 62 });
-        T(value, x + 50, y + 25, { size: 11, weight: "B", color: K.ink, width: cw - 62 });
-        T(sub, x + 50, y + 41, { size: 8, color: K.mute, width: cw - 62 });
-        if (i % 2 === 1 || i === cards.length - 1) y += h + 12;
+    if (highlights.length) {
+      ensure(64);
+      highlights.forEach(([label, value, sub], i) => {
+        const x = M + i * (CW + 16) / 2;
+        T(label, x, y + 14, { size: 7, weight: "SB", color: K.mute, spacing: 0.8, width: (CW - 16) / 2 });
+        T(value, x, y + 27, { size: 11, weight: "SB", width: (CW - 16) / 2 });
+        T(sub, x, y + 43, { size: 8, color: K.mute, width: (CW - 16) / 2 });
       });
-      y += 4;
+      y += 64;
     }
 
     // ── Settlements recorded ──
@@ -648,31 +655,46 @@ export function renderReportPdf(data, { viewerId = null, refId = "" } = {}) {
       }
     }
 
-    // ── How to read this ──
+    // Compact glossary: keep the statement easy to understand and save pages.
     {
-      const lines = [
-        ["Paid", "money a member put in for the group's expenses."],
-        ["Share", "their part of every expense, as it was split."],
-        ["Balance", "paid minus share, after settlements. \"Gets\" means they receive money, \"Pays\" means they still owe."],
-        ["Settle up", "the fewest payments that bring every balance to zero."],
+      const terms = [
+        ["Paid", "What a member paid for group expenses."],
+        ["Share", "Their portion of the recorded expenses."],
+        ["Balance", "Paid minus share, adjusted for confirmed payments."],
+        ["Settle up", "Suggested transfers to clear the remaining balances."],
       ];
-      const rowH = lines.map(([, v]) => textH(v, CW - 120, 8.5, "R", 2) + 6);
-      const h = 44 + rowH.reduce((a, b) => a + b, 0);
-      ensure(h + 30);
-      y += 6;
-      doc.roundedRect(M, y, CW, h, 12).fill(K.page);
-      drawIcon(doc, "info", M + 16, y + 14, 14, K.cyan);
-      T("How to read this statement", M + 38, y + 15, { size: 10, weight: "SB", color: K.ink });
-      let ly = y + 38;
-      lines.forEach(([k, v], i) => {
-        T(k, M + 38, ly, { size: 8.5, weight: "SB", color: K.ink, width: 60 });
-        T(v, M + 100, ly, { size: 8.5, color: K.body, width: CW - 120, lines: 2 });
-        ly += rowH[i];
+      ensure(100);
+      doc.roundedRect(M, y, CW, 72, 10).fill(K.page);
+      terms.forEach(([label, value], i) => {
+        const x = M + 14 + (i % 2) * CW / 2;
+        const ty = y + 12 + Math.floor(i / 2) * 29;
+        T(label, x, ty, { size: 8, weight: "SB", width: CW / 2 - 28 });
+        T(value, x, ty + 12, { size: 7.5, color: K.mute, width: CW / 2 - 28, lines: 2 });
       });
-      y += h + 14;
-      T(`Generated by SplitEase on ${fmtDate(data.completedAt)}${data.completedByName ? ` · ${clean(data.completedByName)}` : ""}. Figures come straight from the group's expenses in the app.`,
-        M, y, { size: 7.5, color: K.faint, width: CW, lines: 2 });
+      y += 82;
+      T(`Issued ${fmtDate(data.completedAt)} · From this group's recorded expenses and confirmed settlements.`, M, y, { size: 7, color: K.faint, width: CW });
+      y += 16;
     }
+
+    // A light cyan brand close complements the charcoal opening header.
+    const compactClose = BOTTOM - y < 84;
+    const closeHeight = compactClose ? 36 : 70;
+    ensure(closeHeight);
+    doc.roundedRect(M, y, CW, closeHeight, 10).fillAndStroke(K.cyanSoft, K.cyanLine);
+    const site = `${publicWebUrl()}/register`;
+    if (compactClose) {
+      T("Share the moments. Split the rest.", M + 14, y + 11, { size: 11, weight: "B", color: K.ink, width: CW * 0.65 });
+      T("Start a free group →", M + CW * 0.65, y + 13, { size: 8.5, weight: "SB", color: K.cyanDark, width: CW * 0.35 - 14, align: "right" });
+      doc.link(M + CW * 0.65, y, CW * 0.35, closeHeight, site);
+    } else {
+      T("FOR YOUR NEXT TOGETHER", M + 18, y + 15, { size: 7, weight: "SB", color: K.cyanDark, spacing: 1.1, width: CW - 170 });
+      const bx = W - M - 134;
+      doc.roundedRect(bx, y + 10, 116, 23, 11.5).fill(K.night);
+      T("Start a free group →", bx, y + 17, { size: 8, weight: "SB", color: "#FFFFFF", width: 116, align: "center" });
+      doc.link(bx, y + 10, 116, 23, site);
+      T("Share the moments. Split the rest.", M + 18, y + 38, { size: 18, weight: "B", color: K.ink, width: CW - 36 });
+    }
+    y += closeHeight;
 
     // ── Footer on every page ──
     const range = doc.bufferedPageRange();

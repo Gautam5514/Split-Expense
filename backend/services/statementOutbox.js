@@ -15,6 +15,7 @@ import Group from "../models/groupModel.js";
 import { StatementBatch, StatementDelivery } from "../models/statementEmailModel.js";
 import { sendEmail } from "../utils/emailService.js";
 import { isPermanentRecipientError } from "../utils/emailErrors.js";
+import { loadStatementAvatars } from "../utils/statementAvatars.js";
 import { renderReportPdf } from "../utils/settlementReport.js";
 import { createNotification } from "../controllers/notificationController.js";
 import { notifyGroupChange } from "../utils/realtime.js";
@@ -197,7 +198,7 @@ async function deliverDue(now) {
     const key = String(batchId);
     if (!ctxCache.has(key)) {
       const batch = await StatementBatch.findById(batchId).lean();
-      ctxCache.set(key, batch ? { batch, fileName: reportFileName(batch.snapshot) } : null);
+      ctxCache.set(key, batch ? { batch, fileName: reportFileName(batch.snapshot), avatarImages: await loadStatementAvatars(batch.snapshot.members) } : null);
     }
     return ctxCache.get(key);
   };
@@ -224,16 +225,16 @@ async function deliverDue(now) {
     try {
       const refId = String(d._id).slice(-8).toUpperCase();
       // Every member gets their own copy: "Prepared for" them, with their position on page 1.
-      const pdf = await renderReportPdf(ctx.batch.snapshot, { viewerId: String(d.userId), refId });
+      const pdf = await renderReportPdf(ctx.batch.snapshot, { viewerId: String(d.userId), refId, avatarImages: ctx.avatarImages });
       const { images, ...content } = buildMemberEmail(ctx.batch.snapshot, { ...member, email: d.to }, {
-        appUrl: appBaseUrl(), reason: ctx.batch.reason, refId, fileName: ctx.fileName,
+        appUrl: appBaseUrl(), reason: ctx.batch.reason, refId, fileName: ctx.fileName, avatarImages: ctx.avatarImages,
       });
       const info = await sendEmail({
         to: d.to,
         ...content,
         attachments: [
           { filename: ctx.fileName, content: pdf, contentType: "application/pdf" },
-          ...emailImageAttachments(images),
+          ...emailImageAttachments(images, ctx.avatarImages),
         ],
         headers: {
           "X-Mailin-Tag": `settlement-statement-${ctx.batch.reason}`, // Brevo dashboard tag

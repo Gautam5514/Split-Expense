@@ -2,7 +2,7 @@ import Group from "../../../models/groupModel.js";
 import Expense from "../../../models/expenseModel.js";
 import { computeGroupBalances } from "../../../controllers/balanceController.js";
 import { resolveMember } from "../resolve.js";
-import { currencyOf, DESTRUCTIVE, fail, IDEMPOTENT_WRITE, money, ok, person, READ, round2, WRITE } from "../helpers.js";
+import { currencyOf, DESTRUCTIVE, fail, IDEMPOTENT_WRITE, money, normText, ok, person, READ, round2, WRITE } from "../helpers.js";
 
 const GROUP_TYPES = ["roommate", "trip", "business", "general"];
 const CURRENCIES = ["INR", "USD", "EUR", "GBP", "AED", "THB", "SGD", "JPY", "AUD", "CAD", "NPR", "LKR", "MYR", "IDR", "VND"];
@@ -148,7 +148,8 @@ export function registerGroupTools(ctx) {
         billDay: z.number().int().min(1).max(28).optional().describe("Day of month bills are due (roommate groups)."),
         receiptRequired: z.boolean().optional().describe("Require a receipt photo on every expense."),
         joinApproval: z.boolean().optional().describe("You approve anyone joining by link."),
-        memberEmails: z.array(z.string().trim().email()).max(20).optional().describe("People to add/invite right away."),
+        memberEmails: z.array(z.string().trim().email()).max(20).optional().describe("People to add/invite right away, by email."),
+        members: z.array(z.string().trim().min(1).max(200)).max(20).optional().describe("People to add right away: emails or names of existing contacts."),
       },
       annotations: WRITE,
     },
@@ -156,6 +157,10 @@ export function registerGroupTools(ctx) {
       const groupType = args.groupType || "roommate";
       const built = settingsBody(args, groupType);
       if (built.error) return fail(built.error);
+      // Resolve people BEFORE creating, so an unknown name never leaves a half-made group behind.
+      const invitees = await peopleToEmails(ctx, [...(args.memberEmails || []), ...(args.members || [])]);
+      if (invitees.error) return fail(invitees.error);
+      if (invitees.emails.length > 20) return fail("Add at most 20 people when creating a group; add the rest with add_members.");
 
       const created = await ctx.call("createGroup", { body: { name: args.name.trim(), groupType, ...built.body } });
       if (created.error) {
@@ -171,8 +176,8 @@ export function registerGroupTools(ctx) {
         summary: `Created ${groupType} group "${g.name}".`,
       };
 
-      if (args.memberEmails?.length) {
-        const added = await ctx.call("addMembersByEmail", { params: { groupId: String(g._id) }, body: { emails: args.memberEmails } });
+      if (invitees.emails.length) {
+        const added = await ctx.call("addMembersByEmail", { params: { groupId: String(g._id) }, body: { emails: invitees.emails } });
         if (added.error) {
           out.membersError = added.data?.message || "Couldn't add members.";
           out.summary += ` Adding members failed: ${out.membersError}`;
@@ -244,18 +249,24 @@ export function registerGroupTools(ctx) {
     {
       title: "Add members",
       description:
-        "Add people to a group by email (creator only, max 20 at a time). People are only added with consent: known " +
-        "contacts join directly, other SplitEase users get an invite to accept, and unknown emails get a join link by email.",
+        "Add people to a group (creator only, max 20 at a time). Give each person as an email, or as the name of someone " +
+        "the user already shares a group with. People are only added with consent: known contacts join directly, other " +
+        "SplitEase users get an invite to accept, and unknown emails get a join link by email.",
       inputSchema: {
         group: groupRef,
-        emails: z.array(z.string().trim().email()).min(1).max(20),
+        people: z.array(z.string().trim().min(1).max(200)).min(1).max(20).optional().describe('Emails or contact names, e.g. ["riya@mail.com", "Aman"].'),
+        emails: z.array(z.string().trim().email()).min(1).max(20).optional().describe("Emails only (same as people)."),
       },
       annotations: WRITE,
     },
-    async ({ group: ref, emails }) => {
+    async ({ group: ref, people = [], emails = [] }) => {
       const r = await ctx.group(ref);
       if (r.error) return r.error;
-      const res = await ctx.call("addMembersByEmail", { params: { groupId: String(r.group._id) }, body: { emails } });
+      const resolved = await peopleToEmails(ctx, [...emails, ...people]);
+      if (resolved.error) return fail(resolved.error);
+      if (!resolved.emails.length) return fail("Who should be added? Pass people: emails or contact names.");
+      if (resolved.emails.length > 20) return fail("Add at most 20 people at a time.");
+      const res = await ctx.call("addMembersByEmail", { params: { groupId: String(r.group._id) }, body: { emails: resolved.emails } });
       if (res.error) return res.error;
       const outcome = membersOutcome(res.data);
       return ok({ group: r.group.name, ...outcome });
@@ -323,6 +334,68 @@ export function registerGroupTools(ctx) {
       if (d.pending) return ok({ pending: true, group: d.group?.name, summary: d.message });
       const name = d.group?.name || d.name;
       return ok({ id: d.group?._id || d._id, group: name, summary: `You're in "${name}".` });
+    },
+  );
+
+  tool(
+    "list_group_invites",
+    {
+      title: "List pending invites & join requests",
+      description:
+        "Creator only. People invited to a group who haven't answered yet, and people who asked to join by link and are " +
+        "waiting for approval (when the group uses join approval).",
+      inputSchema: { group: groupRef },
+      annotations: READ,
+    },
+    async ({ group: ref }) => {
+      const r = await ctx.group(ref);
+      if (r.error) return r.error;
+      if (!isCreatorOf(r.group, uid) && String(r.group.createdBy) !== String(ctx.user.firebaseUid || "")) {
+        return fail(`Only the creator of "${r.group.name}" can see its pending invites and join requests.`);
+      }
+      const res = await ctx.call("getGroupInvites", { params: { groupId: String(r.group._id) } });
+      if (res.error) return res.error;
+      const row = (x) => ({ inviteId: x._id, name: x.user?.name, email: x.user?.email, since: x.createdAt, expiresAt: x.expiresAt });
+      const requests = (res.data?.requests || []).map(row);
+      const invites = (res.data?.invites || []).map(row);
+      return ok({
+        group: r.group.name,
+        joinRequests: requests,
+        pendingInvites: invites,
+        summary:
+          requests.length || invites.length
+            ? `"${r.group.name}": ${requests.length} join request${requests.length === 1 ? "" : "s"} to answer, ${invites.length} invite${invites.length === 1 ? "" : "s"} not answered yet.`
+            : `Nobody is waiting to join "${r.group.name}".`,
+      });
+    },
+  );
+
+  tool(
+    "manage_group_invite",
+    {
+      title: "Approve / decline a join request, or cancel an invite",
+      description:
+        "Creator only. approve lets someone who asked to join into the group. decline turns their request down. cancel " +
+        "withdraws an invite the user sent. Ids come from list_group_invites.",
+      inputSchema: {
+        group: groupRef,
+        inviteId: ctx.objectId,
+        action: z.enum(["approve", "decline", "cancel"]),
+      },
+      annotations: WRITE,
+    },
+    async ({ group: ref, inviteId, action }) => {
+      const r = await ctx.group(ref);
+      if (r.error) return r.error;
+      const params = { groupId: String(r.group._id), inviteId };
+      const res = await ctx.call(action === "approve" ? "approveJoinRequest" : "cancelGroupInvite", { params });
+      if (res.error) return res.error;
+      const done = {
+        approve: `Approved. They are now a member of "${r.group.name}".`,
+        decline: `Declined the request to join "${r.group.name}".`,
+        cancel: `Cancelled the invite to "${r.group.name}".`,
+      }[action];
+      return ok({ group: r.group.name, inviteId, action, summary: done });
     },
   );
 
@@ -404,4 +477,38 @@ function membersOutcome(d = {}) {
     members: (d.group?.members || []).map(person),
     summary: parts.length ? `Members: ${parts.join("; ")}.` : "Nobody new was added (they may already be members).",
   };
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Turns ["riya@mail.com", "Aman"] into emails. A name must match exactly one
+ * of the user's contacts (people they already share a group with); anything
+ * else comes back as a question, so nobody is invited by mistake.
+ */
+async function peopleToEmails(ctx, refs) {
+  const emails = [];
+  const push = (e) => { if (!emails.includes(e)) emails.push(e); };
+  for (const raw of refs || []) {
+    const ref = String(raw).trim();
+    if (!ref) continue;
+    if (ref.includes("@")) {
+      if (!EMAIL.test(ref)) return { error: `"${ref}" is not a full email address.` };
+      push(ref.toLowerCase());
+      continue;
+    }
+    const res = await ctx.call("getContacts", { query: { q: ref } });
+    if (res.error) return { error: res.data?.message || "Couldn't look up contacts." };
+    const q = normText(ref);
+    const list = res.data || [];
+    let hits = list.filter((c) => normText(c.name) === q);
+    if (!hits.length) hits = list.filter((c) => normText(c.name).split(" ")[0] === q);
+    if (!hits.length) hits = list.filter((c) => normText(c.name).includes(q));
+    if (!hits.length) return { error: `I couldn't find "${ref}" among the people you share groups with. Ask the user for their email address.` };
+    if (hits.length > 1) {
+      return { error: `"${ref}" matches several people: ${hits.slice(0, 8).map((c) => `${c.name} <${c.email}>`).join(", ")}. Ask which one, then pass their email.` };
+    }
+    push(String(hits[0].email).toLowerCase());
+  }
+  return { emails };
 }

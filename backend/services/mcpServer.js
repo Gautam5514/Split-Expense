@@ -21,7 +21,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { invokeController, loadControllers } from "./mcp/bridge.js";
 import { resolveGroup } from "./mcp/resolve.js";
-import { fail, internalFail } from "./mcp/helpers.js";
+import { createWriteLimiter, fail, internalFail, withTimeout } from "./mcp/helpers.js";
 import { registerAccountTools } from "./mcp/tools/account.js";
 import { registerGroupTools } from "./mcp/tools/groups.js";
 import { registerExpenseTools } from "./mcp/tools/expenses.js";
@@ -29,23 +29,40 @@ import { registerSettlementTools } from "./mcp/tools/settlements.js";
 import { registerInviteTools } from "./mcp/tools/invites.js";
 import { registerRecurringTools } from "./mcp/tools/recurring.js";
 import { registerSmartTools, registerSmartPrompts } from "./mcp/tools/smart.js";
+import { registerPeopleTools } from "./mcp/tools/people.js";
+import { registerQuickSplitTools } from "./mcp/tools/quickSplit.js";
+import { registerCollabTools } from "./mcp/tools/collab.js";
 
-export const SERVER_VERSION = "2.1.0";
+export const SERVER_VERSION = "3.0.0";
+
+const envInt = (name, fallback) => {
+  const n = Number.parseInt(process.env[name] ?? "", 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+};
+// A tool that hangs would stall the assistant's whole turn; cut it off instead.
+const TOOL_TIMEOUT_MS = envInt("MCP_TOOL_TIMEOUT_MS", 25_000);
+const SLOW_TOOL_MS = 5_000;
+// Shared across requests (the server itself is rebuilt per request).
+export const writeLimiter = createWriteLimiter({ limit: envInt("MCP_WRITES_PER_MIN", 60) });
 
 export const SERVER_INSTRUCTIONS = `SplitEase tracks shared expenses in groups (trips, flatmates, teams) and works out who owes whom.
 
 How to use these tools well:
-- Refer to groups and people the way the user does. Every "group" argument takes a group name or id, and member arguments take a name, an email or "me". If a tool says a name is ambiguous, ask the user which one they meant. Don't guess.
+- Refer to groups and people the way the user does. Every "group" argument takes a group name or id, and member arguments take a name, an email or "me". Small typos are forgiven. If a tool says a name is ambiguous, ask the user which one they meant. Don't guess.
 - For open-ended questions ("catch me up", "anything I need to pay?") call get_action_items first: it lists what to pay, confirm or answer, with the tool to use next.
-- If you're unsure which group the user means, call list_groups first.
+- If you're unsure which group the user means, call list_groups first. To find a bill, person or group by a word, use search.
 - add_expense always records the signed-in user as the payer. Nobody can log a bill in someone else's name. If someone else paid, they add it from their own account. To record money changing hands, use settle_up.
-- Amounts are in the group's currency (get_group shows it). For a bill in another currency, pass currency, originalAmount and fxRate. Don't invent an exchange rate; ask the user for it.
-- With no split details, a bill uses the group's default split across all members. Use splitWith for a subset of people, and splitType + splitDetails for exact amounts, percentages or shares.
-- People join with consent. add_members adds known contacts directly, sends other SplitEase users an invite they must accept, and emails a join link to unknown addresses. Report exactly what the tool says happened.
+- Several bills at once (a list, a trip recap): use add_expenses, one call for up to 20 bills in the same group.
+- Splits: no split details = the group's default split across all members. splitWith = a subset, split equally. splitType + splitDetails = exact amounts, percentages or shares. items = an itemised bill where each item is shared by the people who had it.
+- Other currencies: pass currency and originalAmount. SplitEase looks up today's exchange rate by itself; pass fxRate only if the user gives their own rate. get_exchange_rate shows a rate without adding anything.
+- Fixing mistakes: update_expense changes a bill's description, category or notes. To change an amount or split, delete_expense and add it again. Only the person who added a bill can change or delete it, and settle-up payments can't be deleted.
+- People join with consent. add_members takes emails or the names of people the user already shares a group with; known contacts join directly, other SplitEase users get an invite they must accept, and unknown addresses get a join link by email. Report exactly what the tool says happened.
 - settle_up: if the user says they paid someone, that person must confirm, so the payment stays pending until they do. If the user says someone paid them, it is recorded straight away.
-- Confirm with the user before destructive tools: delete_group, remove_member, leave_group, delete_recurring_bill.
+- A one-off bill with people who are not in a group (dinner with colleagues): use create_quick_split, then mark_quick_split_paid as people pay.
+- Confirm with the user before destructive tools: delete_group, delete_expense, remove_member, leave_group, delete_recurring_bill, delete_quick_split. Also ask before send_group_message, since it posts in the group chat under the user's name.
 - When a group is completed or fully settled, SplitEase emails every member a PDF statement automatically. send_group_statement only re-sends it; get_statement_status shows who received it.
-- Write tools return a "summary" sentence you can relay as-is. Changes show up live in the SplitEase web and mobile apps.`;
+- Write tools return a "summary" sentence you can relay as-is. Changes show up live in the SplitEase web and mobile apps.
+- If a tool says there were too many changes or that it timed out, don't retry in a loop. For a timeout, check whether the change went through first.`;
 
 /**
  * @param {{ id: string, email: string, name: string, firebaseUid?: string }} authedUser
@@ -86,11 +103,33 @@ export function buildSplitEaseMcpServer(authedUser) {
      * logged and reported generically, never leaked.
      */
     tool(name, def, handler) {
+      const isWrite = def?.annotations?.readOnlyHint !== true;
       server.registerTool(name, def, async (args, extra) => {
+        if (isWrite) {
+          const slot = writeLimiter.take(uid);
+          if (!slot.ok) {
+            return fail(`Too many changes in a short time. Wait about ${slot.retryInSec} seconds, then continue. Nothing was changed by this call.`);
+          }
+        }
+        const started = Date.now();
         try {
-          return await handler(args || {}, extra);
+          return await withTimeout(
+            Promise.resolve().then(() => handler(args || {}, extra)),
+            TOOL_TIMEOUT_MS,
+            () => {
+              console.error(`❌ MCP tool ${name} timed out after ${TOOL_TIMEOUT_MS}ms`);
+              return fail(
+                isWrite
+                  ? "This is taking longer than expected. It may still have gone through, so check (for example with list_expenses or get_group) before trying again."
+                  : "This is taking longer than expected. Please try again in a moment.",
+              );
+            },
+          );
         } catch (e) {
           return internalFail(name, e);
+        } finally {
+          const ms = Date.now() - started;
+          if (ms >= SLOW_TOOL_MS) console.warn(`⏱️ MCP tool ${name} took ${ms}ms`);
         }
       });
     },
@@ -129,6 +168,9 @@ export function buildSplitEaseMcpServer(authedUser) {
   registerInviteTools(ctx);
   registerRecurringTools(ctx);
   registerSmartTools(ctx);
+  registerPeopleTools(ctx);
+  registerQuickSplitTools(ctx);
+  registerCollabTools(ctx);
   registerSmartPrompts(ctx);
 
   return server;

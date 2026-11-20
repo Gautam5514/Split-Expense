@@ -10,6 +10,7 @@ import { createRun, decide, executeRun, event } from "./run.service.js";
 import { checkBudgets } from "./monitor.service.js";
 import { describeProviders } from "./llm.js";
 import { realtime } from "./domain.js";
+import { peopleDirectory } from "./people.js";
 const router = express.Router();
 const STALE_MS = 2 * 60_000;
 if (process.env.NODE_ENV !== "test") {
@@ -41,8 +42,10 @@ const present = run => {
   const stale = ["planning", "running"].includes(data.status) && Date.now() - new Date(data.updatedAt).getTime() > STALE_MS;
   return { ...data, runId: String(run._id), writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true", stale };
 };
-router.get("/capabilities", (req,res) => res.json({ enabled: true, writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true", ai: describeProviders(), provider: describeProviders().provider, monitoring: "on_demand", features: ["edit_plan", "read_overall", "list_expenses", "group_types", "delete", "complete_group", "send_statement"] }));
+router.get("/capabilities", (req,res) => res.json({ enabled: true, writesEnabled: process.env.AUTOPILOT_WRITES_ENABLED === "true", ai: describeProviders(), provider: describeProviders().provider, monitoring: "on_demand", features: ["edit_plan", "read_overall", "list_expenses", "group_types", "delete", "complete_group", "send_statement", "people_photos"] }));
 router.get("/groups", route(async (req,res) => res.json(await Group.find({ members: req.user.id }).select("name settings.currency groupType photo.url").limit(100).lean())));
+// Faces for the plan cards (who owes, who gets back, who is being added).
+router.get("/people", route(async (req,res) => res.json(await peopleDirectory(req.user.id))));
 router.post("/runs", route(async (req,res) => {
   const run = await createRun(req.user, req.body);
   res.status(201).json(present(run));

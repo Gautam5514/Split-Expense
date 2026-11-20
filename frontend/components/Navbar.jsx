@@ -21,6 +21,10 @@ import ThemeToggle from "@/components/ThemeToggle";
 import useCoins from "@/hooks/useCoins";
 import FeaturesMenu from "@/components/FeaturesMenu";
 import { PlayStoreNavLink } from "@/components/PlayStoreLink";
+import { useAutopilotAvailable } from "@/components/autopilot/useAutopilotSession";
+import AutopilotMark from "@/components/autopilot/AutopilotMark";
+import { launchOnClick } from "@/components/autopilot/AutopilotLaunch";
+import { notificationTime, notificationTimeFull } from "@/lib/notificationTime";
 
 const NAV_LINKS = [
   { href: "/users",      icon: Home,             label: "Home" },
@@ -94,6 +98,7 @@ export default function Navbar() {
   };
 
   const isLoggedIn = !!token;
+  const autopilot = useAutopilotAvailable();
 
   const getNotificationMeta = (type) => {
     if (type === "promo") return {
@@ -108,17 +113,6 @@ export default function Navbar() {
       label: "Group", Icon: UsersRound,
       iconClass: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-cyan-500/15",
     };
-  };
-
-  const formatNotificationTime = (value) => {
-    if (!value) return "";
-    const date = new Date(value);
-    const diff = Math.floor((Date.now() - date) / 60000);
-    if (diff < 1) return "Just now";
-    if (diff < 60) return `${diff}m ago`;
-    if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
-    if (diff < 10080) return `${Math.floor(diff / 1440)}d ago`;
-    return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
   useEffect(() => {
@@ -230,6 +224,20 @@ export default function Navbar() {
           {/* Right Controls */}
           <div className="flex items-center gap-1 sm:gap-2">
 
+            {/* Autopilot */}
+            {isLoggedIn && autopilot && (
+              <Link
+                href="/autopilot"
+                onClick={launchOnClick}
+                aria-label="Autopilot"
+                title="Autopilot"
+                className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold text-white transition-all active:scale-95 sm:h-9 ${pathname === "/autopilot" ? "bg-[#176e61]" : "bg-gradient-to-r from-[#176e61] to-[#0e8f86]"}`}
+              >
+                <AutopilotMark size={22} />
+                <span>Autopilot</span>
+              </Link>
+            )}
+
             {/* Notifications */}
             {isLoggedIn && (
               <div className="relative" ref={notifRef}>
@@ -307,9 +315,9 @@ export default function Navbar() {
                                       <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                                         {label}
                                       </span>
-                                      <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+                                      <span className="flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-muted-foreground" title={notificationTimeFull(n.createdAt)}>
                                         <Clock3 size={11} />
-                                        {formatNotificationTime(n.createdAt)}
+                                        {notificationTime(n.createdAt) || "Just now"}
                                       </span>
                                     </div>
                                     <p className="line-clamp-2 text-sm font-medium leading-5 text-foreground/80 group-hover:text-foreground">

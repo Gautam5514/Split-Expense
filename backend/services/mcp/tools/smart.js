@@ -5,7 +5,10 @@ import Expense from "../../../models/expenseModel.js";
 import Group from "../../../models/groupModel.js";
 import SettlementRequest from "../../../models/settlementRequestModel.js";
 import { computeGroupBalances, buildSettlement } from "../../../controllers/balanceController.js";
-import { currencyOf, money, ok, READ, round2, WRITE } from "../helpers.js";
+import { getRate } from "../../../utils/fxRates.js";
+import { currencyOf, fail, money, ok, READ, round2, WRITE } from "../helpers.js";
+
+const CURRENCIES = ["INR", "USD", "EUR", "GBP", "AED", "THB", "SGD", "JPY", "AUD", "CAD", "NPR", "LKR", "MYR", "IDR", "VND"];
 
 const idOf = (v) => String(v?._id ?? v);
 const CONCURRENCY = 5;
@@ -121,6 +124,75 @@ export function registerSmartTools(ctx) {
     },
   );
 
+  // ── find anything ───────────────────────────────────────────────────────
+  tool(
+    "search",
+    {
+      title: "Search SplitEase",
+      description:
+        "Search everything the user can see for a word: their groups (by name), the people they split with, and expenses " +
+        "in any of their groups (by description). Use when the user mentions a bill or name without saying which group.",
+      inputSchema: { query: z.string().trim().min(1).max(100) },
+      annotations: READ,
+    },
+    async ({ query }) => {
+      const res = await ctx.call("globalSearch", { query: { q: query } });
+      if (res.error) return res.error;
+      const d = res.data || {};
+      const groups = (d.groups || []).map((g) => ({ id: g.id, name: g.title, groupType: g.groupType, memberCount: g.memberCount }));
+      const people = (d.people || []).map((p) => ({ id: p.id, name: p.title, email: p.subtitle, isContact: !!p.isContact }));
+      const expenses = (d.expenses || []).map((e) => ({ expenseId: e.id, description: e.title, amount: e.amount, group: e.groupName, groupId: e.groupId }));
+      const total = groups.length + people.length + expenses.length;
+      return ok({
+        query,
+        groups,
+        people,
+        expenses,
+        summary: total
+          ? `"${query}": ${groups.length} group${groups.length === 1 ? "" : "s"}, ${people.length} ${people.length === 1 ? "person" : "people"}, ${expenses.length} expense${expenses.length === 1 ? "" : "s"}. Showing the best matches of each; list_expenses with search finds every match in one group.`
+          : `Nothing found for "${query}".`,
+      });
+    },
+  );
+
+  tool(
+    "get_exchange_rate",
+    {
+      title: "Get exchange rate",
+      description:
+        "Today's exchange rate between two currencies, and optionally what an amount converts to. add_expense applies the " +
+        "rate by itself, so this is only for showing the user a conversion before they decide.",
+      inputSchema: {
+        from: z.enum(CURRENCIES),
+        to: z.enum(CURRENCIES),
+        amount: z.number().positive().max(99999999).optional(),
+      },
+      annotations: { ...READ, openWorldHint: true },
+    },
+    async ({ from, to, amount }) => {
+      let r;
+      try {
+        r = await getRate(from, to);
+      } catch (e) {
+        if (e?.status) return fail(e.message);
+        throw e;
+      }
+      const rate = Number(r.rate.toFixed(6));
+      const converted = amount !== undefined ? round2(amount * r.rate) : undefined;
+      return ok({
+        from,
+        to,
+        rate,
+        asOf: r.fetchedAt,
+        ...(converted !== undefined ? { amount, converted } : {}),
+        summary:
+          converted !== undefined
+            ? `${money(amount, from)} is about ${money(converted, to)} (1 ${from} = ${rate} ${to}).`
+            : `1 ${from} = ${rate} ${to}.`,
+      });
+    },
+  );
+
   // ── settlement statement email ──────────────────────────────────────────
   tool(
     "send_group_statement",
@@ -230,6 +302,49 @@ export function registerSmartPrompts(ctx) {
     },
     ({ group }) =>
       user(`Wrap up "${group}": check get_balances. If people still owe money, list the payments and stop. If it is fully settled, ask me to confirm, then use complete_group (it emails everyone the final statement automatically) and tell me when it is done.`),
+  );
+  server.registerPrompt(
+    "plan_a_trip",
+    {
+      title: "Plan a trip group",
+      description: "Create a trip group with budget, dates and people in one go.",
+      argsSchema: { details: z.string().describe('For example "Goa, 20-24 Dec, budget 40000, with Riya and aman@mail.com"') },
+    },
+    ({ details }) =>
+      user(`Set up a SplitEase trip group for: ${details}\nUse create_group with groupType trip, the budget and dates if I gave them, and the people (names of my contacts or emails). If the name of the trip or who is coming is unclear, ask me one short question first. Then give me the invite link from get_invite_link so I can share it.`),
+  );
+  server.registerPrompt(
+    "add_my_bills",
+    {
+      title: "Add a list of bills",
+      description: "Paste several bills and add them to a group in one go.",
+      argsSchema: {
+        group: z.string().describe("Group name"),
+        bills: z.string().describe('One per line, for example "Cab 640" or "Hotel 9500 split with Aman"'),
+      },
+    },
+    ({ group, bills }) =>
+      user(`Add these bills I paid to "${group}" in SplitEase with one add_expenses call:\n${bills}\nPick a sensible category for each. Bills in another currency: pass currency and originalAmount. Afterwards tell me which were added, which were not and why, and my total share.`),
+  );
+  server.registerPrompt(
+    "split_with_friends",
+    {
+      title: "Quick split (no group)",
+      description: "Split a one-off bill with people who aren't in a group.",
+      argsSchema: { details: z.string().describe('For example "Team lunch 4200 between me, Aman, Riya and Karan"') },
+    },
+    ({ details }) =>
+      user(`Make a SplitEase quick split: ${details}\nUse create_quick_split and count me as one of the people if I shared the bill. Then tell me what each person owes me.`),
+  );
+  server.registerPrompt(
+    "fix_a_bill",
+    {
+      title: "Fix a bill I added",
+      description: "Rename, recategorise, or replace a bill with the wrong amount.",
+      argsSchema: { details: z.string().describe('For example "the dinner in Goa trip should be 2100 not 1800"') },
+    },
+    ({ details }) =>
+      user(`Fix this SplitEase bill: ${details}\nFind it with search or list_expenses and show me what you found. A wrong description, category or note: use update_expense. A wrong amount or split: tell me it needs to be deleted and added again, and only after I say yes use delete_expense then add_expense with the same people.`),
   );
   server.registerPrompt(
     "monthly_review",

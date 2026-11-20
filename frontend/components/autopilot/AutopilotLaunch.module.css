@@ -1,0 +1,36 @@
+/* The Autopilot opening: whatever was on screen blurs away, the orb glows for a
+   moment, then the workspace comes into focus. No text. */
+.overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #ecfffb; cursor: pointer; }
+.scrim { position: absolute; inset: 0; background:
+    radial-gradient(60% 55% at 50% 50%, #0f766e99 0%, #06302fb3 45%, #020a0dcc 100%);
+  -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%);
+  animation: scrimIn .55s cubic-bezier(.22,1,.36,1) both; }
+@keyframes scrimIn { from { opacity: 0; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); } to { opacity: 1; } }
+
+/* Slow light moving behind everything. */
+.glow { position: absolute; width: 70vmax; height: 70vmax; border-radius: 50%; filter: blur(90px); opacity: .5; pointer-events: none; }
+.glowA { top: -30vmax; left: -18vmax; background: radial-gradient(circle,#2dd4bf66,transparent 62%); animation: float 9s ease-in-out infinite alternate; }
+.glowB { bottom: -34vmax; right: -20vmax; background: radial-gradient(circle,#38bdf855,transparent 62%); animation: float 11s ease-in-out infinite alternate-reverse; }
+@keyframes float { to { transform: translate3d(8vmax,5vmax,0) scale(1.15); } }
+
+.stage { position: relative; display: flex; width: min(440px,calc(100vw - 40px)); flex-direction: column; align-items: center; text-align: center; animation: rise .7s cubic-bezier(.22,1,.36,1) .08s both; }
+@keyframes rise { from { opacity: 0; transform: translateY(22px) scale(.96); filter: blur(10px); } to { opacity: 1; transform: none; filter: blur(0); } }
+
+/* Orb, halo, ripples. */
+.core { position: relative; display: flex; width: 132px; height: 132px; align-items: center; justify-content: center; }
+.halo { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg,#2dd4bf00 0deg,#5eead4 70deg,#7dd3fc 130deg,#2dd4bf00 210deg,#a7f3d0 300deg,#2dd4bf00 360deg); -webkit-mask: radial-gradient(circle,transparent 61%,#000 63%,#000 69%,transparent 71%); mask: radial-gradient(circle,transparent 61%,#000 63%,#000 69%,transparent 71%); animation: spin 2.4s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ripple { position: absolute; inset: 14px; border: 1px solid #5eead466; border-radius: 50%; animation: ripple 2.6s cubic-bezier(.2,.7,.3,1) infinite; }
+.ripple:nth-child(2) { animation-delay: .85s; }
+.ripple:nth-child(3) { animation-delay: 1.7s; }
+@keyframes ripple { from { transform: scale(.7); opacity: .9; } to { transform: scale(2.5); opacity: 0; } }
+.orb { position: relative; display: flex; width: 78px; height: 78px; align-items: center; justify-content: center; border-radius: 32%; color: #d6fff6; background: radial-gradient(circle at 25% 15%,#8af0d6 0%,#2a8b80 43%,#143f3e 100%); box-shadow: inset 0 1px 0 #ffffff80, inset 0 -2px 0 #00000026, 0 0 60px #2dd4bf80, 0 18px 50px -12px #000; animation: beat 1.9s ease-in-out infinite; }
+@keyframes beat { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+
+/* Hand-off: the sequence rushes forward and clears, leaving the workspace in focus. */
+.leaving { pointer-events: none; }
+.leaving .scrim { animation: scrimOut .6s cubic-bezier(.4,0,.2,1) both; }
+@keyframes scrimOut { to { opacity: 0; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); } }
+.leaving .stage { animation: warp .55s cubic-bezier(.5,0,.75,0) both; }
+@keyframes warp { to { opacity: 0; transform: scale(1.5); filter: blur(14px); } }
+.leaving .glow { transition: opacity .4s; opacity: 0; }

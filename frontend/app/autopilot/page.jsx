@@ -1,6 +1,11 @@
-import { redirect } from "next/navigation";
+import AutopilotWorkspace from "@/components/autopilot/AutopilotWorkspace";
 
-// Autopilot lives in the floating chat on every page; old links land here once.
-export default function AutopilotRedirect() {
-  redirect("/dashboard?autopilot=1");
+export const metadata = {
+  title: "Autopilot | SplitEase",
+  description: "Plan trips, split bills and settle up by saying what you need. Review the plan, then approve.",
+  robots: { index: false, follow: false }, // a signed-in workspace; the public page is /features/autopilot
+};
+
+export default function AutopilotPage() {
+  return <AutopilotWorkspace />;
 }

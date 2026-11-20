@@ -92,9 +92,10 @@ d("statement email outbox (real MongoDB)", () => {
     expect(msg.subject).toContain("fully settled");
     expect(msg.attachments[0].content.subarray(0, 5).toString()).toBe("%PDF-");
     expect(msg.headers["X-Mailin-Tag"]).toBe("settlement-statement-settled");
-    // Inline brand icons travel with the email (cid:), no emoji anywhere.
-    expect(msg.attachments.filter((x) => x.cid).map((x) => x.cid)).toEqual(expect.arrayContaining(["se-logo", "se-status-settled", "se-file"]));
-    expect(msg.html).toContain("cid:se-logo");
+    // The email is a short note: only the logo is embedded (cid:), no emoji anywhere.
+    expect(msg.attachments.filter((x) => x.cid).map((x) => x.cid)).toEqual(["se-logo-light"]);
+    expect(msg.html).toContain("cid:se-logo-light");
+    expect(msg.text).toContain("Your full statement is attached as a PDF.");
     expect(/\p{Extended_Pictographic}/u.test(msg.subject + msg.html + msg.text)).toBe(false);
     // Each member gets their own copy of the PDF ("Prepared for" them).
     const pdfs = sendEmail.mock.calls.map((c) => c[0].attachments.find((x) => x.contentType === "application/pdf"));
@@ -142,7 +143,8 @@ d("statement email outbox (real MongoDB)", () => {
     expect(sendEmail).toHaveBeenCalledTimes(3);
     const toBala = sendEmail.mock.calls.find((c) => c[0].to === bala.email)[0];
     expect(toBala.subject).toContain("is complete");
-    expect(toBala.text).toContain("You pay ₹300.");
+    expect(toBala.text).toContain("Hi Bala,");
+    expect(toBala.text).not.toMatch(/₹/); // the numbers are in the PDF
 
     await receive(bala); await receive(chitra); await settle();
     await runStatementOutbox(later(QUIET_WINDOW_MS.settled + 1000));

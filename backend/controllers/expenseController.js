@@ -217,6 +217,103 @@ export const addExpense = async (req, res) => {
   }
 };
 
+// An expense as its payer may change or remove it: a real bill (never a
+// settle-up record), in a group they still belong to that isn't completed.
+// "Not found" for anything the caller can't see, so ids can't be probed.
+const loadOwnExpense = async (req, res) => {
+  const uid = asId(req.user);
+  if (!uid) { res.status(401).json({ message: "Unauthorized" }); return null; }
+  const { expenseId } = req.params;
+  if (!isValidObjectId(expenseId)) { res.status(400).json({ message: "Invalid expense ID." }); return null; }
+  const expense = await Expense.findById(expenseId);
+  const group = expense ? await Group.findById(expense.groupId).select("name members isCompleted").lean() : null;
+  if (!expense || !group || !ensureMember(group, uid)) { res.status(404).json({ message: "Expense not found." }); return null; }
+  if (expense.isSettlement || String(expense.description || "").toLowerCase().startsWith("settlement")) {
+    res.status(400).json({ message: "Settle-up payments can't be changed or deleted." });
+    return null;
+  }
+  if (!sameId(expense.paidBy, uid)) { res.status(403).json({ message: "Only the person who added this expense can change or delete it." }); return null; }
+  if (group.isCompleted) { res.status(400).json({ message: "This group is completed, so its expenses can't be changed." }); return null; }
+  return { uid, expense, group };
+};
+
+const emitExpenseChange = (groupId, memberIds) => {
+  invalidateBalanceCache(groupId);
+  io.to(`group:${groupId}`).emit("settlementUpdate", { groupId: String(groupId), kind: "expense" });
+  void notifyGroupChange(io, groupId, "expense", memberIds);
+};
+
+// PATCH /api/expenses/:expenseId - body { description?, category?, notes? }.
+// Only the labels: the amount and split never change, so balances stay as they are.
+export const updateExpense = async (req, res) => {
+  try {
+    const found = await loadOwnExpense(req, res);
+    if (!found) return;
+    const { expense, group } = found;
+    const { description, category, notes } = req.body || {};
+    if (description !== undefined) {
+      if (typeof description !== "string" || !description.trim())
+        return res.status(400).json({ field: "description", message: "Description is required." });
+      if (description.trim().length > 200)
+        return res.status(400).json({ field: "description", message: "Description must be under 200 characters." });
+      if (description.trim().toLowerCase().startsWith("settlement"))
+        return res.status(400).json({ field: "description", message: "Pick a different description." });
+      expense.description = description.trim();
+    }
+    if (category !== undefined) {
+      if (!VALID_CATEGORIES.includes(category))
+        return res.status(400).json({ field: "category", message: "Invalid category. Choose from: " + VALID_CATEGORIES.join(", ") + "." });
+      expense.category = category;
+    }
+    if (notes !== undefined) {
+      if (notes !== null && (typeof notes !== "string" || notes.length > 500))
+        return res.status(400).json({ field: "notes", message: "Notes must be under 500 characters." });
+      expense.notes = typeof notes === "string" ? notes.trim() : "";
+    }
+    if (description === undefined && category === undefined && notes === undefined)
+      return res.status(400).json({ message: "Nothing to update." });
+    await expense.save();
+    emitExpenseChange(expense.groupId, group.members.map(String));
+    const populated = await Expense.findById(expense._id)
+      .populate("paidBy", "name email")
+      .populate("splits.userId", "name email")
+      .lean();
+    res.json(populated);
+  } catch (err) {
+    console.error("❌ updateExpense:", err.message);
+    res.status(500).json({ message: "Couldn't update that expense." });
+  }
+};
+
+// DELETE /api/expenses/:expenseId - the payer removes a bill they added.
+// Everyone else in the group is told, and balances update live.
+export const deleteExpense = async (req, res) => {
+  try {
+    const found = await loadOwnExpense(req, res);
+    if (!found) return;
+    const { uid, expense, group } = found;
+    await Expense.deleteOne({ _id: expense._id });
+    const memberIds = group.members.map(String);
+    emitExpenseChange(expense.groupId, memberIds);
+    const recipients = memberIds.filter((id) => id !== String(uid));
+    if (recipients.length) {
+      void createNotification(
+        recipients,
+        `${req.user.name || "A member"} deleted the expense "${expense.description}" of ₹${expense.amount} in "${group.name}"`,
+        `/groups/${expense.groupId}`,
+        "expense",
+        { groupName: group.name, groupId: String(expense.groupId), amount: expense.amount, category: expense.category || "general" }
+      );
+    }
+    res.json({
+      success: true,
+      deleted: { _id: expense._id, description: expense.description, amount: expense.amount, groupId: expense.groupId },
+    });
+  } catch (err) {
+    console.error("❌ deleteExpense:", err.message);
+    res.status(500).json({ message: "Couldn't delete that expense." });
+  }
+};
 
 export const getExpenses = async (req, res) => {
   try {

@@ -3,10 +3,10 @@ import Image from "next/image";
 // Original editorial artwork is paired with the existing data chips and accent
 // treatment so the cards still feel native to the SplitEase design system.
 
-export default function BlogCover({ post, compact = false, fill = false }) {
+export default function BlogCover({ post, compact = false, fill = false, editorial = false }) {
   const { image, alt = "", c1 = "#0891B2", c2 = "#0EA5E9", chips = [], objectPosition } = post.cover || {};
   const gridId = `bg-grid-${post.slug}${compact ? "-c" : fill ? "-f" : ""}`;
-  const shownChips = compact ? chips.slice(0, 2) : chips;
+  const shownChips = editorial ? [] : compact ? chips.slice(0, 2) : chips;
 
   return (
     <div
@@ -43,20 +43,20 @@ export default function BlogCover({ post, compact = false, fill = false }) {
       />
 
       {/* Fine grid */}
-      <svg className="absolute inset-0 h-full w-full opacity-[0.09]">
+      {!editorial && <svg className="absolute inset-0 h-full w-full opacity-[0.09]">
         <defs>
           <pattern id={gridId} width="34" height="34" patternUnits="userSpaceOnUse">
             <path d="M 34 0 L 0 0 0 34" fill="none" stroke="white" strokeOpacity="0.22" strokeWidth="1" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill={`url(#${gridId})`} />
-      </svg>
+      </svg>}
 
       {/* Diagonal light beam */}
-      <div
+      {!editorial && <div
         className="absolute -inset-y-1/2 left-[30%] w-[26%] rotate-[24deg]"
         style={{ background: `linear-gradient(90deg, transparent, ${c2}12, transparent)` }}
-      />
+      />}
 
       {/* Floating glass chips */}
       {shownChips.map((chip, i) => (
@@ -77,11 +77,19 @@ export default function BlogCover({ post, compact = false, fill = false }) {
         </span>
       ))}
 
+      {editorial && (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-[32%]"
+          style={{ background: "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.85) 18%, rgba(0,0,0,0.35) 60%, transparent 100%)" }}
+        />
+      )}
+
       {/* Fade into the card surface: bottom when stacked, right edge in fill layout */}
       <div
-        className={`absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#0A0A0A] to-transparent ${
+        className={`pointer-events-none absolute inset-x-0 bottom-0 ${editorial ? "h-[48%]" : "h-14 bg-gradient-to-t from-[#0A0A0A] to-transparent"} ${
           fill ? "md:hidden" : ""
         }`}
+        style={editorial ? { background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.35) 35%, rgba(0,0,0,0.85) 75%, #000 100%)" } : undefined}
       />
       {fill && (
         <div className="hidden md:block absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-[#0A0A0A] to-transparent" />

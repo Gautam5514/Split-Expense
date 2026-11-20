@@ -24,7 +24,7 @@ jest.unstable_mockModule("../modules/autopilot/models.js", () => ({ AgentRun: Mo
 jest.unstable_mockModule("../modules/autopilot/context.js", () => ({ authorizedRun: authorize, snapshot, sameContext: (current, saved) => !saved || current.fingerprint === saved || current.legacy === saved, fail: (status, code, message) => Object.assign(new Error(message), { status, code }) }));
 jest.unstable_mockModule("../modules/autopilot/domain.js", () => ({ applyStep }));
 jest.unstable_mockModule("../modules/autopilot/insights.js", () => ({ computeInsights: jest.fn() }));
-jest.unstable_mockModule("../modules/autopilot/planner.js", () => ({ extractIntent: jest.fn(), buildPlan: jest.fn(), collectPeopleRefs: jest.fn(), applyEdits: jest.fn(), readCorrection: jest.fn(() => null), parseLocal: jest.fn(() => ({ actions: [], clarification: null })) }));
+jest.unstable_mockModule("../modules/autopilot/planner.js", () => ({ extractIntent: jest.fn(), buildPlan: jest.fn(), collectPeopleRefs: jest.fn(), applyEdits: jest.fn(), readCorrection: jest.fn(() => null), readGroupFollowUp: jest.fn(() => null), readNameAnswer: jest.fn(() => null), applyGroupName: jest.fn(), parseLocal: jest.fn(() => ({ actions: [], clarification: null })) }));
 jest.unstable_mockModule("../models/expenseModel.js", () => ({ default: {} }));
 jest.unstable_mockModule("../modules/autopilot/people.js", () => ({ resolvePeople: jest.fn() }));
 jest.unstable_mockModule("../utils/contacts.js", () => ({ getContactIds: jest.fn() }));

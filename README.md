@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://split.elitecrew.online">
+<a href="https://splitease.tech">
   <img src="docs/assets/readme/hero.svg" width="100%" alt="SplitEase: split bills, not friendships. Exact splits, live balances, fewest-payment settle-ups and an AI that waits for your yes." />
 </a>
 
@@ -14,7 +14,7 @@
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-8B5CF6.svg)](CONTRIBUTING.md)
 [![Good first issues](https://img.shields.io/github/issues/Gautam5514/Split-Expense/good%20first%20issue?label=good%20first%20issues&color=22D3EE)](https://github.com/Gautam5514/Split-Expense/labels/good%20first%20issue)
 
-**[🌐 Web app](https://split.elitecrew.online)** &nbsp;·&nbsp;
+**[🌐 Web app](https://splitease.tech)** &nbsp;·&nbsp;
 **[📱 Android](https://play.google.com/store/apps/details?id=com.kunal.splitapp)** &nbsp;·&nbsp;
 **[🧭 Autopilot](https://split.elitecrew.online/features/autopilot)** &nbsp;·&nbsp;
 **[🛰️ MCP server](https://split.elitecrew.online/mcp)** &nbsp;·&nbsp;
@@ -23,7 +23,7 @@
 
 <br />
 
-<img src="docs/assets/readme/stats.svg" width="100%" alt="800+ automated tests, 29 MCP tools for AI apps, 10 Autopilot actions, 3 platforms on one live ledger" />
+<img src="docs/assets/readme/stats.svg" width="100%" alt="800+ automated tests, 54 MCP tools for AI apps, 10 Autopilot actions, 3 platforms on one live ledger" />
 
 </div>
 
@@ -61,7 +61,7 @@
 | **Fewest payments** | Balances are netted and routed through the minimum number of transfers. Settle-ups are two-sided: one person claims, the other confirms. One-tap UPI on mobile. |
 | **Live everywhere** | Socket.IO pushes every change to every open phone and browser tab. See [Live everywhere](#live-everywhere). |
 | **Autopilot AI** | Chat in English or Hinglish. It drafts a plan with every share, and nothing changes until you approve. |
-| **MCP server** | 29 tools so ChatGPT, Claude, Gemini and Cursor can run your groups, over OAuth 2.1. |
+| **MCP server** | 54 tools so ChatGPT, Claude, Gemini and Cursor can run your groups, over OAuth 2.1. |
 | **Smart nudges** | Festival, monthly and trip-season tips via push and web push, with frequency caps, quiet hours and holdout groups. |
 | **Secure by default** | Firebase auth, Zod validation, Helmet, per-user rate limits, NoSQL-injection sanitising, CodeQL and OpenSSF practices. |
 
@@ -128,14 +128,20 @@ Add the URL as a custom connector in ChatGPT, Claude or Cursor, or use it from t
 | Area | Tools |
 |---|---|
 | 👤 Account | `get_me` · `get_overall_summary` · `get_spending_insights` · `ping` |
-| 👥 Groups | `list_groups` · `get_group` · `create_group` · `update_group_settings` · `add_members` · `remove_member` · `get_invite_link` · `join_group` · `complete_group` · `leave_group` · `delete_group` |
-| 🧾 Expenses | `add_expense` · `list_expenses` · `get_expense` · `get_group_summary` |
+| 👥 Groups | `list_groups` · `get_group` · `create_group` · `update_group_settings` · `add_members` · `remove_member` · `get_invite_link` · `join_group` · `list_group_invites` · `manage_group_invite` · `complete_group` · `leave_group` · `delete_group` |
+| 🧾 Expenses | `add_expense` · `add_expenses` · `update_expense` · `delete_expense` · `list_expenses` · `get_expense` · `get_group_summary` · `export_expenses` |
 | 🤝 Settling | `get_balances` · `settle_up` · `list_pending_settlements` · `respond_to_settlement` |
 | ✉️ Invites | `list_my_invites` · `respond_to_invite` |
+| 🧑‍🤝‍🧑 People | `find_people` · `get_privacy_settings` · `update_privacy_settings` |
+| ⚡ Quick split | `create_quick_split` · `list_quick_splits` · `mark_quick_split_paid` · `delete_quick_split` |
+| 📝 Notes, chat, alerts | `list_notes` · `add_note` · `list_group_messages` · `send_group_message` · `list_notifications` · `mark_notifications_read` |
+| ✨ Smart | `get_action_items` · `search` · `get_exchange_rate` · `send_group_statement` · `get_statement_status` · `retry_failed_statements` |
 | 🔁 Monthly bills | `list_recurring_bills` · `add_recurring_bill` · `update_recurring_bill` · `delete_recurring_bill` |
 
 - **Same rules as the app.** Write tools call the exact REST controllers the web and app use, through an in-process bridge. Validation, permissions, settings lock, consent and live updates are identical, so a bill added from ChatGPT shows up in the app instantly.
 - **Talk naturally.** Groups by name ("goa" finds "Goa Trip"), people by name, email or "me". When a name is ambiguous, the tool returns the candidates instead of guessing.
+- **Whole bills in one message.** Itemised bills, up to 20 bills in one call, and foreign-currency bills converted at today's rate. Small typos in names are forgiven.
+- **Hard to break.** Each call has a time limit, and a per-user limit on changes stops an agent that gets stuck in a loop.
 - **Built for AI clients.** Every tool has `readOnlyHint` / `destructiveHint` annotations, and server instructions explain the rules to the model. A duplicate guard stops retried requests from adding the same bill twice, and `delete_group` needs the group's exact name as confirmation.
 
 Contracts and auth: [`docs/mcp-tool-contracts.md`](docs/mcp-tool-contracts.md) · [`docs/MCP-OAUTH.md`](docs/MCP-OAUTH.md)

@@ -16,6 +16,7 @@ import ChromeGate from "@/components/ChromeGate";
 import MarketingScrollProgress from "@/components/MarketingScrollProgress";
 import AppSidebar from "@/components/AppSidebar";
 import AutopilotWidget from "@/components/autopilot/AutopilotWidget";
+import AutopilotLaunch from "@/components/autopilot/AutopilotLaunch";
 import DesktopAppNavbar from "@/components/DesktopAppNavbar";
 import { SidebarProvider } from "@/context/SidebarContext";
 
@@ -269,6 +270,7 @@ export default function RootLayout({ children }) {
                   <InstallPrompt />
                 </ChromeGate>
                 <AutopilotWidget />
+                <AutopilotLaunch />
                 </SidebarProvider>
               </NotificationProvider>
             </AuthProvider>

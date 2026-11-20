@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Bell, CheckCircle2, ExternalLink, Loader2, Mail, PiggyBank, Receipt, Scale, UserCheck, UserPlus, Users, CircleDashed, Wallet, List, Pencil, Globe2, Trash2, AlertTriangle } from "lucide-react";
-import { PEOPLE_COLORS, initials, money } from "./format";
+import { PEOPLE_COLORS, initials, money, READ_STEPS } from "./format";
+import PersonAvatar from "./PersonAvatar";
 
 const ICONS = { create_group: Users, add_members: UserPlus, set_group_budget: PiggyBank, create_expense: Receipt, monitor_budget: Bell, read_summary: Scale, read_overall: Globe2, list_expenses: List, delete_expense: Trash2, delete_group: Trash2, complete_group: CheckCircle2, send_statement: Mail };
 const DELETES = ["delete_expense", "delete_group"];
@@ -26,7 +27,6 @@ function DangerSummary({ step, result }) {
     </div>
   );
 }
-const READS = ["read_summary", "read_overall", "list_expenses"];
 const SPLIT_LABEL = { equal: "split equally", exact: "exact shares", shares: "by the group's shares", percent: "by the group's percentages" };
 const cap = s => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const toMajor = minor => String(minor / 100);
@@ -69,23 +69,34 @@ function EditExpense({ step, onSave, onCancel, busy }) {
   );
 }
 
+// Read-only results are answers, not plans: plain sections with hairlines between
+// them, and one tinted surface for the thing the user actually asked for.
+const LABEL = "text-[11px] font-semibold uppercase tracking-[.12em] text-muted-foreground";
+const POS = "text-emerald-600 dark:text-emerald-400";
+const NEG = "text-rose-600 dark:text-rose-400";
+function Section({ title, children, first }) {
+  return <section className={first ? "" : "border-t border-border/60 pt-4"}>{title && <p className={`${LABEL} mb-2.5`}>{title}</p>}{children}</section>;
+}
+
 function Overall({ overall }) {
   const totals = Object.entries(overall.totals || {});
   return (
-    <div className="mt-4 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        {totals.length === 0 && <p className="col-span-2 text-sm text-muted-foreground">You aren&apos;t in any active groups yet.</p>}
-        {totals.map(([cur, t]) => [
-          <div key={`${cur}-in`} className="rounded-xl border border-border/60 bg-background/40 p-3"><p className="text-[11px] text-muted-foreground">You get back</p><p className="mt-1 text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{money(t.owedMinor, cur)}</p></div>,
-          <div key={`${cur}-out`} className="rounded-xl border border-border/60 bg-background/40 p-3"><p className="text-[11px] text-muted-foreground">You owe</p><p className="mt-1 text-sm font-semibold tabular-nums text-rose-600 dark:text-rose-400">{money(t.oweMinor, cur)}</p></div>,
-        ])}
-      </div>
+    <div className="space-y-4">
+      {totals.length === 0 && <p className="text-sm text-muted-foreground">You aren&apos;t in any active groups yet.</p>}
+      {totals.map(([cur, t]) => (
+        <div key={cur} className="flex flex-wrap items-end gap-x-8 gap-y-2">
+          <div><p className="text-xs text-muted-foreground">You get back</p><p className={`mt-0.5 text-2xl font-semibold tracking-tight tabular-nums ${POS}`}>{money(t.owedMinor, cur)}</p></div>
+          <div><p className="text-xs text-muted-foreground">You owe</p><p className={`mt-0.5 text-2xl font-semibold tracking-tight tabular-nums ${NEG}`}>{money(t.oweMinor, cur)}</p></div>
+        </div>
+      ))}
       {overall.groups.length > 0 && (
-        <ul className="divide-y divide-border/60 rounded-xl border border-border/60 bg-background/40">
-          {overall.groups.map(g => (
-            <li key={g.groupId}><Link href={`/groups/${g.groupId}`} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted/50"><span className="min-w-0 flex-1 truncate">{g.name}</span><span className={`tabular-nums font-medium ${g.balanceMinor > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>{g.balanceMinor > 0 ? "gets back " : "owes "}{money(Math.abs(g.balanceMinor), g.currency)}</span></Link></li>
-          ))}
-        </ul>
+        <Section title="By group">
+          <ul className="divide-y divide-border/60">
+            {overall.groups.map(g => (
+              <li key={g.groupId}><Link href={`/groups/${g.groupId}`} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm hover:bg-muted/60"><span className="min-w-0 flex-1 truncate">{g.name}</span><span className={`tabular-nums font-medium ${g.balanceMinor > 0 ? POS : NEG}`}>{g.balanceMinor > 0 ? "gets back " : "owes "}{money(Math.abs(g.balanceMinor), g.currency)}</span></Link></li>
+            ))}
+          </ul>
+        </Section>
       )}
       {overall.settledCount > 0 && <p className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />Settled up in {overall.settledCount} other group{overall.settledCount === 1 ? "" : "s"}.</p>}
     </div>
@@ -93,21 +104,17 @@ function Overall({ overall }) {
 }
 
 function ExpenseList({ expenses, currency }) {
-  if (!expenses.length) return <p className="mt-3 text-sm text-muted-foreground">No matching expenses yet.</p>;
+  if (!expenses.length) return <p className="text-sm text-muted-foreground">No matching expenses yet.</p>;
   return (
-    <ul className="mt-3 divide-y divide-border/60 rounded-xl border border-border/60 bg-background/40">
+    <ul className="divide-y divide-border/60">
       {expenses.map(e => (
-        <li key={e.id} className="flex items-center gap-3 px-3 py-2.5">
+        <li key={e.id} className="flex items-center gap-3 py-2.5">
           <div className="min-w-0 flex-1"><p className="truncate text-sm">{e.title}</p><p className="text-[11px] text-muted-foreground">{e.paidBy} · {cap(e.category)} · {new Date(e.date).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</p></div>
           <span className="text-sm font-medium tabular-nums">{money(e.amountMinor, currency)}</span>
         </li>
       ))}
     </ul>
   );
-}
-
-function Avatar({ name, index, size = "h-7 w-7 text-[11px]" }) {
-  return <span className={`${size} ${PEOPLE_COLORS[index % PEOPLE_COLORS.length]} inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white`}>{initials(name)}</span>;
 }
 
 function SplitBreakdown({ splits, currency, total }) {
@@ -121,7 +128,7 @@ function SplitBreakdown({ splits, currency, total }) {
       <ul className="mt-3 divide-y divide-border/60 rounded-xl border border-border/60 bg-background/40">
         {splits.map((s, i) => (
           <li key={s.memberId} className="flex items-center gap-3 px-3 py-2.5">
-            <Avatar name={s.name} index={i} />
+            <PersonAvatar id={s.memberId} name={s.name} index={i} />
             <span className="min-w-0 flex-1 truncate text-sm">{s.name}</span>
             <span className="text-xs tabular-nums text-muted-foreground">{Math.round((s.shareMinor / total) * 100)}%</span>
             <span className="w-24 text-right text-sm font-medium tabular-nums">{money(s.shareMinor, currency)}</span>
@@ -159,7 +166,7 @@ function People({ people, result }) {
           const meta = PERSON[p.status]; const Icon = meta.icon;
           return (
             <li key={p.userId || p.email} className="flex items-center gap-3 px-3 py-2.5">
-              <Avatar name={p.name || p.email} index={i + 1} />
+              <PersonAvatar id={p.userId} name={p.name || p.email} index={i + 1} />
               <div className="min-w-0 flex-1"><p className="truncate text-sm">{p.name || p.email}</p><p className="text-[11px] text-muted-foreground">{meta.hint}</p></div>
               <span className={`inline-flex shrink-0 items-center gap-1 text-[11px] font-medium ${meta.tone}`}><Icon className="h-3.5 w-3.5" />{meta.label}</span>
             </li>
@@ -172,59 +179,67 @@ function People({ people, result }) {
   );
 }
 
+// "Who owes whom?" answered in the order a person wants it: what to pay, where
+// everyone stands, then the spending behind it.
 function Insights({ result, currency }) {
   const ins = result.insights;
   const name = id => result.members?.find(m => m.id === id)?.name || "Member";
   const balances = Object.entries(result.balances || {}).map(([id, v]) => ({ id, name: name(id), v: Math.round(Number(v) * 100) })).filter(b => b.v !== 0).sort((a, b) => b.v - a.v);
+  const settlements = result.settlements || [];
   return (
-    <div className="mt-4 space-y-4">
+    <div className="space-y-4">
+      {settlements.length > 0 ? (
+        <div className="rounded-2xl bg-primary/[0.06] p-4">
+          <p className={`${LABEL} mb-3 !text-primary`}>{settlements.length === 1 ? "One payment settles it" : `${settlements.length} payments settle it`}</p>
+          <ul className="space-y-2.5">{settlements.map((s, i) => (
+            <li key={i} className="flex flex-wrap items-center gap-2 text-sm">
+              <PersonAvatar id={s.from} name={name(s.from)} index={i} size="h-6 w-6 text-[10px]" /><span className="font-medium">{name(s.from)}</span>
+              <span className="text-xs text-muted-foreground">pays</span><ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+              <PersonAvatar id={s.to} name={name(s.to)} index={i + 1} size="h-6 w-6 text-[10px]" /><span className="font-medium">{name(s.to)}</span>
+              <span className="ml-auto text-base font-semibold tabular-nums">{money(Math.round(s.amount * 100), currency)}</span>
+            </li>
+          ))}</ul>
+          <p className="mt-3 text-[11px] text-muted-foreground">A suggestion only. No payment is made for you.</p>
+        </div>
+      ) : (
+        <p className="flex items-center gap-2 text-[15px] font-medium"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Everyone is settled up.</p>
+      )}
+
+      {balances.length > 0 && (
+        <Section title="Net balances" first>
+          <ul className="space-y-2.5">{balances.map((b, i) => (
+            <li key={b.id} className="flex items-center gap-3 text-sm"><PersonAvatar id={b.id} name={b.name} index={i} /><span className="min-w-0 flex-1 truncate">{b.name}</span><span className={`tabular-nums font-medium ${b.v > 0 ? POS : NEG}`}>{b.v > 0 ? "gets back " : "owes "}{money(Math.abs(b.v), currency)}</span></li>
+          ))}</ul>
+        </Section>
+      )}
+
       {ins && (
-        <div className="grid gap-3">
-          {ins.budget && (
-            <div className="flex items-center gap-4 rounded-xl border border-border/60 bg-background/40 p-4">
-              <Ring pct={ins.budget.usedPct} />
-              <div><p className="text-xs text-muted-foreground">Budget used</p><p className="text-sm font-semibold tabular-nums">{money(ins.totalMinor, currency)}</p><p className="text-xs text-muted-foreground tabular-nums">of {money(ins.budget.budgetMinor, currency)}</p></div>
+        <Section title="Spending">
+          <div className="flex items-center gap-4">
+            {ins.budget && <Ring pct={ins.budget.usedPct} size={64} />}
+            <div className="min-w-0">
+              <p className="text-2xl font-semibold tracking-tight tabular-nums">{money(ins.totalMinor, currency)}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">{ins.budget ? `of ${money(ins.budget.budgetMinor, currency)} budget · ` : ""}{ins.expenseCount} expense{ins.expenseCount === 1 ? "" : "s"}{ins.expenseCount > 0 ? ` · ${money(ins.averageMinor, currency)} average` : ""}</p>
             </div>
-          )}
-          <div className="grid grid-cols-3 gap-3">
-            {[["Total spent", money(ins.totalMinor, currency)], ["Expenses", String(ins.expenseCount)], ["Average", money(ins.averageMinor, currency)]].map(([k, v]) => (
-              <div key={k} className="rounded-xl border border-border/60 bg-background/40 p-3"><p className="text-[11px] text-muted-foreground">{k}</p><p className="mt-1 truncate text-sm font-semibold tabular-nums">{v}</p></div>
-            ))}
           </div>
-        </div>
-      )}
-      {ins?.categories?.length > 0 && (
-        <div className="rounded-xl border border-border/60 bg-background/40 p-4">
-          <p className="mb-3 text-xs font-medium text-muted-foreground">Where the money went</p>
-          <ul className="space-y-2.5">
-            {ins.categories.map((c, i) => (
-              <li key={c.name}>
-                <div className="mb-1 flex justify-between text-xs"><span className="capitalize">{c.name}</span><span className="tabular-nums text-muted-foreground">{money(c.amountMinor, currency)}</span></div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted"><motion.div className={`h-full rounded-full ${PEOPLE_COLORS[i % PEOPLE_COLORS.length]}`} initial={{ width: 0 }} animate={{ width: `${(c.amountMinor / ins.totalMinor) * 100}%` }} transition={{ duration: 0.8, delay: i * 0.06 }} /></div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      <div className="rounded-xl border border-border/60 bg-background/40 p-4">
-        <p className="mb-3 text-xs font-medium text-muted-foreground">Net balances</p>
-        {balances.length === 0 ? <p className="flex items-center gap-2 text-sm"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Everyone is settled up.</p> : (
-          <ul className="space-y-2">{balances.map((b, i) => (
-            <li key={b.id} className="flex items-center gap-3 text-sm"><Avatar name={b.name} index={i} /><span className="flex-1 truncate">{b.name}</span><span className={`tabular-nums font-medium ${b.v > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>{b.v > 0 ? "gets back " : "owes "}{money(Math.abs(b.v), currency)}</span></li>
-          ))}</ul>
-        )}
-      </div>
-      {result.settlements?.length > 0 && (
-        <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
-          <p className="mb-3 text-xs font-medium text-primary">Simplest way to settle · suggestion only, no payment is made</p>
-          <ul className="space-y-2">{result.settlements.map((s, i) => (
-            <li key={i} className="flex flex-wrap items-center gap-2 text-sm"><span className="font-medium">{name(s.from)}</span><ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /><span className="font-medium">{name(s.to)}</span><span className="ml-auto tabular-nums font-semibold">{money(Math.round(s.amount * 100), currency)}</span></li>
-          ))}</ul>
-        </div>
+          {ins.categories?.length > 0 && (
+            <ul className="mt-4 space-y-2.5">
+              {ins.categories.map((c, i) => (
+                <li key={c.name}>
+                  <div className="mb-1 flex justify-between text-xs"><span className="capitalize">{c.name}</span><span className="tabular-nums text-muted-foreground">{money(c.amountMinor, currency)}</span></div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted"><motion.div className={`h-full rounded-full ${PEOPLE_COLORS[i % PEOPLE_COLORS.length]}`} initial={{ width: 0 }} animate={{ width: `${(c.amountMinor / ins.totalMinor) * 100}%` }} transition={{ duration: 0.8, delay: i * 0.06 }} /></div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
       )}
     </div>
   );
 }
+
+const READ_TITLE = { read_summary: "Balances", read_overall: "Across all your groups", list_expenses: "Expenses" };
+const READ_WAIT = { read_summary: "Reading the ledger to work out who owes whom…", read_overall: "Adding up your balance in every group…", list_expenses: "Looking through this group’s expenses…" };
 
 export default function PlanSteps({ run, groupName, running, onEdit, busy }) {
   const steps = run.plan?.steps || [];
@@ -238,8 +253,20 @@ export default function PlanSteps({ run, groupName, running, onEdit, busy }) {
         const result = run.results.find(r => r.stepId === step.id);
         const Icon = ICONS[step.type] || Wallet;
         const state = result?.verified ? "verified" : running && i === firstPending ? "executing" : "proposed";
-        const isRead = READS.includes(step.type);
+        const isRead = READ_STEPS.includes(step.type);
         const isDelete = DELETES.includes(step.type);
+        if (isRead) {
+          const where = step.type === "read_overall" ? "" : ` · ${p.name || groupName(p.groupId)}`;
+          return (
+            <motion.li key={step.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }}>
+              <p className={`${LABEL} mb-3`}>{READ_TITLE[step.type]}{where}</p>
+              {!result && <p className="flex items-center gap-2 text-sm text-muted-foreground">{running && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{READ_WAIT[step.type]} Makes no changes.</p>}
+              {step.type === "read_summary" && result && <Insights result={result} currency={p.currency} />}
+              {step.type === "read_overall" && result?.overall && <Overall overall={result.overall} />}
+              {step.type === "list_expenses" && result?.expenses && <ExpenseList expenses={result.expenses} currency={p.currency} />}
+            </motion.li>
+          );
+        }
         return (
           <motion.li key={step.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }} className={`relative overflow-hidden rounded-2xl border bg-card p-4 transition-colors ${state === "verified" ? "border-emerald-500/40" : state === "executing" ? "border-primary/50" : isDelete ? "border-red-500/40" : "border-border"}`}>
             <div className="flex items-start gap-3.5">
@@ -249,10 +276,10 @@ export default function PlanSteps({ run, groupName, running, onEdit, busy }) {
                   <h3 className="text-[15px] font-semibold leading-tight"><span className="mr-1.5 text-muted-foreground tabular-nums">{i + 1}.</span>{step.title}</h3>
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${state === "verified" ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300" : state === "executing" ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground"}`}>
                     {state === "verified" ? <CheckCircle2 className="h-3 w-3" /> : state === "executing" ? <Loader2 className="h-3 w-3 animate-spin" /> : <CircleDashed className="h-3 w-3" />}
-                    {state === "verified" ? "Verified" : state === "executing" ? "Executing" : isRead ? "Read-only" : "Proposed"}
+                    {state === "verified" ? "Verified" : state === "executing" ? "Executing" : "Proposed"}
                   </span>
                 </div>
-                {step.type !== "read_overall" && <p className="mt-1 text-xs text-muted-foreground">{p.name && step.type !== "create_group" ? p.name : groupName(p.groupId)} · {p.currency}{step.type === "create_group" && p.groupType ? ` · ${cap(p.groupType)}` : ""}</p>}
+                <p className="mt-1 text-xs text-muted-foreground">{p.name && step.type !== "create_group" ? p.name : groupName(p.groupId)} · {p.currency}{step.type === "create_group" && p.groupType ? ` · ${cap(p.groupType)}` : ""}</p>
                 {p.amountMinor !== undefined && step.type !== "monitor_budget" && <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">{money(p.amountMinor, p.currency)}</p>}
                 {step.type === "create_expense" && p.splits && <><p className="mt-1 text-xs text-muted-foreground">Paid by you · {p.splits.length} {p.splits.length > 1 ? "people" : "person"}, {SPLIT_LABEL[p.splitType] || "split"}{p.category ? ` · ${cap(p.category)}` : ""}</p>
                   {editing === step.id ? <EditExpense step={step} busy={busy} onCancel={() => setEditing(null)} onSave={changes => { setEditing(null); onEdit(step, changes); }} /> : <SplitBreakdown splits={p.splits} currency={p.currency} total={p.amountMinor} />}
@@ -262,11 +289,7 @@ export default function PlanSteps({ run, groupName, running, onEdit, busy }) {
                   <div className="mt-3"><div className="flex flex-wrap gap-2">{p.thresholds.map(t => <span key={t} className="rounded-lg border border-border bg-background/50 px-3 py-1.5 text-sm font-semibold tabular-nums">{t}%</span>)}</div><p className="mt-2 text-xs leading-5 text-muted-foreground">In-app alerts only, checked when you press “Check budgets”. Approving this step is your opt-in; you can disable it any time.</p></div>
                 )}
                 {isDelete && <DangerSummary step={step} result={result} />}
-                {step.type === "read_summary" && result && <Insights result={result} currency={p.currency} />}
-                {step.type === "read_overall" && result?.overall && <Overall overall={result.overall} />}
-                {step.type === "list_expenses" && result?.expenses && <ExpenseList expenses={result.expenses} currency={p.currency} />}
-                {isRead && !result && <p className="mt-2 text-sm text-muted-foreground">{step.type === "read_overall" ? "Adds up your balance in every group." : step.type === "list_expenses" ? "Looks through this group's expenses." : "Reads your group's ledger and explains who owes whom."} Makes no changes.</p>}
-                {result?.href && !isRead && step.type !== "delete_group" && <Link href={result.href} className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">Open in group <ExternalLink className="h-3 w-3" /></Link>}
+                {result?.href && step.type !== "delete_group" && <Link href={result.href} className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">Open in group <ExternalLink className="h-3 w-3" /></Link>}
               </div>
             </div>
           </motion.li>

@@ -41,3 +41,6 @@ export const PEOPLE_COLORS = [
   "bg-cyan-500", "bg-violet-500", "bg-amber-500", "bg-emerald-500", "bg-rose-500", "bg-sky-500", "bg-fuchsia-500", "bg-lime-500",
 ];
 export const initials = (name = "?") => name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join("") || "?";
+
+// Steps that only read the ledger. Their results are shown as a plain answer, not a plan card.
+export const READ_STEPS = ["read_summary", "read_overall", "list_expenses"];

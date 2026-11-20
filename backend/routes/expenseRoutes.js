@@ -2,6 +2,8 @@ import express from "express";
 import {
   addExpense,
   getExpenses,
+  updateExpense,
+  deleteExpense,
   requestSettlement,
   confirmSettlementRequest,
   rejectSettlementRequest,
@@ -25,5 +27,9 @@ router.post("/settle/:requestId/reject", authMiddleware, rejectSettlementRequest
 router.post("/settle/:requestId/cancel", authMiddleware, cancelSettlementRequest);
 
 router.get("/:groupId", authMiddleware, getExpenses);
+
+// The payer can relabel (description / category / notes) or remove their own bill.
+router.patch("/:expenseId", authMiddleware, updateExpense);
+router.delete("/:expenseId", authMiddleware, deleteExpense);
 
 export default router;

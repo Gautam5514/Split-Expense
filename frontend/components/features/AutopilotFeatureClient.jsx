@@ -1,5 +1,7 @@
 "use client";
 
+import AutopilotMark from "@/components/autopilot/AutopilotMark";
+
 /* /features/autopilot - the marketing page for Autopilot, the in-app AI
    assistant. Same dark landing theme as the other feature pages
    (FeaturePageLayout), with a richer layout: a live demo of the real
@@ -14,10 +16,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  ArrowRight, ArrowUpRight, BadgeCheck, Bot, Check, ChevronDown, Coins, Construction,
+  ArrowRight, ArrowUpRight, BadgeCheck, Check, ChevronDown, Coins, Construction,
   Fingerprint, Gauge, Hourglass, Languages, LifeBuoy, ListChecks, Lock, MessageSquareText, Pencil,
-  PiggyBank, Plug, Receipt, Scale, ShieldCheck, Sparkles, Trash2, UserPlus, Users, Wand2,
-} from "lucide-react";
+  PiggyBank, Plug, Receipt, Scale, ShieldCheck, Sparkles, Trash2, UserPlus, Users, } from "lucide-react";
 import Footer from "@/components/Footer";
 import { PlayStoreButton } from "@/components/PlayStoreLink";
 
@@ -94,7 +95,7 @@ function DemoChat() {
         <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
           <div className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: `rgba(${ACCENT},0.16)` }}>
-              <Wand2 size={15} style={{ color: `rgb(${ACCENT})` }} />
+              <AutopilotMark size={15} style={{ color: `rgb(${ACCENT})` }} />
             </span>
             <div>
               <p className="text-sm font-bold leading-none">Autopilot</p>
@@ -140,7 +141,7 @@ function DemoChat() {
 
           {phase === "planning" && (
             <div className="flex items-center gap-2 px-1 text-xs text-white/45">
-              <Sparkles size={13} className="animate-pulse text-violet-300" />
+              <AutopilotMark size={13} className="animate-pulse text-violet-300" />
               Reading your groups and working out the exact split…
             </div>
           )}
@@ -780,7 +781,7 @@ export default function AutopilotFeatureClient() {
             className="pointer-events-none absolute inset-0"
             style={{ background: `radial-gradient(50% 80% at 50% 0%, rgba(${ACCENT},0.18), transparent 70%)` }}
           />
-          <Bot size={28} className="relative mx-auto text-violet-200" />
+          <AutopilotMark size={28} className="relative mx-auto text-violet-200" />
           <h2 className="font-serif-premium relative mx-auto mt-5 max-w-xl text-3xl font-normal tracking-tight sm:text-4xl">
             Your next trip, planned in one message
           </h2>

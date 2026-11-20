@@ -91,6 +91,13 @@ describe("tool registration", () => {
         "list_my_invites", "respond_to_invite",
         "list_recurring_bills", "add_recurring_bill", "update_recurring_bill", "delete_recurring_bill",
         "get_action_items", "send_group_statement", "get_statement_status", "retry_failed_statements",
+        "add_expenses", "update_expense", "delete_expense", "export_expenses",
+        "list_group_invites", "manage_group_invite",
+        "search", "get_exchange_rate",
+        "find_people", "get_privacy_settings", "update_privacy_settings",
+        "create_quick_split", "list_quick_splits", "mark_quick_split_paid", "delete_quick_split",
+        "list_notes", "add_note", "list_group_messages", "send_group_message",
+        "list_notifications", "mark_notifications_read",
       ].sort(),
     );
   });
@@ -98,7 +105,9 @@ describe("tool registration", () => {
   test("registers ready-made prompts", () => {
     registeredPrompts.clear();
     buildSplitEaseMcpServer({ id: String(oid()), email: "u@e.com", name: "U" });
-    expect([...registeredPrompts.keys()].sort()).toEqual(["catch_me_up", "monthly_review", "settle_up", "split_a_bill", "wrap_up_trip"]);
+    expect([...registeredPrompts.keys()].sort()).toEqual([
+      "add_my_bills", "catch_me_up", "fix_a_bill", "monthly_review", "plan_a_trip", "settle_up", "split_a_bill", "split_with_friends", "wrap_up_trip",
+    ]);
     const text = registeredPrompts.get("split_a_bill").handler({ details: "Dinner 900 in Goa" }).messages[0].content.text;
     expect(text).toContain("Dinner 900 in Goa");
   });
@@ -113,7 +122,10 @@ describe("tool registration", () => {
       const readName = (name.startsWith("get_") || name.startsWith("list_")) && name !== "get_invite_link";
       if (readName) expect(def.annotations.readOnlyHint).toBe(true);
     }
-    for (const name of ["delete_group", "remove_member", "leave_group", "delete_recurring_bill"]) {
+    for (const name of ["find_people", "search", "export_expenses"]) {
+      expect(registered.get(name).def.annotations.readOnlyHint).toBe(true);
+    }
+    for (const name of ["delete_group", "remove_member", "leave_group", "delete_recurring_bill", "delete_expense", "delete_quick_split"]) {
       expect(registered.get(name).def.annotations.destructiveHint).toBe(true);
     }
   });
@@ -379,5 +391,40 @@ describe("get_action_items", () => {
     const out = payload(await callTool(oid(), "get_action_items"));
     expect(out.needsAttention).toBe(0);
     expect(out.summary).toMatch(/caught up/i);
+  });
+});
+
+describe("robustness helpers", () => {
+  test("editDistance forgives a typo or a swapped pair, within the budget", async () => {
+    const { editDistance, typoBudget, normText } = await import("../services/mcp/helpers.js");
+    expect(editDistance("farha", "farah", 1)).toBe(1);
+    expect(editDistance("goa trp", "goa trip", 1)).toBe(1);
+    expect(editDistance("goa", "delhi", 2)).toBe(3);
+    expect(typoBudget("ria")).toBe(0); // short names must match exactly
+    expect(normText("  Café-Trip!!  2026 ")).toBe("cafe trip 2026");
+  });
+
+  test("write limiter: a burst is stopped per user and recovers after the window", async () => {
+    const { createWriteLimiter } = await import("../services/mcp/helpers.js");
+    const lim = createWriteLimiter({ limit: 3, windowMs: 1000 });
+    expect([1, 2, 3].map(() => lim.take("a", 0).ok)).toEqual([true, true, true]);
+    expect(lim.take("a", 10)).toEqual({ ok: false, retryInSec: 1 });
+    expect(lim.take("b", 10).ok).toBe(true); // other users are unaffected
+    expect(lim.take("a", 1001).ok).toBe(true);
+  });
+
+  test("csvCell quotes separators and defuses spreadsheet formulas", async () => {
+    const { csvCell } = await import("../services/mcp/helpers.js");
+    expect(csvCell('a,"b"')).toBe('"a,""b"""');
+    expect(csvCell("=1+1")).toBe("'=1+1");
+    expect(csvCell(-250)).toBe("-250");
+    expect(csvCell(null)).toBe("");
+  });
+
+  test("a tool that hangs is cut off with a clear message instead of stalling the chat", async () => {
+    const { withTimeout } = await import("../services/mcp/helpers.js");
+    const slow = new Promise(() => {});
+    expect(await withTimeout(slow, 10, () => "timed out")).toBe("timed out");
+    expect(await withTimeout(Promise.resolve("done"), 10, () => "timed out")).toBe("done");
   });
 });

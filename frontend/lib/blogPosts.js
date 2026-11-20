@@ -2,9 +2,12 @@
 // pages and the sitemap can share one source of truth. Every post is written
 // around a real search query (the `keywords`) with FAQ schema for rich results.
 
+import { COMPARISON_BLOG_POSTS } from "@/lib/blogPostsComparisons";
+
 import { AI_BLOG_POSTS } from "@/lib/blogPostsAI";
 
 export const BLOG_POSTS = [
+  ...COMPARISON_BLOG_POSTS,
   {
     slug: "splitease-ultimate-group-expense-splitter-guide",
     category: "Product Spotlight",

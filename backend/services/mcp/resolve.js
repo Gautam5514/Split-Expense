@@ -7,9 +7,25 @@
  * question with the candidates, never guessed.
  */
 import Group from "../../models/groupModel.js";
+import { editDistance, normText, typoBudget } from "./helpers.js";
 
 export const isObjectIdString = (v) => typeof v === "string" && /^[a-fA-F0-9]{24}$/.test(v);
-const norm = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+const norm = normText;
+
+/**
+ * Names within a typo or two of `q` ("goa trp" -> "Goa Trip"). Compared with
+ * the whole name and, for a one-word query, with each word of the name.
+ */
+const nearMatches = (list, q, nameOf) => {
+  const budget = typoBudget(q);
+  if (!budget) return [];
+  const single = !q.includes(" ");
+  return list.filter((x) => {
+    const name = norm(nameOf(x));
+    if (editDistance(name, q, budget) <= budget) return true;
+    return single && name.split(" ").some((w) => w.length >= 4 && editDistance(w, q, budget) <= budget);
+  });
+};
 const idOf = (m) => String(m?._id ?? m);
 
 const SELF = new Set(["me", "i", "myself", "self", "mine", "my self"]);
@@ -32,6 +48,12 @@ export async function resolveGroup(ref, uid) {
   let hits = groups.filter((g) => norm(g.name) === q);
   if (!hits.length) hits = groups.filter((g) => norm(g.name).includes(q));
   if (!hits.length) hits = groups.filter((g) => norm(g.name).length >= 3 && q.includes(norm(g.name)));
+  // Words in any order ("trip goa"), then a forgiving match for typos.
+  if (!hits.length) {
+    const words = q.split(" ").filter(Boolean);
+    if (words.length > 1) hits = groups.filter((g) => words.every((w) => norm(g.name).includes(w)));
+  }
+  if (!hits.length) hits = nearMatches(groups, q, (g) => g.name);
   // Prefer the live group over an old completed one with a similar name.
   if (hits.length > 1) {
     const active = hits.filter((g) => !g.isCompleted);
@@ -81,7 +103,9 @@ export function resolveMember(group, ref, uid) {
   const attempt =
     pick(members.filter((m) => norm(m.name) === q)) ||
     pick(members.filter((m) => first(m.name) === q)) ||
-    pick(members.filter((m) => norm(m.name).startsWith(q) || norm(m.email).startsWith(q)));
+    pick(members.filter((m) => norm(m.name).startsWith(q) || norm(m.email).startsWith(q))) ||
+    pick(members.filter((m) => norm(m.name).split(" ").includes(q))) ||
+    pick(nearMatches(members, q, (m) => m.name));
   if (attempt) return attempt;
 
   return { error: `No member "${raw}" in "${group.name}". Members: ${members.map(describe).join(", ")}.` };

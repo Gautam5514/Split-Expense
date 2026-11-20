@@ -5,7 +5,7 @@
 // WhatsApp). So: APP_PUBLIC_URL if set, else the first public https origin in
 // FRONTEND_URL, else the live site. Same rule as the push-notification assets.
 const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/;
-export const DEFAULT_PUBLIC_WEB_URL = "https://split.elitecrew.online";
+export const DEFAULT_PUBLIC_WEB_URL = "https://splitease.tech";
 
 export function publicWebUrl(env = process.env) {
   const strip = (s) => String(s || "").trim().replace(/\/+$/, "");

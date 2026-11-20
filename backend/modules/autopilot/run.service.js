@@ -7,7 +7,7 @@ import { runInput, decisionSchema, hash, checkDecision, keyOf, intentSchema } fr
 import { resolvePeople } from "./people.js";
 import { getContactIds } from "../../utils/contacts.js";
 import { isValidEmail, normalizeEmail } from "../../middleware/validate.js";
-import { extractIntent, buildPlan, collectPeopleRefs, applyEdits, readCorrection, parseLocal } from "./planner.js";
+import { extractIntent, buildPlan, collectPeopleRefs, applyEdits, readCorrection, parseLocal, readGroupFollowUp, readNameAnswer, applyGroupName } from "./planner.js";
 import Expense from "../../models/expenseModel.js";
 import { escapeRegExp } from "../../middleware/validate.js";
 import { READ_STEPS } from "./contracts.js";
@@ -45,17 +45,22 @@ export async function createRun(actor, body) {
   if (existing) return authorizedRun(AgentRun, actor.id, existing._id);
 
   // Conversation: a follow-up continues a run that was waiting for details or approval.
-  let parent = null, bindings = {}, groupId = input.groupId || null, message = input.message;
+  let parent = null, bindings = {}, groupId = input.groupId || null, message = input.message, patched = null, groupName = null;
   if (input.parentRunId) {
     parent = await authorizedRun(AgentRun, actor.id, input.parentRunId);
     if (!["clarification_required", "waiting_approval"].includes(parent.status)) throw fail(409, "PARENT_CLOSED", "That step is already finished. Start a new request.");
     // Understand what a typed reply is before merging it into the waiting request:
     if (!input.reuse && !input.edits?.length && !input.answers?.length) {
+      // 0. Autopilot asked what to call the group: this reply is the name, nothing else.
+      groupName = readNameAnswer(input.message, parent);
       // 1. A quick correction ("make it 4000", "Rahul ko hata do") edits the plan directly.
       const fix = parent.status === "waiting_approval" && parent.intent ? readCorrection(input.message, parent.plan) : null;
       if (fix) input = { ...input, edits: fix.edits };
-      // 2. A complete new request ("who owes whom?") is its own run; the waiting plan stays open.
-      else if (isCompleteRequest(input.message)) {
+      // 2. More about the group being planned ("add x@y.com too", "budget 4 lakh", "same group")
+      //    continues that plan. The group doesn't exist yet, so a fresh request would have nowhere to go.
+      else if (parent.status === "waiting_approval" && parent.intent && (patched = readGroupFollowUp(input.message, parent.intent))) { /* keep the parent; the patched request is planned below */ }
+      // 3. A complete new request ("who owes whom?") is its own run; the waiting plan stays open.
+      else if (!groupName && isCompleteRequest(input.message)) {
         groupId = input.groupId || (parent.groupId ? String(parent.groupId) : null);
         parent = null;
       }
@@ -66,7 +71,7 @@ export async function createRun(actor, body) {
     groupId = input.groupId || (parent.groupId ? String(parent.groupId) : null);
     // Chip answers keep the parsed request; typed replies are merged and re-read by the model.
     if (input.edits?.length && !parent.intent) throw fail(400, "NOTHING_TO_EDIT", "This plan can't be edited. Tell me the change instead.");
-    message = input.reuse || input.edits?.length ? parent.message : `${parent.message}\n${input.message}`.slice(-4000);
+    message = input.reuse || input.edits?.length ? parent.message : `${parent.message}\n${groupName ? `Group name: "${groupName}"` : input.message}`.slice(-4000);
   }
   if (groupId) await snapshot(actor.id, groupId);
 
@@ -82,9 +87,12 @@ export async function createRun(actor, body) {
     const groups = await Group.find({ members: actor.id }).select("name settings.currency").limit(100).lean();
     const ai = {};
     let intent;
-    if (input.edits?.length) { intent = applyEdits(parent.intent, input.edits); Object.assign(ai, parent.ai || {}, { edited: true }); }
+    if (patched) { intent = patched; Object.assign(ai, parent.ai || {}, { edited: true }); }
+    else if (input.edits?.length) { intent = applyEdits(parent.intent, input.edits); Object.assign(ai, parent.ai || {}, { edited: true }); }
     else if (input.reuse && parent?.intent) { intent = intentSchema.parse(parent.intent); Object.assign(ai, parent.ai || {}); }
     else intent = await extractIntent(message, groups, ai, groups.find(g => String(g._id) === String(groupId))?.name || null);
+    // Whatever the reader made of it, the name the user just gave is the group's name.
+    if (groupName && parent && !patched && !input.edits?.length) intent = applyGroupName(intent, groupName, parent.message);
     // A selected group is only context; a request to create a group is about a new one.
     if (intent.actions.some(a => a.type === "create_group")) groupId = null;
     // A group named in the request beats the picker ("add taxi to Goa Trip" while Flat is selected).

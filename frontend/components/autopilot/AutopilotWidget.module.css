@@ -99,7 +99,8 @@
 .composer { padding-bottom: max(16px,env(safe-area-inset-bottom)); background: var(--background); }
 .input { box-shadow: 0 2px 8px #00000004; }
 .input:focus-within { border-color: #34a893; box-shadow: 0 0 0 3px #2dd4bf12; }
-.send { background: #176e61; color: #fff; }
+.send { background: #176e61; color: #fff; box-shadow: 0 6px 16px -8px #0f766e; }
+.send:disabled { background: var(--muted); color: var(--muted-foreground); box-shadow: none; }
 .send:hover:not(:disabled) { background: #11594f; }
 :global(.dark) .eyebrow, :global(.dark) .shortcutIcon { color: #7be0c7; }
 @media(max-width:639px) {

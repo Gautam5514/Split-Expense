@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 jest.mock("next/navigation", () => ({ usePathname: () => "/dashboard" }));
 jest.mock("@/context/AuthContext", () => ({ useAuth: () => ({ token: "test-token", loading: false }) }));
 jest.mock("@/lib/api", () => ({ api: { get: jest.fn(), post: jest.fn() } }));
+jest.mock("@/lib/firebaseClient", () => ({ auth: { currentUser: { uid: "user-1" } } }));
 jest.mock("@/components/group/GroupTypeIcon", () => ({ __esModule: true, default: () => <span /> }));
 jest.mock("@/components/autopilot/PlanSteps", () => ({ __esModule: true, default: () => <span>Plan preview</span> }));
 jest.mock("framer-motion", () => {
@@ -18,9 +19,11 @@ jest.mock("framer-motion", () => {
 });
 process.env.NEXT_PUBLIC_AUTOPILOT_ENABLED = "true";
 const Widget = require("@/components/autopilot/AutopilotWidget").default;
+const { resetAutopilotCaps } = require("@/components/autopilot/useAutopilotSession");
 const STORE = "autopilot.thread.v1";
 beforeEach(() => {
   jest.clearAllMocks(); sessionStorage.clear();
+  resetAutopilotCaps(); // the capability check is shared per page load
   Element.prototype.scrollTo = jest.fn();
   api.get.mockImplementation(url => Promise.resolve({ data: url === "/agent/groups" ? [] : { enabled: true } }));
 });

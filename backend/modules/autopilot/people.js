@@ -1,4 +1,6 @@
 import User from "../../models/userModel.js";
+import Group from "../../models/groupModel.js";
+import UserProfile from "../../models/userProfileModel.js";
 import { searchContacts, lookupUserByEmail } from "../../controllers/peopleController.js";
 import { keyOf } from "./contracts.js";
 export { keyOf };
@@ -69,4 +71,24 @@ async function resolveOne(actorId, ref, memberIds, groupMembers, binding) {
   if (best.length === 1) return byUserId(actorId, best[0]._id, memberIds);
   if (best.length > 1) return { status: "ambiguous", candidates: best.slice(0, 5).map(c => ({ userId: String(c._id), name: c.name, email: c.email })) };
   return { status: "unknown" };
+}
+
+/**
+ * Names and profile photos for the plan cards: the user themself plus everyone
+ * they currently share a group with - exactly the people whose photos the app
+ * already shows them. Kept out of the plan payload on purpose, so a changed
+ * photo never invalidates a plan that is waiting for approval.
+ * Photo order matches the rest of the app: Google photo first, then an upload.
+ */
+export async function peopleDirectory(userId) {
+  const groups = await Group.find({ members: userId }).select("members").limit(200).lean();
+  const ids = [...new Set([String(userId), ...groups.flatMap(g => (g.members || []).map(String))])].slice(0, 2000);
+  const [users, profiles] = await Promise.all([
+    User.find({ _id: { $in: ids } }).select("name photoURL").lean(),
+    UserProfile.find({ userId: { $in: ids } }).select("userId profileImage.url").lean(),
+  ]);
+  const uploaded = new Map(profiles.map(p => [String(p.userId), p.profileImage?.url || null]));
+  const people = {};
+  for (const u of users) people[String(u._id)] = { name: u.name || "Member", photoUrl: u.photoURL || uploaded.get(String(u._id)) || null };
+  return { me: String(userId), people };
 }
