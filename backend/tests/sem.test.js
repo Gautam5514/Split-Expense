@@ -183,3 +183,14 @@ test("shadow compare tolerates legacy paisa drift and skips large drift", () => 
   assert.equal(ok.drift, 2);
   assert.equal(semShadowCompare({ a: 10, b: -5 }, []).skipped, "drift");
 });
+
+test("shadow compare skips very large groups so the request path stays fast", async () => {
+  const { semShadowCompare: cmp, SHADOW_MAX_ACTIVE } = await import("../controllers/balanceController.js");
+  // 19 non-zero members: ten owed 9 each, nine owing 10 each (sums to zero).
+  const big = {};
+  for (let i = 0; i < 10; i++) big[`c${i}`] = 9;
+  for (let i = 0; i < 9; i++) big[`d${i}`] = -10;
+  assert.ok(Object.keys(big).length > SHADOW_MAX_ACTIVE);
+  const r = cmp(big, []);
+  assert.equal(r.skipped, "large");
+});
