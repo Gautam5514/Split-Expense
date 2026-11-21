@@ -3,6 +3,7 @@ import Expense from "../models/expenseModel.js";
 import Group from "../models/groupModel.js";
 import UserProfile from "../models/userProfileModel.js";
 import { isValidObjectId } from "../middleware/validate.js";
+import { settle as semSettle, verify as semVerify } from "../utils/sem.js";
 
 export const to2 = (n) => Number(Number(n).toFixed(2));
 
@@ -32,6 +33,49 @@ export const buildSettlement = (balancesObj) => {
     if (Math.abs(creditor.bal) < 0.01) j++;
   }
   return txns;
+};
+
+// SEM shadow mode: when SEM_SHADOW=1, run the research settlement engine next
+// to the legacy one and log a one-line comparison. Its result is never
+// returned to users, any error is swallowed, and it runs after the response
+// is sent. Logs carry counts only, no user ids or amounts.
+export const semShadowCompare = (balancesObj, legacyTxns) => {
+  const t0 = Date.now();
+  const net = {};
+  let sum = 0n;
+  for (const [id, bal] of Object.entries(balancesObj)) {
+    net[id] = BigInt(Math.round(Number(bal) * 100));
+    sum += net[id];
+  }
+  const ids = Object.keys(net);
+  // Legacy per-expense float rounding can leave a few paise of drift.
+  if (sum !== 0n) {
+    if (sum > BigInt(ids.length) || sum < -BigInt(ids.length)) return { skipped: "drift", drift: Number(sum) };
+    const top = ids.sort((a, b) => (net[b] < 0n ? -net[b] : net[b]) > (net[a] < 0n ? -net[a] : net[a]) ? 1 : -1)[0];
+    net[top] -= sum;
+  }
+  const r = semSettle(net);
+  return {
+    active: Object.values(net).filter((v) => v !== 0n).length,
+    legacy: legacyTxns.length,
+    sem: r.transfers.length,
+    saved: legacyTxns.length - r.transfers.length,
+    optimal: r.optimal,
+    verified: semVerify(net, r.transfers),
+    drift: Number(sum),
+    ms: Date.now() - t0,
+  };
+};
+
+const runSemShadow = (groupId, balancesObj, legacyTxns) => {
+  if (process.env.SEM_SHADOW !== "1") return;
+  setImmediate(() => {
+    try {
+      console.info("[sem-shadow]", JSON.stringify({ groupId: String(groupId), ...semShadowCompare(balancesObj, legacyTxns) }));
+    } catch (err) {
+      console.warn("[sem-shadow] error:", err.message);
+    }
+  });
 };
 
 const BALANCE_FIELDS = "groupId paidBy amount payers splits";
@@ -129,6 +173,7 @@ export const getBalances = async (req, res) => {
     }));
 
     const txns = buildSettlement(balances);
+    runSemShadow(groupId, balances, txns);
     // UPI details of whoever is owed, so the debtor gets a one-tap "Pay via UPI"
     // plus a QR scanner they can save & scan from any UPI app.
     const creditorIds = [...new Set(txns.map((t) => t.to))];
