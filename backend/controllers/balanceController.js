@@ -35,10 +35,14 @@ export const buildSettlement = (balancesObj) => {
   return txns;
 };
 
-// SEM shadow mode: when SEM_SHADOW=1, run the research settlement engine next
-// to the legacy one and log a one-line comparison. Its result is never
-// returned to users, any error is swallowed, and it runs after the response
-// is sent. Logs carry counts only, no user ids or amounts.
+// SEM shadow mode: ON by default (set SEM_SHADOW=0 to turn it off). Runs the
+// exact settlement engine next to the legacy one and logs a one-line
+// comparison. Its result is never returned to users, any error is swallowed,
+// and it runs after the response is sent. Logs carry counts only, no user ids
+// or amounts. Groups with more than SHADOW_MAX_ACTIVE non-zero members are
+// skipped so the exact solver never holds the event loop for long (~13 ms at 18).
+export const SHADOW_MAX_ACTIVE = 18;
+
 export const semShadowCompare = (balancesObj, legacyTxns) => {
   const t0 = Date.now();
   const net = {};
@@ -47,6 +51,8 @@ export const semShadowCompare = (balancesObj, legacyTxns) => {
     net[id] = BigInt(Math.round(Number(bal) * 100));
     sum += net[id];
   }
+  const active = Object.values(net).filter((v) => v !== 0n).length;
+  if (active > SHADOW_MAX_ACTIVE) return { skipped: "large", active, legacy: legacyTxns.length };
   const ids = Object.keys(net);
   // Legacy per-expense float rounding can leave a few paise of drift.
   if (sum !== 0n) {
@@ -68,7 +74,9 @@ export const semShadowCompare = (balancesObj, legacyTxns) => {
 };
 
 const runSemShadow = (groupId, balancesObj, legacyTxns) => {
-  if (process.env.SEM_SHADOW !== "1") return;
+  if (process.env.SEM_SHADOW === "0") return;
+  // Stay quiet under Jest unless a test opts in explicitly.
+  if (process.env.NODE_ENV === "test" && process.env.SEM_SHADOW !== "1") return;
   setImmediate(() => {
     try {
       console.info("[sem-shadow]", JSON.stringify({ groupId: String(groupId), ...semShadowCompare(balancesObj, legacyTxns) }));
