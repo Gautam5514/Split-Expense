@@ -4,7 +4,10 @@ import Link from "next/link";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import headingStyles from "./SectionHeading.module.css";
-import { ArrowRight, Plus, Receipt, MessageCircle, Bell, Link2, SlidersHorizontal } from "lucide-react";
+import {
+  ArrowRight, Plus, Receipt, MessageCircle, Bell, Link2, SlidersHorizontal,
+  ArrowLeftRight, BedDouble, Bot, CarTaxiFront, Gift, Globe, GraduationCap, Home, PartyPopper, Pizza, Plane, ReceiptText, ShoppingBasket, ShoppingCart, Ticket, Tv, Utensils, Wine, Zap,
+} from "lucide-react";
 
 /* "Who it's for" - an editorial scroll section. On desktop the index on the
    left stays pinned while one card per audience slides up over the last as
@@ -19,9 +22,9 @@ const AUDIENCES = [
     desc: "Everyone logs what they paid. SplitEase keeps a running balance, so nobody keeps a notebook or chases a friend at month end.",
     group: "Hostel Block B",
     handle: "Hostel · 4 members",
-    avatar: "🎓",
+    avatar: GraduationCap,
     tint: ["#0891B2", "#164E63", "#0B2A33"],
-    bills: [["🍛", "Mess fee"], ["🛒", "Daily orders"], ["📺", "Subscriptions"]],
+    bills: [[Utensils, "Mess fee"], [ShoppingCart, "Daily orders"], [Tv, "Subscriptions"]],
     rules: [["Ask for a bill photo on every expense", false], ["Approve new members before they join", true]],
   },
   {
@@ -30,9 +33,9 @@ const AUDIENCES = [
     desc: "Set the split once when you create the group. Every expense after that follows it, and balances update live for everyone.",
     group: "Flat 402",
     handle: "Roommates · 3 members",
-    avatar: "🏠",
-    tint: ["#0F766E", "#134E4A", "#0A2E2B"],
-    bills: [["🏠", "Rent"], ["🥦", "Groceries"], ["⚡", "Electricity"]],
+    avatar: Home,
+    tint: ["#0891B2", "#164E63", "#0B2A33"],
+    bills: [[Home, "Rent"], [ShoppingBasket, "Groceries"], [Zap, "Electricity"]],
     rules: [["Ask for a bill photo on every expense", true], ["Approve new members before they join", true]],
   },
   {
@@ -41,9 +44,9 @@ const AUDIENCES = [
     desc: "Add stays, cabs and food as you go, in any currency. At the end, SplitEase works out the fewest payments to make everyone even.",
     group: "Goa Trip 2026",
     handle: "Trip · 6 members",
-    avatar: "✈️",
-    tint: ["#22D3EE", "#0E7490", "#0B2A33"],
-    bills: [["🏨", "Stays"], ["🚕", "Cabs"], ["🎟️", "Activities"]],
+    avatar: Plane,
+    tint: ["#0891B2", "#164E63", "#0B2A33"],
+    bills: [[BedDouble, "Stays"], [CarTaxiFront, "Cabs"], [Ticket, "Activities"]],
     rules: [["Ask for a bill photo on every expense", false], ["Approve new members before they join", false]],
   },
   {
@@ -52,9 +55,9 @@ const AUDIENCES = [
     desc: "Snap the receipt, and the group sees who paid and who owes. Chat about it right next to the expense.",
     group: "Friday Gang",
     handle: "Friends · 4 members",
-    avatar: "🍕",
-    tint: ["#14B8A6", "#115E59", "#0A2E2B"],
-    bills: [["🍷", "Dinners"], ["🎁", "Gifts"], ["🎉", "Parties"]],
+    avatar: Pizza,
+    tint: ["#0891B2", "#164E63", "#0B2A33"],
+    bills: [[Wine, "Dinners"], [Gift, "Gifts"], [PartyPopper, "Parties"]],
     rules: [["Ask for a bill photo on every expense", false], ["Approve new members before they join", true]],
   },
   {
@@ -63,9 +66,9 @@ const AUDIENCES = [
     desc: "Office lunches, a shared car, a family event. If a bill gets shared, SplitEase keeps it fair, on web, Android and inside your AI assistant.",
     group: "Team Offsite",
     handle: "Group · 5 members",
-    avatar: "🌍",
-    tint: ["#06B6D4", "#155E75", "#0B2A33"],
-    bills: [["💱", "Multi-currency"], ["🧾", "Receipts"], ["🤖", "Via AI chat"]],
+    avatar: Globe,
+    tint: ["#0891B2", "#164E63", "#0B2A33"],
+    bills: [[ArrowLeftRight, "Multi-currency"], [ReceiptText, "Receipts"], [Bot, "Via AI chat"]],
     rules: [["Ask for a bill photo on every expense", true], ["Approve new members before they join", false]],
   },
 ];
@@ -206,6 +209,7 @@ export default function FeatureMindMap() {
 
 function AudienceCard({ a, index, reduced }) {
   const [c1, c2, c3] = a.tint;
+  const Avatar = a.avatar;
   return (
     <motion.article
       initial={reduced ? false : { opacity: 0, y: 40 }}
@@ -238,7 +242,9 @@ function AudienceCard({ a, index, reduced }) {
             <div className="rounded-[16px] bg-[#111114]/95 p-4 shadow-2xl sm:p-5">
               {/* identity row */}
               <div className="flex items-center gap-3 border-b border-white/[0.07] pb-4">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/[0.07] text-2xl ring-1 ring-white/10">{a.avatar}</span>
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25">
+                  <Avatar size={22} strokeWidth={1.75} aria-hidden="true" />
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-base font-semibold tracking-tight">{a.group}</p>
                   <p className="truncate text-xs text-white/45">{a.handle}</p>
@@ -257,9 +263,10 @@ function AudienceCard({ a, index, reduced }) {
                 <Link2 size={13} className="text-white/45" /> Common bills
               </p>
               <div className="mt-2.5 flex flex-wrap gap-2">
-                {a.bills.map(([emoji, name]) => (
+                {a.bills.map(([Icon, name]) => (
                   <span key={name} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-white/80">
-                    <span className="text-sm leading-none">{emoji}</span>{name}
+                    <Icon size={13} strokeWidth={1.9} className="text-cyan-300/90" aria-hidden="true" />
+                    {name}
                   </span>
                 ))}
               </div>

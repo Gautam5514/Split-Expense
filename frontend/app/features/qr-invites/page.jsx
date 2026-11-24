@@ -19,9 +19,9 @@ export default function QrInvitesPage() {
   return (
     <FeaturePageLayout
       tag="EASY INVITATIONS"
-      tagColor="text-amber-400"
-      glowBg="bg-amber-500/10"
-      borderHover="hover:border-amber-500/25"
+      tagColor="text-cyan-400"
+      glowBg="bg-cyan-500/10"
+      borderHover="hover:border-cyan-500/25"
       title="QR & Link Invites"
       description="Every group gets its own QR code and invite link. Guests scan or tap to join instantly - no accounts to manually add, no onboarding sheet."
       image="/qrlink.webp"

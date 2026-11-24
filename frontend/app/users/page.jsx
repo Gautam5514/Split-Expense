@@ -286,10 +286,10 @@ export default function UserDashboardPage() {
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-            <StatCard label="Total Groups" value={groups.length} subtext={`${activeGroups.length} currently active`} icon={<Users className="h-5 w-5" />} iconBg="bg-blue-500/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-300" />
-            <StatCard label="Spent This Month" value={analytics ? `₹${analytics.monthlySummary?.totalSpent?.toLocaleString("en-IN") || 0}` : "₹0"} subtext={analytics?.monthlySummary?.topCategory ? `Mostly ${getCategoryLabel(analytics.monthlySummary.topCategory)}` : "No spending this month"} icon={<Calendar className="h-5 w-5" />} iconBg="bg-violet-500/10 text-violet-600 dark:bg-violet-400/10 dark:text-violet-300" />
-            <StatCard label="You Have to Pay" value={totalOwe > 0 ? `₹${Number(totalOwe).toLocaleString("en-IN")}` : "₹0"} subtext={totalOwe > 0 ? "Pending across your groups" : "You're fully settled"} icon={<ArrowUpRight className="h-5 w-5" />} iconBg="bg-rose-500/10 text-rose-600 dark:bg-rose-400/10 dark:text-rose-300" valueColor={totalOwe > 0 ? "text-rose-600 dark:text-rose-400" : "text-foreground"} />
-            <StatCard label="You're Owed" value={totalOwed > 0 ? `₹${Number(totalOwed).toLocaleString("en-IN")}` : "₹0"} subtext={totalOwed > 0 ? "Waiting to come back to you" : "No pending receivables"} icon={<Landmark className="h-5 w-5" />} iconBg="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300" valueColor={totalOwed > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"} />
+            <StatCard label="Total Groups" value={groups.length} icon={<Users className="h-5 w-5" />} iconBg="bg-blue-500/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-300" />
+            <StatCard label="Spent This Month" value={analytics ? `₹${analytics.monthlySummary?.totalSpent?.toLocaleString("en-IN") || 0}` : "₹0"} icon={<Calendar className="h-5 w-5" />} iconBg="bg-violet-500/10 text-violet-600 dark:bg-violet-400/10 dark:text-violet-300" />
+            <StatCard label="You Have to Pay" value={totalOwe > 0 ? `₹${Number(totalOwe).toLocaleString("en-IN")}` : "₹0"} icon={<ArrowUpRight className="h-5 w-5" />} iconBg="bg-rose-500/10 text-rose-600 dark:bg-rose-400/10 dark:text-rose-300" valueColor={totalOwe > 0 ? "text-rose-600 dark:text-rose-400" : "text-foreground"} />
+            <StatCard label="You're Owed" value={totalOwed > 0 ? `₹${Number(totalOwed).toLocaleString("en-IN")}` : "₹0"} icon={<Landmark className="h-5 w-5" />} iconBg="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300" valueColor={totalOwed > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"} />
           </div>
         </div>
       </motion.section>

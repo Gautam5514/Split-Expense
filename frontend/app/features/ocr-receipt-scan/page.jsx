@@ -20,9 +20,9 @@ export default function OcrReceiptScanPage() {
     <FeaturePageLayout
       tag="RECEIPT ATTACHMENTS"
       status="Coming soon"
-      tagColor="text-emerald-400"
-      glowBg="bg-emerald-500/10"
-      borderHover="hover:border-emerald-500/25"
+      tagColor="text-cyan-400"
+      glowBg="bg-cyan-500/10"
+      borderHover="hover:border-cyan-500/25"
       title="Receipt Scan"
       description="Attach a photo or PDF of any bill to an expense today, so the group always has the original receipt. Automatic AI line-item extraction is in active development."
       image="/ocr_recept.webp"

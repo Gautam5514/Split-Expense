@@ -19,9 +19,9 @@ export default function SecureLoginPage() {
   return (
     <FeaturePageLayout
       tag="OTP CHECKER"
-      tagColor="text-emerald-500"
-      glowBg="bg-emerald-500/10"
-      borderHover="hover:border-emerald-500/25"
+      tagColor="text-cyan-500"
+      glowBg="bg-cyan-500/10"
+      borderHover="hover:border-cyan-500/25"
       title="Secure OTP Login"
       description="Every sign-in is verified with a one-time passcode dispatched to your email - no static password to create, forget, or leak."
       image="/secure_otp.webp"

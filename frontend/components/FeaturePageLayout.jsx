@@ -26,8 +26,8 @@ const FEATURE_PAGES = [
 // in beta, or still being built - never let marketing copy alone imply a
 // feature is available when it isn't.
 const STATUS_STYLES = {
-  Available: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
-  Beta: "border-amber-400/30 bg-amber-400/10 text-amber-300",
+  Available: "border-cyan-400/30 bg-cyan-400/10 text-cyan-300",
+  Beta: "border-white/15 bg-white/[0.06] text-white/70",
   "Coming soon": "border-white/15 bg-white/5 text-white/50",
 };
 

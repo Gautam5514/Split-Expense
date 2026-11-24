@@ -19,9 +19,9 @@ export default function GroupChatHubPage() {
   return (
     <FeaturePageLayout
       tag="GROUP CHAT"
-      tagColor="text-violet-400"
-      glowBg="bg-violet-500/10"
-      borderHover="hover:border-violet-500/25"
+      tagColor="text-cyan-400"
+      glowBg="bg-cyan-500/10"
+      borderHover="hover:border-cyan-500/25"
       title="Group Chat Hub"
       description="Real-time chat built into every group, so discussing a bill, sharing a receipt, and logging a settlement all happen in one thread instead of three different apps."
       image="/groupchat.webp"

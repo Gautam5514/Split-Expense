@@ -22,7 +22,7 @@ import {
 import Footer from "@/components/Footer";
 import { PlayStoreButton } from "@/components/PlayStoreLink";
 
-const ACCENT = "167,139,250"; // violet - Autopilot's colour across the page
+const ACCENT = "34,211,238"; // brand cyan - Autopilot's colour across the page
 
 /* ── live demo ─────────────────────────────────────────────────────────── */
 
@@ -129,7 +129,7 @@ function DemoChat() {
                 <span
                   key={label}
                   className={`h-1 flex-1 rounded-full transition-colors duration-500 ${
-                    i < at ? (verified ? "bg-emerald-400" : "bg-violet-400") : i === at ? "animate-pulse bg-violet-400/70" : "bg-white/10"
+                    i < at ? (verified ? "bg-cyan-300" : "bg-cyan-500") : i === at ? "animate-pulse bg-cyan-400/70" : "bg-white/10"
                   }`}
                 />
               ))}
@@ -141,7 +141,7 @@ function DemoChat() {
 
           {phase === "planning" && (
             <div className="flex items-center gap-2 px-1 text-xs text-white/45">
-              <AutopilotMark size={13} className="animate-pulse text-violet-300" />
+              <AutopilotMark size={13} className="animate-pulse text-cyan-300" />
               Reading your groups and working out the exact split…
             </div>
           )}
@@ -162,7 +162,7 @@ function DemoChat() {
                     {s.kind === "read" ? "Answer · nothing changes" : verified ? "Done" : "Plan · waiting for you"}
                   </p>
                   {s.kind === "write" && (
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${verified ? "bg-emerald-400/15 text-emerald-300" : "bg-violet-400/15 text-violet-200"}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${verified ? "bg-cyan-400/15 text-cyan-300" : "bg-white/10 text-white/70"}`}>
                       {s.steps.length} steps
                     </span>
                   )}
@@ -187,11 +187,11 @@ function DemoChat() {
                         </div>
                         <span
                           className={`flex h-5 w-5 items-center justify-center rounded-full border transition-all duration-500 ${
-                            verified ? "border-emerald-400/40 bg-emerald-400/15" : "border-white/10"
+                            verified ? "border-cyan-400/40 bg-cyan-400/15" : "border-white/10"
                           }`}
                           style={{ transitionDelay: verified ? `${i * 140}ms` : "0ms" }}
                         >
-                          {verified && <Check size={11} className="text-emerald-300" />}
+                          {verified && <Check size={11} className="text-cyan-300" />}
                         </span>
                       </motion.li>
                     );
@@ -200,7 +200,7 @@ function DemoChat() {
                 {s.kind === "write" && (
                   <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-3">
                     {verified ? (
-                      <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold text-cyan-300">
                         <BadgeCheck size={14} /> Done, and verified against your ledger.
                       </p>
                     ) : (
@@ -208,7 +208,7 @@ function DemoChat() {
                         <span className="text-[11px] text-white/35">Edit · Reject</span>
                         <span
                           className={`rounded-full px-4 py-1.5 text-xs font-bold text-black transition-all duration-300 ${
-                            phase === "approving" ? "scale-95 bg-emerald-300" : "bg-white shadow-[0_0_0_4px_rgba(167,139,250,0.25)]"
+                            phase === "approving" ? "scale-95 bg-cyan-300" : "bg-white shadow-[0_0_0_4px_rgba(34,211,238,0.25)]"
                           }`}
                         >
                           {phase === "approving" ? "Approved" : "Approve"}
@@ -339,7 +339,7 @@ const SAFETY = [
 const ROADMAP = [
   {
     stage: "Live today",
-    tone: "emerald",
+    tone: "brand",
     icon: Check,
     items: [
       { title: "Plan, approve, verify", desc: "Every write shows a plan first and is read back after it runs." },
@@ -354,7 +354,7 @@ const ROADMAP = [
   },
   {
     stage: "Building next",
-    tone: "amber",
+    tone: "soon",
     icon: Construction,
     items: [
       { title: "Undo", desc: "Take back a delete or a mistaken bill right after it runs." },
@@ -411,8 +411,8 @@ const FEATURE_PAGES = [
 ];
 
 const TONES = {
-  emerald: { dot: "bg-emerald-400", text: "text-emerald-300", ring: "border-emerald-400/25", glow: "52,211,153" },
-  amber: { dot: "bg-amber-400", text: "text-amber-300", ring: "border-amber-400/25", glow: "251,191,36" },
+  brand: { dot: "bg-cyan-400", text: "text-cyan-300", ring: "border-cyan-400/25", glow: "34,211,238" },
+  soon: { dot: "bg-cyan-400", text: "text-cyan-300", ring: "border-cyan-400/25", glow: "34,211,238" },
   white: { dot: "bg-white/50", text: "text-white/60", ring: "border-white/15", glow: "255,255,255" },
 };
 
@@ -426,8 +426,8 @@ const fadeUp = {
 
 function Eyebrow({ children }) {
   return (
-    <p className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-violet-300/80 sm:text-[11px]">
-      <span className="h-px w-6 bg-violet-300/40" />
+    <p className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300/80 sm:text-[11px]">
+      <span className="h-px w-6 bg-cyan-300/40" />
       {children}
     </p>
   );
@@ -480,15 +480,15 @@ export default function AutopilotFeatureClient() {
         <div className="relative mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
           <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="font-mono text-[10px] font-extrabold uppercase tracking-widest text-violet-300">AI ASSISTANT</span>
-              <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-amber-300">
+              <span className="font-mono text-[10px] font-extrabold uppercase tracking-widest text-cyan-300">AI ASSISTANT</span>
+              <span className="rounded-full border border-white/15 bg-white/[0.06] px-2.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-white/70">
                 Beta
               </span>
             </div>
             <h1 className="font-serif-premium mt-4 text-4xl font-normal leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.6rem]">
               Say it once.
               <br />
-              <span className="bg-gradient-to-r from-violet-200 via-white to-cyan-200 bg-clip-text text-transparent">Autopilot does the rest.</span>
+              <span className="bg-gradient-to-r from-cyan-200 via-white to-cyan-200 bg-clip-text text-transparent">Autopilot does the rest.</span>
             </h1>
             <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/55 sm:text-base">
               Tell SplitEase what you need: a new trip, a bill to split, who owes whom. Autopilot turns it into a clear plan with
@@ -498,8 +498,8 @@ export default function AutopilotFeatureClient() {
             <ul className="mt-7 space-y-2.5">
               {["Plans groups, people, bills and budgets from one message", "Shows every share before anything changes", "Understands English and Hinglish"].map((p) => (
                 <li key={p} className="flex items-start gap-2.5 text-sm font-medium text-white/70">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-violet-300/20 bg-violet-300/10">
-                    <Check className="h-3 w-3 text-violet-200" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10">
+                    <Check className="h-3 w-3 text-cyan-200" />
                   </span>
                   {p}
                 </li>
@@ -539,7 +539,7 @@ export default function AutopilotFeatureClient() {
       <section className="mx-auto max-w-6xl px-6 pt-20 sm:pt-28">
         <SectionTitle eyebrow="How it works" title="Ask, review, approve" sub="The same four steps for every request, so you always know what will happen and what did." />
         <div className="relative mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="pointer-events-none absolute left-0 right-0 top-[38px] hidden h-px bg-gradient-to-r from-transparent via-violet-300/25 to-transparent lg:block" />
+          <div className="pointer-events-none absolute left-0 right-0 top-[38px] hidden h-px bg-gradient-to-r from-transparent via-cyan-300/25 to-transparent lg:block" />
           {FLOW.map((f, i) => {
             const Icon = f.icon;
             return (
@@ -547,11 +547,11 @@ export default function AutopilotFeatureClient() {
                 key={f.title}
                 {...fadeUp}
                 transition={{ duration: 0.5, delay: i * 0.08, ease: "easeOut" }}
-                className="relative rounded-2xl border border-white/[0.08] bg-[#0B0B0F] p-6 transition-colors duration-300 hover:border-violet-300/25"
+                className="relative rounded-2xl border border-white/[0.08] bg-[#0B0B0F] p-6 transition-colors duration-300 hover:border-cyan-300/25"
               >
                 <div className="flex items-center justify-between">
-                  <span className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-violet-300/20 bg-[#141019]">
-                    <Icon size={18} className="text-violet-200" />
+                  <span className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-300/20 bg-[#0d1418]">
+                    <Icon size={18} className="text-cyan-200" />
                   </span>
                   <span className="font-serif-premium text-3xl text-white/15">{String(i + 1).padStart(2, "0")}</span>
                 </div>
@@ -589,7 +589,7 @@ export default function AutopilotFeatureClient() {
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `rgba(${rgb},0.14)` }}>
                     <Icon size={18} style={{ color: `rgb(${rgb})` }} />
                   </span>
-                  <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-300">
+                  <span className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-cyan-300">
                     Live
                   </span>
                 </div>
@@ -623,7 +623,7 @@ export default function AutopilotFeatureClient() {
                 { icon: LifeBuoy, label: "Works if AI is down" },
               ].map(({ icon: Icon, label }) => (
                 <div key={label} className="rounded-2xl border border-white/[0.08] bg-[#0B0B0F] px-3 py-4 text-center">
-                  <Icon size={17} className="mx-auto text-violet-200" />
+                  <Icon size={17} className="mx-auto text-cyan-200" />
                   <p className="mt-2 text-[11.5px] font-semibold leading-tight text-white/65">{label}</p>
                 </div>
               ))}
@@ -657,7 +657,7 @@ export default function AutopilotFeatureClient() {
         <div className="relative overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#08080B] p-6 sm:p-10">
           <div
             className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl"
-            style={{ background: "rgba(52,211,153,0.10)" }}
+            style={{ background: "rgba(34,211,238,0.10)" }}
           />
           <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <SectionTitle
@@ -665,7 +665,7 @@ export default function AutopilotFeatureClient() {
               title="Nothing happens without your yes"
               sub="Autopilot follows every rule the app does, plus a few extra ones because it's an AI."
             />
-            <div className="flex items-center gap-2 self-start rounded-full border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 text-xs font-semibold text-emerald-200 lg:self-auto">
+            <div className="flex items-center gap-2 self-start rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-xs font-semibold text-cyan-200 lg:self-auto">
               <ShieldCheck size={14} /> No automatic payments. No surprises.
             </div>
           </div>
@@ -677,9 +677,9 @@ export default function AutopilotFeatureClient() {
                   key={sf.title}
                   {...fadeUp}
                   transition={{ duration: 0.5, delay: (i % 3) * 0.07 }}
-                  className="rounded-2xl border border-white/[0.07] bg-black/40 p-5 transition-colors duration-300 hover:border-emerald-400/25"
+                  className="rounded-2xl border border-white/[0.07] bg-black/40 p-5 transition-colors duration-300 hover:border-cyan-400/25"
                 >
-                  <Icon size={18} className="text-emerald-300" />
+                  <Icon size={18} className="text-cyan-300" />
                   <h3 className="mt-4 text-sm font-bold">{sf.title}</h3>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">{sf.desc}</p>
                 </motion.div>
@@ -713,7 +713,7 @@ export default function AutopilotFeatureClient() {
                 />
                 <div className="relative flex items-center justify-between">
                   <p className={`flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.18em] ${tone.text}`}>
-                    <span className={`h-2 w-2 rounded-full ${tone.dot} ${col.tone === "amber" ? "animate-pulse" : ""}`} />
+                    <span className={`h-2 w-2 rounded-full ${tone.dot} ${col.tone === "soon" ? "animate-pulse" : ""}`} />
                     {col.stage}
                   </p>
                   <span className="text-xs text-white/30">{col.items.length}</span>
@@ -781,7 +781,7 @@ export default function AutopilotFeatureClient() {
             className="pointer-events-none absolute inset-0"
             style={{ background: `radial-gradient(50% 80% at 50% 0%, rgba(${ACCENT},0.18), transparent 70%)` }}
           />
-          <AutopilotMark size={28} className="relative mx-auto text-violet-200" />
+          <AutopilotMark size={28} className="relative mx-auto text-cyan-200" />
           <h2 className="font-serif-premium relative mx-auto mt-5 max-w-xl text-3xl font-normal tracking-tight sm:text-4xl">
             Your next trip, planned in one message
           </h2>
@@ -804,7 +804,7 @@ export default function AutopilotFeatureClient() {
               <Link
                 key={page.href}
                 href={page.href}
-                className="clickable inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] px-4 py-2 text-xs font-semibold text-white/60 transition-all duration-200 hover:border-violet-300/30 hover:text-white"
+                className="clickable inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] px-4 py-2 text-xs font-semibold text-white/60 transition-all duration-200 hover:border-cyan-300/30 hover:text-white"
               >
                 {page.label}
                 <ArrowUpRight size={12} />

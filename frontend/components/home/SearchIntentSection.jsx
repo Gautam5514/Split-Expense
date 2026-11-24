@@ -5,21 +5,19 @@ import SectionHeading from "./SectionHeading";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { ArrowRight, Briefcase, Home, Plane } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { PlayStoreButton } from "@/components/PlayStoreLink";
 
-/* "Made for sharing": three tall scenario cards. Each one is a soft cyan
-   gradient backdrop with a title, a one-line promise, a "Learn more" pill and
-   a SplitEase group card peeking in from the bottom, showing what that
-   scenario actually looks like in the app. */
+/* "Made for sharing": three tall photo cards. The photos are portrait shots
+   with the people in the top half and a naturally dark lower half, so each
+   card is just the photo, full bleed, with the title and one line of copy
+   sitting on that dark area. No card colours, frames or icons. */
 
 const CARDS = [
   {
     key: "trips",
-    Icon: Plane,
     title: "Trips",
-    desc: "Every flight, cab and dinner in one place, settled once when you're back",
-    tint: ["#0891B2", "#164E63"],
+    desc: "Flights, cabs, that one dinner nobody budgeted for. Add it as you go and settle once you're home.",
     photo: {
       src: "/onboarding-trips.webp",
       alt: "Four friends taking a selfie in the sea at a Goa beach sunset",
@@ -27,21 +25,17 @@ const CARDS = [
   },
   {
     key: "home",
-    Icon: Home,
     title: "Flatmates",
-    desc: "Rent, wifi and groceries split the same way every month, automatically",
-    tint: ["#0F766E", "#134E4A"],
+    desc: "Rent, wifi and groceries, split the same way every month. Nobody has to send the reminder.",
     photo: {
       src: "/onboarding-roommates.webp",
-      alt: "Flatmates relaxing together at home",
+      alt: "Flatmates going through a bill together at home",
     },
   },
   {
     key: "work",
-    Icon: Briefcase,
     title: "Teams",
-    desc: "Snap the receipt, split it with partners, hand accounts a clean report",
-    tint: ["#06B6D4", "#155E75"],
+    desc: "Snap the receipt, split it with whoever was there, and send accounts one tidy report.",
     photo: {
       src: "/onboarding-business.webp",
       alt: "Colleagues reviewing shared expenses on a tablet at a conference",
@@ -94,44 +88,30 @@ export default function SearchIntentSection() {
 }
 
 function ScenarioCard({ card, index }) {
-  const { Icon, photo } = card;
-  const [c1, c2] = card.tint;
+  const { photo } = card;
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.65, delay: index * 0.12, ease: [0.22, 1, 0.36, 1] }}
-      className="relative flex min-h-[560px] flex-col overflow-hidden rounded-[28px] p-6 sm:p-8"
-      style={{
-        background: `radial-gradient(110% 65% at 25% 0%, ${c1}99 0%, transparent 65%), radial-gradient(80% 55% at 100% 100%, ${c2}80 0%, transparent 70%), linear-gradient(180deg, ${c2}b3 0%, #07161a 100%)`,
-      }}
+      transition={{ duration: 0.55, delay: index * 0.1, ease: "easeOut" }}
+      className="group relative mx-auto aspect-[2/3] w-full max-w-[26rem] overflow-hidden rounded-[28px] bg-[#0b0f14] ring-1 ring-inset ring-white/10 md:max-w-none"
     >
-      {/* copy */}
-      <div className="relative">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[1.9rem] font-semibold tracking-[-0.03em] text-white sm:text-[2.1rem]">{card.title}</h3>
-          <span className="grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/10 text-white/90 backdrop-blur">
-            <Icon className="h-4.5 w-4.5" aria-hidden="true" />
-          </span>
-        </div>
-        <p className="mt-3 max-w-[22rem] text-[15px] leading-relaxed text-white/75">{card.desc}</p>
-      </div>
+      <Image
+        src={photo.src}
+        alt={photo.alt}
+        fill
+        sizes="(min-width: 768px) 32vw, 90vw"
+        className="object-cover object-[50%_20%] transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
+      />
 
-      {/* photo in a layered frame: soft outer frame, raised inner panel */}
-      <div className="relative mt-auto pt-10">
-        <div className="rounded-[22px] border border-white/25 bg-white/[0.07] p-2 backdrop-blur-sm">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-[16px] shadow-[0_18px_40px_-14px_rgba(0,0,0,0.85)] ring-1 ring-white/10">
-            <Image
-              src={photo.src}
-              alt={photo.alt}
-              fill
-              sizes="(min-width: 768px) 30vw, 90vw"
-              className="object-cover object-[50%_30%]"
-            />
-          </div>
-        </div>
+      {/* scrim: keeps the copy readable where the photo is not dark enough */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/90 via-black/55 to-transparent" />
+
+      <div className="absolute inset-x-0 bottom-0 p-6 sm:p-7 lg:p-8">
+        <h3 className="text-[1.75rem] font-semibold leading-none tracking-[-0.025em] text-white lg:text-[2rem]">{card.title}</h3>
+        <p className="mt-3 max-w-[24rem] text-[15px] leading-relaxed text-white/75">{card.desc}</p>
       </div>
     </motion.article>
   );

@@ -19,9 +19,9 @@ export default function AIExpenseSplitterPage() {
   return (
     <FeaturePageLayout
       tag="LLM INSIGHTS"
-      tagColor="text-pink-400"
-      glowBg="bg-pink-500/10"
-      borderHover="hover:border-pink-500/25"
+      tagColor="text-cyan-400"
+      glowBg="bg-cyan-500/10"
+      borderHover="hover:border-cyan-500/25"
       title="AI Expense Splitter"
       description="An embedded assistant that understands your group's spending - ask it anything, and it answers using your group's real expenses and balances."
       image="/ai_expense.webp"

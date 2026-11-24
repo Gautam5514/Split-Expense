@@ -17,6 +17,7 @@ import SearchIntentSection from "@/components/home/SearchIntentSection";
 // the initial JS bundle small so the page becomes interactive fast.
 const ShowcaseSection = dynamic(() => import("@/components/ShowcaseSection"));
 const IntelligenceSection = dynamic(() => import("@/components/home/IntelligenceSection"));
+const AutopilotSection = dynamic(() => import("@/components/home/AutopilotSection"));
 const BentoSection = dynamic(() => import("@/components/home/BentoSection"));
 const HowItWorksSection = dynamic(() => import("@/components/home/HowItWorksSection"));
 const FeatureMindMap = dynamic(() => import("@/components/home/FeatureMindMap"));
@@ -55,6 +56,9 @@ export default function HomePage() {
       </LazySection>
       <LazySection minHeight="100vh">
         <IntelligenceSection />
+      </LazySection>
+      <LazySection minHeight="100vh">
+        <AutopilotSection />
       </LazySection>
       <LazySection minHeight="100vh">
         <BentoSection />
